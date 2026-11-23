@@ -8,7 +8,7 @@ export const kbdVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[linear-gradient(180deg,#fff,var(--color-sunken))] text-g-600 shadow-[inset_0_-1px_0_rgba(10,11,13,.1),0_0_0_1px_rgba(10,11,13,.1)]",
+          "bg-[linear-gradient(180deg,#fff,var(--color-sunken))] text-g-600 shadow-[inset_0_-1px_0_rgba(10,11,13,.07),0_0_0_1px_rgba(10,11,13,.1)]",
         inset: "bg-g-100 text-g-500 shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)]",
         inverse: "bg-white/16 text-white/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,.22)]"
       }

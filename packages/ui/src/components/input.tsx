@@ -6,7 +6,7 @@ import { cn } from "../lib/cn.ts"
 /** The text-field surface shared by inputs, textareas, input groups and select triggers. */
 export const fieldSurface = [
   "bg-white text-ink [--field-ring:rgba(10,11,13,.12)]",
-  "shadow-[inset_0_1px_2px_rgba(10,11,13,.04),0_0_0_1px_var(--field-ring),0_1px_2px_rgba(10,11,13,.03)]",
+  "shadow-[inset_0_1px_2px_rgba(10,11,13,.03),0_0_0_1px_var(--field-ring),0_1px_1px_rgba(10,11,13,.02)]",
   "transition-[box-shadow,background-color] duration-fast ease-brand",
   "hover:[--field-ring:rgba(10,11,13,.2)]",
   "aria-[invalid=true]:[--field-ring:rgba(217,58,28,.6)] data-invalid:[--field-ring:rgba(217,58,28,.6)]"
@@ -16,7 +16,7 @@ export const inputVariants = cva(
   [
     "w-full min-w-0 font-sans outline-none placeholder:text-g-400",
     fieldSurface,
-    "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)] aria-[invalid=true]:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
+    "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.12)] aria-[invalid=true]:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
     "disabled:cursor-not-allowed disabled:bg-g-50 disabled:text-g-400 disabled:shadow-[0_0_0_1px_rgba(10,11,13,.08)]",
     "read-only:not-disabled:bg-g-50 read-only:not-disabled:text-g-600",
     "file:mr-2.5 file:h-full file:cursor-pointer file:border-0 file:border-r file:border-solid file:border-g-200 file:bg-g-50 file:px-3 file:font-sans file:text-label file:font-[550] file:text-ink",

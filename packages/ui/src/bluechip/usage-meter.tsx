@@ -56,7 +56,7 @@ export function UsageMeter(
         aria-valuemax={limit}
         aria-valuenow={Math.min(used, limit)}
         aria-valuetext={summary}
-        className="h-2 overflow-hidden rounded-[4px] bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.06)]"
+        className="h-2 overflow-hidden rounded-[4px] bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.04)]"
       >
         <div
           className={cn(

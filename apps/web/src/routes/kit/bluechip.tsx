@@ -782,7 +782,7 @@ function DemoControls(
             key={key}
             type="button"
             onClick={actions[key]}
-            className="flex cursor-pointer items-start gap-2.5 rounded-md px-3 py-[11px] text-left surface-secondary transition-[box-shadow,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42, 91, 255,.3),0_4px_10px_-4px_rgba(42, 91, 255,.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue active:scale-98"
+            className="flex cursor-pointer items-start gap-2.5 rounded-md px-3 py-[11px] text-left surface-secondary transition-[box-shadow,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42,91,255,.3),0_3px_6px_-3px_rgba(42,91,255,.12)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue active:scale-98"
           >
             <Icon name={icon} size={16} className="mt-0.5 text-blue" />
             <span className="grid gap-px">

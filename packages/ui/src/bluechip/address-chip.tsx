@@ -53,8 +53,8 @@ export function AddressChip({ address, network = true, feedback = "inline", clas
       className={cn(
         "inline-flex max-w-full items-center gap-2 rounded-full bg-white py-1 pr-1 pl-3 text-[13.5px] font-[550] transition-shadow duration-fast ease-brand",
         copied === "copied" ?
-          "shadow-[0_0_0_1px_var(--color-gain-line),0_1px_2px_rgba(15,138,74,.1)]" :
-          "shadow-[0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.05)]",
+          "shadow-[0_0_0_1px_var(--color-gain-line),0_1px_1px_rgba(15,138,74,.06)]" :
+          "surface-field",
         className
       )}
       {...props}

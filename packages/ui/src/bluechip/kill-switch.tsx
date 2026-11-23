@@ -54,7 +54,7 @@ export function KillSwitch({ paused, agentCount, onPause, onResume, className }:
         data-slot="kill-switch"
         data-state="paused"
         className={cn(
-          "flex w-full max-w-[640px] flex-wrap items-center gap-3 rounded-lg bg-[linear-gradient(180deg,#fffbea,var(--color-warn-wash))] py-3 pr-3 pl-3.5 shadow-[inset_0_0_0_1px_var(--color-warn-line),0_4px_12px_-6px_rgba(154,107,0,.25)]",
+          "flex w-full max-w-[640px] flex-wrap items-center gap-3 rounded-lg bg-[linear-gradient(180deg,#fffbea,var(--color-warn-wash))] py-3 pr-3 pl-3.5 shadow-[inset_0_0_0_1px_var(--color-warn-line),0_3px_8px_-5px_rgba(154,107,0,.14)]",
           className
         )}
       >

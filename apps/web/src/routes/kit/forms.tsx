@@ -214,7 +214,7 @@ function States({ items }: { readonly items: ReadonlyArray<readonly [string, Rea
 // Static state samples are pictures of a state, so they stay out of the tab order.
 const sample = { tabIndex: -1 } as const
 const hoverRing = "[--field-ring:rgba(10,11,13,.2)]"
-const focusRing = "shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]"
+const focusRing = "shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.12)]"
 const focusOutline = "outline-2 outline-offset-2 outline-blue"
 
 /* ---------- Page ---------- */
@@ -863,7 +863,7 @@ function CheckboxSection() {
             <Checkbox
               key="hover"
               aria-label="Hover"
-              className="shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.32),0_1px_2px_rgba(10,11,13,.08)]"
+              className="shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.32),0_1px_2px_rgba(10,11,13,.05)]"
               {...sample}
             />
           ],

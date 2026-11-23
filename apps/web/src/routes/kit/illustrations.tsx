@@ -57,7 +57,7 @@ function KitIllustrations() {
           </div>
           <div className="grid content-center gap-7 p-5 md:p-8">
             <div className="grid items-center gap-6 sm:grid-cols-[auto_minmax(0,1fr)]">
-              <span className="inline-grid place-items-center justify-self-start rounded-xl bg-sunken p-2 shadow-[inset_0_0_0_1px_rgba(10,11,13,.05)]">
+              <span className="inline-grid place-items-center justify-self-start rounded-xl surface-well p-2">
                 <Illustration name="rising-chip" size={160} />
               </span>
               <div>

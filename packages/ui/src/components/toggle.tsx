@@ -16,7 +16,7 @@ export const toggleVariants = cva(
     variants: {
       variant: {
         default:
-          "data-pressed:bg-[linear-gradient(180deg,#fff,#f6f7f9)] data-pressed:text-ink data-pressed:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.08)] data-pressed:[&_svg]:text-blue",
+          "data-pressed:bg-[linear-gradient(180deg,#fff,#f6f7f9)] data-pressed:text-ink data-pressed:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.05)] data-pressed:[&_svg]:text-blue",
         outline:
           "shadow-[inset_0_0_0_1px_rgba(10,11,13,.12)] hover:bg-g-50 data-pressed:bg-blue-50 data-pressed:text-blue data-pressed:shadow-[inset_0_0_0_1px_var(--color-info-line)]"
       },

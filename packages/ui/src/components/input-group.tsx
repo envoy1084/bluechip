@@ -9,7 +9,7 @@ export const inputGroupVariants = cva(
     "flex w-full min-w-0 items-center gap-2 font-sans",
     fieldSurface,
     "has-[input[aria-invalid=true]]:[--field-ring:rgba(217,58,28,.6)] has-[input[data-invalid]]:[--field-ring:rgba(217,58,28,.6)]",
-    "focus-within:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]",
+    "focus-within:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.12)]",
     "has-[input[aria-invalid=true]]:focus-within:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] has-[input[data-invalid]]:focus-within:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
     "has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-g-50 has-[input:disabled]:text-g-400",
     "[&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-g-400"

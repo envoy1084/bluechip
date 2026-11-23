@@ -23,7 +23,7 @@ export const buttonVariants = cva(
         danger: "surface-danger hover:bg-[linear-gradient(180deg,#fff_0%,#ffefe9_100%)]",
         // Solid red, only for confirming an irreversible step (e.g. "Remove agent" in an alert dialog).
         destructive:
-          "bg-[linear-gradient(180deg,#e2492b_0%,var(--color-loss)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_0_0_1px_#b02c13,0_1px_2px_rgba(120,20,0,.3),0_6px_14px_-4px_rgba(204,53,25,.4)] hover:brightness-110",
+          "bg-[linear-gradient(180deg,#e2492b_0%,var(--color-loss)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_0_0_1px_#b02c13,0_1px_2px_rgba(120,20,0,.18),0_4px_10px_-4px_rgba(204,53,25,.26)] hover:brightness-110",
         link: "h-auto bg-transparent px-0 text-blue underline-offset-4 hover:underline active:scale-100"
       },
       size: {

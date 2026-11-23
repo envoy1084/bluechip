@@ -17,23 +17,23 @@ export const tickerChipVariants = cva(
     variants: {
       tone: {
         blue:
-          "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_1px_2px_rgba(20, 50, 160,.25)]",
+          "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_1px_2px_rgba(20,50,160,.15)]",
         yellow:
-          "bg-[linear-gradient(180deg,#ffdc5c,#ffd12f)] text-[#3a2c00] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,90,0,.25)]",
+          "bg-[linear-gradient(180deg,#ffdc5c,#ffd12f)] text-[#3a2c00] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,90,0,.15)]",
         green:
-          "bg-[linear-gradient(180deg,#7ad61a,#66c800)] text-[#0c2a00] shadow-[inset_0_1px_0_rgba(255,255,255,.4),0_1px_2px_rgba(40,90,0,.25)]",
+          "bg-[linear-gradient(180deg,#7ad61a,#66c800)] text-[#0c2a00] shadow-[inset_0_1px_0_rgba(255,255,255,.4),0_1px_2px_rgba(40,90,0,.15)]",
         pink:
-          "bg-[linear-gradient(180deg,#ffbdd9,#fea8cd)] text-[#4a0f2a] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,30,70,.2)]",
+          "bg-[linear-gradient(180deg,#ffbdd9,#fea8cd)] text-[#4a0f2a] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,30,70,.12)]",
         ink:
-          "bg-[linear-gradient(180deg,#2b2e35,#0a0b0d)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.18),0_1px_2px_rgba(0,0,0,.3)]",
+          "bg-[linear-gradient(180deg,#2b2e35,#0a0b0d)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.18),0_1px_2px_rgba(0,0,0,.18)]",
         cerulean:
-          "bg-[linear-gradient(180deg,#62a2ff,#3c8aff)] text-[#00163d] shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_1px_2px_rgba(0,60,160,.25)]",
+          "bg-[linear-gradient(180deg,#62a2ff,#3c8aff)] text-[#00163d] shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_1px_2px_rgba(0,60,160,.15)]",
         lilac:
-          "bg-[linear-gradient(180deg,#dcaefe,#cd99fd)] text-[#2c0a4d] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(80,30,120,.2)]",
+          "bg-[linear-gradient(180deg,#dcaefe,#cd99fd)] text-[#2c0a4d] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(80,30,120,.12)]",
         tan:
-          "bg-[linear-gradient(180deg,#cbb995,#b8a581)] text-[#2a2111] shadow-[inset_0_1px_0_rgba(255,255,255,.4),0_1px_2px_rgba(80,60,20,.2)]",
+          "bg-[linear-gradient(180deg,#cbb995,#b8a581)] text-[#2a2111] shadow-[inset_0_1px_0_rgba(255,255,255,.4),0_1px_2px_rgba(80,60,20,.12)]",
         cash:
-          "bg-[linear-gradient(180deg,#fff,#eef0f3)] text-g-700 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.08)]",
+          "bg-[linear-gradient(180deg,#fff,#eef0f3)] text-g-700 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.05)]",
         unavailable:
           "bg-[repeating-linear-gradient(135deg,#f4f5f7_0_4px,#eceef2_4px_8px)] text-g-500 line-through decoration-ink/35 shadow-[inset_0_0_0_1px_var(--color-g-200)]"
       },
@@ -111,9 +111,9 @@ export function TickerToggle({ symbol, name, className, onPressedChange, ...prop
       data-slot="ticker-toggle"
       className={cn(
         "group/tt inline-flex cursor-pointer items-center gap-2 rounded-[10px] py-1 pr-2.5 pl-1 text-label font-medium text-g-700",
-        "bg-[linear-gradient(180deg,#fff,#f8f9fa)] shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.09),0_1px_2px_rgba(10,11,13,.05)]",
-        "transition-[box-shadow,background,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.16),0_2px_4px_rgba(10,11,13,.06)] active:scale-98",
-        "data-pressed:bg-[linear-gradient(180deg,#fff,#f5f7ff)] data-pressed:text-ink data-pressed:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42, 91, 255,.45),0_1px_2px_rgba(42, 91, 255,.12)]",
+        "bg-[linear-gradient(180deg,#fff,#f8f9fa)] shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.09),0_1px_1px_rgba(10,11,13,.03)]",
+        "transition-[box-shadow,background,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.14),0_1px_3px_rgba(10,11,13,.05)] active:scale-98",
+        "data-pressed:bg-[linear-gradient(180deg,#fff,#f5f7ff)] data-pressed:text-ink data-pressed:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42,91,255,.45),0_1px_2px_rgba(42,91,255,.07)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
         "data-disabled:cursor-not-allowed data-disabled:opacity-45",
         className

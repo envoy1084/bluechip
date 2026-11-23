@@ -14,7 +14,7 @@ export const alertVariants = cva(
         warning:
           "bg-[linear-gradient(180deg,#fff,var(--color-warn-wash))] shadow-[inset_0_0_0_1px_var(--color-warn-line)] [&>svg]:text-warn",
         destructive:
-          "bg-[linear-gradient(180deg,#fff,var(--color-loss-wash))] shadow-[inset_0_0_0_1px_var(--color-loss-line),0_4px_12px_-6px_rgba(217,58,28,.2)] [&>svg]:text-loss [&_[data-slot=alert-title]]:text-loss"
+          "bg-[linear-gradient(180deg,#fff,var(--color-loss-wash))] shadow-[inset_0_0_0_1px_var(--color-loss-line),0_3px_8px_-5px_rgba(217,58,28,.11)] [&>svg]:text-loss [&_[data-slot=alert-title]]:text-loss"
       }
     },
     defaultVariants: { variant: "info" }

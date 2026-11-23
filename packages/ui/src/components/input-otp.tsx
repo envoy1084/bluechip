@@ -20,8 +20,8 @@ export function InputOTPSlot({ className, ...props }: ComponentProps<typeof OTPF
       data-slot="input-otp-slot"
       className={cn(
         "grid h-12 w-[38px] place-items-center rounded-[11px] border-0 bg-white p-0 text-center font-sans text-[20px] font-semibold text-ink caret-blue outline-none sm:h-[52px] sm:w-11 sm:text-[22px]",
-        "shadow-[inset_0_1px_2px_rgba(10,11,13,.04),0_0_0_1px_rgba(10,11,13,.12)] transition-shadow duration-fast ease-brand",
-        "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]",
+        "surface-field transition-shadow duration-fast ease-brand",
+        "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.12)]",
         "data-invalid:text-loss data-invalid:shadow-[0_0_0_1px_rgba(217,58,28,.6)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
         "disabled:bg-g-50 disabled:text-g-400 disabled:shadow-[0_0_0_1px_rgba(10,11,13,.08)]",
         className

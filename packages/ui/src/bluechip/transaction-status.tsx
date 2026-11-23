@@ -88,11 +88,11 @@ export function TransactionStatus({
                 className={cn(
                   "relative z-1 grid size-6 place-items-center rounded-full bg-white text-white shadow-[inset_0_0_0_1.5px_var(--color-g-200)]",
                   s === "done" &&
-                    "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_2px_6px_-2px_rgba(42, 91, 255,.5)]",
+                    "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_2px_4px_-2px_rgba(42,91,255,.28)]",
                   s === "now" &&
-                    "text-blue shadow-[inset_0_0_0_1.5px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.1)]",
+                    "text-blue shadow-[inset_0_0_0_1.5px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.1)]",
                   failed &&
-                    "bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] shadow-[0_2px_6px_-2px_rgba(217,58,28,.5)]"
+                    "bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] shadow-[0_2px_4px_-2px_rgba(217,58,28,.28)]"
                 )}
               >
                 {s === "done" && <Icon name="check" size={12} className="animate-pop-in" />}

@@ -155,7 +155,7 @@ export function MoneyInput({
       </div>
       <InputGroup
         className={cn(
-          "bg-g-50 shadow-[inset_0_0_0_1px_rgba(10,11,13,.08),inset_0_1px_2px_rgba(10,11,13,.04)] focus-within:bg-white",
+          "bg-g-50 shadow-[inset_0_0_0_1px_rgba(10,11,13,.08),inset_0_1px_2px_rgba(10,11,13,.03)] focus-within:bg-white",
           large ? "h-auto gap-1.5 rounded-[14px] py-2.5 pr-2.5 pl-4" : "h-auto rounded-[10px] py-1.5 pr-1.5 pl-2.5",
           check.status === "warning" && !disabled &&
             "bg-warn-wash shadow-[inset_0_0_0_1px_var(--color-warn-line)]",

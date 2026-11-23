@@ -86,7 +86,7 @@ export function DepositCard(
         )}
       >
         {celebrate && <Confetti />}
-        <span className="mb-2 grid size-[52px] animate-pop-in place-items-center rounded-[16px] bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_10px_22px_-8px_rgba(15,138,74,.55)]">
+        <span className="mb-2 grid size-[52px] animate-pop-in place-items-center rounded-[16px] bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(15,138,74,.3)]">
           <Icon name="check" size={22} />
         </span>
         <span className="text-label text-g-600">Cash arrived</span>
@@ -121,7 +121,7 @@ export function DepositCard(
         </output>
       </div>
       <div className="grid justify-items-center gap-5 sm:grid-cols-[168px_minmax(0,1fr)] sm:items-start sm:justify-items-stretch">
-        <figure className="relative m-0 size-[168px] rounded-[16px] bg-white p-3 shadow-[0_0_0_1px_rgba(10,11,13,.08),0_4px_12px_-4px_rgba(10,11,13,.12)]">
+        <figure className="relative m-0 size-[168px] rounded-[16px] bg-white p-3 shadow-e2">
           <svg
             viewBox={`0 0 ${GRID} ${GRID}`}
             className="block size-36 opacity-90"

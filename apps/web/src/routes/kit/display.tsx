@@ -374,7 +374,7 @@ function CardSection() {
           render={({ children, ...props }) => <a {...props} href="#create-agent">{children}</a>}
         >
           <CardHeader>
-            <span className="grid size-[38px] place-items-center rounded-[11px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_4px_10px_-3px_rgba(42, 91, 255,.4)]">
+            <span className="grid size-[38px] place-items-center rounded-[11px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_3px_6px_-3px_rgba(42,91,255,.22)]">
               <Icon name="plus" size={18} />
             </span>
           </CardHeader>

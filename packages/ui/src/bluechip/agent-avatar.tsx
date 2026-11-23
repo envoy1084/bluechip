@@ -6,7 +6,7 @@ import { cn } from "../lib/cn.ts"
 export const agentAvatarVariants = cva(
   [
     "relative grid shrink-0 place-items-center bg-[linear-gradient(180deg,#ffffff,#eef1f6)]",
-    "shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_2px_5px_-1px_rgba(10,11,13,.12)]"
+    "shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_1px_3px_-1px_rgba(10,11,13,.07)]"
   ],
   {
     variants: {

@@ -163,13 +163,13 @@ export function ApprovalCard(
         className={cn(
           "grid place-items-center justify-self-center text-white transition-[width,height,background,box-shadow] duration-slow ease-brand",
           sealed ?
-            "size-24 rounded-2xl bg-white shadow-[0_0_0_1px_rgba(10,11,13,.08),0_10px_22px_-8px_rgba(42, 91, 255,.3)]" :
+            "size-24 rounded-2xl bg-white shadow-[0_0_0_1px_rgba(10,11,13,.08),0_6px_14px_-6px_rgba(42,91,255,.17)]" :
             "size-[60px] rounded-[18px]",
           deciding &&
-            "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_10px_22px_-8px_rgba(42, 91, 255,.55)]",
+            "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(42,91,255,.3)]",
           state === "approving" && "animate-pulse",
           state === "failed" &&
-            "bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] shadow-[0_10px_22px_-8px_rgba(217,58,28,.5)]",
+            "bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] shadow-[0_6px_14px_-6px_rgba(217,58,28,.28)]",
           state === "declined" &&
             "bg-[linear-gradient(180deg,#fff,#eef0f3)] text-g-500 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.1)]"
         )}

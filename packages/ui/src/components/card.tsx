@@ -13,7 +13,7 @@ export const cardVariants = cva(
         raised: "shadow-e3",
         interactive:
           "cursor-pointer shadow-e2 transition-[box-shadow,translate] duration-base ease-brand hover:-translate-y-0.5 hover:shadow-e3",
-        well: "bg-sunken shadow-[inset_0_0_0_1px_rgba(10,11,13,.05)]"
+        well: "surface-well"
       },
       size: { sm: "gap-3 p-4", md: "gap-4 p-5" }
     },

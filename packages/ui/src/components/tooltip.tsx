@@ -40,7 +40,7 @@ export function TooltipContent(
           data-slot="tooltip-content"
           className={cn(
             "inline-flex max-w-[260px] items-center gap-1.5 rounded-[7px] bg-ink px-[9px] py-[5px] text-label-sm font-medium text-white",
-            "shadow-[inset_0_0_0_1px_rgba(255,255,255,.06),0_4px_12px_-2px_rgba(10,11,13,.3)]",
+            "shadow-[inset_0_0_0_1px_rgba(255,255,255,.06),0_3px_8px_-2px_rgba(10,11,13,.18)]",
             "transition-opacity duration-fast ease-brand data-starting-style:opacity-0 data-ending-style:opacity-0",
             "data-instant:transition-none",
             className

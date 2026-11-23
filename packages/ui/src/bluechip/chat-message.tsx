@@ -98,7 +98,7 @@ function BotMark() {
   return (
     <span
       aria-hidden
-      className="grid size-7 shrink-0 place-items-center rounded-[9px] bg-[linear-gradient(180deg,#fff,#f1f3f8)] text-blue shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_2px_4px_-1px_rgba(10,11,13,.1)]"
+      className="grid size-7 shrink-0 place-items-center rounded-[9px] bg-[linear-gradient(180deg,#fff,#f1f3f8)] text-blue shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_1px_2px_-1px_rgba(10,11,13,.06)]"
     >
       <svg width={16} height={16} viewBox="0 0 64 64">
         <mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">

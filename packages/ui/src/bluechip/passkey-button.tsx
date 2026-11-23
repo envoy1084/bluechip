@@ -74,7 +74,7 @@ export function PasskeyButton({
         className={cn(
           "w-full gap-2.5 transition-[background,box-shadow,filter,translate] duration-slow",
           state === "done" &&
-            "bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white [text-shadow:none] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_0_0_1px_#0c7a40,0_6px_14px_-4px_rgba(15,138,74,.45)]"
+            "bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white [text-shadow:none] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_0_0_1px_#0c7a40,0_4px_10px_-4px_rgba(15,138,74,.24)]"
         )}
         {...props}
       >

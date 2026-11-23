@@ -25,7 +25,7 @@ export interface ProgressProps
 export function Progress({ variant, className, ...props }: ProgressProps) {
   return (
     <BaseProgress.Root data-slot="progress" className={cn(progressVariants({ variant }), className)} {...props}>
-      <BaseProgress.Track className="relative h-2 overflow-hidden rounded-sm bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.06)]">
+      <BaseProgress.Track className="relative h-2 overflow-hidden rounded-sm bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.04)]">
         <BaseProgress.Indicator
           className={cn(
             "h-full rounded-[inherit] bg-(image:--progress-fill) transition-[width] duration-slow ease-brand",

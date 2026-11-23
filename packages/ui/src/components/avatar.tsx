@@ -6,7 +6,7 @@ import { cn } from "../lib/cn.ts"
 export const avatarVariants = cva(
   [
     "relative inline-grid shrink-0 place-items-center rounded-full font-semibold text-g-700 select-none",
-    "bg-[linear-gradient(180deg,#fff,#eef1f6)] shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_2px_5px_-1px_rgba(10,11,13,.12)]",
+    "bg-[linear-gradient(180deg,#fff,#eef1f6)] shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_1px_3px_-1px_rgba(10,11,13,.07)]",
     "[&_svg]:text-g-400"
   ],
   {
@@ -79,7 +79,7 @@ export function AvatarGroup({ className, ...props }: ComponentProps<"div">) {
     <div
       data-slot="avatar-group"
       className={cn(
-        "flex *:not-first:-ml-2 *:shadow-[0_0_0_2px_#fff,0_2px_5px_-1px_rgba(10,11,13,.12)]",
+        "flex *:not-first:-ml-2 *:shadow-[0_0_0_2px_#fff,0_1px_3px_-1px_rgba(10,11,13,.07)]",
         className
       )}
       {...props}

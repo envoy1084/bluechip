@@ -13,7 +13,7 @@ const pct = (value: number) => `${value.toFixed(1)}%`
 const clamp = (value: number) => Math.max(0, Math.min(100, value))
 
 export const allocationBarVariants = cva(
-  "relative block w-full rounded-full bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.06)]",
+  "relative block w-full rounded-full bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.04)]",
   {
     variants: {
       size: {

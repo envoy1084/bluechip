@@ -60,7 +60,7 @@ export function BlockedTradeCard({
         aria-label="Limit kept"
         className={cn("flex w-full max-w-[560px] items-center gap-3 rounded-lg bg-white p-5 shadow-e2", className)}
       >
-        <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(15,138,74,.5)]">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_4px_8px_-4px_rgba(15,138,74,.28)]">
           <Icon name="check" />
         </span>
         <div className="grid min-w-0 flex-1 gap-px">
@@ -93,7 +93,7 @@ export function BlockedTradeCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(217,58,28,.6)]">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_4px_8px_-4px_rgba(217,58,28,.32)]">
           <Icon name="stop-sign" />
         </span>
         <div className="grid min-w-0 gap-px">

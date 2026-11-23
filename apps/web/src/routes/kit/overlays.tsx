@@ -732,7 +732,7 @@ function KitOverlays() {
           </div>
           <div className="grid justify-items-center gap-2">
             <CommandDialog defaultOpen={open === "command"}>
-              <CommandDialogTrigger className="inline-flex h-10 w-[min(100%,300px)] cursor-pointer items-center gap-2.5 rounded-md bg-white pr-2 pl-3 text-body-sm text-g-500 shadow-[inset_0_1px_2px_rgba(10,11,13,.04),0_0_0_1px_rgba(10,11,13,.12)] hover:text-g-700">
+              <CommandDialogTrigger className="inline-flex h-10 w-[min(100%,300px)] cursor-pointer items-center gap-2.5 rounded-md bg-white pr-2 pl-3 text-body-sm text-g-500 surface-field hover:text-g-700">
                 <Icon name="search" />
                 <span className="flex-1 text-left">Search bluechip</span>
                 <Kbd>⌘K</Kbd>

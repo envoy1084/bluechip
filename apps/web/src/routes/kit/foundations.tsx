@@ -315,7 +315,7 @@ function TypeSection() {
 function DepthSection() {
   return (
     <Section title="Depth" purpose="Soft, layered shadows instead of borders. Higher levels float over lower ones.">
-      <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-5 rounded-lg bg-sunken p-6 shadow-[inset_0_0_0_1px_rgba(10,11,13,.05)]">
+      <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,160px),1fr))] gap-5 rounded-lg surface-well p-6">
         {DEPTH.map((level) => (
           <li
             key={level.token}
@@ -401,7 +401,7 @@ function FocusSection() {
             aria-label="Focused field sample"
             defaultValue="Rebalancer"
             tabIndex={-1}
-            className="shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]"
+            className="shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.12)]"
           />
           <Token>fields · 1px blue + 4px halo</Token>
         </div>

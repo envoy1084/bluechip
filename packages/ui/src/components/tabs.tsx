@@ -39,7 +39,7 @@ export function TabsList({ className, children, activateOnFocus = true, ...props
           "absolute left-0 w-(--active-tab-width) translate-x-(--active-tab-left) transition-[translate,width] duration-base ease-brand",
           "group-data-[variant=underline]/tabs:bottom-0 group-data-[variant=underline]/tabs:h-0.5 group-data-[variant=underline]/tabs:rounded-full group-data-[variant=underline]/tabs:bg-blue",
           "group-data-[variant=segmented]/tabs:top-[3px] group-data-[variant=segmented]/tabs:bottom-[3px] group-data-[variant=segmented]/tabs:rounded-[8px] group-data-[variant=segmented]/tabs:bg-[linear-gradient(180deg,#fff,#f9fafb)]",
-          "group-data-[variant=segmented]/tabs:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.08),0_1px_3px_rgba(10,11,13,.1)]"
+          "group-data-[variant=segmented]/tabs:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.08),0_1px_2px_rgba(10,11,13,.06)]"
         )}
       />
     </BaseTabs.List>
