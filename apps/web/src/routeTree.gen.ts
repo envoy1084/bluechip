@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as KitRouteRouteImport } from './routes/kit/route'
 import { Route as KitIndexRouteImport } from './routes/kit/index'
+import { Route as KitAgentsRouteImport } from './routes/kit/agents'
+import { Route as KitBluechipRouteImport } from './routes/kit/bluechip'
 import { Route as KitDisplayRouteImport } from './routes/kit/display'
 import { Route as KitFormsRouteImport } from './routes/kit/forms'
 import { Route as KitFoundationsRouteImport } from './routes/kit/foundations'
@@ -33,6 +35,16 @@ const KitRouteRoute = KitRouteRouteImport.update({
 const KitIndexRoute = KitIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => KitRouteRoute,
+} as any)
+const KitAgentsRoute = KitAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => KitRouteRoute,
+} as any)
+const KitBluechipRoute = KitBluechipRouteImport.update({
+  id: '/bluechip',
+  path: '/bluechip',
   getParentRoute: () => KitRouteRoute,
 } as any)
 const KitDisplayRoute = KitDisplayRouteImport.update({
@@ -74,6 +86,8 @@ const KitOverlaysRoute = KitOverlaysRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kit': typeof KitRouteRouteWithChildren
+  '/kit/agents': typeof KitAgentsRoute
+  '/kit/bluechip': typeof KitBluechipRoute
   '/kit/display': typeof KitDisplayRoute
   '/kit/forms': typeof KitFormsRoute
   '/kit/foundations': typeof KitFoundationsRoute
@@ -85,6 +99,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/kit/agents': typeof KitAgentsRoute
+  '/kit/bluechip': typeof KitBluechipRoute
   '/kit/display': typeof KitDisplayRoute
   '/kit/forms': typeof KitFormsRoute
   '/kit/foundations': typeof KitFoundationsRoute
@@ -98,6 +114,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/kit': typeof KitRouteRouteWithChildren
+  '/kit/agents': typeof KitAgentsRoute
+  '/kit/bluechip': typeof KitBluechipRoute
   '/kit/display': typeof KitDisplayRoute
   '/kit/forms': typeof KitFormsRoute
   '/kit/foundations': typeof KitFoundationsRoute
@@ -112,6 +130,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/kit'
+    | '/kit/agents'
+    | '/kit/bluechip'
     | '/kit/display'
     | '/kit/forms'
     | '/kit/foundations'
@@ -123,6 +143,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/kit/agents'
+    | '/kit/bluechip'
     | '/kit/display'
     | '/kit/forms'
     | '/kit/foundations'
@@ -135,6 +157,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/kit'
+    | '/kit/agents'
+    | '/kit/bluechip'
     | '/kit/display'
     | '/kit/forms'
     | '/kit/foundations'
@@ -171,6 +195,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/kit/'
       preLoaderRoute: typeof KitIndexRouteImport
+      parentRoute: typeof KitRouteRoute
+    }
+    '/kit/agents': {
+      id: '/kit/agents'
+      path: '/agents'
+      fullPath: '/kit/agents'
+      preLoaderRoute: typeof KitAgentsRouteImport
+      parentRoute: typeof KitRouteRoute
+    }
+    '/kit/bluechip': {
+      id: '/kit/bluechip'
+      path: '/bluechip'
+      fullPath: '/kit/bluechip'
+      preLoaderRoute: typeof KitBluechipRouteImport
       parentRoute: typeof KitRouteRoute
     }
     '/kit/display': {
@@ -226,6 +264,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface KitRouteRouteChildren {
+  KitAgentsRoute: typeof KitAgentsRoute
+  KitBluechipRoute: typeof KitBluechipRoute
   KitDisplayRoute: typeof KitDisplayRoute
   KitFormsRoute: typeof KitFormsRoute
   KitFoundationsRoute: typeof KitFoundationsRoute
@@ -237,6 +277,8 @@ interface KitRouteRouteChildren {
 }
 
 const KitRouteRouteChildren: KitRouteRouteChildren = {
+  KitAgentsRoute: KitAgentsRoute,
+  KitBluechipRoute: KitBluechipRoute,
   KitDisplayRoute: KitDisplayRoute,
   KitFormsRoute: KitFormsRoute,
   KitFoundationsRoute: KitFoundationsRoute,

@@ -10,7 +10,8 @@ const SECTIONS: ReadonlyArray<{ readonly to: string; readonly label: string; rea
   { to: "/kit/display", label: "Data display", icon: "grid" },
   { to: "/kit/overlays", label: "Overlays", icon: "layers" },
   { to: "/kit/navigation", label: "Navigation", icon: "menu" },
-  { to: "/kit/bluechip", label: "bluechip components", icon: "agent" },
+  { to: "/kit/bluechip", label: "Money & activity", icon: "wallet" },
+  { to: "/kit/agents", label: "Agents & chat", icon: "agent" },
   { to: "/kit/motion", label: "Motion", icon: "play" },
   { to: "/kit/illustrations", label: "Illustrations", icon: "image" }
 ]
