@@ -305,3 +305,6 @@ $RECYCLE.BIN/
 .directory
 .Trash-*
 .nfs*
+
+# Vitest browser-mode failure screenshots
+.vitest/

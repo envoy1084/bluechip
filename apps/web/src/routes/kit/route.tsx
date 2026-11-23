@@ -19,7 +19,7 @@ const SECTIONS: ReadonlyArray<{ readonly to: string; readonly label: string; rea
 function KitLayout() {
   return (
     <div className="grid min-h-dvh md:grid-cols-[232px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-dvh flex-col gap-4 border-r border-black/5 bg-g-50 px-3 py-5 md:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col gap-4 border-r border-ink/5 bg-g-50 px-3 py-5 md:flex">
         <span className="px-2 text-title-3 font-semibold">bluechip kit</span>
         <nav className="grid gap-px" aria-label="Kit sections">
           {SECTIONS.map((s) => (
