@@ -41,6 +41,8 @@ describe("DropdownMenu", () => {
     await render(<AccountMenu onSelect={(item) => selected.push(item)} />)
     const trigger = page.getByRole("button", { name: "Alex" })
     trigger.element().focus()
+    // Under a busy browser the first key can arrive before focus settles; wait for it.
+    await expect.element(trigger).toHaveFocus()
     await userEvent.keyboard("{ArrowDown}")
 
     await expect.element(page.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("data-highlighted")
@@ -58,6 +60,8 @@ describe("DropdownMenu", () => {
     await render(<AccountMenu onSelect={(item) => selected.push(item)} />)
     const trigger = page.getByRole("button", { name: "Alex" })
     trigger.element().focus()
+    // Under a busy browser the first key can arrive before focus settles; wait for it.
+    await expect.element(trigger).toHaveFocus()
     await userEvent.keyboard("{ArrowDown}")
     // Wait for the menu to mount before the next key, or End can land before the list exists.
     await expect.element(page.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("data-highlighted")
