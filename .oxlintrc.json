@@ -77,24 +77,12 @@
       ],
       "plugins": [
         "react",
-        "jsx-a11y",
-        "react-perf"
+        "jsx-a11y"
       ],
       "rules": {
         "react/react-in-jsx-scope": "off",
         "react/rules-of-hooks": "error",
-        "react/exhaustive-deps": "error",
-        "react-perf/jsx-no-new-function-as-prop": "off"
-      }
-    },
-    {
-      "files": [
-        "packages/ui/test/**",
-        "apps/web/test/**"
-      ],
-      "rules": {
-        "react-perf/jsx-no-new-object-as-prop": "off",
-        "react-perf/jsx-no-new-array-as-prop": "off"
+        "react/exhaustive-deps": "error"
       }
     }
   ]
