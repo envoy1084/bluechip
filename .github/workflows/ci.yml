@@ -1,0 +1,97 @@
+# Pull requests, pushes to main, the merge queue and manual runs. Each job runs one stage of
+# `pnpm check`, so a failure names the stage; tests also run on the oldest supported Node.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  static:
+    name: Static
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm circular
+
+  types:
+    name: Types
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+      - run: pnpm typecheck:tsc
+
+  build:
+    name: Build
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+      - run: pnpm build
+
+  test:
+    name: Test (Node ${{ matrix.node || 'from .node-version' }})
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # Empty uses .node-version; 22.19.0 is the oldest Node the packages support (`engines`).
+        node: ["", "22.19.0"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+          node-version: ${{ matrix.node }}
+      - run: pnpm test
+
+  zizmor:
+    name: Workflow audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      # Annotations instead of code scanning: SARIF uploads would need `security-events: write`.
+      - uses: zizmorcore/zizmor-action@v0.8.1
+        with:
+          version: 1.32.0
+          config: .github/zizmor.yml
+          advanced-security: false
+          annotations: true

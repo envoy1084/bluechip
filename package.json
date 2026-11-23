@@ -1,0 +1,44 @@
+{
+  "name": "bluechip",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI agents that trade tokenized stocks on Base within onchain permission policies.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@12.21.0",
+  "scripts": {
+    "build": "tsc -b tsconfig.packages.json && pnpm --recursive --parallel --filter \"./packages/*\" run build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm circular && pnpm test",
+    "circular": "node scripts/bin.ts circular",
+    "clean": "node scripts/bin.ts clean",
+    "format": "dprint fmt",
+    "format:check": "dprint check",
+    "lint": "oxlint --deny-warnings && node scripts/bin.ts lint",
+    "lint:fix": "oxlint --fix",
+    "prepare": "lefthook install && effect-tsgo patch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "effect-tsgo tsrs -b tsconfig.json",
+    "typecheck:tsc": "tsc -b tsconfig.json"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@commitlint/types": "21.2.3",
+    "@effect-kit/oxc": "0.1.0",
+    "@effect/tsgo": "0.73.2",
+    "@effect/vitest": "4.1.5",
+    "@interfere/landmines": "0.1.1",
+    "@types/node": "catalog:",
+    "dprint": "0.65.0",
+    "effect": "catalog:",
+    "lefthook": "2.2.2",
+    "oxlint": "1.94.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

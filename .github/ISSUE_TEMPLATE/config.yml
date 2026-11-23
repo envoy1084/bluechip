@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/envoy1084/bluechip/security/advisories/new
+    about: Report privately. Never post exploit details in a public issue.
+  - name: Question
+    url: https://github.com/envoy1084/bluechip/discussions
+    about: Ask how to do something with bluechip.

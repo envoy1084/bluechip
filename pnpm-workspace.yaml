@@ -1,0 +1,32 @@
+packages:
+  - apps/*
+  - packages/*
+  - scratchpad
+  - scripts
+
+# Versions referenced by more than one package.json. A dependency only one package uses is pinned
+# in that package.json instead.
+catalog:
+  "@types/node": "26.6.6"
+  effect: "4.1.5"
+
+engineStrict: true
+# Exact versions when adding dependencies; published libraries write their ranges by hand.
+savePrefix: ""
+# Scripts refuse to run on an install that no longer matches the lockfile.
+verifyDepsBeforeRun: error
+
+# A release must be a day old before it installs, so a compromised version is likely caught first.
+minimumReleaseAge: 1440
+# Effect ships the language service, test helpers and runtime together, and @effect-kit republishes
+# Effect's repository tools with provenance: take their releases at once.
+minimumReleaseAgeExclude:
+  - effect
+  - "@effect/*"
+  - "@effect-kit/*"
+
+# Dependency install scripts are denied unless listed as true.
+allowBuilds:
+  dprint: false
+  esbuild: false
+  lefthook: true
