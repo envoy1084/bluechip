@@ -15,6 +15,8 @@
     "./icons/*": "./src/icons/*.tsx",
     "./components/*": "./src/components/*.tsx",
     "./bluechip/*": "./src/bluechip/*.tsx",
+    "./motion/use-*": "./src/motion/use-*.ts",
+    "./motion/halftone/*": "./src/motion/halftone/*.ts",
     "./motion/*": "./src/motion/*.tsx",
     "./illustrations/*": "./src/illustrations/*.tsx"
   },
@@ -37,7 +39,6 @@
     "@hugeicons/react": "1.1.10",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "sonner": "2.0.8",
     "tailwind-merge": "3.7.1"
   }
 }
