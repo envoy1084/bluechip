@@ -41,7 +41,7 @@ import { formatMoney, formatPercent } from "@bluechip/ui/lib/format"
 import { type TickerTone, tickerTone } from "@bluechip/ui/lib/tickers"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import { createFileRoute } from "@tanstack/react-router"
-import { type ReactNode, useId, useState } from "react"
+import { type ReactNode, useId, useMemo, useState } from "react"
 
 export const Route = createFileRoute("/kit/display")({ component: KitDisplay })
 
@@ -110,10 +110,21 @@ const VALUE_SERIES: ReadonlyArray<ChartSeries> = [
   { key: "stocks", label: "Stocks", values: STOCKS_VALUE },
   { key: "cash", label: "Cash", values: CASH_VALUE }
 ]
+const CASH_SERIES: ReadonlyArray<ChartSeries> = [{ key: "cash", label: "Cash", values: CASH_VALUE }]
 const WEEKS = ["Oct 6", "Oct 13", "Oct 20", "Oct 27", "Nov 3", "Nov 10", "Nov 17", "Nov 24"]
 const FLOW_SERIES: ReadonlyArray<ChartSeries> = [
   { key: "bought", label: "Bought", values: [420, 380, 610, 290, 540, 470, 720, 380] },
   { key: "sold", label: "Sold", values: [120, 260, 180, 340, 90, 210, 160, 240] }
+]
+
+const FEE_SERIES: ReadonlyArray<ChartSeries> = [
+  {
+    key: "network",
+    label: "Network",
+    values: [1.2, 0.9, 1.6, 0.7, 1.3, 1.1, 1.9, 0.8],
+    color: "var(--color-series-3)"
+  },
+  { key: "swap", label: "Swap", values: [2.4, 2.1, 3.2, 1.8, 2.7, 2.3, 3.6, 2], color: "var(--color-series-6)" }
 ]
 
 const LIMITS: ReadonlyArray<readonly [string, ReactNode]> = [
@@ -132,7 +143,7 @@ const LIMITS: ReadonlyArray<readonly [string, ReactNode]> = [
 /* ---------- Page scaffolding (mirrors the brand kit's section layout) ---------- */
 
 const TONE: Readonly<Record<TickerTone, string>> = {
-  blue: "bg-[linear-gradient(180deg,#2a46ff,#0000ff)] text-white",
+  blue: "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white",
   yellow: "bg-[linear-gradient(180deg,#ffdc5c,#ffd12f)] text-[#3a2c00]",
   green: "bg-[linear-gradient(180deg,#7ad61a,#66c800)] text-[#0c2a00]",
   pink: "bg-[linear-gradient(180deg,#ffbdd9,#fea8cd)] text-[#4a0f2a]",
@@ -363,7 +374,7 @@ function CardSection() {
           render={({ children, ...props }) => <a {...props} href="#create-agent">{children}</a>}
         >
           <CardHeader>
-            <span className="grid size-[38px] place-items-center rounded-[11px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_4px_10px_-3px_rgba(0,0,255,.4)]">
+            <span className="grid size-[38px] place-items-center rounded-[11px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_4px_10px_-3px_rgba(42, 91, 255,.4)]">
               <Icon name="plus" size={18} />
             </span>
           </CardHeader>
@@ -465,8 +476,17 @@ const STATUS_OF: Readonly<Record<TradeStatus, keyof typeof STATUS_TONE>> = {
   "Waiting for you": "waiting"
 }
 
+const DEFAULT_SELECTION: ReadonlySet<string> = new Set(["2858"])
+const NO_TRADES: ReadonlyArray<Trade> = []
+
 const TRADE_COLUMNS: ReadonlyArray<DataTableColumn<Trade>> = [
-  { id: "stock", header: "Stock", cell: (t) => <Ticker symbol={t.symbol} />, sortValue: (t) => t.symbol },
+  {
+    id: "stock",
+    header: "Stock",
+    cell: (t) => <Ticker symbol={t.symbol} />,
+    sortValue: (t) => t.symbol,
+    hideable: false
+  },
   {
     id: "agent",
     header: "Agent",
@@ -503,55 +523,90 @@ function DataTableSection() {
   const [query, setQuery] = useState("")
   const [selected, setSelected] = useState(1)
   const q = query.trim().toLowerCase()
-  const rows = TRADES.filter((t) =>
-    !q || t.symbol.toLowerCase().includes(q) || t.agent.name.toLowerCase().includes(q) ||
-    stock(t.symbol).name.toLowerCase().includes(q)
+  // A stable array per query: the table keeps its page while you select rows.
+  const rows = useMemo(
+    () =>
+      TRADES.filter((t) =>
+        !q || t.symbol.toLowerCase().includes(q) || t.agent.name.toLowerCase().includes(q) ||
+        stock(t.symbol).name.toLowerCase().includes(q)
+      ),
+    [q]
   )
   return (
     <Section
       title="Data table"
-      purpose="A table you can work with: sort, filter, select rows, page through."
-      base="Table + state"
+      purpose="A table you can work with: sort, filter, select rows, choose columns, page through."
+      base="Table + TanStack Table"
     >
-      <div className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <InputGroup size="sm" className="w-[min(100%,300px)]">
-            <Icon name="search" size={16} />
-            <InputGroupInput
-              aria-label="Filter trades"
-              placeholder="Filter by stock or agent"
-              value={query}
-              onValueChange={setQuery}
-            />
-          </InputGroup>
-          {selected > 0 && (
-            <span className="ml-auto text-label font-[550] text-blue tabular-nums">{selected} selected</span>
-          )}
-        </div>
-        <DataTable
-          caption="Agent trades, sortable"
-          columns={TRADE_COLUMNS}
-          rows={rows}
-          getRowId={(t) => String(t.id)}
-          defaultSort={{ column: "day", direction: "descending" }}
-          pageSize={6}
-          selectable
-          rowLabel={(t) => `Select trade ${t.id}`}
-          defaultSelection={new Set(["2858"])}
-          onSelectionChange={(selection) => setSelected(selection.size)}
-          empty={
-            <Empty variant="plain" size="sm">
-              <EmptyMedia variant="default">
-                <Icon name="search" size={20} />
-              </EmptyMedia>
-              <EmptyTitle className="text-body-sm">No trades match “{query.trim()}”</EmptyTitle>
-              <EmptyDescription>Try a ticker like NVDA or an agent name.</EmptyDescription>
-              <EmptyContent>
-                <Button variant="secondary" size="sm" onClick={() => setQuery("")}>Clear filter</Button>
-              </EmptyContent>
-            </Empty>
-          }
-        />
+      <DataTable
+        caption="Agent trades, sortable"
+        columns={TRADE_COLUMNS}
+        rows={rows}
+        getRowId={(t) => String(t.id)}
+        defaultSort={{ column: "day", direction: "descending" }}
+        pageSize={6}
+        selectable
+        rowLabel={(t) => `Select trade ${t.id}`}
+        defaultSelection={DEFAULT_SELECTION}
+        onSelectionChange={(selection) => setSelected(selection.size)}
+        toolbar={
+          <>
+            <InputGroup size="sm" className="w-[min(100%,300px)]">
+              <Icon name="search" size={16} />
+              <InputGroupInput
+                aria-label="Filter trades"
+                placeholder="Filter by stock or agent"
+                value={query}
+                onValueChange={setQuery}
+              />
+            </InputGroup>
+            {selected > 0 && (
+              <span className="ml-auto text-label font-[550] text-blue tabular-nums">{selected} selected</span>
+            )}
+          </>
+        }
+        empty={
+          <Empty variant="plain" size="sm">
+            <EmptyMedia variant="default">
+              <Icon name="search" size={20} />
+            </EmptyMedia>
+            <EmptyTitle className="text-body-sm">No trades match “{query.trim()}”</EmptyTitle>
+            <EmptyDescription>Try a ticker like NVDA or an agent name.</EmptyDescription>
+            <EmptyContent>
+              <Button variant="secondary" size="sm" onClick={() => setQuery("")}>Clear filter</Button>
+            </EmptyContent>
+          </Empty>
+        }
+      />
+      <div className="grid gap-4">
+        <Demo label="Read only · columns hidden at first" className="block">
+          <DataTable
+            caption="Recent trades, read only"
+            columns={TRADE_COLUMNS}
+            rows={TRADES.slice(0, 3)}
+            getRowId={(t) => String(t.id)}
+            pageSize={3}
+            defaultHiddenColumns={["agent", "status"]}
+          />
+        </Demo>
+        <Demo label="Empty" className="block">
+          <DataTable
+            caption="Trades, none yet"
+            columns={TRADE_COLUMNS}
+            rows={NO_TRADES}
+            getRowId={(t) => String(t.id)}
+            selectable
+            empty={
+              <Empty variant="plain" size="sm">
+                <EmptyMedia variant="default">
+                  <Icon name="activity" size={20} />
+                </EmptyMedia>
+                <EmptyTitle className="text-body-sm">No trades yet</EmptyTitle>
+                <EmptyDescription>Your agents' trades show up here.</EmptyDescription>
+              </Empty>
+            }
+          />
+        </Demo>
       </div>
     </Section>
   )
@@ -563,8 +618,8 @@ function ChartSection() {
   return (
     <Section
       title="Chart"
-      purpose="Area, bar and line charts in the series colors. Hover or use arrow keys to read exact values."
-      base="SVG"
+      purpose="Area, bar and line charts in the series colors. Hover, or focus a chart and use the arrow keys, to read exact values."
+      base="Chart (Recharts)"
     >
       <Card className="gap-3 pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -595,6 +650,29 @@ function ChartSection() {
           <AreaChart title="Stocks and cash value, last 30 days" labels={DAY_LABELS} series={VALUE_SERIES} />
         )}
       </Card>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="gap-3 pb-4">
+          <CardDescription>One series, no legend</CardDescription>
+          <LineChart
+            title="Cash, last 30 days"
+            labels={DAY_LABELS}
+            series={CASH_SERIES}
+            height={180}
+            showLegend={false}
+          />
+        </Card>
+        <Card className="gap-3 pb-4">
+          <CardDescription>Custom colors and ticks</CardDescription>
+          <BarChart
+            title="Agent fees per week"
+            labels={WEEKS}
+            series={FEE_SERIES}
+            height={180}
+            formatValue={(value) => formatMoney(value)}
+            formatTick={(value) => `$${value}`}
+          />
+        </Card>
+      </div>
     </Section>
   )
 }

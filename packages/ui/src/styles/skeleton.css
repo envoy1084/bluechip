@@ -1,0 +1,11 @@
+/* skullet's measured skeletons on the brand tokens. skullet reads these custom properties on every skeleton, so a
+   section can override them locally. Text bars get the small radius; images and chips keep their own. */
+:root {
+  --skullet-base: var(--color-g-100);
+  --skullet-highlight: rgb(255 255 255 / .6);
+  --skullet-radius: var(--radius-xs);
+  --skullet-animation: shimmer;
+  --skullet-speed: slow;
+  --skullet-text-top: cap-height;
+  --skullet-text-bottom: baseline;
+}

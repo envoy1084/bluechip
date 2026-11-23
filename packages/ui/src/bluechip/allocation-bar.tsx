@@ -27,11 +27,11 @@ export const allocationBarVariants = cva(
 )
 
 const FILL: Readonly<Record<CapState | "cash", string>> = {
-  under: "bg-[linear-gradient(180deg,#2a46ff,#0000ff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
+  under: "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
   at: "bg-[linear-gradient(180deg,#ffd84d,#f5b800)] shadow-[inset_0_1px_0_rgba(255,255,255,.45)]",
   // Blue up to the max, red past it: the overflow is the part that matters.
   over:
-    "bg-[linear-gradient(90deg,#2a46ff_0,#0000ff_var(--split),var(--color-loss)_var(--split),#ef5a3a_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
+    "bg-[linear-gradient(90deg,#4c76ff_0,#2a5bff_var(--split),var(--color-loss)_var(--split),#ef5a3a_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
   cash: "bg-[linear-gradient(180deg,#d3d7de,#b1b7c3)]"
 }
 

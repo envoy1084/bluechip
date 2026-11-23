@@ -4,6 +4,7 @@ import type { ComponentProps } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney } from "../lib/format.ts"
+import { haptic } from "../lib/haptics.ts"
 import { tickerTone } from "../lib/tickers.ts"
 import { PriceChange } from "./price-change.tsx"
 
@@ -16,7 +17,7 @@ export const tickerChipVariants = cva(
     variants: {
       tone: {
         blue:
-          "bg-[linear-gradient(180deg,#2a46ff,#0000ff)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_1px_2px_rgba(0,0,120,.25)]",
+          "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_1px_2px_rgba(20, 50, 160,.25)]",
         yellow:
           "bg-[linear-gradient(180deg,#ffdc5c,#ffd12f)] text-[#3a2c00] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,90,0,.25)]",
         green:
@@ -104,7 +105,7 @@ export interface TickerToggleProps extends Omit<ComponentProps<typeof BaseToggle
 }
 
 /** A selectable stock (pick the stocks an agent can trade). Space or Enter toggles it; it reads as pressed. */
-export function TickerToggle({ symbol, name, className, ...props }: TickerToggleProps) {
+export function TickerToggle({ symbol, name, className, onPressedChange, ...props }: TickerToggleProps) {
   return (
     <BaseToggle
       data-slot="ticker-toggle"
@@ -112,11 +113,15 @@ export function TickerToggle({ symbol, name, className, ...props }: TickerToggle
         "group/tt inline-flex cursor-pointer items-center gap-2 rounded-[10px] py-1 pr-2.5 pl-1 text-label font-medium text-g-700",
         "bg-[linear-gradient(180deg,#fff,#f8f9fa)] shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.09),0_1px_2px_rgba(10,11,13,.05)]",
         "transition-[box-shadow,background,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.16),0_2px_4px_rgba(10,11,13,.06)] active:scale-98",
-        "data-pressed:bg-[linear-gradient(180deg,#fff,#f5f7ff)] data-pressed:text-ink data-pressed:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(0,0,255,.45),0_1px_2px_rgba(0,0,255,.12)]",
+        "data-pressed:bg-[linear-gradient(180deg,#fff,#f5f7ff)] data-pressed:text-ink data-pressed:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42, 91, 255,.45),0_1px_2px_rgba(42, 91, 255,.12)]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
         "data-disabled:cursor-not-allowed data-disabled:opacity-45",
         className
       )}
+      onPressedChange={(pressed, details) => {
+        haptic("select")
+        onPressedChange?.(pressed, details)
+      }}
       {...props}
     >
       <TickerChip

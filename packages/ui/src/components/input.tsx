@@ -16,7 +16,7 @@ export const inputVariants = cva(
   [
     "w-full min-w-0 font-sans outline-none placeholder:text-g-400",
     fieldSurface,
-    "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(0,0,255,.12)] aria-[invalid=true]:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
+    "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)] aria-[invalid=true]:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
     "disabled:cursor-not-allowed disabled:bg-g-50 disabled:text-g-400 disabled:shadow-[0_0_0_1px_rgba(10,11,13,.08)]",
     "read-only:not-disabled:bg-g-50 read-only:not-disabled:text-g-600",
     "file:mr-2.5 file:h-full file:cursor-pointer file:border-0 file:border-r file:border-solid file:border-g-200 file:bg-g-50 file:px-3 file:font-sans file:text-label file:font-[550] file:text-ink",

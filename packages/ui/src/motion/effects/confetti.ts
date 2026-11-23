@@ -5,7 +5,7 @@ import { prefersReducedMotion } from "../reduced-motion.ts"
 import { oneShot } from "./canvas.ts"
 
 export const CONFETTI_COLORS: ReadonlyArray<string> = [
-  "#0000ff",
+  "#2a5bff",
   "#3c8aff",
   "#ffd12f",
   "#66c800",
@@ -66,7 +66,7 @@ export const fireConfetti = (target: HTMLElement, options: ConfettiOptions = {})
       flip: 6 + r() * 10,
       size: 5 + r() * 5,
       chip: r() < 0.3,
-      color: colors[Math.floor(r() * colors.length)] ?? "#0000ff",
+      color: colors[Math.floor(r() * colors.length)] ?? "#2a5bff",
       life: 1.5 + r() * 0.7
     }
   })

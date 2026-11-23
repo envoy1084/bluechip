@@ -1,8 +1,9 @@
-import { type ReactNode, useRef, useState } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 import { Button } from "../components/button.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney } from "../lib/format.ts"
+import { haptic } from "../lib/haptics.ts"
 import { AllocationBar } from "./allocation-bar.tsx"
 
 export interface BlockedTradeCardProps {
@@ -29,7 +30,8 @@ export interface BlockedTradeCardProps {
 
 /**
  * The moment a limit says no, said plainly: what the agent tried, which limit stopped it, the numbers against your
- * max, and that nothing happened to your money. Keep my limit is the calm default. A red wash, never a modal.
+ * max, and that nothing happened to your money. Keep my limit is the calm default. A red wash, never a modal. Phones
+ * get an error haptic when it appears.
  */
 export function BlockedTradeCard({
   agentName,
@@ -48,6 +50,7 @@ export function BlockedTradeCard({
   const [kept, setKept] = useState(false)
   const keepRef = useRef<HTMLButtonElement>(null)
   const undoRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => haptic("error"), [])
 
   if (kept) {
     return (

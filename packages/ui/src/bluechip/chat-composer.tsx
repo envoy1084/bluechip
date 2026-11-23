@@ -60,7 +60,7 @@ export function ChatComposer({
                   setMessage(suggestion)
                   textarea.current?.focus()
                 }}
-                className="cursor-pointer rounded-full bg-[linear-gradient(180deg,#fff,#f7f8fa)] px-[11px] py-1.5 text-left text-label-sm font-medium text-g-700 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_1px_2px_rgba(10,11,13,.05)] transition-[box-shadow,color] duration-fast ease-brand hover:text-ink hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(0,0,255,.3),0_2px_6px_-2px_rgba(0,0,255,.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
+                className="cursor-pointer rounded-full bg-[linear-gradient(180deg,#fff,#f7f8fa)] px-[11px] py-1.5 text-left text-label-sm font-medium text-g-700 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08),0_1px_2px_rgba(10,11,13,.05)] transition-[box-shadow,color] duration-fast ease-brand hover:text-ink hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42, 91, 255,.3),0_2px_6px_-2px_rgba(42, 91, 255,.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
               >
                 {suggestion}
               </button>
@@ -70,7 +70,7 @@ export function ChatComposer({
       )}
       <form
         onSubmit={submit}
-        className="rounded-[16px] bg-[linear-gradient(180deg,#fff,#fafbfc)] p-1.5 shadow-[0_0_0_1px_rgba(10,11,13,.09),0_2px_4px_rgba(10,11,13,.04),0_12px_28px_-12px_rgba(0,0,255,.2)] transition-shadow duration-base ease-brand focus-within:shadow-[0_0_0_1px_rgba(0,0,255,.55),0_0_0_4px_rgba(0,0,255,.1),0_12px_28px_-12px_rgba(0,0,255,.3)]"
+        className="rounded-[16px] bg-[linear-gradient(180deg,#fff,#fafbfc)] p-1.5 shadow-[0_0_0_1px_rgba(10,11,13,.09),0_2px_4px_rgba(10,11,13,.04),0_12px_28px_-12px_rgba(42, 91, 255,.2)] transition-shadow duration-base ease-brand focus-within:shadow-[0_0_0_1px_rgba(42, 91, 255,.55),0_0_0_4px_rgba(42, 91, 255,.1),0_12px_28px_-12px_rgba(42, 91, 255,.3)]"
       >
         <label htmlFor={id} className="sr-only">Message bluechip</label>
         <textarea

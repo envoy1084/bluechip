@@ -70,7 +70,7 @@ export function Slider({
                   "size-5 cursor-grab rounded-full bg-[linear-gradient(180deg,#fff,#f6f7f9)] outline-none",
                   "shadow-[0_0_0_1px_rgba(10,11,13,.14),0_1px_3px_rgba(10,11,13,.2),0_4px_10px_-2px_rgba(10,11,13,.16)]",
                   "transition-[box-shadow,scale] duration-fast ease-brand hover:scale-108",
-                  "has-[:focus-visible]:shadow-[0_0_0_1px_var(--color-blue),0_0_0_5px_rgba(0,0,255,.16),0_2px_6px_rgba(10,11,13,.2)]",
+                  "has-[:focus-visible]:shadow-[0_0_0_1px_var(--color-blue),0_0_0_5px_rgba(42, 91, 255,.16),0_2px_6px_rgba(10,11,13,.2)]",
                   "data-dragging:scale-110 data-dragging:cursor-grabbing group-data-disabled/slider:cursor-not-allowed group-data-disabled/slider:hover:scale-100"
                 )}
               >

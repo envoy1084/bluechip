@@ -4,7 +4,7 @@ import type { Scene } from "../engine.ts"
 
 /** Rising chip: the logo chip turning slowly, rings widening behind it, a glint running up the price line. */
 export const logo: Scene = {
-  palette: ["#c9d3ff", "#3c8aff", "#0000ff", "#0000b0"],
+  palette: ["#c9d3ff", "#3c8aff", "#2a5bff", "#1a3bc2"],
   stillAt: 2.2,
   draw(c, t, W, H, p) {
     const R = Math.min(W * 0.36, H * 0.36), rise = Math.sin(t * 0.8) * R * 0.07

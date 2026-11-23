@@ -28,6 +28,27 @@ kit artifact (`research/brand/brand-kit.html` with `research/brand/kit/**`, run 
   policy, oracle, smart account; no gains promises).
 - **Relative imports end in `.ts`/`.tsx`.** Readonly props interfaces. Types fully inferred where possible.
 
+## Use existing libraries
+
+Reuse a maintained library before writing behaviour from scratch. The chosen set:
+
+| Need                                                      | Library                                                                                                                                                     |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Behaviour and accessibility of controls and overlays      | `@base-ui/react`                                                                                                                                            |
+| Number transitions (balances, prices, counters)           | `@number-flow/react`, through `motion/number-roll.tsx` (`NumberRoll`)                                                                                       |
+| Text that changes in place (button states, status labels) | `torph`, through `components/text-morph.tsx` (`TextMorph`)                                                                                                  |
+| Loading states                                            | `skullet`, through `components/skeleton.tsx` (`Skeleton` measures the real content; `SkeletonBlock` for rare manual shapes; theme in `styles/skeleton.css`) |
+| Haptic feedback on phones                                 | `web-haptics`, through `lib/haptics.ts` (`haptic(kind)`, Button `haptic` prop)                                                                              |
+| Big moments (agent locked, trade filled, money arrived)   | `glimm`, through `motion/sweep.tsx` (`MomentScope` + `useMoment`, `SweepProvider`)                                                                          |
+| Tables                                                    | `@tanstack/react-table`                                                                                                                                     |
+| Carousels                                                 | `embla-carousel-react`                                                                                                                                      |
+| Resizable panels                                          | `react-resizable-panels`                                                                                                                                    |
+| Charts                                                    | `recharts` (sparklines stay plain SVG)                                                                                                                      |
+| Easing                                                    | tokens in `theme.css` (`ease-brand`, `ease-spring`, from easing.dev's curves)                                                                               |
+
+The halftone engine, scenes and illustrations are bluechip's own art and stay in `src/motion` and
+`src/illustrations`.
+
 ## Tests
 
 `test/<folder>/<name>.test.tsx`, run in Chromium (Vitest browser mode). Import from `@effect/vitest`

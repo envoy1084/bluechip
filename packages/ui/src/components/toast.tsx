@@ -118,7 +118,9 @@ function ToastList() {
         "data-ending-style:data-[swipe-direction=down]:[transform:translateY(calc(var(--toast-swipe-movement-y)+150%))]",
         "data-ending-style:data-[swipe-direction=right]:[transform:translateX(calc(var(--toast-swipe-movement-x)+150%))_translateY(var(--offset-y))]",
         "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
-        "[transition:transform_360ms_var(--ease-brand),opacity_200ms_var(--ease-brand),height_360ms_var(--ease-brand)]"
+        // In and restacking on the spring, so a new toast lands with a small settle; out on the plain ease-in.
+        "[transition:transform_440ms_var(--ease-spring),opacity_200ms_var(--ease-brand),height_360ms_var(--ease-brand)]",
+        "data-ending-style:[transition:transform_240ms_var(--ease-brand-in),opacity_200ms_var(--ease-brand-in)]"
       )}
     >
       <Toast.Content

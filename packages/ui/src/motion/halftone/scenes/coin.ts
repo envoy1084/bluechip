@@ -4,7 +4,7 @@ import type { Scene } from "../engine.ts"
 
 /** Chip spin: the chip spinning on its axis with three smaller chips orbiting it. */
 export const coin: Scene = {
-  palette: ["#ffe27a", "#ffd12f", "#3c8aff", "#0000ff"],
+  palette: ["#ffe27a", "#ffd12f", "#3c8aff", "#2a5bff"],
   stillAt: 0.7,
   draw(c, t, W, H, p) {
     const R = Math.min(W * 0.2, H * 0.3), cx = W * 0.5 + p.x * W * 0.02, cy = H * 0.48 + p.y * H * 0.02

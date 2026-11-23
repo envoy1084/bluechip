@@ -1,4 +1,5 @@
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { SweepProvider } from "@bluechip/ui/motion/sweep"
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/kit")({ component: KitLayout })
@@ -37,7 +38,9 @@ function KitLayout() {
         </nav>
       </aside>
       <main className="min-w-0">
-        <Outlet />
+        <SweepProvider>
+          <Outlet />
+        </SweepProvider>
       </main>
     </div>
   )

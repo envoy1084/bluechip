@@ -8,7 +8,7 @@ const SPARKS = [-2.4, -2.8, 3.14, 2.8, 2.4]
 
 /** Blocked ("Your limit stopped this trade."): a chip rolls into a fence, bounces back and fades. */
 export const blocked: Scene = {
-  palette: ["#ffe27a", "#ffd12f", "#3c8aff", "#0000ff"],
+  palette: ["#ffe27a", "#ffd12f", "#3c8aff", "#2a5bff"],
   stillAt: 1.3,
   draw(c, t, W, H, p) {
     const u = t % CYCLE, v = u - HIT

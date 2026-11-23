@@ -6,13 +6,13 @@
   --color-current: currentColor;
 
   /* Base palette */
-  --color-blue: #0000ff;
-  --color-blue-hi: #2a46ff;
-  --color-blue-lo: #0000c4;
-  --color-blue-deep: #00009e;
-  --color-blue-50: #f3f5ff;
-  --color-blue-100: #e6eaff;
-  --color-blue-200: #c9d3ff;
+  --color-blue: #2a5bff; /* Brand blue: lighter than Base Blue, 5.2:1 with white text */
+  --color-blue-hi: #4c76ff;
+  --color-blue-lo: #1f48e6;
+  --color-blue-deep: #1a3bc2;
+  --color-blue-50: #f2f5ff;
+  --color-blue-100: #e4eaff;
+  --color-blue-200: #c6d3ff;
   --color-cerulean: #3c8aff;
   --color-yellow: #ffd12f;
   --color-yellow-soft: #fff4c7;
@@ -48,12 +48,12 @@
   --color-warn: #8a5f00;
   --color-warn-wash: #fff8e1;
   --color-warn-line: #f3e2a6;
-  --color-info: #0000ff;
+  --color-info: #2a5bff;
   --color-info-wash: #f3f5ff;
   --color-info-line: #d4dbff;
 
   /* Chart series order (allocation, multi-series charts). Ticker chips keep their own tones. */
-  --color-series-1: #0000ff;
+  --color-series-1: #2a5bff;
   --color-series-2: #3c8aff;
   --color-series-3: #66c800;
   --color-series-4: #ffd12f;
@@ -110,31 +110,32 @@
   --radius-xl: 18px;
   --radius-2xl: 24px;
 
-  /* Depth */
-  --shadow-hair: 0 0 0 1px rgba(10, 11, 13, .07);
-  --shadow-e1: 0 0 0 1px rgba(10, 11, 13, .06), 0 1px 2px rgba(10, 11, 13, .05);
-  --shadow-e2: 0 0 0 1px rgba(10, 11, 13, .06), 0 1px 2px rgba(10, 11, 13, .04), 0 4px 10px -2px rgba(10, 11, 13, .06), 0 12px 24px -8px rgba(10, 11, 13, .07);
-  --shadow-e3: 0 0 0 1px rgba(10, 11, 13, .06), 0 2px 4px rgba(10, 11, 13, .04), 0 12px 28px -6px rgba(10, 11, 13, .12), 0 32px 64px -24px rgba(10, 11, 13, .16);
-  --shadow-e4: 0 0 0 1px rgba(10, 11, 13, .08), 0 4px 8px rgba(10, 11, 13, .05), 0 24px 48px -12px rgba(10, 11, 13, .2), 0 48px 96px -32px rgba(10, 11, 13, .24);
-  --inset-shadow-hi: inset 0 1px 0 rgba(255, 255, 255, .9);
+  /* Depth: a hairline edge plus a soft, short drop. Kept light so surfaces read as layered, not heavy. */
+  --shadow-hair: 0 0 0 1px rgba(10, 11, 13, .06);
+  --shadow-e1: 0 0 0 1px rgba(10, 11, 13, .05), 0 1px 1px rgba(10, 11, 13, .03);
+  --shadow-e2: 0 0 0 1px rgba(10, 11, 13, .05), 0 1px 2px rgba(10, 11, 13, .03), 0 4px 12px -6px rgba(10, 11, 13, .06);
+  --shadow-e3: 0 0 0 1px rgba(10, 11, 13, .05), 0 2px 4px rgba(10, 11, 13, .03), 0 12px 24px -10px rgba(10, 11, 13, .1);
+  --shadow-e4: 0 0 0 1px rgba(10, 11, 13, .06), 0 4px 8px rgba(10, 11, 13, .04), 0 24px 48px -20px rgba(10, 11, 13, .16);
+  --inset-shadow-hi: inset 0 1px 0 rgba(255, 255, 255, .8);
 
-  /* Motion */
-  --ease-brand: cubic-bezier(.2, .8, .2, 1);
-  --ease-brand-in: cubic-bezier(.4, 0, 1, 1);
-  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  /* Motion. Curves from easing.dev's presets; `spring` is a linear() spring (stiffness 220, damping 22). */
+  --ease-brand: cubic-bezier(.19, 1, .22, 1);
+  --ease-brand-in: cubic-bezier(.55, 0, 1, .45);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ease-spring: linear(0, 0.0181, 0.0656, 0.1331, 0.2133, 0.3, 0.3887, 0.4757, 0.5585, 0.6353, 0.7049, 0.7669, 0.821, 0.8674, 0.9064, 0.9387, 0.9648, 0.9854, 1.0012, 1.0129, 1.0211, 1.0266, 1.0296, 1.0309, 1.0308, 1.0296, 1.0278, 1.0254, 1.0228, 1.02, 1.0173, 1.0147, 1.0122, 1.01, 1.0079, 1.0062, 1.0046, 1.0033, 1.0023, 1.0014, 1);
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 320ms;
 
   --animate-fade-in: fade-in var(--duration-base) var(--ease-brand);
   --animate-fade-out: fade-out var(--duration-fast) var(--ease-brand-in);
-  --animate-pop-in: pop-in var(--duration-base) var(--ease-brand);
+  --animate-pop-in: pop-in var(--duration-slow) var(--ease-spring);
   --animate-slide-up: slide-up var(--duration-slow) var(--ease-brand);
   --animate-shimmer: shimmer 1.6s linear infinite;
 
   @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
   @keyframes fade-out { from { opacity: 1 } to { opacity: 0 } }
-  @keyframes pop-in { from { opacity: 0; transform: translateY(4px) scale(.98) } to { opacity: 1; transform: none } }
+  @keyframes pop-in { from { opacity: 0; transform: translateY(2px) scale(.9) } to { opacity: 1; transform: none } }
   @keyframes slide-up { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
   @keyframes shimmer { from { background-position: -200% 0 } to { background-position: 200% 0 } }
 }

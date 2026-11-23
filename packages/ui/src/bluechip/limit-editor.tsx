@@ -2,6 +2,7 @@ import { type ComponentProps, type ReactNode, useId, useState } from "react"
 import { Button } from "../components/button.tsx"
 import { InputGroup, InputGroupInput, InputGroupText } from "../components/input-group.tsx"
 import { Slider } from "../components/slider.tsx"
+import { TextMorph } from "../components/text-morph.tsx"
 import { Icon, type IconName } from "../icons/icon.tsx"
 import {
   type AgentLimits,
@@ -15,7 +16,9 @@ import {
   matchPreset
 } from "../lib/agent-limits.ts"
 import { cn } from "../lib/cn.ts"
+import { haptic } from "../lib/haptics.ts"
 import { findTicker } from "../lib/tickers.ts"
+import { MomentScope, useMoment } from "../motion/sweep.tsx"
 import { PermissionCard } from "./permission-card.tsx"
 import { PresetPicker } from "./preset-picker.tsx"
 import { TickerToggle } from "./ticker-chip.tsx"
@@ -72,7 +75,8 @@ function ChangeMark({ change }: { readonly change: LimitChange }) {
 
 /**
  * Set what an agent may do and read it back as plain sentences while you drag. Each change is marked: tighter
- * limits apply at once; looser ones need Face ID, because they give the agent more power.
+ * limits apply at once; looser ones need Face ID, because they give the agent more power. Landing on a preset taps
+ * a haptic on phones; locking sweeps the preview card and taps a success haptic.
  */
 export function LimitEditor({
   locked,
@@ -94,8 +98,11 @@ export function LimitEditor({
   const errors = limitErrors(limits)
   const firstError = Object.values(errors)[0]
   const change = compareLimits(locked, limits)
+  const { ref: momentRef, play: playMoment } = useMoment()
 
   const update = (next: AgentLimits) => {
+    const landed = matchPreset(next)
+    if (landed !== undefined && landed !== matchPreset(limits)) haptic("tap")
     setOwn(next)
     setJustLocked(false)
     onValueChange?.(next)
@@ -104,7 +111,8 @@ export function LimitEditor({
     setLocking(true)
     try {
       await onLock?.(limits)
-      setJustLocked(true)
+      haptic("success")
+      playMoment(() => setJustLocked(true))
     } finally {
       setLocking(false)
     }
@@ -187,7 +195,7 @@ export function LimitEditor({
               (
                 <Button disabled={firstError !== undefined || locking} onClick={lock} aria-busy={locking || undefined}>
                   <Icon name="face-id" size={16} />
-                  {locking ? "Waiting for Face ID…" : "Lock with Face ID"}
+                  <TextMorph>{locking ? "Waiting for Face ID…" : "Lock with Face ID"}</TextMorph>
                 </Button>
               ) :
               change === "tighter" && <Button onClick={() => onApply?.(limits)}>Apply now</Button>}
@@ -198,12 +206,15 @@ export function LimitEditor({
         <span className="text-caption font-semibold tracking-[.06em] text-g-500 uppercase">
           What you'll see on the agent
         </span>
-        <PermissionCard
-          size="compact"
-          limits={limits}
-          spentToday={0}
-          {...(change === "same" && lockedUntil !== undefined ? { lockedUntil } : {})}
-        />
+        <div className="relative rounded-lg">
+          <PermissionCard
+            size="compact"
+            limits={limits}
+            spentToday={0}
+            {...(change === "same" && lockedUntil !== undefined ? { lockedUntil } : {})}
+          />
+          <MomentScope ref={momentRef} />
+        </div>
       </div>
     </div>
   )

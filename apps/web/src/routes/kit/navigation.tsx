@@ -171,6 +171,21 @@ function Section(
   )
 }
 
+function TemplateCard({ agent }: { readonly agent: (typeof AGENTS)[number] }) {
+  return (
+    <div className="flex h-full flex-col items-start gap-2.5 rounded-lg bg-white p-4 shadow-e1">
+      <div className="mb-1 grid h-[120px] w-full place-items-center rounded-md bg-sunken bg-[radial-gradient(rgba(10,11,13,.07)_1px,transparent_1px)] bg-size-[12px_12px] text-blue">
+        <Icon name={agent.icon} size={32} />
+      </div>
+      <h3 className="text-body font-semibold">{agent.name}</h3>
+      <p className="text-label text-g-600">{agent.say}</p>
+      <Button variant="secondary" size="sm" className="mt-auto" onClick={() => toast(`Starting ${agent.name}`)}>
+        Use template
+      </Button>
+    </div>
+  )
+}
+
 function PaginationDemo() {
   const total = 12
   const [page, setPage] = useState(3)
@@ -665,73 +680,97 @@ function KitNavigation() {
         <Section
           id="carousel"
           title="Carousel"
-          base="CSS scroll snap"
-          purpose="A row of cards you page through with arrows, dots, the arrow keys or a swipe."
+          base="Carousel (Embla)"
+          purpose="A row of cards you page through with arrows, dots, the arrow keys, or by dragging and swiping."
         >
           <Carousel aria-label="Agent templates">
             <CarouselContent>
               {AGENTS.map((agent, i) => (
                 <CarouselItem key={agent.id} aria-label={`${i + 1} of ${AGENTS.length}`}>
-                  <div className="flex h-full flex-col items-start gap-2.5 rounded-lg bg-white p-4 shadow-e1">
-                    <div className="mb-1 grid h-[120px] w-full place-items-center rounded-md bg-sunken bg-[radial-gradient(rgba(10,11,13,.07)_1px,transparent_1px)] bg-size-[12px_12px] text-blue">
-                      <Icon name={agent.icon} size={32} />
-                    </div>
-                    <h3 className="text-body font-semibold">{agent.name}</h3>
-                    <p className="text-label text-g-600">{agent.say}</p>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="mt-auto"
-                      onClick={() => toast(`Starting ${agent.name}`)}
-                    >
-                      Use template
-                    </Button>
-                  </div>
+                  <TemplateCard agent={agent} />
                 </CarouselItem>
               ))}
             </CarouselContent>
             <CarouselControls />
           </Carousel>
+          <div className="grid gap-2">
+            <span className="text-caption font-semibold text-g-400">Looping, one at a time</span>
+            <Carousel aria-label="Agent templates, looping" opts={{ loop: true }} className="max-w-[360px]">
+              <CarouselContent>
+                {AGENTS.map((agent, i) => (
+                  <CarouselItem
+                    key={agent.id}
+                    aria-label={`${i + 1} of ${AGENTS.length}`}
+                    className="min-[600px]:basis-full min-[1100px]:basis-full"
+                  >
+                    <TemplateCard agent={agent} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselControls />
+            </Carousel>
+          </div>
         </Section>
 
         <Section
           id="resizable"
           title="Resizable"
-          base="Resizable"
+          base="Resizable (react-resizable-panels)"
           flush
-          purpose="Panels you can resize by dragging the handle, or with arrow keys when it's focused."
+          purpose="Panels you can resize by dragging the handle, or with the arrow keys when it's focused."
         >
-          <ResizablePanelGroup defaultSize={34} className="h-[260px]">
-            <ResizablePanel>
-              <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
-                <span className="text-caption font-semibold text-g-400">Agents</span>
-                {AGENTS.slice(0, 3).map((agent) => (
-                  <span key={agent.id} className="flex items-center gap-2">
-                    <Icon name={agent.icon} size={16} className="text-blue" />
-                    {agent.name}
-                  </span>
-                ))}
-              </div>
-            </ResizablePanel>
-            <ResizableHandle aria-label="Resize agents panel" />
-            <ResizablePanel>
-              <ResizablePanelGroup direction="vertical" defaultSize={55} className="h-full">
-                <ResizablePanel>
-                  <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
-                    <span className="text-caption font-semibold text-g-400">Chat</span>
-                    <p className="text-label text-g-600">“Create an agent that can only rebalance my portfolio.”</p>
-                  </div>
-                </ResizablePanel>
-                <ResizableHandle aria-label="Resize chat panel" />
-                <ResizablePanel>
-                  <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
-                    <span className="text-caption font-semibold text-g-400">Limits preview</span>
-                    <p className="text-label text-g-600">Rebalance only · Max 25% in one stock · Cash reserve $200</p>
-                  </div>
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+          <div className="h-[260px]">
+            <ResizablePanelGroup>
+              <ResizablePanel id="agents" defaultSize="34%" minSize="20%" maxSize="80%">
+                <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
+                  <span className="text-caption font-semibold text-g-400">Agents</span>
+                  {AGENTS.slice(0, 3).map((agent) => (
+                    <span key={agent.id} className="flex items-center gap-2">
+                      <Icon name={agent.icon} size={16} className="text-blue" />
+                      {agent.name}
+                    </span>
+                  ))}
+                </div>
+              </ResizablePanel>
+              <ResizableHandle aria-label="Resize agents panel" />
+              <ResizablePanel id="workspace" minSize="20%">
+                <ResizablePanelGroup orientation="vertical">
+                  <ResizablePanel id="chat" defaultSize="55%" minSize="20%" maxSize="80%">
+                    <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
+                      <span className="text-caption font-semibold text-g-400">Chat</span>
+                      <p className="text-label text-g-600">“Create an agent that can only rebalance my portfolio.”</p>
+                    </div>
+                  </ResizablePanel>
+                  <ResizableHandle aria-label="Resize chat panel" />
+                  <ResizablePanel id="limits" minSize="20%">
+                    <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
+                      <span className="text-caption font-semibold text-g-400">Limits preview</span>
+                      <p className="text-label text-g-600">Rebalance only · Max 25% in one stock · Cash reserve $200</p>
+                    </div>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+          <div className="h-[140px] border-t border-g-100">
+            <ResizablePanelGroup>
+              <ResizablePanel id="sidebar" defaultSize="28%" minSize="18%" collapsible collapsedSize="0%">
+                <div className="grid content-start gap-1 p-4 text-[13.5px]">
+                  <span className="text-caption font-semibold text-g-400">Collapsible · no grip</span>
+                  <p className="text-label text-g-600">
+                    Drag past the edge, or press Enter on the line, to fold it away.
+                  </p>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle={false} aria-label="Resize activity panel" />
+              <ResizablePanel id="activity">
+                <div className="grid content-start gap-1 p-4 text-[13.5px]">
+                  <span className="text-caption font-semibold text-g-400">Activity</span>
+                  <p className="text-label text-g-600">Rebalancer bought $40.00 of Apple · 2 minutes ago</p>
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
         </Section>
       </div>
       <Toaster />

@@ -32,7 +32,7 @@ export const selectTriggerVariants = cva(
   [
     "flex w-full min-w-0 cursor-pointer items-center gap-2 bg-[linear-gradient(180deg,#fff,var(--color-canvas))] text-left font-sans outline-none",
     fieldSurface,
-    "focus-visible:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(0,0,255,.12)] data-popup-open:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(0,0,255,.12)]",
+    "focus-visible:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)] data-popup-open:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]",
     "data-disabled:cursor-not-allowed data-disabled:bg-g-50 data-disabled:bg-none data-disabled:text-g-400 data-disabled:shadow-[0_0_0_1px_rgba(10,11,13,.08)]"
   ],
   {

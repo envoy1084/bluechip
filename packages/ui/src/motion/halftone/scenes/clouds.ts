@@ -29,7 +29,7 @@ const CLOUDS: ReadonlyArray<Cloud> = [
 
 /** Clouds (market closed, weekends): clouds drift past a crescent moon. */
 export const clouds: Scene = {
-  palette: ["#c9d3ff", "#cd99fd", "#3c8aff", "#0000ff"],
+  palette: ["#c9d3ff", "#cd99fd", "#3c8aff", "#2a5bff"],
   stillAt: 3,
   draw(c, t, W, H, p) {
     const mx = W * 0.8 - p.x * W * 0.01, my = H * 0.24, mr = H * 0.12

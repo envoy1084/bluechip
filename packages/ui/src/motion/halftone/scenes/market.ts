@@ -7,7 +7,7 @@ const CYCLE = 6
 
 /** Market settling: twelve bars spring to new heights every six seconds, a line over their tops. */
 export const market: Scene = {
-  palette: ["#b6f569", "#66c800", "#3c8aff", "#0000ff"],
+  palette: ["#b6f569", "#66c800", "#3c8aff", "#2a5bff"],
   stillAt: 3.4,
   draw(c, t, W, H, p) {
     const k = Math.floor(t / CYCLE), u = t - k * CYCLE

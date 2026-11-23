@@ -2,6 +2,7 @@ import type { ComponentProps } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney, formatShares } from "../lib/format.ts"
+import { NumberRoll } from "../motion/number-roll.tsx"
 import { AllocationBar, capState } from "./allocation-bar.tsx"
 import { PriceChange } from "./price-change.tsx"
 import { CASH_SYMBOL, TickerChip } from "./ticker-chip.tsx"
@@ -52,7 +53,7 @@ export function HoldingRow(
         <AllocationBar weight={weight} cap={cap} label={name} className="mt-1.5 max-w-[220px]" />
       </span>
       <span className="grid justify-items-end gap-px">
-        <b className="text-body-sm font-semibold tabular-nums">{formatMoney(value)}</b>
+        <NumberRoll value={value} format={formatMoney} className="text-body-sm font-semibold" />
         <PriceChange value={change} />
       </span>
       <Icon name="chevron-right" size={16} className="hidden text-g-300 sm:block" />
@@ -78,7 +79,7 @@ export function CashHoldingRow({ value, weight, reserve, className, ...props }: 
         <AllocationBar weight={weight} cap={reserve} cash label="Cash" className="mt-1.5 max-w-[220px]" />
       </span>
       <span className="grid justify-items-end gap-px">
-        <b className="text-body-sm font-semibold tabular-nums">{formatMoney(value)}</b>
+        <NumberRoll value={value} format={formatMoney} className="text-body-sm font-semibold" />
         <span className="text-label-sm text-g-500 tabular-nums">{weight.toFixed(1)}%</span>
       </span>
       <Icon name="chevron-right" size={16} className="hidden text-g-300 sm:block" />

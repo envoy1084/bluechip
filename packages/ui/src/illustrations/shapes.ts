@@ -21,8 +21,8 @@ export interface Material {
 }
 
 export const MATERIALS = {
-  B: { c: "#0000ff", hi: "#3c8aff", lo: "#0000b0", t: 0.8 },
-  N: { c: "#0000b0", hi: "#0000ff", lo: "#00007a", t: 0.92 },
+  B: { c: "#2a5bff", hi: "#3c8aff", lo: "#1a3bc2", t: 0.8 },
+  N: { c: "#1a3bc2", hi: "#2a5bff", lo: "#00007a", t: 0.92 },
   C: { c: "#3c8aff", hi: "#8ab8ff", lo: "#1f5fe0", t: 0.55 },
   Y: { c: "#ffd12f", hi: "#ffe88a", lo: "#e3a600", t: 0.3 },
   O: { c: "#f5a300", hi: "#ffd12f", lo: "#b87800", t: 0.5 },
@@ -39,7 +39,7 @@ export const MATERIALS = {
   K: { c: INK, flat: true, t: 0.96 },
   w: { c: "#ffffff", flat: true, line: false, t: 0 },
   x: { c: "#ffffff", flat: true, t: 0.16 },
-  b: { c: "#0000ff", flat: true, line: false, t: 0.8 }
+  b: { c: "#2a5bff", flat: true, line: false, t: 0.8 }
 } as const satisfies Record<string, Material>
 
 export type MaterialKey = keyof typeof MATERIALS

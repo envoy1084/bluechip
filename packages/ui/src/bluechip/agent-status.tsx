@@ -1,5 +1,6 @@
 import { cva } from "class-variance-authority"
 import type { ComponentProps } from "react"
+import { TextMorph } from "../components/text-morph.tsx"
 import { Icon, type IconName } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import type { AgentStatus as AvatarStatus } from "./agent-avatar.tsx"
@@ -66,7 +67,10 @@ export interface AgentStatusProps extends Omit<ComponentProps<"span">, "children
   readonly state: AgentState
 }
 
-/** One word for what an agent is doing. Each state has its own color and icon, so it reads without color too. */
+/**
+ * One word for what an agent is doing. Each state has its own color and icon, so it reads without color too. A new
+ * state morphs the label in place.
+ */
 export function AgentStatus({ state, className, ...props }: AgentStatusProps) {
   const icon = STATE_ICON[state]
   return (
@@ -84,7 +88,7 @@ export function AgentStatus({ state, className, ...props }: AgentStatusProps) {
             className="size-1.5 rounded-full bg-current shadow-[0_0_0_3px_color-mix(in_srgb,currentColor_18%,transparent)]"
           />
         )}
-      {AGENT_STATES[state].label}
+      <TextMorph>{AGENT_STATES[state].label}</TextMorph>
     </span>
   )
 }

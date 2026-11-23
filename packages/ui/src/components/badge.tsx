@@ -8,14 +8,14 @@ export const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_0_0_1px_#0000c8]",
+          "bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_0_0_1px_#1d47dc]",
         secondary: "bg-g-100 text-g-700 shadow-[inset_0_0_0_1px_rgba(10,11,13,.05)]",
         outline: "bg-white text-g-700 shadow-[inset_0_0_0_1px_var(--color-g-200)]",
         success: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]",
         warning: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]",
         destructive: "bg-loss-wash text-loss shadow-[inset_0_0_0_1px_var(--color-loss-line)]",
         count:
-          "h-5 min-w-5 justify-center rounded-[10px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] px-1.5 text-[11.5px] text-white tabular-nums shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_0_0_1px_#0000c8]"
+          "h-5 min-w-5 animate-pop-in justify-center rounded-[10px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] px-1.5 text-[11.5px] text-white tabular-nums shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_0_0_1px_#1d47dc]"
       }
     },
     defaultVariants: { variant: "default" }

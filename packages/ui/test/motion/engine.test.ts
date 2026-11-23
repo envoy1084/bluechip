@@ -1,7 +1,7 @@
 import { darkness, inkLevel, mount, type Palette, type Scene } from "@bluechip/ui/motion/halftone"
 import { describe, expect, it } from "@effect/vitest"
 
-const PALETTE: Palette = ["#ff0000", "#00ff00", "#0000ff", "#000000"]
+const PALETTE: Palette = ["#ff0000", "#00ff00", "#2a5bff", "#000000"]
 
 const nextFrames = (count: number) =>
   new Promise<void>((resolve) => {
@@ -69,7 +69,7 @@ describe("halftone engine", () => {
     await nextFrames(6)
     expect(state.frames).toBe(1)
     // Regression: the first resize notification must not clear the still frame.
-    expect(pixelAt(canvas, 5, 5)).toBe("rgb(0,0,255)")
+    expect(pixelAt(canvas, 5, 5)).toBe("rgb(42,91,255)")
     handle.stop()
     canvas.remove()
   })

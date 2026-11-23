@@ -34,6 +34,24 @@ export default defineConfig({
       project("scripts", "scripts"),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
       project("ui", "packages/ui", {
+        // Pre-bundle the UI libraries up front; discovering them mid-run reloads Vite and breaks React hooks.
+        optimizeDeps: {
+          include: [
+            "react",
+            "react-dom",
+            "react/jsx-runtime",
+            "@base-ui/react",
+            "@number-flow/react",
+            "torph/react",
+            "skullet/react",
+            "web-haptics",
+            "glimm/react",
+            "@tanstack/react-table",
+            "embla-carousel-react",
+            "react-resizable-panels",
+            "recharts"
+          ]
+        },
         test: {
           browser: { enabled: true, headless: true, provider: playwright(), instances: [{ browser: "chromium" }] }
         }

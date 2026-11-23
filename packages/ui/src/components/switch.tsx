@@ -2,13 +2,14 @@ import { Switch as BaseSwitch } from "@base-ui/react/switch"
 import { cva, type VariantProps } from "class-variance-authority"
 import type { ComponentProps } from "react"
 import { cn } from "../lib/cn.ts"
+import { haptic } from "../lib/haptics.ts"
 
 export const switchVariants = cva(
   [
     "group/switch relative inline-flex h-(--h) w-(--w) shrink-0 cursor-pointer rounded-full p-0",
     "bg-g-200 shadow-[inset_0_1px_2px_rgba(10,11,13,.12),inset_0_0_0_1px_rgba(10,11,13,.04)] transition-[background,box-shadow] duration-base ease-brand",
     "hover:not-data-checked:not-data-disabled:bg-g-300",
-    "data-checked:bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] data-checked:shadow-[inset_0_1px_2px_rgba(0,0,80,.3),0_0_0_1px_#0000c8]",
+    "data-checked:bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] data-checked:shadow-[inset_0_1px_2px_rgba(16, 40, 130,.3),0_0_0_1px_#1d47dc]",
     "data-disabled:cursor-not-allowed data-disabled:opacity-45"
   ],
   {
@@ -21,10 +22,18 @@ export const switchVariants = cva(
 
 export interface SwitchProps extends ComponentProps<typeof BaseSwitch.Root>, VariantProps<typeof switchVariants> {}
 
-/** Turns a setting on or off right away, with no save button. */
-export function Switch({ size, className, ...props }: SwitchProps) {
+/** Turns a setting on or off right away, with no save button. A light haptic on phones marks the change. */
+export function Switch({ size, className, onCheckedChange, ...props }: SwitchProps) {
   return (
-    <BaseSwitch.Root data-slot="switch" className={cn(switchVariants({ size }), className)} {...props}>
+    <BaseSwitch.Root
+      data-slot="switch"
+      className={cn(switchVariants({ size }), className)}
+      onCheckedChange={(checked, details) => {
+        haptic("select")
+        onCheckedChange?.(checked, details)
+      }}
+      {...props}
+    >
       <BaseSwitch.Thumb
         data-slot="switch-thumb"
         className={cn(

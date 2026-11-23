@@ -133,7 +133,7 @@ function Ticker({ symbol }: { readonly symbol: string }) {
     <span
       className={cn(
         "inline-flex items-center rounded-[5px] px-1.5 pt-[3px] pb-0.5 font-pixel text-caption-sm font-extrabold tracking-[.05em] shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
-        TICKER_TONE[symbol] ?? "bg-[linear-gradient(180deg,#2a46ff,#0000ff)] text-white"
+        TICKER_TONE[symbol] ?? "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white"
       )}
     >
       {symbol}
@@ -214,7 +214,7 @@ function States({ items }: { readonly items: ReadonlyArray<readonly [string, Rea
 // Static state samples are pictures of a state, so they stay out of the tab order.
 const sample = { tabIndex: -1 } as const
 const hoverRing = "[--field-ring:rgba(10,11,13,.2)]"
-const focusRing = "shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(0,0,255,.12)]"
+const focusRing = "shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]"
 const focusOutline = "outline-2 outline-offset-2 outline-blue"
 
 /* ---------- Page ---------- */

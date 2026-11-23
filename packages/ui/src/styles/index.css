@@ -5,6 +5,8 @@
 @import "./theme.css";
 @import "./base.css";
 @import "./surfaces.css";
+@import "skullet/styles.css";
+@import "./skeleton.css";
 
 /* Scan the package's components for class names when an app imports this file. */
 @source "../";

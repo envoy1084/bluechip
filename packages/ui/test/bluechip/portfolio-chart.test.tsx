@@ -27,19 +27,43 @@ describe("PortfolioChart", () => {
     await userEvent.click(screen.getByRole("tab", { name: "1W" }))
     await expect.element(screen.getByRole("tab", { name: "1W" })).toHaveAttribute("aria-selected", "true")
     await expect.element(screen.getByText("Past week")).toBeVisible()
+    await expect.element(screen.getByText("Wed 18 Nov")).toBeVisible()
   })
 
-  it("moves the crosshair with the keyboard and announces each point", async () => {
+  it("reads each point's value and date from the keyboard, and the headline follows", async () => {
     const screen = await render(<PortfolioChart ranges={RANGES} defaultRange="1W" />)
-    const plot = screen.getByRole("slider", { name: "Portfolio value" })
-    await expect.element(plot).toHaveAttribute("aria-valuetext", "$12,269.39, Fri 20 Nov")
+    const plot = screen.getByRole("application", { name: "Portfolio value" })
+    await expect.element(plot).toBeVisible()
+    // The pointer may still rest where an earlier test left it; move it off the chart.
+    await userEvent.unhover(plot)
     plot.element().focus()
-    await userEvent.keyboard("{ArrowLeft}")
-    await expect.element(plot).toHaveAttribute("aria-valuetext", "$12,000.00, Thu 19 Nov")
-    await expect.element(screen.getByText("Thu 19 Nov").first()).toBeVisible()
-    await userEvent.keyboard("{Home}")
-    await expect.element(plot).toHaveAttribute("aria-valuetext", "$11,800.00, Wed 18 Nov")
-    await userEvent.keyboard("{Escape}")
+    const tooltip = screen.getByRole("status")
+    await expect.element(tooltip).toHaveTextContent("$11,800.00Wed 18 Nov")
+    await userEvent.keyboard("{ArrowRight}")
+    await expect.element(tooltip).toHaveTextContent("$12,000.00Thu 19 Nov")
+    // The headline swaps the range description for the point's date.
+    await expect.element(screen.getByText("Past week")).not.toBeInTheDocument()
+    plot.element().blur()
     await expect.element(screen.getByText("Past week")).toBeVisible()
+  })
+
+  it("shows the value under the pointer", async () => {
+    const screen = await render(
+      <div style={{ width: 640 }}>
+        <PortfolioChart ranges={RANGES} defaultRange="1W" />
+      </div>
+    )
+    const plot = screen.getByRole("application", { name: "Portfolio value" })
+    await expect.element(plot).toBeVisible()
+    const { width } = plot.element().getBoundingClientRect()
+    await userEvent.hover(plot, { position: { x: width - 14, y: 60 } })
+    await expect.element(screen.getByRole("status")).toHaveTextContent("$12,269.39Fri 20 Nov")
+  })
+
+  it("invites a first deposit when there is nothing to plot", async () => {
+    const screen = await render(
+      <PortfolioChart ranges={[{ id: "All", description: "All time", points: [{ value: 0, label: "Today" }] }]} />
+    )
+    await expect.element(screen.getByText("Your chart starts with your first deposit")).toBeVisible()
   })
 })

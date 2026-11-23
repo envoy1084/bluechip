@@ -9,7 +9,7 @@ const STARS = (() => {
 
 /** Warp (sending a trade or a withdrawal): streaks fly out of a bright centre, surging now and then. */
 export const warp: Scene = {
-  palette: ["#c9d3ff", "#cd99fd", "#3c8aff", "#0000ff"],
+  palette: ["#c9d3ff", "#cd99fd", "#3c8aff", "#2a5bff"],
   stillAt: 2.4,
   draw(c, t, W, H, p) {
     const cx = W * 0.5 + p.x * W * 0.05, cy = H * 0.5 + p.y * H * 0.05, D = Math.hypot(W, H) * 0.55
@@ -35,6 +35,6 @@ export const warp: Scene = {
     c.fillStyle = g
     c.fillRect(0, 0, W, H)
     const pulse = (t * 0.6) % 1
-    p.hot = { x: cx, y: cy, r: D * 0.05 * (1 - pulse) + 4, color: "#0000ff" }
+    p.hot = { x: cx, y: cy, r: D * 0.05 * (1 - pulse) + 4, color: "#2a5bff" }
   }
 }

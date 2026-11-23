@@ -17,10 +17,10 @@ interface Swatch {
 }
 
 const BRAND: ReadonlyArray<Swatch> = [
-  { token: "blue", hex: "#0000FF", className: "bg-blue", note: "Base Blue: primary actions, links" },
-  { token: "blue-hi", hex: "#2A46FF", className: "bg-blue-hi", note: "Top of the primary gradient" },
-  { token: "blue-lo", hex: "#0000C4", className: "bg-blue-lo" },
-  { token: "blue-deep", hex: "#00009E", className: "bg-blue-deep" },
+  { token: "blue", hex: "#2a5bff", className: "bg-blue", note: "Base Blue: primary actions, links" },
+  { token: "blue-hi", hex: "#4c76ff", className: "bg-blue-hi", note: "Top of the primary gradient" },
+  { token: "blue-lo", hex: "#1f48e6", className: "bg-blue-lo" },
+  { token: "blue-deep", hex: "#1a3bc2", className: "bg-blue-deep" },
   { token: "blue-200", hex: "#C9D3FF", className: "bg-blue-200" },
   { token: "blue-100", hex: "#E6EAFF", className: "bg-blue-100" },
   { token: "blue-50", hex: "#F3F5FF", className: "bg-blue-50", note: "Selected rows, tinted tiles" },
@@ -85,7 +85,7 @@ const SEMANTIC: ReadonlyArray<
     name: "Info",
     use: "Waiting for you, neutral notes",
     swatches: [
-      { token: "info", hex: "#0000FF", className: "bg-info" },
+      { token: "info", hex: "#2a5bff", className: "bg-info" },
       { token: "info-wash", hex: "#F3F5FF", className: "bg-info-wash" },
       { token: "info-line", hex: "#D4DBFF", className: "bg-info-line" }
     ]
@@ -93,7 +93,7 @@ const SEMANTIC: ReadonlyArray<
 ]
 
 const SERIES: ReadonlyArray<Swatch> = [
-  { token: "series-1", hex: "#0000FF", className: "bg-series-1" },
+  { token: "series-1", hex: "#2a5bff", className: "bg-series-1" },
   { token: "series-2", hex: "#3C8AFF", className: "bg-series-2" },
   { token: "series-3", hex: "#66C800", className: "bg-series-3" },
   { token: "series-4", hex: "#FFD12F", className: "bg-series-4" },
@@ -401,7 +401,7 @@ function FocusSection() {
             aria-label="Focused field sample"
             defaultValue="Rebalancer"
             tabIndex={-1}
-            className="shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(0,0,255,.12)]"
+            className="shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)]"
           />
           <Token>fields · 1px blue + 4px halo</Token>
         </div>

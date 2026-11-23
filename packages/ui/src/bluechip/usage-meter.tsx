@@ -2,6 +2,7 @@ import type { ComponentProps } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { formatDollars } from "../lib/agent-limits.ts"
 import { cn } from "../lib/cn.ts"
+import { NumberRoll } from "../motion/number-roll.tsx"
 
 /** How much of the limit is used: amber from 80%, red when it's all used. */
 export type UsageLevel = "normal" | "near" | "full"
@@ -30,7 +31,7 @@ export interface UsageMeterProps extends Omit<ComponentProps<"div">, "children">
   readonly resetsAt?: string
 }
 
-/** How much of today's spending limit an agent has used, with what's left and when it resets. */
+/** How much of today's spending limit an agent has used, with what's left and when it resets. Amounts roll. */
 export function UsageMeter(
   { used, limit, label = "Spent today", resetsAt = "midnight New York time", className, ...props }: UsageMeterProps
 ) {
@@ -42,7 +43,8 @@ export function UsageMeter(
       <div className="flex justify-between gap-2.5 text-[13.5px] text-g-600">
         <span>{label}</span>
         <span className="tabular-nums">
-          <b className="font-semibold text-ink">{formatDollars(used)}</b> of {formatDollars(limit)}
+          <NumberRoll value={used} format={formatDollars} className="font-semibold text-ink" /> of{" "}
+          {formatDollars(limit)}
         </span>
       </div>
       <div
@@ -76,7 +78,11 @@ export function UsageMeter(
         {level === "full" && <Icon name="stop-sign" size={13} />}
         {level === "full" ?
           `Limit reached. Resets at ${resetsAt}.` :
-          `${formatDollars(limit - used)} left today`}
+          (
+            <>
+              <NumberRoll value={limit - used} format={formatDollars} /> left today
+            </>
+          )}
       </span>
     </div>
   )

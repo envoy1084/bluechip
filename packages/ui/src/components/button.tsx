@@ -2,6 +2,7 @@ import { Button as BaseButton } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import type { ComponentProps } from "react"
 import { cn } from "../lib/cn.ts"
+import { type Haptic, haptic as playHaptic } from "../lib/haptics.ts"
 import { Spinner } from "./spinner.tsx"
 
 export const buttonVariants = cva(
@@ -42,10 +43,14 @@ export const buttonVariants = cva(
 export interface ButtonProps extends ComponentProps<typeof BaseButton>, VariantProps<typeof buttonVariants> {
   /** Shows a spinner, keeps the width, and blocks presses. */
   readonly loading?: boolean
+  /** A haptic on phones when pressed: `success` for the press that finishes something, `nudge` before a weighty one. */
+  readonly haptic?: Extract<Haptic, "tap" | "success" | "nudge" | "error">
 }
 
 /** The bluechip button. `primary` is for the one action that matters on a screen. */
-export function Button({ variant, size, loading = false, disabled, className, children, ...props }: ButtonProps) {
+export function Button(
+  { variant, size, loading = false, haptic, disabled, className, children, onClick, ...props }: ButtonProps
+) {
   return (
     <BaseButton
       data-slot="button"
@@ -53,6 +58,10 @@ export function Button({ variant, size, loading = false, disabled, className, ch
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(buttonVariants({ variant, size }), className)}
+      onClick={(event) => {
+        if (haptic !== undefined) playHaptic(haptic)
+        onClick?.(event)
+      }}
       {...props}
     >
       {loading ?

@@ -85,7 +85,7 @@ const butterfly = (c: CanvasRenderingContext2D, s: number, open: number): void =
 
 /** Butterflies: three butterflies at different depths, with a fast downstroke, slower recovery and glides. */
 export const butterflies: Scene = {
-  palette: ["#fea8cd", "#cd99fd", "#3c8aff", "#0000ff"],
+  palette: ["#fea8cd", "#cd99fd", "#3c8aff", "#2a5bff"],
   stillAt: 5.7,
   draw(c, t, W, H, p) {
     const base = Math.min(W * 0.2, H * 0.34)

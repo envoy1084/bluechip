@@ -3,6 +3,7 @@ import type { ComponentProps } from "react"
 import { Icon, type IconName } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatChange, formatMoney, formatPercent } from "../lib/format.ts"
+import { NumberRoll } from "../motion/number-roll.tsx"
 import { usePriceFlash } from "../motion/use-price-flash.ts"
 
 /** Which way a value moved. Anything that rounds to 0.00 is flat. */
@@ -42,10 +43,10 @@ export interface PriceChangeProps
 
 /**
  * A change, never by color alone: an arrow, a sign and the tone. Up is Gain, down is Loss, flat is grey with a dash.
+ * The numbers roll when they change.
  */
 export function PriceChange({ value, amount, size, className, ...props }: PriceChangeProps) {
   const direction = priceDirection(value)
-  const percent = formatPercent(value)
   return (
     <span
       data-slot="price-change"
@@ -54,7 +55,14 @@ export function PriceChange({ value, amount, size, className, ...props }: PriceC
       {...props}
     >
       <Icon name={ARROW[direction]} size={size === "lg" ? 16 : 14} />
-      {amount === undefined ? percent : `${formatChange(amount)} (${percent})`}
+      {amount !== undefined && (
+        <>
+          <NumberRoll value={amount} format={formatChange} />
+          <span className="whitespace-pre">{" ("}</span>
+        </>
+      )}
+      <NumberRoll value={value} format={formatPercent} />
+      {amount !== undefined && ")"}
     </span>
   )
 }
@@ -83,7 +91,7 @@ export interface PriceProps extends Omit<ComponentProps<"span">, "children">, Va
   readonly flash?: boolean
 }
 
-/** A price in tabular figures with its change. A new price flashes Gain or Loss for a moment. */
+/** A price in tabular figures with its change. A new price rolls in and flashes Gain or Loss for a moment. */
 export function Price(
   { price, change, changeAmount, flash = true, size, layout, className, ...props }: PriceProps
 ) {
@@ -97,7 +105,7 @@ export function Price(
           flash && flashClass
         )}
       >
-        {formatMoney(price)}
+        <NumberRoll value={price} format={formatMoney} />
       </span>
       <PriceChange
         value={change}

@@ -1,8 +1,10 @@
 import { type ReactNode, useEffect, useState } from "react"
 import { Button, type ButtonProps } from "../components/button.tsx"
 import { Spinner } from "../components/spinner.tsx"
+import { TextMorph } from "../components/text-morph.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
+import { haptic } from "../lib/haptics.ts"
 import { Seal } from "../motion/seal.tsx"
 
 /** How the person proves it's them. The button always names it. */
@@ -27,7 +29,8 @@ export interface PasskeyButtonProps extends Omit<ButtonProps, "children" | "onCl
 
 /**
  * The one button for anything that needs you: creating your account, signing in, approving a trade, locking limits.
- * Waiting says so, success forms the seal and turns green, and a failure asks to try again, never with a code.
+ * Waiting says so, success forms the seal, turns green and taps a success haptic on phones, and a failure asks to try
+ * again, never with a code. The label morphs between states (string labels only).
  */
 export function PasskeyButton({
   method = "face-id",
@@ -49,7 +52,13 @@ export function PasskeyButton({
 
   const start = () => {
     setState("waiting")
-    onAuthenticate().then(() => setState("done"), () => setState("error"))
+    onAuthenticate().then(
+      () => {
+        haptic("success")
+        setState("done")
+      },
+      () => setState("error")
+    )
   }
 
   const icon = method === "face-id" ? "face-id" : "fingerprint"
@@ -74,13 +83,15 @@ export function PasskeyButton({
           state === "done" ?
           <Seal playing label={`Done with ${name}`} className="size-5" /> :
           <Icon name={icon} size={18} />}
-        {state === "waiting"
-          ? `Waiting for ${name}…`
-          : state === "done"
-          ? doneLabel
-          : state === "error"
-          ? `Try ${name} again`
-          : children}
+        <TextMorph>
+          {state === "waiting"
+            ? `Waiting for ${name}…`
+            : state === "done"
+            ? doneLabel
+            : state === "error"
+            ? `Try ${name} again`
+            : children}
+        </TextMorph>
       </Button>
       <span aria-live="polite" className={cn("text-label-sm text-loss", state !== "error" && "sr-only")}>
         {state === "error" ? `${name === "Face ID" ? "Face ID" : "Your fingerprint"} didn't work. Try again.` : ""}

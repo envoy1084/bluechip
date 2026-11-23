@@ -13,6 +13,7 @@ import {
 } from "../components/alert-dialog.tsx"
 import { Button } from "../components/button.tsx"
 import { Spinner } from "../components/spinner.tsx"
+import { TextMorph } from "../components/text-morph.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 
@@ -70,7 +71,7 @@ export function KillSwitch({ paused, agentCount, onPause, onResume, className }:
         </div>
         <Button size="sm" aria-busy={resuming || undefined} disabled={resuming} onClick={resume}>
           {resuming ? <Spinner size={14} /> : <Icon name="face-id" size={14} />}
-          {resuming ? "Waiting for Face ID…" : "Resume with Face ID"}
+          <TextMorph>{resuming ? "Waiting for Face ID…" : "Resume with Face ID"}</TextMorph>
         </Button>
       </output>
     )
@@ -104,7 +105,7 @@ export function KillSwitch({ paused, agentCount, onPause, onResume, className }:
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="danger" onClick={onPause}>
+            <AlertDialogAction variant="danger" haptic="nudge" onClick={onPause}>
               <Icon name="pause" size={16} />Pause all {plural}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -43,7 +43,7 @@ const PIXELS: ReadonlyArray<SealPixel> = (() => {
         }
         run += len
       }
-      const color = ring ? "#3c8aff" : x + y < -0.55 ? "#2a46ff" : "#0000ff"
+      const color = ring ? "#3c8aff" : x + y < -0.55 ? "#4c76ff" : "#2a5bff"
       const angle = r() * TAU, far = 1.1 + r() * 1.2
       pixels.push({
         x: i,

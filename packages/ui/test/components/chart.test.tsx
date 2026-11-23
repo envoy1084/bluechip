@@ -16,7 +16,7 @@ describe("Chart", () => {
         <BarChart title="Bought and sold per week" labels={labels} series={series} />
       </div>
     )
-    // The middle of three bars: 52 px axis gutter, then three equal slots across the rest.
+    // The middle of three bars: a 52 px axis gutter, then three equal slots across the rest.
     await userEvent.hover(screen.getByRole("application", { name: "Bought and sold per week" }), {
       position: { x: 320, y: 120 }
     })
@@ -24,20 +24,23 @@ describe("Chart", () => {
     await expect.element(screen.getByText("$2,150", { exact: true })).toBeVisible()
   })
 
-  it("reads points with the arrow keys", async () => {
+  it("reads points with the arrow keys and announces them", async () => {
     const screen = await render(
       <div style={{ width: 600 }}>
         <AreaChart title="Portfolio, last 3 days" labels={labels} series={series} />
       </div>
     )
     const plot = screen.getByRole("application", { name: "Portfolio, last 3 days" })
+    await expect.element(plot).toBeVisible()
+    // The pointer may still rest where an earlier test left it; move it off the chart.
+    await userEvent.unhover(plot)
     plot.element().focus()
+    // Focus opens the first point; the arrow keys walk from there.
+    await expect.element(screen.getByRole("status")).toHaveTextContent("Nov 17Stocks$8,400Cash$2,200")
     await userEvent.keyboard("{ArrowRight}")
-    await expect.element(screen.getByText("Nov 19: Stocks $9,010, Cash $2,080")).toBeInTheDocument()
-    await userEvent.keyboard("{ArrowLeft}")
-    await expect.element(screen.getByText("Nov 18: Stocks $8,620, Cash $2,150")).toBeInTheDocument()
-    await userEvent.keyboard("{Escape}")
-    await expect.element(screen.getByText("$8,620")).not.toBeInTheDocument()
+    await expect.element(screen.getByRole("status")).toHaveTextContent("Nov 18Stocks$8,620Cash$2,150")
+    await userEvent.keyboard("{ArrowRight}{ArrowLeft}{ArrowLeft}")
+    await expect.element(screen.getByRole("status")).toHaveTextContent("Nov 17Stocks$8,400Cash$2,200")
   })
 
   it("hides a series from its legend button, but never the last one", async () => {
@@ -46,5 +49,7 @@ describe("Chart", () => {
     await expect.element(screen.getByRole("button", { name: "Cash" })).toHaveAttribute("aria-pressed", "false")
     await userEvent.click(screen.getByRole("button", { name: "Stocks" }))
     await expect.element(screen.getByRole("button", { name: "Stocks" })).toHaveAttribute("aria-pressed", "true")
+    await userEvent.click(screen.getByRole("button", { name: "Cash" }))
+    await expect.element(screen.getByRole("button", { name: "Cash" })).toHaveAttribute("aria-pressed", "true")
   })
 })

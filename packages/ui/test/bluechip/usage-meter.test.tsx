@@ -19,10 +19,11 @@ describe("UsageMeter", () => {
       "aria-valuetext",
       "$140 of $200"
     )
-    await expect.element(screen.getByText("$60 left today")).toBeVisible()
+    const note = screen.container.querySelector("[data-slot=usage-meter-note]")
+    expect(note?.textContent).toBe("$60 left today")
 
     await screen.rerender(<UsageMeter used={170} limit={200} />)
-    await expect.element(screen.getByText("$30 left today")).toBeVisible()
+    await expect.poll(() => note?.textContent).toBe("$30 left today")
     expect(screen.container.querySelector("[data-slot=usage-meter]")?.getAttribute("data-level")).toBe("near")
 
     await screen.rerender(<UsageMeter used={200} limit={200} />)

@@ -1,10 +1,12 @@
-import { type ReactNode, useId, useMemo } from "react"
+import { type ReactNode, useEffect, useId, useMemo, useState } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney } from "../lib/format.ts"
+import { haptic } from "../lib/haptics.ts"
 import { Confetti } from "../motion/confetti.tsx"
 import { NumberRoll } from "../motion/number-roll.tsx"
 import { seededRandom } from "../motion/random.ts"
+import { MomentScope, useMoment } from "../motion/sweep.tsx"
 import { AddressChip, shortAddress } from "./address-chip.tsx"
 
 const GRID = 29
@@ -50,13 +52,27 @@ export interface DepositCardProps {
 
 /**
  * How to add cash: send USDC on Base to your address. The warning is loud because other coins or networks can be
- * lost. When the deposit lands, the amount rolls in.
+ * lost. When the deposit lands, a sweep passes over the card, the amount rolls up from zero and phones get a success
+ * haptic.
  */
 export function DepositCard(
   { address, status, amount = 0, from, footer, celebrate = false, className }: DepositCardProps
 ) {
   const pattern = useMemo(() => patternPath(address), [address])
   const titleId = useId()
+  const { ref: momentRef, play: playMoment } = useMoment()
+  const [shown, setShown] = useState(0)
+  useEffect(() => {
+    if (status !== "arrived") return
+    // After the first paint, so the amount visibly rolls up from zero.
+    const frame = requestAnimationFrame(() => setShown(amount))
+    return () => cancelAnimationFrame(frame)
+  }, [status, amount])
+  useEffect(() => {
+    if (status !== "arrived") return
+    playMoment()
+    haptic("success")
+  }, [status, playMoment])
 
   if (status === "arrived") {
     return (
@@ -75,14 +91,15 @@ export function DepositCard(
         </span>
         <span className="text-label text-g-600">Cash arrived</span>
         <NumberRoll
-          value={amount}
-          format={(v) => formatMoney(v)}
+          value={shown}
+          format={formatMoney}
           className="text-[32px] leading-[1.1] font-semibold tracking-[-0.035em]"
         />
         <output className="block max-w-[38ch] text-body-sm text-g-600">
           USDC on Base{from ? `, from ${shortAddress(from)}` : ""}. It's ready to invest.
         </output>
         {footer}
+        <MomentScope ref={momentRef} />
       </section>
     )
   }
@@ -117,7 +134,7 @@ export function DepositCard(
             aria-hidden
             className="absolute top-1/2 left-1/2 grid size-8 -translate-1/2 place-items-center rounded-[9px] bg-white shadow-[0_0_0_1px_rgba(10,11,13,.06)]"
           >
-            <i className="size-[22px] rounded-full bg-[linear-gradient(180deg,#2a46ff,#0000ff)]" />
+            <i className="size-[22px] rounded-full bg-[linear-gradient(180deg,#4c76ff,#2a5bff)]" />
           </span>
           <figcaption className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full bg-warn-wash px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
             Example pattern

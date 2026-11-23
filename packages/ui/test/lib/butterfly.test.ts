@@ -2,7 +2,7 @@ import { butterflyPixels, hash } from "@bluechip/ui/lib/butterfly"
 import { describe, expect, it } from "@effect/vitest"
 
 const COLORS: Readonly<Record<string, string>> = {
-  B: "#0000ff",
+  B: "#2a5bff",
   C: "#3c8aff",
   P: "#fea8cd",
   V: "#cd99fd",

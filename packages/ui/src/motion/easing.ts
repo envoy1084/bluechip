@@ -22,3 +22,12 @@ export const outBack = (progress: number, k = 1.6): number => {
 /** A damped spring from 0 to 1: overshoots once and settles. Unclamped above, 0 before it starts. */
 export const spring = (progress: number, stiffness = 6, frequency = 9): number =>
   progress <= 0 ? 0 : 1 - Math.exp(-stiffness * progress) * Math.cos(frequency * progress)
+
+/**
+ * The theme's easing tokens (`--ease-brand`, `--ease-in-out`) as strings, for the Web Animations API and libraries
+ * that take an easing string and can't read a CSS variable. Keep them in step with `styles/theme.css`.
+ */
+export const EASE = {
+  brand: "cubic-bezier(.19, 1, .22, 1)",
+  inOut: "cubic-bezier(.65, 0, .35, 1)"
+} as const

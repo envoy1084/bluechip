@@ -1,5 +1,7 @@
 import { useState } from "react"
+import { Pie, PieChart, type PieSectorShapeProps, Sector } from "recharts"
 import { cn } from "../lib/cn.ts"
+import { useReducedMotion } from "../motion/use-reduced-motion.ts"
 
 export interface AllocationSlice {
   /** A stable id: the symbol, or `cash`. Cash always takes the cash series color. */
@@ -18,43 +20,7 @@ export const offTarget = (slices: ReadonlyArray<AllocationSlice>): number =>
 const colorOf = (slice: AllocationSlice, index: number) =>
   slice.id === "cash" ? "var(--color-series-cash)" : `var(--color-series-${(index % 8) + 1})`
 
-const C = 200, MID = C / 2, GAP = 2.2
-
-function Ring(
-  { radius, width, slices, field, focus }: {
-    readonly radius: number
-    readonly width: number
-    readonly slices: ReadonlyArray<AllocationSlice>
-    readonly field: "current" | "target"
-    readonly focus: string | null
-  }
-) {
-  const circumference = 2 * Math.PI * radius
-  let offset = 0
-  return slices.map((slice, i) => {
-    const length = Math.max(0, (slice[field] / 100) * circumference - GAP)
-    const dashoffset = -offset
-    offset += (slice[field] / 100) * circumference
-    return (
-      <circle
-        key={slice.id}
-        cx={MID}
-        cy={MID}
-        r={radius}
-        fill="none"
-        stroke={colorOf(slice, i)}
-        strokeWidth={width}
-        strokeDasharray={`${length.toFixed(2)} ${(circumference - length).toFixed(2)}`}
-        strokeDashoffset={dashoffset.toFixed(2)}
-        transform={`rotate(-90 ${MID} ${MID})`}
-        className={cn(
-          "transition-[stroke-dasharray,stroke-dashoffset,opacity] duration-[600ms] ease-brand",
-          focus !== null && focus !== slice.id && "opacity-20"
-        )}
-      />
-    )
-  })
-}
+const SIZE = 200
 
 export interface AllocationDonutProps {
   readonly slices: ReadonlyArray<AllocationSlice>
@@ -63,25 +29,81 @@ export interface AllocationDonutProps {
 
 /**
  * Your mix now (outer ring) against the mix you asked for (inner ring), in the chart series colors. The center says
- * how far off you are. Hover or focus a legend row to isolate it.
+ * how far off you are. Hover a slice, or hover or focus a legend row, to isolate it; press a row to keep it isolated.
  */
 export function AllocationDonut({ slices, className }: AllocationDonutProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const [pinned, setPinned] = useState<string | null>(null)
+  const reduced = useReducedMotion()
   const focus = hovered ?? pinned
   const off = offTarget(slices)
+
+  const ring = (field: "current" | "target") =>
+    slices
+      .map((slice, i) => ({ id: slice.id, value: slice[field], fill: colorOf(slice, i) }))
+      .filter((entry) => entry.value > 0)
+  const sector = (props: PieSectorShapeProps) => {
+    const id = (props.payload as { readonly id?: string } | undefined)?.id
+    return (
+      <Sector
+        cx={props.cx}
+        cy={props.cy}
+        innerRadius={props.innerRadius}
+        outerRadius={props.outerRadius}
+        startAngle={props.startAngle}
+        endAngle={props.endAngle}
+        fill={props.fill ?? "currentColor"}
+        className={cn(
+          "transition-opacity duration-slow ease-brand",
+          focus !== null && focus !== id && "opacity-20"
+        )}
+      />
+    )
+  }
+  const rings = { startAngle: 90, endAngle: -270, paddingAngle: 1.5, stroke: "none", isAnimationActive: !reduced }
+
   return (
     <div
       data-slot="allocation-donut"
       className={cn("flex w-full max-w-[640px] flex-wrap items-center justify-center gap-8", className)}
     >
-      <div className="relative size-[200px] shrink-0">
-        <svg viewBox={`0 0 ${C} ${C}`} width={C} height={C} aria-hidden className="block">
-          <circle cx={MID} cy={MID} r="84" fill="none" stroke="var(--color-g-100)" strokeWidth="14" />
-          <Ring radius={84} width={14} slices={slices} field="current" focus={focus} />
-          <Ring radius={64} width={6} slices={slices} field="target" focus={focus} />
-        </svg>
-        <div className="absolute inset-0 grid place-content-center text-center">
+      <div className="relative size-[200px] shrink-0" aria-hidden>
+        {/* The legend is the accessible view of these numbers, so the chart itself takes no focus. */}
+        <PieChart
+          width={SIZE}
+          height={SIZE}
+          accessibilityLayer={false}
+          margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+        >
+          <Pie
+            data={[{ value: 100 }]}
+            dataKey="value"
+            innerRadius={77}
+            outerRadius={91}
+            fill="var(--color-g-100)"
+            stroke="none"
+            isAnimationActive={false}
+          />
+          <Pie
+            data={ring("current")}
+            dataKey="value"
+            innerRadius={77}
+            outerRadius={91}
+            shape={sector}
+            onMouseEnter={(entry) => setHovered((entry.payload as { readonly id: string }).id)}
+            onMouseLeave={() => setHovered(null)}
+            {...rings}
+          />
+          <Pie
+            data={ring("target")}
+            dataKey="value"
+            innerRadius={61}
+            outerRadius={67}
+            shape={sector}
+            {...rings}
+          />
+        </PieChart>
+        <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
           <span className="text-caption text-g-600">Off target</span>
           <b className="text-[26px] leading-[1.15] font-semibold tracking-[-0.03em] tabular-nums">{off.toFixed(1)}%</b>
           <span className="max-w-[104px] text-[11.5px] text-g-500">
@@ -111,7 +133,7 @@ export function AllocationDonut({ slices, className }: AllocationDonutProps) {
               >
                 <i
                   aria-hidden
-                  className="size-2.5 rounded-[3px] shadow-[inset_0_0_0_1px_rgba(10,11,13,.1)]"
+                  className="size-2.5 rounded-[3px] shadow-hair"
                   style={{ background: colorOf(slice, i) }}
                 />
                 <span className="font-[550]">{slice.label}</span>

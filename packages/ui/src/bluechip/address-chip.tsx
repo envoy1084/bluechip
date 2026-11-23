@@ -1,4 +1,5 @@
 import { type ComponentProps, useEffect, useState } from "react"
+import { TextMorph } from "../components/text-morph.tsx"
 import { toast } from "../components/toast.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
@@ -86,7 +87,7 @@ export function AddressChip({ address, network = true, feedback = "inline", clas
           copied === "idle" || feedback === "toast" ? "sr-only" : copied === "copied" ? "text-gain" : "text-loss"
         )}
       >
-        {copied === "copied" ? "Copied" : copied === "failed" ? "Couldn't copy" : ""}
+        <TextMorph>{copied === "copied" ? "Copied" : copied === "failed" ? "Couldn't copy" : ""}</TextMorph>
       </span>
     </span>
   )

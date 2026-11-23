@@ -7,6 +7,7 @@ import { Toggle } from "../components/toggle.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { findTicker, TICKERS } from "../lib/tickers.ts"
+import { NumberRoll } from "../motion/number-roll.tsx"
 import { CASH_SYMBOL, TickerChip } from "./ticker-chip.tsx"
 
 /** One stock's target share of your money, in whole percent. A locked target is never changed by balancing. */
@@ -70,6 +71,7 @@ export interface AllocationEditorProps {
   readonly className?: string
 }
 
+const percentText = (value: number) => `${value}%`
 const nameOf = (symbol: string) => findTicker(symbol)?.name ?? symbol
 const SEGMENT = (index: number) => `var(--color-series-${(index % 8) + 1})`
 
@@ -178,7 +180,7 @@ export function AllocationEditor(
           <span className="text-[13.5px] font-[550]">Cash</span>
           <span className="hidden text-label-sm text-g-500 sm:block">Fills the rest</span>
           <span data-slot="allocation-editor-cash" className="pr-2 text-right text-body-sm font-semibold tabular-nums">
-            {cash}%
+            <NumberRoll value={cash} format={percentText} />
           </span>
           {cash < reserve && (
             <span className="col-span-full text-caption text-warn sm:col-start-2">

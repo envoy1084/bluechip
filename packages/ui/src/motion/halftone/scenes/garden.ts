@@ -13,7 +13,7 @@ const LEAVES: ReadonlyArray<readonly [number, number]> = [[0.3, -1], [0.48, 1]]
 
 /** Garden bloom ("Limits locked"): flowers grow and open inside a fence held by a padlock. */
 export const garden: Scene = {
-  palette: ["#b6f569", "#66c800", "#cd99fd", "#0000ff"],
+  palette: ["#b6f569", "#66c800", "#cd99fd", "#2a5bff"],
   stillAt: 5.5,
   draw(c, t, W, H, p) {
     const G = H * 0.95, FY = H * 0.6, unit = Math.min(W * 0.62, H)

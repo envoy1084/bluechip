@@ -1,6 +1,12 @@
+import { HoldingRow } from "@bluechip/ui/bluechip/holding-row"
 import { Button } from "@bluechip/ui/components/button"
+import { Checkbox } from "@bluechip/ui/components/checkbox"
+import { Skeleton } from "@bluechip/ui/components/skeleton"
+import { Switch } from "@bluechip/ui/components/switch"
+import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatMoney, formatPercent } from "@bluechip/ui/lib/format"
+import { type Haptic, haptic, HAPTIC_EVENT } from "@bluechip/ui/lib/haptics"
 import { ButterflyAssemble, type ButterflyAssembleHandle } from "@bluechip/ui/motion/butterfly-assemble"
 import { Confetti } from "@bluechip/ui/motion/confetti"
 import { DotGrid } from "@bluechip/ui/motion/dot-grid"
@@ -8,8 +14,9 @@ import { Halftone, type HalftoneSceneName } from "@bluechip/ui/motion/halftone"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { Scramble } from "@bluechip/ui/motion/scramble"
 import { Seal, type SealHandle } from "@bluechip/ui/motion/seal"
+import { MomentScope, useMoment } from "@bluechip/ui/motion/sweep"
 import { createFileRoute } from "@tanstack/react-router"
-import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react"
+import { type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react"
 
 export const Route = createFileRoute("/kit/motion")({ component: KitMotion })
 
@@ -152,9 +159,9 @@ const INTERFACE: Readonly<Record<"roll" | "scramble", Entry>> = {
   roll: {
     n: 13,
     name: "Number roll and flash",
-    used: "Balances, prices, agent spend counters",
-    duration: "320 ms roll, 28 ms digit stagger, 900 ms flash",
-    easing: "--ease",
+    used: "Balances, prices, agent spend counters (NumberFlow)",
+    duration: "640 ms roll, 900 ms flash",
+    easing: "--ease-brand",
     reduced: "Digits swap instantly; color still shows the direction"
   },
   scramble: {
@@ -164,6 +171,41 @@ const INTERFACE: Readonly<Record<"roll" | "scramble", Entry>> = {
     duration: "800 ms",
     easing: "Linear, left to right",
     reduced: "Text appears at once"
+  }
+}
+
+const FEEL: Readonly<Record<"morph" | "skeleton" | "haptics" | "moment", Entry>> = {
+  morph: {
+    n: 15,
+    name: "Text morph",
+    used: "Labels that change in place: Approve → Filled, Copy → Copied (torph)",
+    duration: "320 ms",
+    easing: "--ease-brand",
+    reduced: "The new label at once"
+  },
+  skeleton: {
+    n: 16,
+    name: "Measured skeleton",
+    used: "Every loading state: drawn from the real content, so nothing moves when it lands (skullet)",
+    duration: "4 s shimmer; reveal in sequence",
+    easing: "Cosine sweep",
+    reduced: "Still bars, content at once"
+  },
+  haptics: {
+    n: 17,
+    name: "Haptics",
+    used: "Face ID done, trade filled, limit said no, settings flipped (web-haptics)",
+    duration: "15 – 160 ms patterns",
+    easing: "—",
+    reduced: "Unchanged. Desktop has none; the ring here shows each one"
+  },
+  moment: {
+    n: 18,
+    name: "Moment sweep",
+    used: "Limits locked, trade filled, cash arrived. Nothing else (glimm)",
+    duration: "1.6 s band, gone by mid-card",
+    easing: "Smooth, curved band",
+    reduced: "No band; the change shows at once. Same without WebGL"
   }
 }
 
@@ -178,7 +220,10 @@ const REDUCED: ReadonlyArray<readonly [string, string]> = [
   ["Reactive grid (8)", "A still noise field. No springs, no ripples."],
   ["Confetti (12)", "Not drawn. The toast or heading says it."],
   ["Number roll, flash (13)", "Digits change in place; the up or down color stays on the text."],
-  ["Text scramble (14)", "The text is there from the start."]
+  ["Text scramble (14)", "The text is there from the start."],
+  ["Text morph (15)", "The new label replaces the old one at once."],
+  ["Measured skeleton (16)", "Bars hold still; content replaces them without a fade."],
+  ["Moment sweep (18)", "No band. The change is made at once, as without WebGL."]
 ]
 
 /** True once the element has scrolled into view. */
@@ -247,6 +292,23 @@ function KitMotion() {
         <Group title="Interface motion">
           <RollCard />
           <ScrambleCard />
+        </Group>
+      </section>
+
+      <section className="grid gap-6">
+        <div className="grid gap-2">
+          <span className="text-caption-sm font-semibold tracking-[.06em] text-blue uppercase">Feel</span>
+          <h2 className="text-title-1 font-semibold">Small things that say it worked.</h2>
+          <p className="max-w-[64ch] text-body text-g-600">
+            Numbers roll, labels morph, loading takes the shape of what's coming, phones tap back, and three moments get
+            a sweep. All from maintained libraries, tuned to the brand curves.
+          </p>
+        </div>
+        <Group title="Feedback">
+          <MorphCard />
+          <SkeletonCard />
+          <HapticsCard />
+          <MomentCard />
         </Group>
       </section>
 
@@ -499,6 +561,209 @@ function ScrambleCard() {
               <Scramble key={line} text={LINES[line % LINES.length] ?? ""} /> :
               LINES[0]}
           </h3>
+        </div>
+      }
+    />
+  )
+}
+
+const APPROVAL_STEPS = ["Approve", "Approving…", "Approved", "Sending", "Filled"]
+
+function MorphCard() {
+  const [step, setStep] = useState(0)
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (step === 0 || step === APPROVAL_STEPS.length - 1) return
+    const timer = setTimeout(() => setStep((s) => s + 1), 900)
+    return () => clearTimeout(timer)
+  }, [step])
+  useEffect(() => {
+    if (!copied) return
+    const timer = setTimeout(() => setCopied(false), 1600)
+    return () => clearTimeout(timer)
+  }, [copied])
+  const done = step === APPROVAL_STEPS.length - 1
+  return (
+    <Card
+      entry={FEEL.morph}
+      stage={
+        <div className="grid justify-items-center gap-4">
+          <Button
+            size="lg"
+            className="min-w-[200px]"
+            haptic={done ? "tap" : "success"}
+            onClick={() => setStep((s) => (s === 0 ? 1 : done ? 0 : s))}
+          >
+            <Icon name={done ? "check" : "face-id"} size={18} />
+            <TextMorph>{APPROVAL_STEPS[step] ?? ""}</TextMorph>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setCopied(true)}>
+            <Icon name={copied ? "check" : "copy"} size={14} />
+            <TextMorph>{copied ? "Copied" : "Copy address"}</TextMorph>
+          </Button>
+          <span className="text-caption text-g-500">Press either button</span>
+        </div>
+      }
+    />
+  )
+}
+
+interface DemoHolding {
+  readonly id: string
+  readonly symbol: string
+  readonly name: string
+  readonly shares: number
+  readonly value: number
+  readonly weight: number
+  readonly change: number
+}
+
+const HOLDINGS: ReadonlyArray<DemoHolding> = [
+  { id: "nvda", symbol: "NVDA", name: "Nvidia", shares: 12.4, value: 2249.47, weight: 18.2, change: 1.86 },
+  { id: "aapl", symbol: "AAPL", name: "Apple", shares: 8.75, value: 1987.1, weight: 16.1, change: -0.42 }
+]
+// The shape of a holding before any have loaded: realistic lengths, never shown as text.
+const SAMPLE_HOLDINGS: ReadonlyArray<DemoHolding> = [
+  { id: "sample-1", symbol: "XXXX", name: "Company", shares: 10.5, value: 2000, weight: 18, change: 1.5 },
+  { id: "sample-2", symbol: "XXXX", name: "Company", shares: 10.5, value: 2000, weight: 18, change: 1.5 }
+]
+
+function SkeletonCard() {
+  const [holdings, setHoldings] = useState<ReadonlyArray<DemoHolding> | null>(null)
+  useEffect(() => {
+    if (holdings !== null) return
+    const timer = setTimeout(() => setHoldings(HOLDINGS), 1800)
+    return () => clearTimeout(timer)
+  }, [holdings])
+  return (
+    <Card
+      entry={FEEL.skeleton}
+      onReplay={() => setHoldings(null)}
+      stage={
+        <div className="w-[min(100%-40px,380px)] overflow-hidden rounded-md bg-white shadow-e2">
+          <Skeleton data={holdings} sample={SAMPLE_HOLDINGS} label="Loading holdings">
+            {(rows: ReadonlyArray<DemoHolding>) =>
+              rows.map((row) => (
+                <HoldingRow
+                  key={row.id}
+                  symbol={row.symbol}
+                  name={row.name}
+                  shares={row.shares}
+                  value={row.value}
+                  weight={row.weight}
+                  cap={30}
+                  change={row.change}
+                />
+              ))}
+          </Skeleton>
+        </div>
+      }
+    />
+  )
+}
+
+const HAPTICS: ReadonlyArray<readonly [Haptic, string]> = [
+  ["tap", "Tap"],
+  ["select", "Select"],
+  ["success", "Success"],
+  ["nudge", "Nudge"],
+  ["error", "Error"]
+]
+
+function HapticsCard() {
+  const [pulse, setPulse] = useState<{ readonly kind: Haptic; readonly at: number } | null>(null)
+  const [on, setOn] = useState(true)
+  const id = useId()
+  useEffect(() => {
+    const show = (event: Event) => setPulse({ kind: (event as CustomEvent<Haptic>).detail, at: performance.now() })
+    window.addEventListener(HAPTIC_EVENT, show)
+    return () => window.removeEventListener(HAPTIC_EVENT, show)
+  }, [])
+  return (
+    <Card
+      entry={FEEL.haptics}
+      stage={
+        <div className="grid justify-items-center gap-4 px-5">
+          <span className="relative grid size-14 place-items-center rounded-full bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]">
+            {pulse && (
+              <i
+                key={pulse.at}
+                aria-hidden
+                className="absolute inset-0 animate-[haptic-pulse_600ms_var(--ease-brand)_forwards] rounded-full shadow-[0_0_0_2px_var(--color-blue)] motion-reduce:hidden"
+              />
+            )}
+            <Icon name="phone" size={22} />
+          </span>
+          <output className="min-h-5 text-label font-[550] text-g-700">
+            <TextMorph>{pulse ? `Played “${pulse.kind}”` : "Nothing played yet"}</TextMorph>
+          </output>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {HAPTICS.map(([kind, label]) => (
+              <Button
+                key={kind}
+                variant="secondary"
+                size="xs"
+                onClick={() => haptic(kind)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 text-label text-g-600">
+            <span className="flex items-center gap-2">
+              <Switch id={`${id}-switch`} size="sm" checked={on} onCheckedChange={setOn} />
+              <label htmlFor={`${id}-switch`}>Switch</label>
+            </span>
+            <span className="flex items-center gap-2">
+              <Checkbox id={`${id}-checkbox`} defaultChecked />
+              <label htmlFor={`${id}-checkbox`}>Checkbox</label>
+            </span>
+          </div>
+          <style>{"@keyframes haptic-pulse { from { opacity: 1; scale: 1 } to { opacity: 0; scale: 1.7 } }"}</style>
+        </div>
+      }
+    />
+  )
+}
+
+const MOMENTS = [
+  { title: "Limits locked", text: "Weekly buyer can trade within its new limits.", icon: "lock" },
+  { title: "Bought $250.00 of Nvidia", text: "1.371 shares at $182.40. It's in your portfolio.", icon: "check" },
+  { title: "Cash arrived", text: "$500.00 USDC on Base. It's ready to invest.", icon: "wallet" }
+] as const
+
+function MomentCard() {
+  const { ref: momentRef, play: playMoment } = useMoment()
+  const [index, setIndex] = useState(0)
+  const shown = MOMENTS[index] ?? MOMENTS[0]
+  return (
+    <Card
+      entry={FEEL.moment}
+      stage={
+        <div className="grid w-[min(100%-40px,360px)] justify-items-center gap-4">
+          <div className="relative grid w-full justify-items-center gap-1.5 rounded-lg bg-white px-5 py-6 text-center shadow-e2">
+            <span className="mb-1 grid size-11 place-items-center rounded-[14px] bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3)]">
+              <Icon name={shown.icon} size={20} />
+            </span>
+            <b className="text-body font-semibold">
+              <TextMorph>{shown.title}</TextMorph>
+            </b>
+            <span className="text-label text-g-600">{shown.text}</span>
+            <MomentScope ref={momentRef} />
+          </div>
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {MOMENTS.map((m, i) => (
+              <Button
+                key={m.title}
+                variant="secondary"
+                size="xs"
+                haptic="success"
+                onClick={() => playMoment(() => setIndex(i))}
+              >
+                {["Lock limits", "Fill trade", "Cash in"][i]}
+              </Button>
+            ))}
+          </div>
         </div>
       }
     />

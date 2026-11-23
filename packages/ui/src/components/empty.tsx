@@ -37,7 +37,7 @@ export const emptyMediaVariants = cva("grid place-items-center", {
   variants: {
     variant: {
       icon:
-        "mb-1 size-[52px] rounded-2xl bg-[linear-gradient(180deg,#fff,var(--color-blue-50))] text-blue shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_var(--color-info-line),0_6px_16px_-6px_rgba(0,0,255,.25)] in-data-[size=sm]:mb-0.5 in-data-[size=sm]:size-[38px] in-data-[size=sm]:rounded-[11px]",
+        "mb-1 size-[52px] rounded-2xl bg-[linear-gradient(180deg,#fff,var(--color-blue-50))] text-blue shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_var(--color-info-line),0_6px_16px_-6px_rgba(42, 91, 255,.25)] in-data-[size=sm]:mb-0.5 in-data-[size=sm]:size-[38px] in-data-[size=sm]:rounded-[11px]",
       default: "text-g-300"
     }
   },

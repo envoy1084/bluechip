@@ -42,7 +42,7 @@ export function Textarea({
       className={cn(
         "block min-h-16 w-full min-w-0 resize-none rounded-md px-3 py-2.5 font-sans text-body-sm leading-normal outline-none field-sizing-content placeholder:text-g-400",
         fieldSurface,
-        "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(0,0,255,.12)] aria-[invalid=true]:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
+        "focus:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42, 91, 255,.12)] aria-[invalid=true]:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)] data-invalid:focus:shadow-[0_0_0_1px_var(--color-loss),0_0_0_4px_rgba(217,58,28,.12)]",
         "disabled:cursor-not-allowed disabled:bg-g-50 disabled:text-g-400 disabled:shadow-[0_0_0_1px_rgba(10,11,13,.08)]",
         className
       )}

@@ -16,12 +16,12 @@ const INK = "#0a0b0d"
 const MASK = ["0110", "1111", "1111", "0111", "0111", "0110", "0010"]
 /** Main and accent color pairs, picked by the id's hash. */
 export const BUTTERFLY_COLORS: ReadonlyArray<readonly [main: string, accent: string]> = [
-  ["#0000ff", "#3c8aff"],
+  ["#2a5bff", "#3c8aff"],
   ["#fea8cd", "#cd99fd"],
   ["#66c800", "#b6f569"],
   ["#ffd12f", "#f5a300"],
   ["#3c8aff", "#fea8cd"],
-  ["#cd99fd", "#0000ff"]
+  ["#cd99fd", "#2a5bff"]
 ]
 
 /** 32-bit FNV-1a over the id's code points (the first UTF-16 unit of each, as the kit does). */

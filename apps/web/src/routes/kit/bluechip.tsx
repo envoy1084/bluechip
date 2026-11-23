@@ -28,6 +28,7 @@ import { type TransactionState, TransactionStatus } from "@bluechip/ui/bluechip/
 import { Button } from "@bluechip/ui/components/button"
 import { Checkbox } from "@bluechip/ui/components/checkbox"
 import { Label } from "@bluechip/ui/components/label"
+import { Skeleton } from "@bluechip/ui/components/skeleton"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@bluechip/ui/components/tabs"
 import { Toaster } from "@bluechip/ui/components/toast"
 import { ToggleGroup, ToggleGroupItem } from "@bluechip/ui/components/toggle-group"
@@ -555,6 +556,23 @@ function KitBluechip() {
                 />
               </div>,
               true
+            ],
+            [
+              "Loading: measured from a sample row",
+              <div key="l" className="w-full overflow-hidden rounded-md">
+                <Skeleton loading label="Loading holdings">
+                  <HoldingRow
+                    symbol="XXXX"
+                    name="Company name"
+                    shares={10.5}
+                    value={2000}
+                    weight={18}
+                    cap={CAP}
+                    change={1.5}
+                  />
+                </Skeleton>
+              </div>,
+              true
             ]
           ]}
         >
@@ -658,7 +676,7 @@ function KitBluechip() {
           purpose="How to add cash. Send USDC on Base to your address; we watch for it and tell you the moment it lands. The warning is loud because other coins or networks can be lost."
           notes={[
             "The QR here is a pixel pattern, not a real code",
-            "Waiting pulses; arrival rolls in",
+            "Waiting pulses; arrival sweeps and rolls in",
             "Warning always visible, never in a tooltip"
           ]}
         >
@@ -764,7 +782,7 @@ function DemoControls(
             key={key}
             type="button"
             onClick={actions[key]}
-            className="flex cursor-pointer items-start gap-2.5 rounded-md px-3 py-[11px] text-left surface-secondary transition-[box-shadow,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(0,0,255,.3),0_4px_10px_-4px_rgba(0,0,255,.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue active:scale-98"
+            className="flex cursor-pointer items-start gap-2.5 rounded-md px-3 py-[11px] text-left surface-secondary transition-[box-shadow,scale] duration-fast ease-brand hover:shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42, 91, 255,.3),0_4px_10px_-4px_rgba(42, 91, 255,.2)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue active:scale-98"
           >
             <Icon name={icon} size={16} className="mt-0.5 text-blue" />
             <span className="grid gap-px">

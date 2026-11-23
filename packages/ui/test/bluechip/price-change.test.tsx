@@ -20,8 +20,8 @@ describe("PriceChange", () => {
   })
 
   it("puts the amount before the percent", async () => {
-    const screen = await render(<PriceChange value={1.83} amount={220.4} />)
-    await expect.element(screen.getByText("+$220.40 (+1.83%)")).toBeVisible()
+    const screen = await render(<PriceChange value={1.83} amount={220.4} data-testid="change" />)
+    await expect.element(screen.getByTestId("change")).toHaveTextContent("+$220.40 (+1.83%)")
   })
 
   it("draws an arrow for up and down, a dash for flat", async () => {

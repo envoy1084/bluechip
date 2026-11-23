@@ -56,10 +56,10 @@ const logoPath = (): ReadonlyArray<Point> => {
   return mapPoints(LOGO, ([x, y]) => [10 + (x - 32) * s, 10 + (y - 32) * s])
 }
 
-const BLUE: Palette = ["#c9d3ff", "#3c8aff", "#0000ff", "#0000b0"]
-const COIN: Palette = ["#ffe27a", "#ffd12f", "#3c8aff", "#0000ff"]
-const MEADOW: Palette = ["#b6f569", "#66c800", "#3c8aff", "#0000ff"]
-const BLOOM: Palette = ["#fea8cd", "#cd99fd", "#3c8aff", "#0000ff"]
+const BLUE: Palette = ["#c9d3ff", "#3c8aff", "#2a5bff", "#1a3bc2"]
+const COIN: Palette = ["#ffe27a", "#ffd12f", "#3c8aff", "#2a5bff"]
+const MEADOW: Palette = ["#b6f569", "#66c800", "#3c8aff", "#2a5bff"]
+const BLOOM: Palette = ["#fea8cd", "#cd99fd", "#3c8aff", "#2a5bff"]
 
 export const OBJECTS = {
   chip: {
@@ -129,7 +129,7 @@ export const OBJECTS = {
   garden: {
     label: "Garden",
     usedFor: "Limits overview: your portfolio grows inside its limits",
-    palette: ["#b6f569", "#66c800", "#fea8cd", "#0000ff"],
+    palette: ["#b6f569", "#66c800", "#fea8cd", "#2a5bff"],
     tones: { P: 0.68, V: 0.68, Y: 0.68, O: 0.95, G: 0.45, L: 0.2, W: 0.95, T: 0.95 },
     draw: (t) => {
       const sway = Math.sin(t * 1.4) * 0.35
@@ -308,7 +308,7 @@ export const OBJECTS = {
   magnifier: {
     label: "Magnifier",
     usedFor: "Stock picker agent, research, no search results",
-    palette: ["#c9d3ff", "#3c8aff", "#0000ff", "#0a0b0d"],
+    palette: ["#c9d3ff", "#3c8aff", "#2a5bff", "#0a0b0d"],
     tones: { S: 0.12, D: 0.85 },
     draw: () => [
       line([[12.4, 12.4], [17, 17]], 2.8, "D"),
@@ -360,7 +360,7 @@ export const OBJECTS = {
   moon: {
     label: "Moon",
     usedFor: "Market closed, agents waiting",
-    palette: ["#cd99fd", "#3c8aff", "#0000ff", "#0000b0"],
+    palette: ["#cd99fd", "#3c8aff", "#2a5bff", "#1a3bc2"],
     tones: { Y: 0.5, O: 0.7, C: 0.3 },
     draw: (t) => {
       const tw = 0.5 + 0.5 * Math.cos(t * 2)
@@ -395,7 +395,7 @@ export const OBJECTS = {
   wallet: {
     label: "Wallet",
     usedFor: "Your account, cash (USDC) balance, deposits",
-    palette: ["#ffe27a", "#3c8aff", "#0000ff", "#0000b0"],
+    palette: ["#ffe27a", "#3c8aff", "#2a5bff", "#1a3bc2"],
     tones: { W: 0.16, Y: 0.3 },
     draw: () => [
       rect(7, 2, 10, 7, "W", { r: 0.8 }),
@@ -409,7 +409,7 @@ export const OBJECTS = {
   certificate: {
     label: "Stock certificate",
     usedFor: "Stock details, what you own",
-    palette: ["#d9cca9", "#b8a581", "#3c8aff", "#0000ff"],
+    palette: ["#d9cca9", "#b8a581", "#3c8aff", "#2a5bff"],
     tones: { W: 0.2, M: 0.45, C: 0.62, Y: 0.45, B: 0.85 },
     draw: () => [
       rect(2, 3, 16, 12, "W", { r: 0.4 }),
@@ -426,7 +426,7 @@ export const OBJECTS = {
   "empty-inbox": {
     label: "Empty inbox",
     usedFor: "No activity yet, nothing waiting for approval",
-    palette: ["#dee1e7", "#8a909c", "#3c8aff", "#0000ff"],
+    palette: ["#dee1e7", "#8a909c", "#3c8aff", "#2a5bff"],
     tones: { S: 0.22, C: 0.6 },
     draw: () => [
       poly([[4.5, 4], [15.5, 4], [18, 11], [18, 17.5], [2, 17.5], [2, 11]], "M"),

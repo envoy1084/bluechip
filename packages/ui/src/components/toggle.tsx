@@ -2,6 +2,7 @@ import { Toggle as BaseToggle } from "@base-ui/react/toggle"
 import { cva, type VariantProps } from "class-variance-authority"
 import type { ComponentProps } from "react"
 import { cn } from "../lib/cn.ts"
+import { haptic } from "../lib/haptics.ts"
 
 export const toggleVariants = cva(
   [
@@ -32,12 +33,16 @@ export const toggleVariants = cva(
 export interface ToggleProps extends ComponentProps<typeof BaseToggle>, VariantProps<typeof toggleVariants> {}
 
 /** A two-state button for a view preference, like hiding balances. Icon-only toggles need an `aria-label`. */
-export function Toggle({ variant, size, className, ...props }: ToggleProps) {
+export function Toggle({ variant, size, className, onPressedChange, ...props }: ToggleProps) {
   return (
     <BaseToggle
       data-slot="toggle"
       data-variant={variant ?? "default"}
       className={cn(toggleVariants({ variant, size }), className)}
+      onPressedChange={(pressed, details) => {
+        haptic("select")
+        onPressedChange?.(pressed, details)
+      }}
       {...props}
     />
   )
