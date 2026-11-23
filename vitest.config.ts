@@ -1,3 +1,4 @@
+import { playwright } from "@vitest/browser-playwright"
 import * as path from "node:path"
 import { defineConfig, mergeConfig, type ViteUserConfig } from "vitest/config"
 
@@ -30,7 +31,13 @@ export default defineConfig({
   test: {
     passWithNoTests: true,
     projects: [
-      project("scripts", "scripts")
+      project("scripts", "scripts"),
+      // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
+      project("ui", "packages/ui", {
+        test: {
+          browser: { enabled: true, headless: true, provider: playwright(), instances: [{ browser: "chromium" }] }
+        }
+      })
     ]
   }
 })

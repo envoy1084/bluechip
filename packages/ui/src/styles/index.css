@@ -1,0 +1,10 @@
+/* @bluechip/ui entry. Apps import this once: `@import "@bluechip/ui/styles.css";` */
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/doto/800.css";
+@import "./theme.css";
+@import "./base.css";
+@import "./surfaces.css";
+
+/* Scan the package's components for class names when an app imports this file. */
+@source "../";

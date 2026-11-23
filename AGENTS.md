@@ -7,7 +7,10 @@ that match the task.
 ## Workspace map
 
 - `packages/*`: publishable packages, each with its own public boundary.
+  - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
+    bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
+  - `apps/web` (`@bluechip/web`): the TanStack Start web app; `/kit` shows every component.
 - `scripts/`: the repository's tooling, one Effect CLI (`node scripts/bin.ts <command>`).
 - `scratchpad/`: ad hoc probes: `scratchpad/<name>.ts`, run with `node`, deleted afterwards (git
   ignores everything there but its skeleton).
@@ -93,7 +96,8 @@ Load the `effect-conventions` skill before writing or reviewing code.
 ## Tests
 
 Tests live in each package's `test/` folder and use `@effect/vitest` (`it.effect`, `assert`), never
-`vitest` directly. Write the tests a behaviour needs: the documented contract, its failure cases and
+`vitest` directly. `packages/ui` tests run in real Chromium (Vitest browser mode, `vitest-browser-react`) and
+import the package by name (`@bluechip/ui/components/button`). Write the tests a behaviour needs: the documented contract, its failure cases and
 regressions; leave what the type checker proves to `typetest/`. The landmines testing rules are
 enforced: no test doubles (use real implementations, test layers, MSW for the network), no fixed
 sleeps (`TestClock`, or await a signal), no polling races, and no retries or raised timeouts.

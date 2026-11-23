@@ -1,0 +1,25 @@
+@layer base {
+  :root { color-scheme: light; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  h1, h2, h3, h4, h5 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  ::selection { background: var(--color-blue-200); }
+  :focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
