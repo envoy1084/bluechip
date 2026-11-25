@@ -96,8 +96,10 @@ export class IntentStore extends Context.Service<IntentStore, {
   ) => Effect.Effect<IntentRow, Conflict>
   /** Cancels an agent's intents that haven't been sent: it was paused or removed, or its policies changed. */
   readonly cancelAgentIntents: (agentId: string) => Effect.Effect<void>
-  /** Expires approvals, signatures and waiting trades left open past their time. */
-  readonly expire: Effect.Effect<void>
+  /**
+   * Expires approvals, signatures and waiting trades left open past their time: everyone's (the cron), or one user's.
+   */
+  readonly expire: (options?: { readonly userId?: UserId | undefined }) => Effect.Effect<void>
 }>()("@bluechip/server/IntentStore") {
   static readonly layer = Layer.effect(
     IntentStore,
@@ -222,13 +224,14 @@ export class IntentStore extends Context.Service<IntentStore, {
         for (const row of open) yield* advance(row, { _tag: "Cancelled" }).pipe(Effect.ignore)
       })
 
-      const expire = Effect.gen(function*() {
+      const expire = Effect.fn("IntentStore.expire")(function*(options: { readonly userId?: UserId | undefined } = {}) {
         const stale = yield* db.select().from(intents).where(and(
           inArray(intents.status, ["needsApproval", "awaitingSignature", "waiting"]),
-          lt(intents.expiresAt, yield* DateTime.now)
+          lt(intents.expiresAt, yield* DateTime.now),
+          options.userId === undefined ? undefined : eq(intents.userId, options.userId as `user_${string}`)
         )).pipe(Effect.orDie)
         for (const row of stale) yield* advance(row, { _tag: "Expired" }).pipe(Effect.ignore)
-      }).pipe(Effect.withSpan("IntentStore.expire"))
+      })
 
       return IntentStore.of({
         find,

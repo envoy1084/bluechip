@@ -54,6 +54,8 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
   // Follows an agent's sent operation to its receipt, records the fill, and ends the intent.
   const finish = Effect.fnUntraced(function*(row: IntentRow, account: Hex, session: SessionRow) {
     const receipt = yield* executor.wait(row.agentId!, session, row.userOpHash as Hex)
+    // Stopped between sending and saving that the bundler took it: a receipt says it did.
+    if (row.status === "sending" && receipt !== undefined) row = yield* intents.advance(row, { _tag: "Accepted" })
     const trade = yield* ledger.row(row.tradeId!)
     const settled = trade === undefined ? undefined : yield* ledger.settle(trade, account, receipt)
     const status = settled?.status ?? (receipt?.success === true ? "filled" : "failed")

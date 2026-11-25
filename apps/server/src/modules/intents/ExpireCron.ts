@@ -7,6 +7,6 @@ import { IntentStore } from "./IntentStore.ts"
 export const ExpireIntentsCron = ClusterCron.make({
   name: "intents.expire",
   cron: Cron.parseUnsafe("*/5 * * * *"),
-  execute: IntentStore.use((store) => store.expire),
+  execute: IntentStore.use((store) => store.expire()),
   skipIfOlderThan: Duration.minutes(5)
 })
