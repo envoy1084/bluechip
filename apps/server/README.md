@@ -1,13 +1,14 @@
 # @bluechip/server
 
 bluechip's API server: Effect v4 on Node, Postgres through Drizzle ORM's Effect driver. It implements
-`BluechipApi` from `@bluechip/domain` (Effect `HttpApi`) under `/api`.
+`BluechipApi` from `@bluechip/domain` (Effect `HttpApi`) under `/api`, builds Namera v2 Kernel accounts for passkeys,
+and runs scheduled jobs on Trigger.dev.
 
 ## Run locally
 
 ```sh
 cp .env.example .env              # at the repository root
-docker compose up -d              # Postgres 18 on localhost:5432
+docker compose --profile chain up -d   # Postgres, a Base fork (8545) and a bundler (4337)
 pnpm --filter @bluechip/server db:migrate
 pnpm --filter @bluechip/server dev
 curl localhost:4000/health
@@ -18,6 +19,23 @@ open http://localhost:4000/api/docs  # API docs; the OpenAPI document is /api/op
 
 The web app (`pnpm --filter @bluechip/web dev`) proxies `/api` and `/auth` to this server (`SERVER_ORIGIN`,
 default `http://localhost:4000`); `localhost:3000/dev/connection` shows the connection live.
+
+## Local chain
+
+The fork keeps Base's chain id (8453), so contracts, Namera and signatures behave as on mainnet, with fake money.
+
+- `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1` sets an address's balances (refuses unless
+  `NETWORK=local`).
+- Set `BASE_FORK_RPC_URL` to a Base RPC you control: the public endpoint rate-limits the fork. Pin `BASE_FORK_BLOCK`
+  so Anvil's cache (the `foundry-cache` volume) serves restarts without RPC; restart at a newer weekday block to
+  refresh prices, which freeze at the fork block.
+- Gas: locally the account pays in fork ETH (`GAS_SPONSORSHIP=none`); in production Alchemy sponsors it.
+
+## Jobs
+
+Tasks live in `trigger/` and run their Effect programs with `JobsRuntime` (`src/Jobs.ts`). `npx trigger.dev login`
+once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` runs them on this machine;
+`jobs:deploy` deploys them. Each run writes a `job_runs` row.
 
 ## API
 
@@ -37,10 +55,18 @@ default `http://localhost:4000`); `localhost:3000/dev/connection` shows the conn
 
 ## Configuration
 
-| Variable        | Default                 | Meaning                                                         |
-| --------------- | ----------------------- | --------------------------------------------------------------- |
-| `DATABASE_URL`  | required                | Postgres connection string (redacted in logs)                   |
-| `PORT`          | `4000`                  | HTTP port                                                       |
-| `PUBLIC_ORIGIN` | `http://localhost:3000` | The web app's origin                                            |
-| `NODE_ENV`      | `development`           | `development`, `test` or `production` (JSON logs in production) |
-| `LOG_LEVEL`     | `Info`                  | Minimum log level                                               |
+| Variable                | Default                 | Meaning                                                          |
+| ----------------------- | ----------------------- | ---------------------------------------------------------------- |
+| `DATABASE_URL`          | required                | Postgres connection string (redacted in logs)                    |
+| `PORT`                  | `4000`                  | HTTP port                                                        |
+| `PUBLIC_ORIGIN`         | `http://localhost:3000` | The web app's origin                                             |
+| `NODE_ENV`              | `development`           | `development`, `test` or `production` (JSON logs in production)  |
+| `LOG_LEVEL`             | `Info`                  | Minimum log level                                                |
+| `NETWORK`               | `local`                 | `local` (the Anvil fork) or `base` (Base mainnet)                |
+| `BASE_RPC_URL`          | `http://localhost:8545` | The node the server reads and sends through                      |
+| `BUNDLER`               | `local`                 | `local` (Alto at `BUNDLER_URL`) or `alchemy`                     |
+| `BUNDLER_URL`           | `http://localhost:4337` | The local bundler                                                |
+| `GAS_SPONSORSHIP`       | `none`                  | `none`, `alchemy-bso` (Alchemy's bundler) or `alchemy-paymaster` |
+| `ALCHEMY_API_KEY`       | —                       | Alchemy key (redacted), when `BUNDLER=alchemy`                   |
+| `ALCHEMY_GAS_POLICY_ID` | —                       | Gas Manager policy that pays sponsored gas                       |
+| `TRIGGER_PROJECT_REF`   | —                       | Trigger.dev project (`proj_…`)                                   |

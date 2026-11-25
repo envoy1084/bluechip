@@ -9,6 +9,8 @@ that match the task.
 - `packages/*`: publishable packages, each with its own public boundary.
   - `packages/domain` (`@bluechip/domain`, private): shared ids, errors, live events and the HTTP API contract
     (`BluechipApi`, Effect `HttpApi`); the server implements it, the web app calls it. Depends only on `effect`.
+  - `packages/chain` (`@bluechip/chain`, private): Base from Effect: `ChainClient` (viem), contract addresses (USDC,
+    EntryPoint, every Coinbase stock with a Chainlink feed), ABIs, and `DevChain` cheatcodes for the local fork.
   - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
     bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
@@ -35,8 +37,10 @@ Dependencies point inward: apps depend on packages, packages never depend on app
 | `pnpm build`     | `tsc -b`, then each package's build                                 |
 | `pnpm circular`  | Fail on import cycles between modules                               |
 
-Local services: `cp .env.example .env`, `docker compose up -d` (Postgres), then
-`pnpm --filter @bluechip/server db:migrate` and `pnpm --filter @bluechip/server dev`.
+Local services: `cp .env.example .env`, `docker compose --profile chain up -d` (Postgres, an Anvil fork of Base
+mainnet on 8545 and the Alto bundler on 4337; plain `docker compose up -d` starts Postgres only), then
+`pnpm --filter @bluechip/server db:migrate` and `pnpm --filter @bluechip/server dev`. Fork money:
+`pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Fork tests skip when the fork is down.
 
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 
