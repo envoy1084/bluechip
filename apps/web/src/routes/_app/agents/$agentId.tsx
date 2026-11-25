@@ -16,11 +16,13 @@ import { agentState, hasSession } from "../../../agents/agentState.ts"
 import { agentAtom, agentUsageAtom } from "../../../atoms/agents.ts"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../shell/AppPage.tsx"
+import { AgentActivity } from "./-components/detail/AgentActivity.tsx"
 import { AgentAlerts } from "./-components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "./-components/detail/AgentHeader.tsx"
 import { PoliciesSection } from "./-components/detail/PoliciesSection.tsx"
 import { RemoveConfirm } from "./-components/detail/RemoveConfirm.tsx"
 import { SessionHistory } from "./-components/detail/SessionHistory.tsx"
+import { TradeWithAgent } from "./-components/detail/TradeWithAgent.tsx"
 import { UsageCard } from "./-components/detail/UsageCard.tsx"
 import { useRemoveAgent } from "./-components/detail/useRemoveAgent.ts"
 
@@ -129,8 +131,12 @@ function AgentContent({ agent }: Readonly<{ agent: Agent }>) {
             "grid" :
             "grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"}
         >
-          <PoliciesSection agent={agent} nameOf={nameOf} />
           <div className="grid content-start gap-4">
+            <PoliciesSection agent={agent} nameOf={nameOf} />
+            {agent.status === "draft" ? null : <AgentActivity agent={agent} nameOf={nameOf} />}
+          </div>
+          <div className="grid content-start gap-4">
+            {state === "active" || state === "stopped" ? <TradeWithAgent agent={agent} nameOf={nameOf} /> : null}
             {usage === undefined ? null : <UsageCard agent={agent} usage={usage} />}
             {agent.status === "draft" ? null : <SessionHistory agent={agent} nameOf={nameOf} />}
           </div>
