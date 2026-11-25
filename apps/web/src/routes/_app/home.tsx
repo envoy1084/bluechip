@@ -7,6 +7,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { meAtom } from "../../atoms/account.ts"
 import { portfolioAtom } from "../../atoms/portfolio.ts"
 import { cashDialogAtom } from "../../funding/cashDialog.ts"
+import { ApprovalsBell } from "../../intents/ApprovalsSheet.tsx"
 import { MarketPill } from "../../market/MarketPill.tsx"
 import { AppPage } from "../../shell/AppPage.tsx"
 import { BalanceCard } from "./-components/BalanceCard.tsx"
@@ -32,7 +33,15 @@ function Home() {
   const empty = AsyncResult.isSuccess(portfolio) && portfolio.value.value === BigInt(0)
 
   return (
-    <AppPage title="Home" actions={<MarketPill className="hidden sm:inline-flex" />}>
+    <AppPage
+      title="Home"
+      actions={
+        <>
+          <MarketPill className="hidden sm:inline-flex" />
+          <ApprovalsBell />
+        </>
+      }
+    >
       <div className="grid gap-0.5">
         <span className="text-label-sm font-medium text-g-500">{today()}</span>
         <h2 className="text-[26px] font-semibold tracking-[-0.035em]">

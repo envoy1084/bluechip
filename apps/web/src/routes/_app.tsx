@@ -8,6 +8,7 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider
@@ -19,14 +20,14 @@ import { SidebarAgents, SidebarPauseAll } from "../agents/SidebarAgents.tsx"
 import { liveEventAtom } from "../api/events.ts"
 import { SignedIn } from "../auth/SignedIn.tsx"
 import { CashDialogs } from "../funding/CashDialogs.tsx"
+import { useApprovalCount } from "../intents/ApprovalsList.tsx"
 
 // Signed-in pages render in the browser: they need the session cookie and the live stream.
 export const Route = createFileRoute("/_app")({ ssr: false, component: AppLayout })
 
-// Approvals joins as its phase lands.
 const NAV: ReadonlyArray<
   {
-    readonly to: "/home" | "/portfolio" | "/stocks" | "/agents" | "/activity" | "/settings"
+    readonly to: "/home" | "/portfolio" | "/stocks" | "/agents" | "/activity" | "/approvals" | "/settings"
     readonly label: string
     readonly icon: IconName
   }
@@ -36,11 +37,13 @@ const NAV: ReadonlyArray<
   { to: "/stocks", label: "Stocks", icon: "stocks" },
   { to: "/agents", label: "Agents", icon: "agents" },
   { to: "/activity", label: "Activity", icon: "activity" },
+  { to: "/approvals", label: "Approvals", icon: "approvals" },
   { to: "/settings", label: "Settings", icon: "settings" }
 ]
 
 function AppLayout() {
   const matchRoute = useMatchRoute()
+  const approvals = useApprovalCount()
   return (
     <SignedIn>
       {(me) =>
@@ -66,6 +69,9 @@ function AppLayout() {
                             <Icon name={item.icon} />
                             <span>{item.label}</span>
                           </SidebarMenuButton>
+                          {item.to === "/approvals" && approvals > 0 ?
+                            <SidebarMenuBadge aria-label={`${approvals} waiting`}>{approvals}</SidebarMenuBadge> :
+                            null}
                         </SidebarMenuItem>
                       ))}
                     </SidebarMenu>

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as AppApprovalsRouteImport } from './routes/_app/approvals'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
@@ -43,6 +44,11 @@ const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppApprovalsRoute = AppApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/home',
@@ -133,6 +139,7 @@ const AppAgentsAgentIdEditRoute = AppAgentsAgentIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/signin': typeof SigninRoute
+  '/approvals': typeof AppApprovalsRoute
   '/home': typeof AppHomeRoute
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/signin': typeof SigninRoute
+  '/approvals': typeof AppApprovalsRoute
   '/home': typeof AppHomeRoute
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/signin': typeof SigninRoute
+  '/_app/approvals': typeof AppApprovalsRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/signin'
+    | '/approvals'
     | '/home'
     | '/settings'
     | '/dev/chain'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/signin'
+    | '/approvals'
     | '/home'
     | '/settings'
     | '/dev/chain'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/signin'
+    | '/_app/approvals'
     | '/_app/home'
     | '/_app/settings'
     | '/dev/chain'
@@ -297,6 +309,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/signin'
       preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/approvals': {
+      id: '/_app/approvals'
+      path: '/approvals'
+      fullPath: '/approvals'
+      preLoaderRoute: typeof AppApprovalsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/home': {
       id: '/_app/home'
@@ -421,6 +440,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppApprovalsRoute: typeof AppApprovalsRoute
   AppHomeRoute: typeof AppHomeRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
@@ -434,6 +454,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppApprovalsRoute: AppApprovalsRoute,
   AppHomeRoute: AppHomeRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,

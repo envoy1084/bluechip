@@ -18,7 +18,7 @@ export type TradeFlow =
   | { readonly status: "failed"; readonly message: string }
 
 /** Why a trade didn't start, in words: nothing moved in any of these. */
-const problemOf = (error: unknown, side: "buy" | "sell"): string => {
+export const tradeProblem = (error: unknown, side: "buy" | "sell"): string => {
   const nothing = side === "buy" ? "Nothing was bought." : "Nothing was sold."
   if (error instanceof InsufficientCash) return `You have ${formatMoney(usdcDollars(error.available))} in cash.`
   if (error instanceof InsufficientShares) return `You have ${shareCount(error.available)} shares to sell.`
@@ -51,7 +51,7 @@ export function useTrade(symbol: StockSymbol) {
       const trade = await confirm({ id: request.id, options: request.options })
       setFlow({ status: "sent", trade })
     } catch (error) {
-      setFlow({ status: "failed", message: problemOf(error, side) })
+      setFlow({ status: "failed", message: tradeProblem(error, side) })
     }
   }
 
