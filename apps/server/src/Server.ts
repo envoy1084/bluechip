@@ -15,7 +15,11 @@ export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddlewar
 
 /** The server: routes, Node HTTP on `PORT`, the database, config and logging. */
 export const ServerLive = HttpRouter.serve(Routes).pipe(
-  Layer.provide(NodeHttpServer.layerConfig(createServer, { port: Config.Port("PORT").pipe(Config.withDefault(4000)) })),
+  Layer.provide(NodeHttpServer.layerConfig(createServer, {
+    port: Config.Port("PORT").pipe(Config.withDefault(4000)),
+    // Live streams never finish on their own; cut them quickly on shutdown so clients reconnect to the next process.
+    gracefulShutdownTimeout: Config.succeed("2 seconds")
+  })),
   Layer.provide(Database.layer),
   Layer.provide(AppConfig.layer),
   Layer.provide(LoggingLive)

@@ -4,7 +4,18 @@
  *
  * @since 0.0.0
  */
+import * as Duration from "effect/Duration"
 import * as Schema from "effect/Schema"
+
+/**
+ * How often the server sends a `Heartbeat`. A client that hears nothing for a few intervals treats the connection as
+ * dropped: proxies can keep a dead stream open without ever closing it.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const heartbeatInterval = Duration.seconds(5)
 
 /**
  * Every live event. Features add their cases here (`PriceTick`, `PortfolioChanged`, …).
