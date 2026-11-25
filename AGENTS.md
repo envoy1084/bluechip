@@ -11,6 +11,9 @@ that match the task.
     (`BluechipApi`, Effect `HttpApi`); the server implements it, the web app calls it. Depends only on `effect`.
   - `packages/chain` (`@bluechip/chain`, private): Base from Effect: `ChainClient` (viem), contract addresses (USDC,
     EntryPoint, every Coinbase stock with a Chainlink feed), ABIs, and `DevChain` cheatcodes for the local fork.
+  - `packages/devnet` (`@bluechip/devnet`, private): a local Base for tests, Anvil and Alto per Vitest worker,
+    started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), with
+    every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`).
   - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
     bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
@@ -34,6 +37,7 @@ Dependencies point inward: apps depend on packages, packages never depend on app
 | `pnpm lint`      | oxlint with Effect's rules (`lint:fix` applies fixes)               |
 | `pnpm format`    | Format with dprint (`format:check` only checks)                     |
 | `pnpm test`      | Run every Vitest project once (`test:watch` for watch mode)         |
+| `pnpm test:fork` | Check the real-Base facts the devnet copies, on a running fork      |
 | `pnpm build`     | `tsc -b`, then each package's build                                 |
 | `pnpm circular`  | Fail on import cycles between modules                               |
 
@@ -42,8 +46,10 @@ Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's
 (4337), migrations, then the server (8080), the web app (3000), the component kit (4000) and the Trigger.dev job
 runner, in one terminal. Ctrl+C stops everything and the fork (it reads through your RPC); `pnpm dev:stop` stops
 anything left running (`--all` stops Postgres too). `pnpm dev --no-chain` (or `--no-uikit`, `--no-jobs`) skips
-parts. Fork money: `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Fork tests skip when
-the fork is down; server tests use their own `bluechip_test` database.
+parts. Fork money: `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Tests need only Postgres
+(server tests use their own `bluechip_test` database); chain tests run on the devnet. `pnpm devnet:capture`
+rebuilds the devnet's state from the fork block in the root `.env.local` (needs `BASE_FORK_RPC_URL`); run it when
+bluechip starts using a new contract.
 
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 
