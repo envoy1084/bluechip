@@ -22,9 +22,13 @@ import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
 import { Route as WelcomeCashRouteImport } from './routes/welcome/cash'
 import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
+import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
+import { Route as AppAgentsAgentIdRouteImport } from './routes/_app/agents/$agentId'
+import { Route as AppAgentsNewRouteImport } from './routes/_app/agents/new'
 import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
+import { Route as AppAgentsAgentIdEditRouteImport } from './routes/_app/agents/$agentId_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -90,6 +94,21 @@ const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
   path: '/activity/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgentsIndexRoute = AppAgentsIndexRouteImport.update({
+  id: '/agents/',
+  path: '/agents/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsAgentIdRoute = AppAgentsAgentIdRouteImport.update({
+  id: '/agents/$agentId',
+  path: '/agents/$agentId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgentsNewRoute = AppAgentsNewRouteImport.update({
+  id: '/agents/new',
+  path: '/agents/new',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPortfolioIndexRoute = AppPortfolioIndexRouteImport.update({
   id: '/portfolio/',
   path: '/portfolio/',
@@ -105,6 +124,11 @@ const AppStocksSymbolRoute = AppStocksSymbolRouteImport.update({
   path: '/stocks/$symbol',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgentsAgentIdEditRoute = AppAgentsAgentIdEditRouteImport.update({
+  id: '/agents/$agentId_/edit',
+  path: '/agents/$agentId/edit',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -118,10 +142,14 @@ export interface FileRoutesByFullPath {
   '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/agents/new': typeof AppAgentsNewRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity/': typeof AppActivityIndexRoute
+  '/agents/': typeof AppAgentsIndexRoute
   '/portfolio/': typeof AppPortfolioIndexRoute
   '/stocks/': typeof AppStocksIndexRoute
+  '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -135,10 +163,14 @@ export interface FileRoutesByTo {
   '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome': typeof WelcomeIndexRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/agents/new': typeof AppAgentsNewRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity': typeof AppActivityIndexRoute
+  '/agents': typeof AppAgentsIndexRoute
   '/portfolio': typeof AppPortfolioIndexRoute
   '/stocks': typeof AppStocksIndexRoute
+  '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -154,10 +186,14 @@ export interface FileRoutesById {
   '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
+  '/_app/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/_app/agents/new': typeof AppAgentsNewRoute
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
   '/_app/activity/': typeof AppActivityIndexRoute
+  '/_app/agents/': typeof AppAgentsIndexRoute
   '/_app/portfolio/': typeof AppPortfolioIndexRoute
   '/_app/stocks/': typeof AppStocksIndexRoute
+  '/_app/agents/$agentId_/edit': typeof AppAgentsAgentIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -173,10 +209,14 @@ export interface FileRouteTypes {
     | '/welcome/cash'
     | '/welcome/eligibility'
     | '/welcome/'
+    | '/agents/$agentId'
+    | '/agents/new'
     | '/stocks/$symbol'
     | '/activity/'
+    | '/agents/'
     | '/portfolio/'
     | '/stocks/'
+    | '/agents/$agentId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -190,10 +230,14 @@ export interface FileRouteTypes {
     | '/welcome/cash'
     | '/welcome/eligibility'
     | '/welcome'
+    | '/agents/$agentId'
+    | '/agents/new'
     | '/stocks/$symbol'
     | '/activity'
+    | '/agents'
     | '/portfolio'
     | '/stocks'
+    | '/agents/$agentId/edit'
   id:
     | '__root__'
     | '/'
@@ -208,10 +252,14 @@ export interface FileRouteTypes {
     | '/welcome/cash'
     | '/welcome/eligibility'
     | '/welcome/'
+    | '/_app/agents/$agentId'
+    | '/_app/agents/new'
     | '/_app/stocks/$symbol'
     | '/_app/activity/'
+    | '/_app/agents/'
     | '/_app/portfolio/'
     | '/_app/stocks/'
+    | '/_app/agents/$agentId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -320,6 +368,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActivityIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agents/': {
+      id: '/_app/agents/'
+      path: '/agents'
+      fullPath: '/agents/'
+      preLoaderRoute: typeof AppAgentsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents/$agentId': {
+      id: '/_app/agents/$agentId'
+      path: '/agents/$agentId'
+      fullPath: '/agents/$agentId'
+      preLoaderRoute: typeof AppAgentsAgentIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents/new': {
+      id: '/_app/agents/new'
+      path: '/agents/new'
+      fullPath: '/agents/new'
+      preLoaderRoute: typeof AppAgentsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/portfolio/': {
       id: '/_app/portfolio/'
       path: '/portfolio'
@@ -341,25 +410,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStocksSymbolRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agents/$agentId_/edit': {
+      id: '/_app/agents/$agentId_/edit'
+      path: '/agents/$agentId/edit'
+      fullPath: '/agents/$agentId/edit'
+      preLoaderRoute: typeof AppAgentsAgentIdEditRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppHomeRoute: typeof AppHomeRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
+  AppAgentsNewRoute: typeof AppAgentsNewRoute
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
+  AppAgentsIndexRoute: typeof AppAgentsIndexRoute
   AppPortfolioIndexRoute: typeof AppPortfolioIndexRoute
   AppStocksIndexRoute: typeof AppStocksIndexRoute
+  AppAgentsAgentIdEditRoute: typeof AppAgentsAgentIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
+  AppAgentsNewRoute: AppAgentsNewRoute,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
+  AppAgentsIndexRoute: AppAgentsIndexRoute,
   AppPortfolioIndexRoute: AppPortfolioIndexRoute,
   AppStocksIndexRoute: AppStocksIndexRoute,
+  AppAgentsAgentIdEditRoute: AppAgentsAgentIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
