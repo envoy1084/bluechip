@@ -22,6 +22,7 @@ import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
 import { Route as WelcomeCashRouteImport } from './routes/welcome/cash'
 import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
+import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
@@ -90,6 +91,11 @@ const WelcomeEligibilityRoute = WelcomeEligibilityRouteImport.update({
   path: '/welcome/eligibility',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppActivityIndexRoute = AppActivityIndexRouteImport.update({
+  id: '/activity/',
+  path: '/activity/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPortfolioIndexRoute = AppPortfolioIndexRouteImport.update({
   id: '/portfolio/',
   path: '/portfolio/',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
+  '/activity/': typeof AppActivityIndexRoute
   '/portfolio/': typeof AppPortfolioIndexRoute
   '/stocks/': typeof AppStocksIndexRoute
 }
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome': typeof WelcomeIndexRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
+  '/activity': typeof AppActivityIndexRoute
   '/portfolio': typeof AppPortfolioIndexRoute
   '/stocks': typeof AppStocksIndexRoute
 }
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
+  '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/portfolio/': typeof AppPortfolioIndexRoute
   '/_app/stocks/': typeof AppStocksIndexRoute
 }
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/welcome/eligibility'
     | '/welcome/'
     | '/stocks/$symbol'
+    | '/activity/'
     | '/portfolio/'
     | '/stocks/'
   fileRoutesByTo: FileRoutesByTo
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/welcome/eligibility'
     | '/welcome'
     | '/stocks/$symbol'
+    | '/activity'
     | '/portfolio'
     | '/stocks'
   id:
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/welcome/eligibility'
     | '/welcome/'
     | '/_app/stocks/$symbol'
+    | '/_app/activity/'
     | '/_app/portfolio/'
     | '/_app/stocks/'
   fileRoutesById: FileRoutesById
@@ -320,6 +332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeEligibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/activity/': {
+      id: '/_app/activity/'
+      path: '/activity'
+      fullPath: '/activity/'
+      preLoaderRoute: typeof AppActivityIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/portfolio/': {
       id: '/_app/portfolio/'
       path: '/portfolio'
@@ -349,6 +368,7 @@ interface AppRouteChildren {
   AppHomeRoute: typeof AppHomeRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
+  AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppPortfolioIndexRoute: typeof AppPortfolioIndexRoute
   AppStocksIndexRoute: typeof AppStocksIndexRoute
 }
@@ -358,6 +378,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
+  AppActivityIndexRoute: AppActivityIndexRoute,
   AppPortfolioIndexRoute: AppPortfolioIndexRoute,
   AppStocksIndexRoute: AppStocksIndexRoute,
 }

@@ -9,6 +9,7 @@ import { portfolioAtom } from "../../atoms/portfolio.ts"
 import { MarketPill } from "../../market/MarketPill.tsx"
 import { AppPage } from "../../shell/AppPage.tsx"
 import { BalanceCard } from "./-components/BalanceCard.tsx"
+import { LatestActivity } from "./-components/LatestActivity.tsx"
 
 export const Route = createFileRoute("/_app/home")({ component: Home })
 
@@ -38,6 +39,8 @@ function Home() {
       </div>
 
       {AsyncResult.isSuccess(portfolio) && !empty && <BalanceCard portfolio={portfolio.value} />}
+
+      <LatestActivity />
 
       {empty && (
         <DepositCard

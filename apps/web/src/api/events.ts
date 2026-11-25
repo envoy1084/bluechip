@@ -1,6 +1,7 @@
 import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import { heartbeatInterval, type LiveEvent } from "@bluechip/domain/Events"
 import type { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
+import type { Trade } from "@bluechip/domain/trading/Trade"
 import * as Data from "effect/Data"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
@@ -22,6 +23,9 @@ export const connectionAtom = Atom.make<Connection>("connecting")
 
 /** Market prices from `PriceTick` events, by stock: newer than any fetched list while the stream is live. */
 export const livePricesAtom = Atom.make<ReadonlyMap<StockSymbol, MarketPrice>>(new Map())
+
+/** Trades as `TradeUpdated` events report them, by id: newer than anything fetched while the stream is live. */
+export const liveTradesAtom = Atom.make<ReadonlyMap<string, Trade>>(new Map())
 
 /** The stream ended or went silent (a deploy, a restart, a dead proxy); treated like a dropped connection. */
 class StreamClosed extends Data.TaggedError("StreamClosed") {}
@@ -46,6 +50,10 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
           ? Effect.andThen(setConnection("live"), Reactivity.invalidate([liveReactivityKey]))
           : setConnection("live"),
         Effect.suspend(() => {
+          if (event._tag === "TradeUpdated") {
+            get.set(liveTradesAtom, new Map(get(liveTradesAtom)).set(event.trade.id, event.trade))
+            return Reactivity.invalidate([portfolioReactivityKey])
+          }
           if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
             return Reactivity.invalidate([portfolioReactivityKey])
           }

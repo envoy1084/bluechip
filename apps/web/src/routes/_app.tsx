@@ -21,13 +21,18 @@ import { SignedIn } from "../auth/SignedIn.tsx"
 // Signed-in pages render in the browser: they need the session cookie and the live stream.
 export const Route = createFileRoute("/_app")({ ssr: false, component: AppLayout })
 
-// Agents, Activity and Approvals join as their phases land.
+// Agents and Approvals join as their phases land.
 const NAV: ReadonlyArray<
-  { readonly to: "/home" | "/portfolio" | "/stocks" | "/settings"; readonly label: string; readonly icon: IconName }
+  {
+    readonly to: "/home" | "/portfolio" | "/stocks" | "/activity" | "/settings"
+    readonly label: string
+    readonly icon: IconName
+  }
 > = [
   { to: "/home", label: "Home", icon: "home" },
   { to: "/portfolio", label: "Portfolio", icon: "portfolio" },
   { to: "/stocks", label: "Stocks", icon: "stocks" },
+  { to: "/activity", label: "Activity", icon: "activity" },
   { to: "/settings", label: "Settings", icon: "settings" }
 ]
 
