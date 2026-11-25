@@ -13,16 +13,6 @@ import { Server } from "prool/vitest"
 import { BASE_FEE_WEI, BUNDLER_KEYS } from "./Controls.ts"
 import { contextKey, type DevnetContext } from "./Devnet.ts"
 
-const entryPoint07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
-
-// Anvil loads a state file, not the gzipped dump: unpack it once per run, where every worker's Anvil can read it.
-const stateFile = (): string => {
-  const packed = path.join(import.meta.dirname, "..", "state", "devnet.state.gz")
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "bluechip-devnet-")), "state.json")
-  fs.writeFileSync(file, gunzipSync(fs.readFileSync(packed)))
-  return file
-}
-
 /**
  * A Vitest global setup function: it starts the servers and returns the function that stops them.
  *
@@ -43,7 +33,10 @@ export type GlobalSetup = (project: {
  * @since 0.0.0
  */
 export const globalSetup = (): GlobalSetup => {
-  const state = stateFile()
+  // Anvil loads a state file, not the gzipped dump: unpack it once per run, where every worker's Anvil can read it.
+  const packed = path.join(import.meta.dirname, "..", "state", "devnet.state.gz")
+  const state = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "bluechip-devnet-")), "state.json")
+  fs.writeFileSync(state, gunzipSync(fs.readFileSync(packed)))
   let anvilUrl = ""
 
   return Server.setup({
@@ -58,7 +51,8 @@ export const globalSetup = (): GlobalSetup => {
       }),
       alto: (poolId: number) =>
         Instance.alto({
-          entrypoints: [entryPoint07],
+          // EntryPoint v0.7.
+          entrypoints: ["0x0000000071727De22E5E9d8BAf0edAc6f37da032"],
           rpcUrl: `${anvilUrl}/${poolId}`,
           executorPrivateKeys: [BUNDLER_KEYS.executor],
           utilityPrivateKey: BUNDLER_KEYS.utility,

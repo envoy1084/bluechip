@@ -79,10 +79,6 @@ const abi = parseAbi([
 const ANSWER_SLOT = pad("0x00")
 const UPDATED_AT_SLOT = pad("0x01")
 
-// FiatTokenV2_2 keeps balances in `balanceAndBlacklistStates`, slot 9.
-const usdcBalanceSlot = (account: Address) =>
-  keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [account, BigInt(9)]))
-
 // What the admin keeps on hand to trade pools: far more than any pool holds.
 const TRADING_FLOAT = BigInt(10) ** BigInt(15)
 
@@ -184,7 +180,9 @@ export const movePool = async (node: Rpc, stock: Stock, price: bigint) => {
   const tokenOut = buying ? stock.token : usdc
 
   if (buying) {
-    await node("anvil_setStorageAt", [usdc, usdcBalanceSlot(DEVNET_ADMIN), pad(toHex(TRADING_FLOAT))])
+    // FiatTokenV2_2 keeps balances in `balanceAndBlacklistStates`, slot 9.
+    const slot = keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [DEVNET_ADMIN, BigInt(9)]))
+    await node("anvil_setStorageAt", [usdc, slot, pad(toHex(TRADING_FLOAT))])
   } else {
     const [held] = decodeAbiParameters(
       [{ type: "uint256" }],
