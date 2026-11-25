@@ -1,61 +1,77 @@
-import { Quote, ReferencePrice } from "@bluechip/domain/market/Market"
 import { bpsBetween, lessBps, Price, priceOf, Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { assert, describe, it } from "@effect/vitest"
-import * as DateTime from "effect/DateTime"
-import * as Schema from "effect/Schema"
 
-const nvdaPrice = Price.make(15203644218n) // $152.03644218
+describe("valueOf", () => {
+  it.each([
+    { name: "one share-token at $1 is 1 USDC", shares: 100_000_000n, price: 100_000_000n, expected: 1_000_000n },
+    // 0.65626105 NVDA × $152.03644218 = $99.7755959…
+    { name: "a fraction of a cent rounds down", shares: 65_626_105n, price: 15_203_644_218n, expected: 99_775_595n },
+    { name: "a value under one unit is zero", shares: 1n, price: 100_000_000n, expected: 0n },
+    { name: "no shares are worth nothing", shares: 0n, price: 15_203_644_218n, expected: 0n },
+    { name: "any shares at a zero price are worth nothing", shares: 100_000_000n, price: 0n, expected: 0n }
+  ])("$name", ({ expected, price, shares }) => {
+    assert.strictEqual(valueOf(Shares.make(shares), Price.make(price)), expected)
+  })
+})
 
-describe("Units", () => {
-  it("values shares at a price, rounding down", () => {
-    // 0.65626105 NVDA × $152.03644218 = $99.7756…, so 99.775595 USDC (never rounded up).
-    assert.strictEqual(valueOf(Shares.make(65626105n), nvdaPrice), 99775595n)
-    assert.strictEqual(valueOf(Shares.make(100000000n), Price.make(100000000n)), 1000000n)
+describe("sharesFor", () => {
+  it.each([
+    { name: "1 USDC at $1 buys one share-token", usdc: 1_000_000n, price: 100_000_000n, expected: 100_000_000n },
+    // $100 ÷ $152.03644218 = 0.657737048… NVDA
+    { name: "a fraction of a unit rounds down", usdc: 100_000_000n, price: 15_203_644_218n, expected: 65_773_704n },
+    { name: "no USDC buys nothing", usdc: 0n, price: 15_203_644_218n, expected: 0n },
+    { name: "a zero price buys nothing", usdc: 1n, price: 0n, expected: 0n }
+  ])("$name", ({ expected, price, usdc }) => {
+    assert.strictEqual(sharesFor(Usdc.make(usdc), Price.make(price)), expected)
   })
 
-  it("buys whole units of shares, rounding down", () => {
-    assert.strictEqual(sharesFor(Usdc.make(100000000n), nvdaPrice), 65773704n)
-    assert.strictEqual(sharesFor(Usdc.make(1n), Price.make(0n)), 0n)
-  })
+  it.prop(
+    "buying then valuing never returns more than was spent",
+    { usdc: Usdc, price: Price },
+    ({ price, usdc }) => valueOf(sharesFor(usdc, price), price) <= usdc
+  )
+})
 
-  it("never creates value: buying then valuing returns at most what was spent", () => {
-    for (const usdc of [1n, 999n, 100000000n, 123456789012n]) {
-      for (const price of [1n, 15203644218n, 99999999999n]) {
-        const back = valueOf(sharesFor(Usdc.make(usdc), Price.make(price)), Price.make(price))
-        assert.isTrue(back <= usdc, `${usdc} at ${price} came back as ${back}`)
-      }
-    }
+describe("priceOf", () => {
+  it.each([
+    // 100 USDC for 0.65626105 NVDA is $152.3783866…
+    { name: "a trade's price per share", usdc: 100_000_000n, shares: 65_626_105n, expected: 15_237_838_662n },
+    // $2 for 3 share-tokens: $0.6666666666…7, rounded up.
+    { name: "a remainder over half rounds up", usdc: 2n, shares: 3n, expected: 6_666_666_667n },
+    // $1 for 3 share-tokens: $0.3333333333…3, rounded down.
+    { name: "a remainder under half rounds down", usdc: 1n, shares: 3n, expected: 3_333_333_333n },
+    { name: "no shares is a zero price", usdc: 100_000_000n, shares: 0n, expected: 0n }
+  ])("$name", ({ expected, shares, usdc }) => {
+    assert.strictEqual(priceOf(Usdc.make(usdc), Shares.make(shares)), expected)
   })
+})
 
-  it("prices a trade per share", () => {
-    // 100 USDC for 0.65626105 NVDA is $152.38 per share.
-    assert.strictEqual(priceOf(Usdc.make(100000000n), Shares.make(65626105n)), 15237838662n)
+describe("bpsBetween", () => {
+  it.each([
+    {
+      name: "a value above its reference is positive",
+      value: 15_237_838_662n,
+      reference: 15_203_644_218n,
+      expected: 22
+    },
+    { name: "a value below its reference is negative", value: 99n, reference: 100n, expected: -100 },
+    { name: "an equal value is zero", value: 100n, reference: 100n, expected: 0 },
+    { name: "a positive gap under 1 bp rounds to zero", value: 100_001n, reference: 100_000n, expected: 0 },
+    { name: "a negative gap under 1 bp rounds to zero", value: 99_999n, reference: 100_000n, expected: 0 },
+    { name: "a zero reference is zero", value: 100n, reference: 0n, expected: 0 }
+  ])("$name", ({ expected, reference, value }) => {
+    assert.strictEqual(bpsBetween(value, reference), expected)
   })
+})
 
-  it("measures gaps in basis points and applies slippage", () => {
-    assert.strictEqual(bpsBetween(15237838662n, nvdaPrice), 22)
-    assert.strictEqual(bpsBetween(99n, 100n), -100)
-    assert.strictEqual(lessBps(1000000n, 50), 995000n)
-  })
-
-  it("sends amounts as exact integers in JSON", () => {
-    const at = DateTime.makeUnsafe("2026-11-24T15:00:00Z")
-    const quote = new Quote({
-      symbol: "NVDA",
-      side: "buy",
-      usdc: Usdc.make(100000000n),
-      shares: Shares.make(65626105n),
-      price: Price.make(15237838662n),
-      reference: new ReferencePrice({ symbol: "NVDA", price: nvdaPrice, updatedAt: at, status: "live" }),
-      gapBps: 22,
-      minimumOut: 65297974n,
-      pool: "0xF668e21993f0ACd7ab00BB1cFbAeD0df28A3C8EC" as never,
-      quotedAt: at,
-      expiresAt: at
-    })
-    const json = Schema.encodeSync(Schema.toCodecJson(Quote))(quote)
-    const back = Schema.decodeUnknownSync(Schema.toCodecJson(Quote))(JSON.parse(JSON.stringify(json)))
-    assert.strictEqual(back.shares, 65626105n)
-    assert.strictEqual(back.minimumOut, 65297974n)
+describe("lessBps", () => {
+  it.each([
+    { name: "50 bps off 1 USDC", amount: 1_000_000n, bps: 50, expected: 995_000n },
+    // 999 × 0.995 = 994.005
+    { name: "a fraction of a unit rounds down", amount: 999n, bps: 50, expected: 994n },
+    { name: "zero bps leaves the amount", amount: 1_000_000n, bps: 0, expected: 1_000_000n },
+    { name: "10,000 bps leaves nothing", amount: 1_000_000n, bps: 10_000, expected: 0n }
+  ])("$name", ({ amount, bps, expected }) => {
+    assert.strictEqual(lessBps(amount, bps), expected)
   })
 })

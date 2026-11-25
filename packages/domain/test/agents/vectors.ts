@@ -140,6 +140,7 @@ const pickerVectors: ReadonlyArray<Vector> = [
   // How big.
   vector("a buy under $5", { legs: [buy("NVDA", 4.99, 0.0499)] }, blocked("tooSmall NVDA")),
   vector("a $5 buy", { legs: [buy("NVDA", 5, 0.05)] }, allowed),
+  vector("a sell worth under $5", { legs: [sell("NVDA", 0.0499, 4.99)] }, blocked("tooSmall NVDA")),
   vector(
     "a buy over the max per trade",
     { limits: { maxInOneStock: 5000 }, legs: [buy("AAPL", 101, 0.505)] },
@@ -285,7 +286,11 @@ const pickerVectors: ReadonlyArray<Vector> = [
   ),
 
   // Slippage budget: 1% of $2,000 is $20.
-  vector("a $1 loss with $19 used", { slippage: { used: 19 }, legs: [buy("NVDA", 100, 0.99)] }, allowed),
+  vector(
+    "a $1 loss that uses the last of the budget",
+    { slippage: { used: 19 }, legs: [buy("NVDA", 100, 0.99)] },
+    allowed
+  ),
   vector(
     "a $1 loss with $19.50 used",
     { slippage: { used: 19.5 }, legs: [buy("NVDA", 100, 0.99)] },

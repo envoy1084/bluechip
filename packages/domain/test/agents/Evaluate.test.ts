@@ -1,37 +1,33 @@
 import {
+  Allowed,
+  Blocked,
+  collarFor,
   type Decision,
   evaluate,
   type FeedPrice,
+  holdingsAfter,
   type Leg,
+  legLoss,
+  legValue,
+  NeedsApproval,
+  priceMode,
   type Proposal,
-  type Rule
+  Violation,
+  Wait
 } from "@bluechip/domain/agents/Evaluate"
-import { Limits } from "@bluechip/domain/agents/Limits"
+import { Limits, Target } from "@bluechip/domain/agents/Limits"
 import { draftLimits } from "@bluechip/domain/agents/Templates"
-import { chargeSlippage, slippageUsed } from "@bluechip/domain/agents/TradeMath"
+import type { Holdings } from "@bluechip/domain/agents/TradeMath"
 import { Price, Shares, Usdc } from "@bluechip/domain/market/Units"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 
 const usdc = (dollars: number) => Usdc.make(BigInt(Math.round(dollars * 1_000_000)))
 const shares = (count: number) => Shares.make(BigInt(Math.round(count * 100_000_000)))
-const price = (dollars: number, ageSeconds = 60): FeedPrice => ({
+const feed = (dollars: number, ageSeconds = 60): FeedPrice => ({
   price: Price.make(BigInt(dollars) * BigInt(100_000_000)),
   ageSeconds
 })
-
-const NOW = DateTime.makeUnsafe("2026-11-25T15:00:00Z")
-const NOW_SECONDS = Number(DateTime.toEpochMillis(NOW) / 1000)
-
-// $1,000 cash, 5 NVDA at $100 and 2.5 AAPL at $200: $2,000 in all.
-const base: Proposal = {
-  limits: draftLimits({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] }),
-  holdings: { usdc: usdc(1000), shares: { NVDA: shares(5), AAPL: shares(2.5) } },
-  prices: { NVDA: price(100), AAPL: price(200), TSLA: price(400) },
-  usage: { spentToday: usdc(0), tradesToday: 0, slippage: { used: usdc(0), updatedAt: NOW_SECONDS } },
-  legs: [],
-  now: NOW
-}
 
 const buy = (symbol: Leg["symbol"], dollars: number, sharesOut: number): Leg => ({
   symbol,
@@ -47,142 +43,272 @@ const sell = (symbol: Leg["symbol"], count: number, dollarsOut: number): Leg => 
   amountOut: usdc(dollarsOut)
 })
 
-const decide = (overrides: Partial<Proposal>, limits: Partial<Limits> = {}): Decision =>
-  evaluate({ ...base, ...overrides, limits: new Limits({ ...base.limits, ...limits }) })
+const HOUR = 3600
+const NVDA_PRICE = Price.make(10_000_000_000n)
 
-const rules = (decision: Decision): ReadonlyArray<Rule> =>
-  decision._tag === "Blocked" ? decision.violations.map((violation) => violation.rule) : []
+describe("priceMode", () => {
+  it.each([
+    { name: "a fresh price is live", age: 0, expected: "live" },
+    { name: "26 hours old is live", age: 26 * HOUR, expected: "live" },
+    { name: "a second past 26 hours is paused", age: 26 * HOUR + 1, expected: "paused" },
+    { name: "80 hours old is paused", age: 80 * HOUR, expected: "paused" },
+    { name: "a second past 80 hours is stale", age: 80 * HOUR + 1, expected: "stale" }
+  ])("$name", ({ age, expected }) => {
+    assert.strictEqual(priceMode(age), expected)
+  })
+})
+
+describe("collarFor", () => {
+  const limits = new Limits({
+    ...draftLimits({ template: "stockPicker", preset: "balanced", stocks: ["NVDA"], targets: [] }),
+    priceProtection: 200
+  })
+
+  it.each(
+    [
+      { name: "live: the price protection", mode: "live", expected: 200 },
+      { name: "paused: half of it", mode: "paused", expected: 100 },
+      { name: "stale: the price protection", mode: "stale", expected: 200 }
+    ] as const
+  )("$name", ({ expected, mode }) => {
+    assert.strictEqual(collarFor(limits, mode), expected)
+  })
+})
+
+describe("legValue", () => {
+  it.each([
+    { name: "a buy is worth the USDC it spends", leg: buy("NVDA", 100, 0.5), expected: 100_000_000n },
+    { name: "a sell is worth its shares at Chainlink's price", leg: sell("NVDA", 1.01, 50), expected: 101_000_000n }
+  ])("$name", ({ expected, leg }) => {
+    assert.strictEqual(legValue(leg, NVDA_PRICE), expected)
+  })
+})
+
+describe("legLoss", () => {
+  it.each([
+    { name: "a buy 1% under Chainlink's price loses 1%", leg: buy("NVDA", 100, 0.99), expected: 1_000_000n },
+    { name: "a buy at Chainlink's price loses nothing", leg: buy("NVDA", 100, 1), expected: 0n },
+    { name: "a buy over Chainlink's price loses nothing", leg: buy("NVDA", 100, 1.01), expected: 0n },
+    { name: "a sell 1% under Chainlink's price loses 1%", leg: sell("NVDA", 1, 99), expected: 1_000_000n },
+    { name: "a sell over Chainlink's price loses nothing", leg: sell("NVDA", 1, 101), expected: 0n }
+  ])("$name", ({ expected, leg }) => {
+    assert.strictEqual(legLoss(leg, NVDA_PRICE), expected)
+  })
+})
+
+describe("holdingsAfter", () => {
+  const HELD: Holdings = { usdc: usdc(100), shares: { NVDA: shares(2) } }
+
+  it.each<{ name: string; legs: ReadonlyArray<Leg>; expected: Holdings | undefined }>([
+    {
+      name: "a buy spends cash for shares",
+      legs: [buy("NVDA", 100, 1)],
+      expected: { usdc: 0n as Usdc, shares: { NVDA: 300_000_000n as Shares } }
+    },
+    {
+      name: "a sell spends shares for cash",
+      legs: [sell("NVDA", 2, 200)],
+      expected: { usdc: 300_000_000n as Usdc, shares: { NVDA: 0n as Shares } }
+    },
+    {
+      name: "a buy of a stock not held adds it",
+      legs: [buy("AAPL", 50, 0.25)],
+      expected: { usdc: 50_000_000n as Usdc, shares: { NVDA: 200_000_000n as Shares, AAPL: 25_000_000n as Shares } }
+    },
+    {
+      name: "a sell's cash pays for a later buy",
+      legs: [sell("NVDA", 1, 100), buy("AAPL", 200, 1)],
+      expected: { usdc: 0n as Usdc, shares: { NVDA: 100_000_000n as Shares, AAPL: 100_000_000n as Shares } }
+    },
+    { name: "a buy a unit over the cash", legs: [buy("NVDA", 100.000001, 1)], expected: undefined },
+    { name: "a sell a unit over the shares", legs: [sell("NVDA", 2.00000001, 200)], expected: undefined },
+    {
+      name: "a buy before the sell that would pay for it",
+      legs: [buy("AAPL", 200, 1), sell("NVDA", 1, 100)],
+      expected: undefined
+    },
+    { name: "no legs", legs: [], expected: { usdc: 100_000_000n as Usdc, shares: { NVDA: 200_000_000n as Shares } } }
+  ])("$name", ({ expected, legs }) => {
+    assert.deepStrictEqual(holdingsAfter(HELD, legs), expected)
+  })
+})
 
 describe("evaluate", () => {
-  it("allows a fair buy that lands exactly on the stock cap", () => {
-    // 6 NVDA = $600 of $2,000: exactly 30%.
-    const decision = decide({ legs: [buy("NVDA", 100, 1)] })
-    assert.strictEqual(decision._tag, "Allowed")
-    assert.strictEqual(decision._tag === "Allowed" && decision.loss, usdc(0))
+  const NOW = DateTime.makeUnsafe("2026-11-25T15:00:00Z")
+  const PICKER = draftLimits({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
+  const REBALANCER = draftLimits({
+    template: "rebalancer",
+    preset: "balanced",
+    stocks: ["NVDA", "AAPL"],
+    targets: [
+      new Target({ asset: "NVDA", weight: 3000 }),
+      new Target({ asset: "AAPL", weight: 3000 }),
+      new Target({ asset: "USDC", weight: 4000 })
+    ]
   })
 
-  it("allows a fair sell", () => {
-    assert.strictEqual(decide({ legs: [sell("NVDA", 1, 100)] })._tag, "Allowed")
+  // $1,000 cash, 5 NVDA at $100 and 2.5 AAPL at $200: $2,000 in all, for a balanced Stock picker ($250 a day, $100 a
+  // trade, ask above $150, 30% in one stock, 10% cash, 1% price protection and weekly slippage, 12 trades a day).
+  const proposal = (options: {
+    readonly legs: ReadonlyArray<Leg>
+    readonly limits?: Partial<Limits>
+    readonly base?: Limits
+    readonly holdings?: Holdings
+    readonly prices?: Proposal["prices"]
+    readonly spentToday?: number
+    readonly tradesToday?: number
+  }): Proposal => ({
+    limits: new Limits({ ...(options.base ?? PICKER), ...options.limits }),
+    holdings: options.holdings ?? { usdc: usdc(1000), shares: { NVDA: shares(5), AAPL: shares(2.5) } },
+    prices: options.prices ?? { NVDA: feed(100), AAPL: feed(200), TSLA: feed(400) },
+    usage: {
+      spentToday: usdc(options.spentToday ?? 0),
+      tradesToday: options.tradesToday ?? 0,
+      slippage: { used: usdc(0), updatedAt: 0 }
+    },
+    legs: options.legs,
+    now: NOW
   })
 
-  it("blocks an empty operation", () => {
-    assert.deepStrictEqual(rules(decide({ legs: [] })), ["nothingToTrade"])
-  })
+  const blocked = (...violations: Array<[Violation["rule"], Violation["symbol"], string]>) =>
+    new Blocked({ violations: violations.map(([rule, symbol, message]) => new Violation({ rule, symbol, message })) })
 
-  it("keeps to the agent's stocks and direction", () => {
-    assert.deepStrictEqual(rules(decide({ legs: [buy("TSLA", 50, 0.125)] })), ["notAllowedStock"])
-    assert.deepStrictEqual(rules(decide({ legs: [sell("NVDA", 0.5, 50)] }, { mode: "buy" })), ["wrongDirection"])
-    assert.deepStrictEqual(rules(decide({ legs: [buy("NVDA", 50, 0.5)] }, { mode: "sell" })), ["wrongDirection"])
-  })
+  const TOMORROW = DateTime.makeUnsafe("2026-11-26T00:00:00Z")
 
-  it("sizes trades between $5 and the max per trade, sells at Chainlink's price", () => {
-    assert.deepStrictEqual(rules(decide({ legs: [buy("NVDA", 4.99, 0.0499)] })), ["tooSmall"])
-    assert.strictEqual(decide({ legs: [buy("NVDA", 5, 0.05)] })._tag, "Allowed")
-    assert.deepStrictEqual(rules(decide({ legs: [buy("AAPL", 101, 0.505)] }, { maxInOneStock: 5000 })), [
-      "overTradeSize"
-    ])
-    // 1.01 NVDA is worth $101 at Chainlink's price, whatever the pool paid.
-    assert.deepStrictEqual(rules(decide({ legs: [sell("NVDA", 1.01, 101)] })), ["overTradeSize"])
-  })
-
-  it("asks for Face ID above the ask-me amount", () => {
-    assert.strictEqual(decide({ legs: [buy("NVDA", 60, 0.6)] }, { askAbove: usdc(50) })._tag, "NeedsApproval")
-    assert.strictEqual(decide({ legs: [buy("NVDA", 50, 0.5)] }, { askAbove: usdc(50) })._tag, "Allowed")
-    assert.strictEqual(decide({ legs: [buy("NVDA", 5, 0.05)] }, { askAbove: usdc(0) })._tag, "NeedsApproval")
-  })
-
-  it("blocks an operation over the daily budget, and waits when today's is used up", () => {
-    const legs = [buy("NVDA", 100, 1), buy("AAPL", 100, 0.5), buy("NVDA", 100, 1)]
-    assert.deepStrictEqual(rules(decide({ legs }, { maxInOneStock: 5000 })), ["overDailyBudget"])
-
-    const waiting = decide({ legs: [buy("NVDA", 100, 1)], usage: { ...base.usage, spentToday: usdc(200) } })
-    assert.strictEqual(waiting._tag, "Wait")
-    assert.strictEqual(waiting._tag === "Wait" && waiting.reason, "dailyBudget")
-    assert.isTrue(waiting._tag === "Wait" && DateTime.Equivalence(waiting.until, DateTime.makeUnsafe("2026-11-26")))
-
-    const tired = decide({ legs: [sell("NVDA", 1, 100)], usage: { ...base.usage, tradesToday: 12 } })
-    assert.strictEqual(tired._tag === "Wait" && tired.reason, "tradesPerDay")
-  })
-
-  it("holds fills to the collar, and to half of it while prices are paused", () => {
-    assert.strictEqual(decide({ legs: [buy("NVDA", 100, 0.99)] })._tag, "Allowed")
-    assert.deepStrictEqual(rules(decide({ legs: [buy("NVDA", 100, 0.98999999)] })), ["unfairPrice"])
-    assert.deepStrictEqual(rules(decide({ legs: [sell("NVDA", 1, 98.99)] })), ["unfairPrice"])
-
-    const paused = { prices: { ...base.prices, NVDA: price(100, 30 * 3600) } }
-    assert.strictEqual(decide({ ...paused, legs: [buy("NVDA", 100, 0.995)] })._tag, "Allowed")
-    assert.deepStrictEqual(rules(decide({ ...paused, legs: [buy("NVDA", 100, 0.99)] })), ["unfairPrice"])
-    assert.deepStrictEqual(rules(decide({ ...paused, legs: [buy("NVDA", 100, 1)] }, { tradeWhilePaused: false })), [
-      "pausedTradingOff"
-    ])
-  })
-
-  it("never trades on a stale price, or values a portfolio with one", () => {
-    const stale = { prices: { ...base.prices, NVDA: price(100, 81 * 3600) } }
-    assert.deepStrictEqual(rules(decide({ ...stale, legs: [buy("NVDA", 100, 1)] })), ["pricesStale"])
-    assert.deepStrictEqual(rules(decide({ ...stale, legs: [buy("AAPL", 100, 0.5)] })), ["pricesStale"])
-    assert.deepStrictEqual(rules(decide({ prices: { NVDA: price(100) }, legs: [buy("NVDA", 50, 0.5)] })), [
-      "pricesStale"
-    ])
-  })
-
-  it("needs the holdings a trade spends", () => {
-    const poor = { holdings: { usdc: usdc(50), shares: { NVDA: shares(5) } } }
-    assert.deepStrictEqual(rules(decide({ ...poor, legs: [buy("NVDA", 60, 0.6)] })), ["insufficientBalance"])
-    assert.deepStrictEqual(rules(decide({ ...poor, legs: [sell("NVDA", 6, 600)] }, { maxPerTrade: usdc(1000) })), [
-      "insufficientBalance"
-    ])
-  })
-
-  it("keeps a stock under its cap and cash over its reserve", () => {
-    // 6.01 NVDA = $601 of $2,000: just over 30%.
-    assert.deepStrictEqual(rules(decide({ legs: [buy("NVDA", 101, 1.01)] }, { maxPerTrade: usdc(200) })), [
-      "overStockCap"
-    ])
-    // A sell never breaks the cap, even when the stock is already over it.
-    assert.strictEqual(decide({ legs: [sell("NVDA", 0.5, 50)] }, { maxInOneStock: 1000 })._tag, "Allowed")
-
-    // $250 cash of $1,250 is 20%; buying $60 leaves 15.2% (and NVDA at 44.8%, under a 50% cap).
-    const lean = { holdings: { usdc: usdc(250), shares: { NVDA: shares(5), AAPL: shares(2.5) } } }
-    assert.strictEqual(decide({ ...lean, legs: [buy("NVDA", 60, 0.6)] }, { maxInOneStock: 5000 })._tag, "Allowed")
-    assert.deepStrictEqual(
-      rules(decide({ ...lean, legs: [buy("NVDA", 60, 0.6)] }, { maxInOneStock: 5000, cashReserve: 2000 })),
-      [
-        "underCashReserve"
-      ]
-    )
-    assert.strictEqual(decide({ ...lean, legs: [sell("NVDA", 0.5, 50)] }, { cashReserve: 5000 })._tag, "Allowed")
-  })
-
-  it("stops at the weekly slippage budget, which decays over seven days", () => {
-    // 1% of $2,000 is $20; this buy loses $1.
-    const losing = [buy("NVDA", 100, 0.99)]
-    const used = (dollars: number, daysAgo = 0) => ({
-      ...base.usage,
-      slippage: { used: usdc(dollars), updatedAt: NOW_SECONDS - daysAgo * 86_400 }
-    })
-
-    assert.strictEqual(decide({ legs: losing, usage: used(19) })._tag, "Allowed")
-    assert.deepStrictEqual(rules(decide({ legs: losing, usage: used(19.5) })), ["overSlippageBudget"])
-    assert.strictEqual(decide({ legs: losing, usage: used(38, 3.5) })._tag, "Allowed")
-
-    assert.strictEqual(slippageUsed({ used: usdc(20), updatedAt: 0 }, 3.5 * 86_400), usdc(10))
-    assert.strictEqual(slippageUsed({ used: usdc(20), updatedAt: 0 }, 7 * 86_400), usdc(0))
-    assert.deepStrictEqual(chargeSlippage({ used: usdc(20), updatedAt: 0 }, usdc(1), 3.5 * 86_400), {
-      used: usdc(11),
-      updatedAt: 3.5 * 86_400
-    })
-  })
-
-  it("reports every broken rule at once", () => {
-    const decision = decide({ legs: [buy("TSLA", 300, 0.5)] }, { maxInOneStock: 1000 })
-    assert.deepStrictEqual(rules(decision), [
-      "notAllowedStock",
-      "overDailyBudget",
-      "overTradeSize",
-      "unfairPrice",
-      "overStockCap",
-      "overSlippageBudget"
-    ])
+  it.each<{ name: string; proposal: Proposal; expected: Decision }>([
+    {
+      name: "a buy at Chainlink's price: allowed, losing nothing",
+      proposal: proposal({ legs: [buy("NVDA", 100, 1)] }),
+      expected: new Allowed({ loss: usdc(0) })
+    },
+    {
+      name: "a buy 1% under Chainlink's price: allowed, losing $1",
+      proposal: proposal({ legs: [buy("NVDA", 100, 0.99)] }),
+      expected: new Allowed({ loss: usdc(1) })
+    },
+    {
+      name: "two legs: allowed, losing both legs' losses",
+      proposal: proposal({ legs: [sell("NVDA", 1, 99), buy("AAPL", 50, 0.2475)], limits: { maxInOneStock: 5000 } }),
+      expected: new Allowed({ loss: usdc(1.5) })
+    },
+    {
+      name: "a buy over ask-me: needs approval, with its loss",
+      proposal: proposal({ legs: [buy("NVDA", 60, 0.594)], limits: { askAbove: usdc(50) } }),
+      expected: new NeedsApproval({ loss: usdc(0.6) })
+    },
+    {
+      name: "a buy past today's budget: waits for the next UTC day",
+      proposal: proposal({ legs: [buy("NVDA", 100, 1)], spentToday: 200 }),
+      expected: new Wait({ reason: "dailyBudget", until: TOMORROW })
+    },
+    {
+      name: "one trade too many today: waits for the next UTC day",
+      proposal: proposal({ legs: [sell("NVDA", 1, 100)], tradesToday: 12 }),
+      expected: new Wait({ reason: "tradesPerDay", until: TOMORROW })
+    },
+    {
+      name: "budget and trades both used up: waits on the budget",
+      proposal: proposal({ legs: [buy("NVDA", 100, 1)], spentToday: 200, tradesToday: 12 }),
+      expected: new Wait({ reason: "dailyBudget", until: TOMORROW })
+    },
+    {
+      name: "a buy over ask-me past today's budget: waits rather than asks",
+      proposal: proposal({ legs: [buy("NVDA", 100, 1)], limits: { askAbove: usdc(50) }, spentToday: 200 }),
+      expected: new Wait({ reason: "dailyBudget", until: TOMORROW })
+    },
+    {
+      name: "a blocked buy past today's budget: blocked rather than waiting",
+      proposal: proposal({ legs: [buy("NVDA", 4, 0.04)], spentToday: 250 }),
+      expected: blocked(["tooSmall", "NVDA", "Trades start at $5.00."])
+    },
+    {
+      name: "nothing to trade: says so",
+      proposal: proposal({ legs: [] }),
+      expected: blocked(["nothingToTrade", null, "There's nothing to trade."])
+    },
+    {
+      name: "a sell-only agent buying: says which way it trades",
+      proposal: proposal({ legs: [buy("NVDA", 50, 0.5)], limits: { mode: "sell" } }),
+      expected: blocked(["wrongDirection", "NVDA", "This agent can only sell."])
+    },
+    {
+      name: "a stale price on the traded stock: says it is too old to trade on",
+      proposal: proposal({ legs: [buy("NVDA", 100, 1)], prices: { NVDA: feed(100, 81 * HOUR), AAPL: feed(200) } }),
+      expected: blocked(["pricesStale", "NVDA", "NVDA's price is too old to trade on."])
+    },
+    {
+      name: "no price for another holding: says it is too old to value the portfolio",
+      proposal: proposal({ legs: [buy("NVDA", 50, 0.5)], prices: { NVDA: feed(100) } }),
+      expected: blocked(["pricesStale", "AAPL", "AAPL's price is too old to value your portfolio."])
+    },
+    {
+      name: "paused prices with weekend trading off: says it doesn't trade while paused",
+      proposal: proposal({
+        legs: [buy("NVDA", 100, 1)],
+        limits: { tradeWhilePaused: false },
+        prices: { NVDA: feed(100, 30 * HOUR), AAPL: feed(200) }
+      }),
+      expected: blocked(["pausedTradingOff", "NVDA", "This agent doesn't trade while prices are paused."])
+    },
+    {
+      name: "a buy with too little cash: says the account doesn't hold enough",
+      proposal: proposal({ legs: [buy("NVDA", 60, 0.6)], holdings: { usdc: usdc(50), shares: { NVDA: shares(5) } } }),
+      expected: blocked(["insufficientBalance", null, "The account doesn't hold enough for this trade."])
+    },
+    {
+      name: "a buy taking cash under the reserve: names the reserve",
+      proposal: proposal({
+        legs: [buy("NVDA", 60, 0.6)],
+        limits: { maxInOneStock: 5000, cashReserve: 2000 },
+        holdings: { usdc: usdc(250), shares: { NVDA: shares(5), AAPL: shares(2.5) } }
+      }),
+      expected: blocked(["underCashReserve", null, "Cash would fall under 20% of your money."])
+    },
+    {
+      name: "every broken rule at once: names each",
+      proposal: proposal({ legs: [buy("TSLA", 300, 0.5)], limits: { maxInOneStock: 1000 } }),
+      expected: blocked(
+        ["notAllowedStock", "TSLA", "This agent can't trade TSLA."],
+        ["overDailyBudget", null, "That's more than the daily budget of $250.00."],
+        ["overTradeSize", "TSLA", "That's more than $100.00 in one trade."],
+        ["unfairPrice", "TSLA", "TSLA's price is too far from Chainlink's."],
+        ["overStockCap", "TSLA", "TSLA would be over 10% of your money."],
+        ["overSlippageBudget", null, "This agent has lost its weekly allowance to prices."]
+      )
+    },
+    {
+      name: "a Rebalancer on target: says the portfolio is already close",
+      proposal: proposal({
+        base: REBALANCER,
+        legs: [sell("AAPL", 0.05, 10)],
+        holdings: { usdc: usdc(800), shares: { NVDA: shares(6), AAPL: shares(3) } }
+      }),
+      expected: blocked(["notNeeded", null, "Your portfolio is already close to its target mix."])
+    },
+    {
+      name: "a Rebalancer buying what is overweight: names each asset moving the wrong way",
+      proposal: proposal({
+        base: REBALANCER,
+        legs: [buy("NVDA", 50, 0.5)],
+        holdings: { usdc: usdc(800), shares: { NVDA: shares(8), AAPL: shares(2) } }
+      }),
+      expected: blocked(
+        ["overStockCap", "NVDA", "NVDA would be over 30% of your money."],
+        ["wrongWay", "NVDA", "NVDA would move away from its target."],
+        ["wrongWay", null, "USDC would move away from its target."],
+        ["noProgress", null, "This wouldn't bring your portfolio closer to its target mix."]
+      )
+    },
+    {
+      name: "a Rebalancer buying past a target: says it would go past",
+      proposal: proposal({
+        base: REBALANCER,
+        legs: [buy("NVDA", 110, 1.1)],
+        limits: { maxPerTrade: usdc(200), maxInOneStock: 4000 }
+      }),
+      expected: blocked(["overshoots", "NVDA", "NVDA would go past its target."])
+    }
+  ])("$name", ({ expected, proposal }) => {
+    assert.deepStrictEqual(evaluate(proposal), expected)
   })
 })
