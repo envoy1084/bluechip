@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@bluechip/domain": "workspace:*",
+    "@namera-ai/contracts": "catalog:",
     "@namera-ai/sdk": "catalog:"
   }
 }

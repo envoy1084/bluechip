@@ -8,7 +8,7 @@
     "@bluechip/devnet": "workspace:*",
     "@bluechip/domain": "workspace:*",
     "@effect/platform-node": "catalog:",
-    "@namera-ai/contracts": "2.0.0-rc.0",
+    "@namera-ai/contracts": "catalog:",
     "effect": "catalog:",
     "glob": "14.0.6",
     "madge": "8.0.0",
