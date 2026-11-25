@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as SigninRouteImport } from './routes/signin'
+import { Route as AppAddCashRouteImport } from './routes/_app/add-cash'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
@@ -21,6 +22,7 @@ import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
 import { Route as WelcomeCashRouteImport } from './routes/welcome/cash'
 import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
+import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
 
@@ -37,6 +39,11 @@ const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAddCashRoute = AppAddCashRouteImport.update({
+  id: '/add-cash',
+  path: '/add-cash',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/home',
@@ -83,6 +90,11 @@ const WelcomeEligibilityRoute = WelcomeEligibilityRouteImport.update({
   path: '/welcome/eligibility',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppPortfolioIndexRoute = AppPortfolioIndexRouteImport.update({
+  id: '/portfolio/',
+  path: '/portfolio/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStocksIndexRoute = AppStocksIndexRouteImport.update({
   id: '/stocks/',
   path: '/stocks/',
@@ -97,6 +109,7 @@ const AppStocksSymbolRoute = AppStocksSymbolRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/signin': typeof SigninRoute
+  '/add-cash': typeof AppAddCashRoute
   '/home': typeof AppHomeRoute
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
@@ -107,11 +120,13 @@ export interface FileRoutesByFullPath {
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
+  '/portfolio/': typeof AppPortfolioIndexRoute
   '/stocks/': typeof AppStocksIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/signin': typeof SigninRoute
+  '/add-cash': typeof AppAddCashRoute
   '/home': typeof AppHomeRoute
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
@@ -122,6 +137,7 @@ export interface FileRoutesByTo {
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome': typeof WelcomeIndexRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
+  '/portfolio': typeof AppPortfolioIndexRoute
   '/stocks': typeof AppStocksIndexRoute
 }
 export interface FileRoutesById {
@@ -129,6 +145,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/signin': typeof SigninRoute
+  '/_app/add-cash': typeof AppAddCashRoute
   '/_app/home': typeof AppHomeRoute
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
@@ -139,6 +156,7 @@ export interface FileRoutesById {
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
+  '/_app/portfolio/': typeof AppPortfolioIndexRoute
   '/_app/stocks/': typeof AppStocksIndexRoute
 }
 export interface FileRouteTypes {
@@ -146,6 +164,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/signin'
+    | '/add-cash'
     | '/home'
     | '/settings'
     | '/dev/chain'
@@ -156,11 +175,13 @@ export interface FileRouteTypes {
     | '/welcome/eligibility'
     | '/welcome/'
     | '/stocks/$symbol'
+    | '/portfolio/'
     | '/stocks/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/signin'
+    | '/add-cash'
     | '/home'
     | '/settings'
     | '/dev/chain'
@@ -171,12 +192,14 @@ export interface FileRouteTypes {
     | '/welcome/eligibility'
     | '/welcome'
     | '/stocks/$symbol'
+    | '/portfolio'
     | '/stocks'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/signin'
+    | '/_app/add-cash'
     | '/_app/home'
     | '/_app/settings'
     | '/dev/chain'
@@ -187,6 +210,7 @@ export interface FileRouteTypes {
     | '/welcome/eligibility'
     | '/welcome/'
     | '/_app/stocks/$symbol'
+    | '/_app/portfolio/'
     | '/_app/stocks/'
   fileRoutesById: FileRoutesById
 }
@@ -225,6 +249,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/signin'
       preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/add-cash': {
+      id: '/_app/add-cash'
+      path: '/add-cash'
+      fullPath: '/add-cash'
+      preLoaderRoute: typeof AppAddCashRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/home': {
       id: '/_app/home'
@@ -289,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeEligibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/portfolio/': {
+      id: '/_app/portfolio/'
+      path: '/portfolio'
+      fullPath: '/portfolio/'
+      preLoaderRoute: typeof AppPortfolioIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/stocks/': {
       id: '/_app/stocks/'
       path: '/stocks'
@@ -307,16 +345,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAddCashRoute: typeof AppAddCashRoute
   AppHomeRoute: typeof AppHomeRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
+  AppPortfolioIndexRoute: typeof AppPortfolioIndexRoute
   AppStocksIndexRoute: typeof AppStocksIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAddCashRoute: AppAddCashRoute,
   AppHomeRoute: AppHomeRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
+  AppPortfolioIndexRoute: AppPortfolioIndexRoute,
   AppStocksIndexRoute: AppStocksIndexRoute,
 }
 

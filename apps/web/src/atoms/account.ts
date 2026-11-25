@@ -15,8 +15,8 @@ export const passkeysAtom = BluechipApiClient.query("account", "passkeys", { rea
 
 // The browser's WebAuthn JSON and the domain schemas describe the same objects (SimpleWebAuthn types its extension
 // outputs as an interface, the schema as a record); the server decodes and checks every field.
-const ceremonyOptions = <A>(options: Record<string, unknown>) => options as A
-const asCredential = <A>(credential: object) => credential as unknown as A
+export const ceremonyOptions = <A>(options: Record<string, unknown>) => options as A
+export const asCredential = <A>(credential: object) => credential as unknown as A
 
 /** Creates a passkey (Face ID / Touch ID), then the account it owns, and signs in. */
 export const signUpAtom = BluechipApiClient.runtime.fn(

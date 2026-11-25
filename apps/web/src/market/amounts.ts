@@ -14,6 +14,7 @@ const toNumber = (units: bigint, decimals: number) => Number(units) / 10 ** deci
 
 export const priceDollars = (price: bigint) => toNumber(price, PRICE_DECIMALS)
 export const shareCount = (shares: bigint) => toNumber(shares, SHARE_DECIMALS)
+export const usdcDollars = (usdc: bigint) => toNumber(usdc, USDC_DECIMALS)
 export const bpsPercent = (bps: number) => bps / 100
 
 /** A decimal typed by a person ("12.5", "1,000") as base units, or `null` when it is empty, malformed or zero. */
