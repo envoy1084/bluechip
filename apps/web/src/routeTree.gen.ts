@@ -17,8 +17,8 @@ import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
 import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
+import { Route as WelcomeCashRouteImport } from './routes/welcome/cash'
 import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
-import { Route as WelcomeReadyRouteImport } from './routes/welcome/ready'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,14 +59,14 @@ const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
   path: '/welcome/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelcomeCashRoute = WelcomeCashRouteImport.update({
+  id: '/welcome/cash',
+  path: '/welcome/cash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WelcomeEligibilityRoute = WelcomeEligibilityRouteImport.update({
   id: '/welcome/eligibility',
   path: '/welcome/eligibility',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WelcomeReadyRoute = WelcomeReadyRouteImport.update({
-  id: '/welcome/ready',
-  path: '/welcome/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -77,8 +77,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
-  '/welcome/ready': typeof WelcomeReadyRoute
   '/welcome/': typeof WelcomeIndexRoute
 }
 export interface FileRoutesByTo {
@@ -88,8 +88,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
-  '/welcome/ready': typeof WelcomeReadyRoute
   '/welcome': typeof WelcomeIndexRoute
 }
 export interface FileRoutesById {
@@ -101,8 +101,8 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
-  '/welcome/ready': typeof WelcomeReadyRoute
   '/welcome/': typeof WelcomeIndexRoute
 }
 export interface FileRouteTypes {
@@ -114,8 +114,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/welcome/cash'
     | '/welcome/eligibility'
-    | '/welcome/ready'
     | '/welcome/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -125,8 +125,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/welcome/cash'
     | '/welcome/eligibility'
-    | '/welcome/ready'
     | '/welcome'
   id:
     | '__root__'
@@ -137,8 +137,8 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/welcome/cash'
     | '/welcome/eligibility'
-    | '/welcome/ready'
     | '/welcome/'
   fileRoutesById: FileRoutesById
 }
@@ -148,8 +148,8 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
+  WelcomeCashRoute: typeof WelcomeCashRoute
   WelcomeEligibilityRoute: typeof WelcomeEligibilityRoute
-  WelcomeReadyRoute: typeof WelcomeReadyRoute
   WelcomeIndexRoute: typeof WelcomeIndexRoute
 }
 
@@ -211,18 +211,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/welcome/cash': {
+      id: '/welcome/cash'
+      path: '/welcome/cash'
+      fullPath: '/welcome/cash'
+      preLoaderRoute: typeof WelcomeCashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/welcome/eligibility': {
       id: '/welcome/eligibility'
       path: '/welcome/eligibility'
       fullPath: '/welcome/eligibility'
       preLoaderRoute: typeof WelcomeEligibilityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/welcome/ready': {
-      id: '/welcome/ready'
-      path: '/welcome/ready'
-      fullPath: '/welcome/ready'
-      preLoaderRoute: typeof WelcomeReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -246,8 +246,8 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,
+  WelcomeCashRoute: WelcomeCashRoute,
   WelcomeEligibilityRoute: WelcomeEligibilityRoute,
-  WelcomeReadyRoute: WelcomeReadyRoute,
   WelcomeIndexRoute: WelcomeIndexRoute,
 }
 export const routeTree = rootRouteImport

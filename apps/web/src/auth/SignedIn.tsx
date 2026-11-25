@@ -1,15 +1,10 @@
 import type { Me } from "@bluechip/domain/Account"
 import { Unauthenticated } from "@bluechip/domain/Errors"
 import { Button } from "@bluechip/ui/components/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from "@bluechip/ui/components/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@bluechip/ui/components/dialog"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
+import { Icon } from "@bluechip/ui/icons/icon"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Navigate, useNavigate } from "@tanstack/react-router"
 import * as Option from "effect/Option"
@@ -42,14 +37,15 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
   if (unauthenticated) {
     return (
       <Dialog open>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Your session ended</DialogTitle>
-            <DialogDescription>Sign in again with your passkey to pick up where you left off.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => navigate({ to: "/signin" })}>Sign in</Button>
-          </DialogFooter>
+        <DialogContent showCloseButton={false} className="grid justify-items-center gap-2 p-8 text-center">
+          <Illustration name="passkey" size={56} />
+          <DialogTitle>Sign in again to continue</DialogTitle>
+          <DialogDescription>
+            For your safety you're signed out after 30 days, or when you sign out on another tab.
+          </DialogDescription>
+          <Button className="mt-2" onClick={() => navigate({ to: "/signin" })}>
+            <Icon name="face-id" size={14} />Sign in with Face ID
+          </Button>
         </DialogContent>
       </Dialog>
     )
