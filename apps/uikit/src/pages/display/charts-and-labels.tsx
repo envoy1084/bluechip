@@ -19,7 +19,7 @@ export function ChartSection() {
     <Section
       title="Chart"
       purpose="Area, bar and line charts in the series colors. Hover, or focus a chart and use the arrow keys, to read exact values."
-      base="Chart (Recharts)"
+      base="Chart (TanStack Charts)"
     >
       <Card className="gap-3 pb-4">
         <div className="flex flex-wrap items-start justify-between gap-3">

@@ -1,223 +1,24 @@
-import {
-  type ComponentProps,
-  createContext,
-  type CSSProperties,
-  type ReactElement,
-  type ReactNode,
-  useContext,
-  useId,
-  useMemo,
-  useState
-} from "react"
-import {
-  Area,
-  AreaChart as RechartsAreaChart,
-  Bar,
-  BarChart as RechartsBarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart as RechartsLineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts"
+import { areaY, barY, crosshair, defineChart, dot, group, lineY } from "@tanstack/charts"
+import { decorative } from "@tanstack/charts/mark/decorative"
+import { Chart } from "@tanstack/charts/react/tooltip"
+import { scaleBand } from "@tanstack/charts/scales/band"
+import { scaleLinear } from "@tanstack/charts/scales/linear"
+import { tooltip } from "@tanstack/charts/tooltip"
+import { useMemo, useState } from "react"
 import { cn } from "../lib/cn.ts"
 import { useReducedMotion } from "../motion/use-reduced-motion.ts"
 
-/* ---------- Container, tooltip and legend (shadcn's chart pattern) ---------- */
-
-/** Names and colors for each series, by data key. Colors default to the `--color-series-*` tokens, in order. */
-export type ChartConfig = Readonly<Record<string, { readonly label?: ReactNode; readonly color?: string }>>
-
-interface ChartContextValue {
-  readonly config: ChartConfig
-}
-
-const ChartContext = createContext<ChartContextValue | null>(null)
-
-const useChart = (): ChartContextValue => {
-  const context = useContext(ChartContext)
-  if (!context) throw new Error("Chart parts must be used inside a ChartContainer.")
-  return context
-}
-
-const seriesToken = (index: number) => `var(--color-series-${(index % 8) + 1})`
-
-/** The CSS variable a series paints with: `fill="var(--chart-stocks)"`. */
-export const chartColor = (key: string): string => `var(--chart-${key})`
-
-export interface ChartContainerProps extends ComponentProps<"div"> {
-  readonly config: ChartConfig
-  /** One Recharts chart (`AreaChart`, `BarChart`, …); it fills the container. */
-  readonly children: ReactElement
-}
-
-/**
- * Sizes a Recharts chart to its box, gives every series in `config` a `--chart-<key>` color, and styles axes, grid
- * and cursor in the kit's neutrals. Give it a height (`className="h-60"`); it defaults to 240 px.
- */
-export function ChartContainer({ config, className, style, children, ...props }: ChartContainerProps) {
-  const colors = Object.fromEntries(
-    Object.entries(config).map(([key, series], i) => [`--chart-${key}`, series.color ?? seriesToken(i)])
-  )
-  const context = useMemo(() => ({ config }), [config])
-  return (
-    <ChartContext value={context}>
-      <div
-        data-slot="chart"
-        style={{ ...colors, ...style } as CSSProperties}
-        className={cn(
-          "relative h-[240px] w-full min-w-0 text-caption-sm",
-          "[&_.recharts-cartesian-axis-tick_text]:fill-g-400 [&_.recharts-text]:tabular-nums",
-          "[&_.recharts-cartesian-grid_line]:stroke-g-100 [&_.recharts-reference-line_line]:stroke-g-300",
-          "[&_.recharts-curve.recharts-tooltip-cursor]:stroke-g-300 [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-g-50",
-          // The accessibility layer focuses the chart surface; outline it like every other control.
-          "[&_.recharts-surface]:rounded-sm [&_.recharts-surface]:outline-none [&_.recharts-surface:focus-visible]:shadow-[0_0_0_2px_var(--color-blue)]",
-          "[&_.recharts-wrapper]:outline-none",
-          className
-        )}
-        {...props}
-      >
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>{children}</ResponsiveContainer>
-      </div>
-    </ChartContext>
-  )
-}
-
-export const ChartTooltip = Tooltip
-
-interface ChartPayloadItem {
-  readonly dataKey?: unknown
-  readonly name?: unknown
-  readonly value?: unknown
-  readonly color?: string | undefined
-}
-
-export interface ChartTooltipContentProps {
-  /** Set by Recharts. */
-  readonly active?: boolean
-  readonly payload?: ReadonlyArray<ChartPayloadItem>
-  readonly label?: ReactNode
-  readonly accessibilityLayer?: boolean
-  /** Formats each value ("$8,620"). */
-  readonly valueFormatter?: (value: number) => string
-  readonly labelFormatter?: (label: ReactNode) => ReactNode
-  readonly hideLabel?: boolean
-  readonly className?: string
-}
-
-const NO_ITEMS: ReadonlyArray<never> = []
-const formatNumber = (value: number) => value.toLocaleString("en-US")
-
-const keyOf = (item: ChartPayloadItem) => String(item.dataKey ?? item.name ?? "")
-
-/** The kit's tooltip: the point's label, then a swatch, name and value per series. Pass as `<ChartTooltip content={…} />`. */
-export function ChartTooltipContent(
-  {
-    active = false,
-    payload = NO_ITEMS,
-    label,
-    accessibilityLayer = false,
-    valueFormatter = formatNumber,
-    labelFormatter,
-    hideLabel = false,
-    className
-  }: ChartTooltipContentProps
-) {
-  const { config } = useChart()
-  if (!active || payload.length === 0) return null
-  return (
-    <div
-      data-slot="chart-tooltip"
-      {
-        // Keyboard readers hear each point as the arrow keys move the tooltip.
-        ...(accessibilityLayer ? { role: "status", "aria-live": "polite" } : {})
-      }
-      className={cn(
-        "pointer-events-none grid min-w-[150px] gap-1 rounded-md bg-white px-[11px] py-[9px] text-label-sm shadow-e3",
-        className
-      )}
-    >
-      {!hideLabel && (
-        <strong className="text-caption font-semibold text-g-500">
-          {labelFormatter ? labelFormatter(label) : label}
-        </strong>
-      )}
-      {payload.map((item) => {
-        const key = keyOf(item)
-        return (
-          <div key={key} className="flex items-center gap-[7px]">
-            <i
-              aria-hidden
-              className="size-[9px] shrink-0 rounded-[3px]"
-              style={{ background: item.color ?? chartColor(key) }}
-            />
-            <span>{config[key]?.label ?? key}</span>
-            <b className="ml-auto pl-3 font-semibold tabular-nums">
-              {typeof item.value === "number" ? valueFormatter(item.value) : String(item.value ?? "")}
-            </b>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-export const ChartLegend = Legend
-
-export interface ChartLegendContentProps {
-  /** Set by Recharts, or pass the series yourself. */
-  readonly payload?: ReadonlyArray<{ readonly dataKey?: unknown; readonly value?: unknown }>
-  /** Series hidden by the reader. With `onToggle`, each item becomes a button that shows or hides its series. */
-  readonly hidden?: ReadonlySet<string>
-  readonly onToggle?: (key: string) => void
-  readonly className?: string
-}
-
-/** A swatch and name per series, from the chart config. */
-export function ChartLegendContent({ payload = NO_ITEMS, hidden, onToggle, className }: ChartLegendContentProps) {
-  const { config } = useChart()
-  return (
-    <div data-slot="chart-legend" className={cn("flex flex-wrap gap-1.5", className)}>
-      {payload.map((item) => {
-        const key = String(item.dataKey ?? item.value ?? "")
-        const shown = !hidden?.has(key)
-        const swatch = (
-          <i
-            aria-hidden
-            className="size-[9px] shrink-0 rounded-[3px] bg-g-200"
-            // The config's color, so the legend also works outside the container that defines `--chart-*`.
-            style={shown ? { background: config[key]?.color ?? chartColor(key) } : undefined}
-          />
-        )
-        const name = config[key]?.label ?? key
-        return onToggle ?
-          (
-            <button
-              key={key}
-              type="button"
-              aria-pressed={shown}
-              onClick={() => onToggle(key)}
-              className="inline-flex h-7 cursor-pointer items-center gap-[7px] rounded-[7px] px-2.5 text-label font-medium text-g-700 hover:bg-g-100 focus-visible:outline-offset-0 aria-[pressed=false]:text-g-400 aria-[pressed=false]:line-through"
-            >
-              {swatch}
-              {name}
-            </button>
-          ) :
-          (
-            <span key={key} className="inline-flex h-7 items-center gap-[7px] px-2.5 text-label font-medium text-g-700">
-              {swatch}
-              {name}
-            </span>
-          )
-      })}
-    </div>
-  )
-}
-
-/* ---------- Ready-made charts ---------- */
+// Written out in full: Tailwind only emits the theme variables it finds in the source.
+const SERIES_COLORS = [
+  "var(--color-series-1)",
+  "var(--color-series-2)",
+  "var(--color-series-3)",
+  "var(--color-series-4)",
+  "var(--color-series-5)",
+  "var(--color-series-6)",
+  "var(--color-series-7)",
+  "var(--color-series-8)"
+]
 
 export interface ChartSeries {
   readonly key: string
@@ -244,6 +45,14 @@ export interface ChartProps {
 
 type ChartKind = "area" | "bar" | "line"
 
+interface Row {
+  readonly index: number
+  readonly label: string
+  readonly key: string
+  readonly name: string
+  readonly value: number
+}
+
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
 const usdCompact = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -254,20 +63,125 @@ const usdCompact = new Intl.NumberFormat("en-US", {
 const defaultFormatValue = (value: number) => usd.format(value)
 const defaultFormatTick = (value: number) => usdCompact.format(value).replace("K", "k")
 
-function LastDot(
-  { cx, cy, index, last, color }: {
-    readonly cx?: number
-    readonly cy?: number
-    readonly index?: number
-    readonly last: number
-    readonly color: string
-  }
-) {
-  if (index !== last) return <g />
-  return <circle cx={cx} cy={cy} r={3.5} fill={color} stroke="#fff" strokeWidth={2} />
+interface Palette {
+  readonly keys: ReadonlyArray<string>
+  readonly values: ReadonlyArray<string>
 }
 
-const CHARTS = { area: RechartsAreaChart, bar: RechartsBarChart, line: RechartsLineChart } as const
+interface Options {
+  readonly formatTick: (value: number) => string
+  readonly animate: boolean
+}
+
+/** What every kind shares: the value axis, series colors, area fills, focus by x and the tooltip. */
+const shared = (palette: Palette, options: Options) => ({
+  y: {
+    scale: scaleLinear,
+    nice: true,
+    grid: { strokeDasharray: "3 4" },
+    axis: { line: false, ticks: { size: 0, padding: 6, format: options.formatTick } }
+  },
+  color: { domain: [...palette.keys], range: [...palette.values] },
+  gradients: palette.values.map((color, index) => ({
+    id: `chart-fill-${index}`,
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stops: [{ offset: 0, color, opacity: 0.22 }, { offset: 1, color, opacity: 0 }]
+  })),
+  margin: { top: 14, right: 12 },
+  focus: "group-x" as const,
+  maxFocusDistance: Number.POSITIVE_INFINITY,
+  tooltip: { use: tooltip, sticky: false },
+  svgAnimation: options.animate
+})
+
+/** Bars per label, side by side for each series. */
+const barDefinition = (rows: ReadonlyArray<Row>, labels: ReadonlyArray<string>, palette: Palette, options: Options) => {
+  const { y, ...rest } = shared(palette, options)
+  return defineChart({
+    ...rest,
+    marks: [
+      barY(rows, {
+        id: "bars",
+        x: "label",
+        y: "value",
+        color: "key",
+        layout: group({ padding: 0.15 }),
+        maxThickness: 18,
+        radius: { end: 4 }
+      })
+    ],
+    scales: {
+      x: {
+        scale: () => scaleBand<string>().domain(labels).padding(0.25),
+        axis: { line: false, ticks: { size: 0, padding: 10 } }
+      },
+      y
+    }
+  })
+}
+
+/** Lines over the labels, with a soft fill under each (area) or the latest point marked (line). */
+const seriesDefinition = (
+  kind: "area" | "line",
+  rows: ReadonlyArray<Row>,
+  labels: ReadonlyArray<string>,
+  palette: Palette,
+  options: Options
+) => {
+  const { y, ...rest } = shared(palette, options)
+  const last = rows.filter((row) => row.index === labels.length - 1)
+
+  return defineChart({
+    ...rest,
+    marks: [
+      ...(kind === "area" ?
+        palette.keys.map((key, index) =>
+          decorative(
+            areaY(rows.filter((row) => row.key === key), {
+              id: `fill-${key}`,
+              x: "index",
+              y1: 0,
+              y2: "value",
+              fill: `url(#chart-fill-${index})`,
+              fillOpacity: 1
+            })
+          )
+        ) :
+        []),
+      lineY(rows, { id: "lines", x: "index", y: "value", z: "key", color: "key", strokeWidth: 2 }),
+      ...(kind === "line" ?
+        palette.keys.map((key, index) =>
+          decorative(dot(last.filter((row) => row.key === key), {
+            id: `last-${key}`,
+            x: "index",
+            y: "value",
+            r: 3.5,
+            fill: palette.values[index]!,
+            stroke: "#fff",
+            strokeWidth: 2
+          }))
+        ) :
+        []),
+      crosshair({ x: { strokeDasharray: "3 3" }, y: false, marker: true })
+    ],
+    scales: {
+      x: {
+        scale: scaleLinear().domain([0, Math.max(labels.length - 1, 1)]),
+        axis: {
+          line: false,
+          ticks: { size: 0, padding: 10, format: (index: number) => labels[Math.round(index)] ?? "" },
+          tickLabels: { thin: { minGap: 24, priority: "ends" } }
+        }
+      },
+      y
+    }
+  })
+}
+
+const colorFor = (s: ChartSeries, i: number) => s.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!
 
 function SeriesChart({
   kind,
@@ -282,21 +196,21 @@ function SeriesChart({
 }: ChartProps & { readonly kind: ChartKind }) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set())
   const reduced = useReducedMotion()
-  const gradient = useId().replace(/[^a-zA-Z0-9]/g, "")
 
-  const config = useMemo<ChartConfig>(
-    () =>
-      Object.fromEntries(
-        series.map((s, i) => [s.key, { label: s.label, color: s.color ?? seriesToken(i) }] as const)
-      ),
-    [series]
-  )
-  const legendContext = useMemo(() => ({ config }), [config])
-  const data = useMemo(
-    () => labels.map((label, i) => ({ label, ...Object.fromEntries(series.map((s) => [s.key, s.values[i] ?? 0])) })),
-    [labels, series]
-  )
   const visible = series.filter((s) => !hidden.has(s.key))
+
+  const definition = useMemo(() => {
+    const shown = series.flatMap((s, i) => (hidden.has(s.key) ? [] : [{ s, color: colorFor(s, i) }]))
+    const rows = labels.flatMap((label, index) =>
+      shown.map(({ s }): Row => ({ index, label, key: s.key, name: s.label, value: s.values[index] ?? 0 }))
+    )
+    const palette = { keys: shown.map(({ s }) => s.key), values: shown.map(({ color }) => color) }
+    const options = { formatTick, animate: !reduced }
+    return kind === "bar" ?
+      { kind, chart: barDefinition(rows, labels, palette, options) } as const :
+      { kind, chart: seriesDefinition(kind, rows, labels, palette, options) } as const
+  }, [kind, labels, series, hidden, formatTick, reduced])
+
   const toggle = (key: string) =>
     setHidden((current) => {
       const next = new Set(current)
@@ -306,82 +220,62 @@ function SeriesChart({
       return next
     })
 
-  const Chart = CHARTS[kind]
-  const animate = !reduced
+  // The same surface for every kind; each kind's definition is typed by its x values (labels or indexes).
+  const surface = {
+    ariaLabel: title,
+    height,
+    className: "text-caption text-g-500",
+    renderTooltipBody: ({ points }: { readonly points: ReadonlyArray<{ readonly datum: unknown }> }) => {
+      const first = points[0]?.datum as Row | undefined
+      if (first === undefined) return null
+      return (
+        <div
+          data-slot="chart-tooltip"
+          className="grid min-w-[140px] gap-1 rounded-[10px] bg-white px-3 py-2 text-label shadow-e3"
+        >
+          <b className="font-semibold text-ink">{first.label}</b>
+          {points.map((point) => {
+            const row = point.datum as Row
+            const index = series.findIndex((s) => s.key === row.key)
+            return (
+              <span key={row.key} className="flex items-center gap-2">
+                <i
+                  aria-hidden
+                  className="size-2 rounded-[2px]"
+                  style={{ background: colorFor(series[index]!, index) }}
+                />
+                <span className="text-g-600">{row.name}</span>
+                <b className="ml-auto pl-3 font-semibold text-ink tabular-nums">{formatValue(row.value)}</b>
+              </span>
+            )
+          })}
+        </div>
+      )
+    }
+  }
+
   return (
     <div data-slot="chart-card" className={cn("grid min-w-0 gap-3", className)}>
-      <ChartContainer config={config} style={{ height }}>
-        <Chart data={data} margin={{ top: 14, right: 12, bottom: 0, left: 0 }} title={title}>
-          {kind === "area" && (
-            <defs>
-              {visible.map((s) => (
-                <linearGradient key={s.key} id={`${gradient}-${s.key}`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0" stopColor={chartColor(s.key)} stopOpacity={0.22} />
-                  <stop offset="1" stopColor={chartColor(s.key)} stopOpacity={0} />
-                </linearGradient>
-              ))}
-            </defs>
-          )}
-          <CartesianGrid vertical={false} strokeDasharray="3 4" />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} minTickGap={24} />
-          <YAxis width={52} tickLine={false} axisLine={false} tickMargin={6} tickFormatter={formatTick} />
-          <ChartTooltip
-            cursor={kind === "bar" ? true : { strokeDasharray: "3 3" }}
-            isAnimationActive={false}
-            content={<ChartTooltipContent valueFormatter={formatValue} />}
-          />
-          {visible.map((s) => {
-            const color = chartColor(s.key)
-            if (kind === "bar") {
-              return (
-                <Bar
-                  key={s.key}
-                  dataKey={s.key}
-                  fill={color}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={18}
-                  isAnimationActive={animate}
-                />
-              )
-            }
-            const activeDot = { r: 4, fill: color, stroke: "#fff", strokeWidth: 2 }
-            return kind === "area" ?
-              (
-                <Area
-                  key={s.key}
-                  dataKey={s.key}
-                  type="monotone"
-                  stroke={color}
-                  strokeWidth={2}
-                  fill={`url(#${gradient}-${s.key})`}
-                  activeDot={activeDot}
-                  isAnimationActive={animate}
-                />
-              ) :
-              (
-                <Line
-                  key={s.key}
-                  dataKey={s.key}
-                  type="monotone"
-                  stroke={color}
-                  strokeWidth={2}
-                  // Only the latest point gets a dot; Recharts clones the element for each point.
-                  dot={<LastDot last={labels.length - 1} color={color} />}
-                  activeDot={activeDot}
-                  isAnimationActive={animate}
-                />
-              )
-          })}
-        </Chart>
-      </ChartContainer>
+      {definition.kind === "bar" ?
+        <Chart definition={definition.chart} {...surface} /> :
+        <Chart definition={definition.chart} {...surface} />}
+
       {showLegend && (
-        <ChartContext value={legendContext}>
-          <ChartLegendContent
-            payload={series.map((s) => ({ dataKey: s.key }))}
-            hidden={hidden}
-            onToggle={toggle}
-          />
-        </ChartContext>
+        <ul aria-label="Series" className="flex flex-wrap justify-center gap-1.5">
+          {series.map((s, i) => (
+            <li key={s.key}>
+              <button
+                type="button"
+                aria-pressed={!hidden.has(s.key)}
+                onClick={() => toggle(s.key)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm text-g-600 transition-colors duration-fast ease-brand hover:bg-g-50 aria-pressed:text-ink aria-[pressed=false]:opacity-50"
+              >
+                <i aria-hidden className="size-2.5 rounded-[3px]" style={{ background: colorFor(s, i) }} />
+                {s.label}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )

@@ -1,6 +1,9 @@
-import { type ReactNode, useEffect, useId, useMemo, useState } from "react"
-import { Area, AreaChart, CartesianGrid, ReferenceLine, useActiveTooltipDataPoints, XAxis, YAxis } from "recharts"
-import { type ChartConfig, ChartContainer, ChartTooltip } from "../components/chart.tsx"
+import { areaY, crosshair, defineChart, dot, lineY, ruleY } from "@tanstack/charts"
+import { decorative } from "@tanstack/charts/mark/decorative"
+import { Chart } from "@tanstack/charts/react/tooltip"
+import { scaleLinear } from "@tanstack/charts/scales/linear"
+import { tooltip } from "@tanstack/charts/tooltip"
+import { type ReactNode, useMemo, useState } from "react"
 import { Skeleton } from "../components/skeleton.tsx"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "../components/tabs.tsx"
 import { Icon } from "../icons/icon.tsx"
@@ -39,32 +42,82 @@ interface PlotPoint extends PortfolioPoint {
   readonly index: number
 }
 
-const CONFIG: ChartConfig = { value: { label: "Total value", color: "var(--color-blue)" } }
-const BLUE = "var(--color-blue)"
+const BLUE = "#2a5bff"
+const INK = "#0a0b0d"
 
-/** Reports the point under the crosshair (pointer or keyboard), so the headline can follow it. */
-function ActivePoint({ onChange }: { readonly onChange: (index: number | null) => void }) {
-  const index = useActiveTooltipDataPoints<PlotPoint>()?.[0]?.index ?? null
-  useEffect(() => onChange(index), [index, onChange])
-  return null
+/** The chart for one range: area and line in brand blue, the start dashed, the latest point marked. */
+const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean) => {
+  const values = rows.map((row) => row.value)
+  const pad = (Math.max(...values) - Math.min(...values)) * 0.12 || 1
+  const low = Math.min(...values) - pad
+  const high = Math.max(...values) + pad
+  const base = rows[0]?.value ?? 0
+  const last = rows.slice(-1)
+
+  // First, a third, two thirds and last, as indexes; their labels are the points' own.
+  const ticks = [...new Set([0, 1 / 3, 2 / 3, 1].map((share) => Math.round(share * (rows.length - 1))))]
+
+  return defineChart({
+    marks: [
+      decorative(
+        areaY(rows, { id: "area", x: "index", y1: low, y2: "value", fill: "url(#portfolio-fill)", fillOpacity: 1 })
+      ),
+      decorative(
+        ruleY([base], { id: "start", y: (value) => value, stroke: INK, strokeOpacity: 0.28, strokeDasharray: "2 4" })
+      ),
+      lineY(rows, { id: "value", x: "index", y: "value", stroke: BLUE, strokeWidth: 2, key: "index" }),
+      decorative(dot(last, { id: "end-halo", x: "index", y: "value", r: 9, fill: BLUE, fillOpacity: 0.14 })),
+      decorative(dot(last, { id: "end", x: "index", y: "value", r: 4, fill: BLUE, stroke: "#fff", strokeWidth: 2 })),
+      crosshair({ x: { stroke: INK, strokeOpacity: 0.25 }, y: false, marker: true })
+    ],
+    scales: {
+      x: {
+        scale: scaleLinear().domain([0, Math.max(rows.length - 1, 1)]),
+        axis: {
+          line: false,
+          ticks: { values: ticks, size: 0, padding: 8, format: (index) => rows[index]?.label ?? "" },
+          tickLabels: { anchor: ({ index }) => (index === 0 ? "start" : index === ticks.length - 1 ? "end" : "middle") }
+        }
+      },
+      y: {
+        scale: scaleLinear().domain([low, high]),
+        axis: false,
+        grid: { stroke: INK, strokeOpacity: 0.06 }
+      }
+    },
+    margin: { top: 14, right: 10, left: 0 },
+    gradients: [{
+      id: "portfolio-fill",
+      x1: 0,
+      y1: 0,
+      x2: 0,
+      y2: 1,
+      stops: [
+        { offset: 0, color: BLUE, opacity: 0.16 },
+        { offset: 0.7, color: BLUE, opacity: 0.03 },
+        { offset: 1, color: BLUE, opacity: 0 }
+      ]
+    }],
+    focus: "nearest-x",
+    maxFocusDistance: Number.POSITIVE_INFINITY,
+    tooltip: {
+      use: tooltip,
+      offset: 14,
+      sticky: false,
+      // What screen readers hear; the visible bubble is `TooltipBody`.
+      format: (point) => `${formatMoney(point.datum.value)}, ${point.datum.label}`
+    },
+    svgAnimation: animate
+  })
 }
 
-const NO_POINTS: ReadonlyArray<never> = []
-
-function CrosshairTooltip(
-  { active = false, payload = NO_POINTS, accessibilityLayer = false }: {
-    readonly active?: boolean
-    readonly payload?: ReadonlyArray<{ readonly payload?: PlotPoint }>
-    readonly accessibilityLayer?: boolean
-  }
-) {
-  const point = payload[0]?.payload
-  if (!active || !point) return null
+/** The dark bubble under the crosshair: the value and when. */
+function TooltipBody({ point }: { readonly point: PlotPoint | undefined }): ReactNode {
+  if (point === undefined) return null
   return (
     <div
       data-slot="portfolio-chart-tooltip"
-      {...(accessibilityLayer ? { role: "status", "aria-live": "polite" } : {})}
-      className="pointer-events-none grid rounded-[9px] bg-ink px-2.5 py-1.5 whitespace-nowrap text-white shadow-e3"
+      className="grid rounded-[9px] bg-ink px-2.5 py-1.5 whitespace-nowrap text-white shadow-e3"
     >
       <b className="text-label font-semibold tabular-nums">{formatMoney(point.value)}</b>
       <span className="text-[11.5px] text-white/70">{point.label}</span>
@@ -72,53 +125,9 @@ function CrosshairTooltip(
   )
 }
 
-/** An x-axis label; the first and last align to the plot's edges instead of hanging past them. */
-function EdgeTick(
-  { x, y, payload, first, last }: {
-    readonly x?: number | string
-    readonly y?: number | string
-    // `coordinate` is the point's own x; Recharts nudges `x` inward for centered edge labels, which we don't center.
-    readonly payload?: { readonly value?: unknown; readonly coordinate?: number }
-    readonly first?: string | undefined
-    readonly last?: string | undefined
-  }
-) {
-  const value = payload?.value
-  const edge = value === first ? "start" : value === last ? "end" : undefined
-  return (
-    <text
-      x={edge ? payload?.coordinate ?? x : x}
-      y={y}
-      dy={10}
-      textAnchor={edge ?? "middle"}
-      className="fill-g-500 text-caption-sm"
-    >
-      {String(value ?? "")}
-    </text>
-  )
-}
-
-/** Only the latest point gets a dot, with a soft halo: "you are here". */
-function EndDot(
-  { cx, cy, index, last }: {
-    readonly cx?: number
-    readonly cy?: number
-    readonly index?: number
-    readonly last: number
-  }
-) {
-  if (index !== last) return <g />
-  return (
-    <g data-slot="portfolio-chart-end">
-      <circle cx={cx} cy={cy} r={9} fill={BLUE} opacity={0.14} />
-      <circle cx={cx} cy={cy} r={4} fill={BLUE} stroke="#fff" strokeWidth={2} />
-    </g>
-  )
-}
-
 /**
  * Your total value over time in brand blue, with the starting value dashed for reference. Ranges are tabs. Hover, or
- * focus the chart and use ← →, to read any point; the headline follows and a screen reader hears each one.
+ * focus the chart and use ← →, to read any point; the headline follows.
  */
 export function PortfolioChart(
   { ranges, defaultRange, title = "Total value", titleAddon, loading = false, className }: PortfolioChartProps
@@ -126,19 +135,16 @@ export function PortfolioChart(
   const [rangeId, setRangeId] = useState(defaultRange ?? ranges.at(-1)?.id ?? "")
   const [index, setIndex] = useState<number | null>(null)
   const reduced = useReducedMotion()
-  const gradient = useId().replace(/[^a-zA-Z0-9]/g, "")
 
   const range = ranges.find((r) => r.id === rangeId) ?? ranges[0]
-  const data = useMemo(
+  const rows = useMemo(
     () => (range?.points ?? []).map((point, i): PlotPoint => ({ ...point, index: i })),
     [range]
   )
-  const current = index === null ? data.at(-1) : data[index]
-  const base = data[0]?.value ?? 0
-  const values = data.map((p) => p.value)
-  const pad = (Math.max(...values) - Math.min(...values)) * 0.12 || 1
-  // First, a third, two thirds and last; recharts drops the middle ones when they would collide.
-  const ticks = [...new Set([0, 1 / 3, 2 / 3, 1].map((f) => data[Math.round(f * (data.length - 1))]?.label ?? ""))]
+  const definition = useMemo(() => (rows.length < 2 ? undefined : definitionFor(rows, !reduced)), [rows, reduced])
+
+  const current = index === null ? rows.at(-1) : rows[index]
+  const base = rows[0]?.value ?? 0
 
   return (
     <div
@@ -182,6 +188,7 @@ export function PortfolioChart(
             {ranges.map((r) => <TabsTab key={r.id} value={r.id}>{r.id}</TabsTab>)}
           </TabsList>
         </div>
+
         <TabsPanel value={rangeId} className="min-w-0 focus-visible:outline-none">
           {loading ?
             (
@@ -189,7 +196,7 @@ export function PortfolioChart(
                 {[40, 65, 85, 55, 75].map((h) => <Skeleton key={h} className="flex-1" style={{ height: `${h}%` }} />)}
               </div>
             ) :
-            data.length < 2 ?
+            definition === undefined ?
             (
               <div className="grid justify-items-start gap-1 py-10">
                 <Icon name="chart-line" size={18} className="mb-1 text-g-400" />
@@ -198,59 +205,16 @@ export function PortfolioChart(
               </div>
             ) :
             (
-              <ChartContainer
-                config={CONFIG}
-                style={{ height: "clamp(180px, 45cqw, 230px)" }}
-                className="cursor-crosshair touch-pan-y [&_.recharts-cartesian-axis-tick_text]:fill-g-500"
-              >
-                <AreaChart
-                  // A fresh chart per range, so the crosshair doesn't carry over.
-                  key={rangeId}
-                  data={data}
-                  margin={{ top: 14, right: 10, bottom: 0, left: 0 }}
-                  title="Portfolio value"
-                >
-                  <defs>
-                    <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor={BLUE} stopOpacity={0.16} />
-                      <stop offset="0.7" stopColor={BLUE} stopOpacity={0.03} />
-                      <stop offset="1" stopColor={BLUE} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="label"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    ticks={ticks}
-                    tick={<EdgeTick first={data[0]?.label} last={data.at(-1)?.label} />}
-                    interval="preserveStartEnd"
-                    minTickGap={48}
-                  />
-                  <YAxis hide domain={[Math.min(...values) - pad, Math.max(...values) + pad]} />
-                  <ReferenceLine y={base} strokeDasharray="2 4" />
-                  <ChartTooltip
-                    cursor={{ stroke: "var(--color-ink)", strokeOpacity: 0.25 }}
-                    isAnimationActive={false}
-                    offset={14}
-                    content={<CrosshairTooltip />}
-                  />
-                  <Area
-                    dataKey="value"
-                    type="linear"
-                    stroke={BLUE}
-                    strokeWidth={2}
-                    strokeLinejoin="round"
-                    fill={`url(#${gradient})`}
-                    // Recharts clones the element with each point's position and index.
-                    dot={<EndDot last={data.length - 1} />}
-                    activeDot={{ r: 4.5, fill: "#fff", stroke: BLUE, strokeWidth: 2 }}
-                    isAnimationActive={!reduced}
-                  />
-                  <ActivePoint onChange={setIndex} />
-                </AreaChart>
-              </ChartContainer>
+              <Chart
+                // A fresh chart per range, so focus doesn't carry over.
+                key={rangeId}
+                definition={definition}
+                ariaLabel={title === "Total value" ? "Portfolio value" : String(title)}
+                height={210}
+                className="cursor-crosshair touch-pan-y text-caption-sm text-g-500"
+                onFocusChange={(point) => setIndex(point === null ? null : (point.datum as PlotPoint).index)}
+                renderTooltipBody={({ points }) => <TooltipBody point={points[0]?.datum as PlotPoint | undefined} />}
+              />
             )}
         </TabsPanel>
       </Tabs>

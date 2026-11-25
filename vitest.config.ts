@@ -53,7 +53,14 @@ export default defineConfig({
             "@tanstack/react-table",
             "embla-carousel-react",
             "react-resizable-panels",
-            "recharts"
+            "@tanstack/charts",
+            "@tanstack/charts/mark/decorative",
+            "@tanstack/charts/polar",
+            "@tanstack/charts/react",
+            "@tanstack/charts/react/tooltip",
+            "@tanstack/charts/scales/band",
+            "@tanstack/charts/scales/linear",
+            "@tanstack/charts/tooltip"
           ]
         },
         test: {

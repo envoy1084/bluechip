@@ -32,7 +32,7 @@ describe("PortfolioChart", () => {
 
   it("reads each point's value and date from the keyboard, and the headline follows", async () => {
     const screen = await render(<PortfolioChart ranges={RANGES} defaultRange="1W" />)
-    const plot = screen.getByRole("application", { name: "Portfolio value" })
+    const plot = screen.getByRole("img", { name: "Portfolio value" })
     await expect.element(plot).toBeVisible()
     // The pointer may still rest where an earlier test left it; move it off the chart.
     await userEvent.unhover(plot)
@@ -53,7 +53,7 @@ describe("PortfolioChart", () => {
         <PortfolioChart ranges={RANGES} defaultRange="1W" />
       </div>
     )
-    const plot = screen.getByRole("application", { name: "Portfolio value" })
+    const plot = screen.getByRole("img", { name: "Portfolio value" })
     await expect.element(plot).toBeVisible()
     const { width } = plot.element().getBoundingClientRect()
     await userEvent.hover(plot, { position: { x: width - 14, y: 60 } })

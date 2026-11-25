@@ -17,7 +17,7 @@ describe("Chart", () => {
       </div>
     )
     // The middle of three bars: a 52 px axis gutter, then three equal slots across the rest.
-    await userEvent.hover(screen.getByRole("application", { name: "Bought and sold per week" }), {
+    await userEvent.hover(screen.getByRole("img", { name: "Bought and sold per week" }), {
       position: { x: 320, y: 120 }
     })
     await expect.element(screen.getByText("$8,620", { exact: true })).toBeVisible()
@@ -30,7 +30,7 @@ describe("Chart", () => {
         <AreaChart title="Portfolio, last 3 days" labels={labels} series={series} />
       </div>
     )
-    const plot = screen.getByRole("application", { name: "Portfolio, last 3 days" })
+    const plot = screen.getByRole("img", { name: "Portfolio, last 3 days" })
     await expect.element(plot).toBeVisible()
     // The pointer may still rest where an earlier test left it; move it off the chart.
     await userEvent.unhover(plot)
