@@ -7,6 +7,7 @@ import * as HttpApi from "effect/http-api/HttpApi"
 import * as OpenApi from "effect/http-api/OpenApi"
 import { AccountApi } from "./api/AccountApi.ts"
 import { ActivityApi } from "./api/ActivityApi.ts"
+import { AgentsApi } from "./api/AgentsApi.ts"
 import { AuthApi } from "./api/AuthApi.ts"
 import { DevApi } from "./api/DevApi.ts"
 import { EventsApi } from "./api/EventsApi.ts"
@@ -34,6 +35,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(PortfolioApi)
   .add(TransfersApi)
   .add(TradesApi)
+  .add(AgentsApi)
   .add(ActivityApi)
   .add(DevApi)
   .middleware(DefectReporting)

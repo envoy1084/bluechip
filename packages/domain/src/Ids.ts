@@ -161,3 +161,20 @@ export const TradeId = typeId("trade").pipe(
  * @since 0.0.0
  */
 export type TradeId = typeof TradeId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const AgentId = typeId("agent").pipe(
+  Schema.brand("AgentId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/AgentId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type AgentId = typeof AgentId.Type

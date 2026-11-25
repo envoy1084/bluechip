@@ -5,6 +5,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
+import { LimitProblem } from "./agents/Rules.ts"
 
 /**
  * @stability unstable
@@ -73,7 +74,7 @@ export class InvalidRequest extends Schema.TaggedError<InvalidRequest>("@bluechi
  */
 export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Errors/Conflict")(
   "Conflict",
-  { reason: Schema.Literals(["requestIdReused", "staleUpdate"]) },
+  { reason: Schema.Literals(["requestIdReused", "staleUpdate", "agentBusy"]) },
   { httpApiStatus: 409 }
 ) {}
 
@@ -206,3 +207,17 @@ export class Unavailable extends Schema.TaggedError<Unavailable>("@bluechip/doma
  * @since 0.0.0
  */
 export const isRetryable = (error: unknown): boolean => error instanceof Unavailable || error instanceof RateLimited
+
+/**
+ * An agent's limits break a rule: each problem names the limit and why (outside its range, or not allowed for the
+ * template).
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class InvalidLimits extends Schema.TaggedError<InvalidLimits>("@bluechip/domain/Errors/InvalidLimits")(
+  "InvalidLimits",
+  { problems: Schema.Array(LimitProblem) },
+  { httpApiStatus: 422 }
+) {}
