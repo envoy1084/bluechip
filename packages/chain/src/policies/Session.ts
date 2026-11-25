@@ -117,7 +117,8 @@ export const diffSessions = (before: AgentSpec, after: AgentSpec): {
 }
 
 /**
- * The session `signer` signs in with `spec`'s policies until `validUntil` (Unix seconds).
+ * The session `signer` signs in with `spec`'s policies until `validUntil` (Unix seconds). Its permission id depends on
+ * `salt`: pass the same salt to build the same session again (Namera picks a random one otherwise).
  *
  * @stability experimental
  * @category constructors
@@ -127,11 +128,13 @@ export const agentSession = (options: {
   readonly spec: AgentSpec
   readonly signer: Address
   readonly validUntil: number
+  readonly salt?: Hex | undefined
 }): Session.Session =>
   Session.from({
     signer: SessionKey.ecdsa(options.signer),
     validUntil: options.validUntil,
-    policies: compileSession(options.spec)
+    policies: compileSession(options.spec),
+    ...(options.salt === undefined ? {} : { salt: options.salt })
   })
 
 /**

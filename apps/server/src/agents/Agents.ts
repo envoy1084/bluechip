@@ -34,7 +34,7 @@ import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import * as Result from "effect/Result"
 import { typeid } from "typeid-js"
-import type { Address, Hex } from "viem"
+import { type Address, type Hex, keccak256, stringToHex } from "viem"
 import { AppConfig } from "../Config.ts"
 import { Database } from "../db/Database.ts"
 import { agents, sessionKeys } from "../db/schema/agents.ts"
@@ -67,9 +67,15 @@ const unavailable = Effect.fail(new Unavailable({ dependency: "chain", retryAfte
 
 const seconds = (time: DateTime.Utc) => Math.floor(DateTime.toEpochMillis(time) / 1000)
 
-// The Namera session a session row locks: its spec's policies, signed by its key, until its end.
+// The Namera session a session row locks: its spec's policies, signed by its key, until its end. The salt comes from
+// the row, so building it again (to read its grant once locked) gives the same permission id.
 const sessionOf = (row: SessionRow): Session.Session =>
-  agentSession({ spec: decodeSpec(row.spec), signer: row.sessionKey as Address, validUntil: seconds(row.validUntil!) })
+  agentSession({
+    spec: decodeSpec(row.spec),
+    signer: row.sessionKey as Address,
+    validUntil: seconds(row.validUntil!),
+    salt: keccak256(stringToHex(row.id))
+  })
 
 /**
  * Agents with the account's passkey. Creating one prepares its lock (an owner operation enabling a Namera session
