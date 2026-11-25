@@ -1,0 +1,124 @@
+/**
+ * The errors every endpoint may return. Each carries its HTTP status, so the server encodes it and the typed client
+ * decodes it back into the same class.
+ *
+ * @since 0.0.0
+ */
+import * as Schema from "effect/Schema"
+
+/**
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class Unauthenticated extends Schema.TaggedError<Unauthenticated>("@bluechip/domain/Errors/Unauthenticated")(
+  "Unauthenticated",
+  {},
+  { httpApiStatus: 401 }
+) {}
+
+/**
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class Forbidden extends Schema.TaggedError<Forbidden>("@bluechip/domain/Errors/Forbidden")(
+  "Forbidden",
+  {},
+  { httpApiStatus: 403 }
+) {}
+
+/**
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class NotFound extends Schema.TaggedError<NotFound>("@bluechip/domain/Errors/NotFound")(
+  "NotFound",
+  { resource: Schema.String, id: Schema.String },
+  { httpApiStatus: 404 }
+) {}
+
+/**
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class InvalidRequest extends Schema.TaggedError<InvalidRequest>("@bluechip/domain/Errors/InvalidRequest")(
+  "InvalidRequest",
+  { field: Schema.String, problem: Schema.Literals(["missing", "outOfRange", "invalid", "notAllowed"]) },
+  { httpApiStatus: 400 }
+) {}
+
+/**
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Errors/Conflict")(
+  "Conflict",
+  { reason: Schema.Literals(["requestIdReused", "staleUpdate"]) },
+  { httpApiStatus: 409 }
+) {}
+
+/**
+ * The client was built against another contract version; it should reload.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class ClientOutdated extends Schema.TaggedError<ClientOutdated>("@bluechip/domain/Errors/ClientOutdated")(
+  "ClientOutdated",
+  { serverVersion: Schema.Int },
+  { httpApiStatus: 426 }
+) {}
+
+/**
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class RateLimited extends Schema.TaggedError<RateLimited>("@bluechip/domain/Errors/RateLimited")(
+  "RateLimited",
+  { retryAfterSeconds: Schema.Int },
+  { httpApiStatus: 429 }
+) {}
+
+/**
+ * An unexpected failure on the server. The request id finds its logs.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class Internal extends Schema.TaggedError<Internal>("@bluechip/domain/Errors/Internal")(
+  "Internal",
+  { requestId: Schema.String },
+  { httpApiStatus: 500 }
+) {}
+
+/**
+ * A dependency (the chain, quotes, the database, the model) is down; retrying later can succeed.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class Unavailable extends Schema.TaggedError<Unavailable>("@bluechip/domain/Errors/Unavailable")(
+  "Unavailable",
+  {
+    dependency: Schema.Literals(["chain", "quotes", "database", "model"]),
+    retryAfterSeconds: Schema.NullOr(Schema.Int)
+  },
+  { httpApiStatus: 503 }
+) {}
+
+/**
+ * Whether retrying the same request later can succeed.
+ *
+ * @stability unstable
+ * @category predicates
+ * @since 0.0.0
+ */
+export const isRetryable = (error: unknown): boolean => error instanceof Unavailable || error instanceof RateLimited

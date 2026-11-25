@@ -1,0 +1,20 @@
+{
+  "name": "@bluechip/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "bluechip's shared domain: ids, errors, live events and the HTTP API contract.",
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    "./api/*": "./src/api/*.ts",
+    "./*": "./src/*.ts"
+  },
+  "peerDependencies": {
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "effect": "catalog:"
+  }
+}

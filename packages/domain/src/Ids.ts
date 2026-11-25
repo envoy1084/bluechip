@@ -1,0 +1,55 @@
+/**
+ * Identifiers shared by the server and the web app.
+ *
+ * Entity ids are TypeIDs: a lowercase prefix, an underscore and a base32 UUIDv7 (`agent_01jd…`), so an id says what
+ * it identifies and sorts by creation time.
+ *
+ * @since 0.0.0
+ */
+import * as Schema from "effect/Schema"
+
+/**
+ * A TypeID string with the given prefix. Brand it per entity, so ids of different entities never mix.
+ *
+ * @stability unstable
+ * @category constructors
+ * @since 0.0.0
+ */
+export const typeId = (prefix: string) =>
+  Schema.String.check(Schema.isPattern(new RegExp(`^${prefix}_[0-7][0-9a-hjkmnp-tv-z]{25}$`)))
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const UserId = typeId("user").pipe(
+  Schema.brand("UserId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/UserId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type UserId = typeof UserId.Type
+
+/**
+ * A client-generated UUID that makes a write idempotent: the same request id returns the first result.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const RequestId = Schema.String.check(Schema.isUUID()).pipe(
+  Schema.brand("RequestId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/RequestId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type RequestId = typeof RequestId.Type

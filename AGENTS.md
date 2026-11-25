@@ -7,6 +7,8 @@ that match the task.
 ## Workspace map
 
 - `packages/*`: publishable packages, each with its own public boundary.
+  - `packages/domain` (`@bluechip/domain`, private): shared ids, errors, live events and the HTTP API contract
+    (`BluechipApi`, Effect `HttpApi`); the server implements it, the web app calls it. Depends only on `effect`.
   - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
     bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
