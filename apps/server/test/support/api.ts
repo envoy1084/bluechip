@@ -7,6 +7,8 @@ import * as Effect from "effect/Effect"
 import * as HttpRouter from "effect/http/HttpRouter"
 import * as HttpServer from "effect/http/HttpServer"
 import * as Layer from "effect/Layer"
+import { randomBytes } from "node:crypto"
+import { Agents } from "../../src/agents/Agents.ts"
 import { ApiRoutes } from "../../src/api/Api.ts"
 import { AppConfig } from "../../src/Config.ts"
 import { Database } from "../../src/db/Database.ts"
@@ -29,10 +31,11 @@ const config = ConfigProvider.layer(ConfigProvider.fromEnvRecord({
   DATABASE_URL: testDatabaseUrl,
   PUBLIC_ORIGIN: origin,
   RP_ID: "localhost",
+  AGENT_KEY_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
   BUNDLER_URL: DevnetTest.urls().bundlerUrl
 }))
 
-const Services = Layer.mergeAll(Withdrawals.layer, Trades.layer, Charts.layer).pipe(
+const Services = Layer.mergeAll(Withdrawals.layer, Trades.layer, Agents.layer, Charts.layer).pipe(
   Layer.provideMerge(Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer)),
   Layer.provideMerge(Layer.mergeAll(AlpacaTest, Database.layer, AppConfig.layer)),
   Layer.provideMerge(LiveEvents.layer),

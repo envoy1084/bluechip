@@ -12,6 +12,8 @@ export class AppConfig extends Context.Service<AppConfig, {
   /** The WebAuthn relying party: passkeys are bound to this domain for good. */
   readonly rpId: string
   readonly databaseUrl: Redacted.Redacted
+  /** Encrypts agents' session keys at rest: 32 random bytes, base64 (`openssl rand -base64 32`). */
+  readonly agentKeyEncryptionKey: Redacted.Redacted<string>
 }>()("@bluechip/server/AppConfig") {
   static readonly layer = Layer.effect(
     AppConfig,
@@ -23,7 +25,8 @@ export class AppConfig extends Context.Service<AppConfig, {
         port: yield* Config.Port("PORT").pipe(Config.withDefault(8080)),
         publicOrigin: yield* Config.String("PUBLIC_ORIGIN").pipe(Config.withDefault("http://localhost:3000")),
         rpId: yield* Config.String("RP_ID").pipe(Config.withDefault("localhost")),
-        databaseUrl: yield* Config.Redacted("DATABASE_URL")
+        databaseUrl: yield* Config.Redacted("DATABASE_URL"),
+        agentKeyEncryptionKey: yield* Config.Redacted("AGENT_KEY_ENCRYPTION_KEY")
       }
     })
   )

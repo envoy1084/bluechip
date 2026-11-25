@@ -5,6 +5,7 @@ import * as Layer from "effect/Layer"
 import { AuthenticationLive } from "../auth/Authentication.ts"
 import { AccountHandlers } from "./Account.ts"
 import { ActivityHandlers } from "./Activity.ts"
+import { AgentsHandlers } from "./Agents.ts"
 import { AuthHandlers } from "./Auth.ts"
 import { ContractCheckLive, DefectReportingLive } from "./Contract.ts"
 import { DevHandlers } from "./Dev.ts"
@@ -25,6 +26,7 @@ export const ApiHandlers = Layer.mergeAll(
   PortfolioHandlers,
   TransfersHandlers,
   TradesHandlers,
+  AgentsHandlers,
   ActivityHandlers,
   DevHandlers
 )

@@ -58,6 +58,12 @@ const owner = Effect.fnUntraced(function*(passkey: OwnerPasskey, assertion?: typ
   })
 })
 
+/** The owner's Kernel account, for reads and grants that need it (it signs nothing without the browser). */
+export const ownerAccount = Effect.fnUntraced(function*(passkey: OwnerPasskey) {
+  const namera = yield* Namera
+  return yield* namera.kernelAccount(yield* owner(passkey)).pipe(Effect.catch(unavailable))
+})
+
 /** The user operation's hash as WebAuthn's challenge (base64url of its 32 bytes). */
 export const challengeOf = (hash: Hex) => isoBase64URL.fromBuffer(hexToBytes(hash) as Uint8Array<ArrayBuffer>)
 
