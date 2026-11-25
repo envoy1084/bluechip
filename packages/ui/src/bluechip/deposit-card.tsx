@@ -1,38 +1,21 @@
 import { type ReactNode, useEffect, useId, useMemo, useState } from "react"
+import { encode } from "uqr"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney } from "../lib/format.ts"
 import { haptic } from "../lib/haptics.ts"
 import { Confetti } from "../motion/confetti.tsx"
 import { NumberRoll } from "../motion/number-roll.tsx"
-import { seededRandom } from "../motion/random.ts"
 import { MomentScope, useMoment } from "../motion/sweep.tsx"
 import { AddressChip, shortAddress } from "./address-chip.tsx"
 
-const GRID = 29
-
-const hash = (text: string): number =>
-  [...text].reduce((h, ch) => Math.imul(h ^ ch.charCodeAt(0), 16777619), 2166136261)
-
-// A QR-like pixel pattern seeded by the address: finder squares in three corners, noise elsewhere, a clear middle
-// for the mark. It is decoration, not a scannable code, and is labelled as an example.
-const patternPath = (address: string): string => {
-  const random = seededRandom(hash(address))
+// The address as an EIP-681 link on Base (chain 8453), so a wallet that scans it also picks the right network. High
+// error correction keeps the code readable under the mark in the middle.
+const qrCode = (address: string): { readonly size: number; readonly path: string } => {
+  const { data, size } = encode(`ethereum:${address}@8453`, { ecc: "H", border: 0 })
   const cells: Array<string> = []
-  const finder = (x: number, y: number) => {
-    cells.push(`M${x} ${y}h7v7h-7z M${x + 1} ${y + 1}v5h5v-5z M${x + 2} ${y + 2}h3v3h-3z`)
-  }
-  for (let y = 0; y < GRID; y++) {
-    for (let x = 0; x < GRID; x++) {
-      const inFinder = (x < 8 && y < 8) || (x > 20 && y < 8) || (x < 8 && y > 20)
-      const middle = x > 10 && x < 18 && y > 10 && y < 18
-      if (!inFinder && !middle && random() > 0.52) cells.push(`M${x} ${y}h1v1h-1z`)
-    }
-  }
-  finder(0, 0)
-  finder(22, 0)
-  finder(0, 22)
-  return cells.join(" ")
+  data.forEach((row, y) => row.forEach((dark, x) => dark && cells.push(`M${x} ${y}h1v1h-1z`)))
+  return { size, path: cells.join("") }
 }
 
 export interface DepositCardProps {
@@ -58,7 +41,7 @@ export interface DepositCardProps {
 export function DepositCard(
   { address, status, amount = 0, from, footer, celebrate = false, className }: DepositCardProps
 ) {
-  const pattern = useMemo(() => patternPath(address), [address])
+  const qr = useMemo(() => qrCode(address), [address])
   const titleId = useId()
   const { ref: momentRef, play: playMoment } = useMoment()
   const [shown, setShown] = useState(0)
@@ -123,12 +106,13 @@ export function DepositCard(
       <div className="grid justify-items-center gap-5 sm:grid-cols-[168px_minmax(0,1fr)] sm:items-start sm:justify-items-stretch">
         <figure className="relative m-0 size-[168px] rounded-[16px] bg-white p-3 shadow-e2">
           <svg
-            viewBox={`0 0 ${GRID} ${GRID}`}
-            className="block size-36 opacity-90"
+            viewBox={`0 0 ${qr.size} ${qr.size}`}
+            className="block size-36"
             shapeRendering="crispEdges"
-            aria-hidden
+            role="img"
+            aria-label={`QR code for ${shortAddress(address)}`}
           >
-            <path d={pattern} fill="var(--color-ink)" fillRule="evenodd" />
+            <path d={qr.path} fill="var(--color-ink)" />
           </svg>
           <span
             aria-hidden
@@ -136,9 +120,6 @@ export function DepositCard(
           >
             <i className="size-[22px] rounded-full bg-[linear-gradient(180deg,#4c76ff,#2a5bff)]" />
           </span>
-          <figcaption className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 rounded-full bg-warn-wash px-2 py-0.5 text-[11.5px] font-semibold whitespace-nowrap text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
-            Example pattern
-          </figcaption>
         </figure>
         <div className="grid w-full min-w-0 gap-3">
           <span className="text-label font-[550] text-g-800">Your address</span>

@@ -191,14 +191,6 @@ function Status({ tone, children }: { readonly tone: keyof typeof STATUS_TONE; r
   )
 }
 
-function ExampleFlag() {
-  return (
-    <span className="inline-flex items-center rounded-full bg-warn-wash px-2 py-0.5 text-[11.5px] font-semibold text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
-      Example
-    </span>
-  )
-}
-
 function Change({ value }: { readonly value: number }) {
   return <span className={cn("tabular-nums", value >= 0 ? "text-gain" : "text-loss")}>{formatPercent(value)}</span>
 }
@@ -356,7 +348,6 @@ function CardSection() {
               </p>
             </div>
             <CardAction>
-              <ExampleFlag />
             </CardAction>
           </CardHeader>
           <CardContent>
@@ -426,7 +417,7 @@ function TableSection() {
       <Table>
         <TableCaption>
           <span className="inline-flex items-center gap-2">
-            Your stocks <ExampleFlag />
+            Your stocks
           </span>
         </TableCaption>
         <TableHeader>
@@ -625,7 +616,7 @@ function ChartSection() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardDescription className="flex items-center gap-2">
-              {chart === "bar" ? "Bought and sold, per week" : "Portfolio, last 30 days"} <ExampleFlag />
+              {chart === "bar" ? "Bought and sold, per week" : "Portfolio, last 30 days"}
             </CardDescription>
             <p className="mt-0.5 text-[28px] leading-[1.15] font-semibold tracking-[-0.035em] tabular-nums">
               $10,452.90 <span className="text-label font-semibold tracking-normal text-gain">+4.8%</span>
@@ -986,7 +977,7 @@ function SkeletonSection() {
               <>
                 <div>
                   <CardDescription className="flex items-center gap-2">
-                    Portfolio <ExampleFlag />
+                    Portfolio
                   </CardDescription>
                   <p className="mt-0.5 text-[28px] leading-[1.15] font-semibold tracking-[-0.035em] tabular-nums">
                     $10,452.90

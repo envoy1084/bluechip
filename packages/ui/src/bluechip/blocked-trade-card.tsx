@@ -10,7 +10,7 @@ export interface BlockedTradeCardProps {
   readonly agentName: string
   /** When it happened: "2 min ago". */
   readonly time: ReactNode
-  /** Shown after the time, like an "Example" flag. */
+  /** Shown after the time, such as a status tag. */
   readonly meta?: ReactNode
   readonly side: "buy" | "sell"
   readonly stockName: string

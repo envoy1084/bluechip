@@ -18,7 +18,7 @@ export interface DailyBriefCardProps extends Omit<ComponentProps<"div">, "childr
   readonly watching: ReadonlyArray<BriefLine>
   /** What your limits stopped. Refusals are a feature, so they get their own section. */
   readonly refused: ReadonlyArray<BriefLine>
-  /** A tag beside the title, like an "Example" flag. */
+  /** A tag beside the title, such as a status tag. */
   readonly flag?: ReactNode
 }
 

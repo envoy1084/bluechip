@@ -159,14 +159,6 @@ const SUGGESTIONS = [
 
 /* ---------- Page layout ---------- */
 
-function ExampleFlag() {
-  return (
-    <span className="inline-flex items-center rounded-full bg-warn-wash px-2 py-0.5 text-[11.5px] font-semibold text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
-      Example
-    </span>
-  )
-}
-
 function Group({ n, title, children }: { readonly n: string; readonly title: string; readonly children: ReactNode }) {
   return (
     <div className="pt-10">
@@ -742,7 +734,6 @@ function ProposalSection() {
         <ProposalCard
           {...PROPOSAL}
           className="max-w-[600px]"
-          flag={<ExampleFlag />}
           onApprove={() => toast("Opening approval")}
           onAdjust={() => toast("Adjust the weights")}
         />
@@ -761,7 +752,6 @@ function BriefSection() {
         <DailyBriefCard
           className="max-w-[560px]"
           date="Tuesday 24 November"
-          flag={<ExampleFlag />}
           did={[
             {
               agentId: "rebalancer",

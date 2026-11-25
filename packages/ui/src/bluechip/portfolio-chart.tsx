@@ -28,7 +28,7 @@ export interface PortfolioChartProps {
   readonly ranges: ReadonlyArray<PortfolioRange>
   readonly defaultRange?: string
   readonly title?: ReactNode
-  /** Shown after the title, like an "Example" flag. */
+  /** Shown after the title, such as a status tag. */
   readonly titleAddon?: ReactNode
   /** Shows a skeleton instead of the chart. */
   readonly loading?: boolean

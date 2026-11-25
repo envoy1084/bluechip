@@ -479,7 +479,7 @@ function ConfettiCard() {
             <div>
               <strong className="mb-0.5 block text-body-sm font-semibold">Your first deposit arrived</strong>
               <p className="text-label text-g-600">
-                <span className="tabular-nums">$500.00</span> cash (USDC) is ready to use. Example
+                <span className="tabular-nums">$500.00</span> cash (USDC) is ready to use.
               </p>
             </div>
           </div>
@@ -523,7 +523,7 @@ function RollCard() {
       stage={
         <div ref={stage} className="grid justify-items-center gap-2 text-center">
           <span className="text-caption-sm font-semibold tracking-[.06em] text-g-500 uppercase">
-            Portfolio value · Example
+            Portfolio value
           </span>
           <NumberRoll
             value={quote.value}

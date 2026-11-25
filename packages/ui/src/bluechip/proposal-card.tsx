@@ -31,7 +31,7 @@ export interface ProposalCardProps extends Omit<ComponentProps<"div">, "children
   readonly assumptions?: ReadonlyArray<string>
   /** bluechip's view, labelled as opinion. */
   readonly opinions?: ReadonlyArray<string>
-  /** A tag beside the eyebrow, like an "Example" flag. */
+  /** A tag beside the eyebrow, such as a status tag. */
   readonly flag?: ReactNode
   readonly onApprove?: () => void
   readonly onAdjust?: () => void

@@ -220,14 +220,6 @@ const APPROVAL_ORDER = (price: number): TradeOrder => ({
 
 /* ---------- Page scaffolding (mirrors the brand kit's #product-ui layout) ---------- */
 
-function ExampleFlag({ children = "Example" }: { readonly children?: ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-warn-wash px-2 py-0.5 text-[11.5px] font-semibold text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
-      {children}
-    </span>
-  )
-}
-
 function Group(
   { id, title, intro, children }: {
     readonly id: string
@@ -435,7 +427,7 @@ function KitBluechip() {
         <h1 className="text-display-3 font-semibold">Money & activity</h1>
         <p className="max-w-[64ch] text-body-lg text-g-600">
           Prices, balances, approvals and the brakes. Every demo here shares one example market, so the controls below
-          move them all at once. All prices, balances and addresses are examples.
+          move them all at once.
         </p>
       </div>
 
@@ -444,7 +436,7 @@ function KitBluechip() {
       <Group
         id="market-money"
         title="Market & money"
-        intro="Prices, balances and how your money is split. Numbers are tabular, changes are never color alone, and every amount here is an example."
+        intro="Prices, balances and how your money is split. Numbers are tabular, changes are never color alone."
       >
         <TickerSection prices={prices} />
         <PriceSection
@@ -471,7 +463,7 @@ function KitBluechip() {
             ]
           ]}
         >
-          <PortfolioChart ranges={portfolioRanges(total, dayChange)} defaultRange="1M" titleAddon={<ExampleFlag />} />
+          <PortfolioChart ranges={portfolioRanges(total, dayChange)} defaultRange="1M" />
         </Section>
         <AllocationBarSection />
         <Section
@@ -580,7 +572,7 @@ function KitBluechip() {
             <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-g-100 px-4 py-[13px]">
               <b className="text-body-sm font-semibold">Holdings</b>
               <span className="flex items-center gap-1.5 text-caption text-g-500">
-                Share of your money · your max <ExampleFlag />
+                Share of your money · your max
               </span>
             </div>
             {rows.map((r) => (
@@ -635,7 +627,6 @@ function KitBluechip() {
             key={blockedKey}
             agentName="Tech picker"
             time="2 min ago"
-            meta={<ExampleFlag />}
             side="buy"
             stockName="Tesla"
             amount={2400}
@@ -665,9 +656,6 @@ function KitBluechip() {
         >
           <div className="grid justify-items-center gap-3">
             <AddressChip address={ADDRESS} />
-            <span className="flex items-center gap-1.5 text-label-sm text-g-500">
-              <ExampleFlag /> not a real address
-            </span>
           </div>
         </Section>
         <Section
@@ -891,7 +879,7 @@ function PriceSection({ quote, onTick }: { readonly quote: Quote; readonly onTic
           <TickerChip symbol="NVDA" size="lg" />
           <div className="grid gap-1">
             <span className="flex items-center gap-1.5 text-label-sm text-g-500">
-              Nvidia <ExampleFlag />
+              Nvidia
             </span>
             <Price price={quote.price} change={changeOf(quote)} size="xl" />
           </div>
@@ -954,7 +942,7 @@ function MoneySection({ cash, nvidia }: { readonly cash: number; readonly nvidia
           label="Buy Nvidia with"
           description={
             <span className="inline-flex flex-wrap items-center gap-1.5">
-              Cash (USDC) · {formatMoney(cash)} available <ExampleFlag />
+              Cash (USDC) · {formatMoney(cash)} available
             </span>
           }
           available={cash}
@@ -1212,7 +1200,7 @@ function ActivitySection(
       <div className={cn(card, "max-w-[640px] overflow-hidden")}>
         <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-g-100 px-4 py-[13px]">
           <b className="flex items-center gap-2 text-body-sm font-semibold">
-            Activity <ExampleFlag />
+            Activity
           </b>
           <ToggleGroup
             aria-label="Filter activity"
@@ -1314,7 +1302,7 @@ function OrderSection({ nvidia, tesla }: { readonly nvidia: number; readonly tes
           </TabsPanel>
         </Tabs>
         <p className="flex items-center justify-center gap-1.5 text-label-sm text-g-500">
-          <ExampleFlag /> Prices update until you approve.
+          Prices update until you approve.
         </p>
       </div>
     </Section>
