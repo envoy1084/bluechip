@@ -21,9 +21,15 @@ export const AgentsHandlers = HttpApiBuilder.group(BluechipApi, "agents", (handl
         ([user, agents]) =>
           agents.lock(user, params.id, payload.requestId)
       ))
-    .handle("changeLimits", ({ params, payload }) =>
+    .handle("sessions", ({ params }) =>
       Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.changeLimits(user, params.id, payload)))
+        agents.sessions(user, params.id)))
+    .handle("change", ({ params, payload }) =>
+      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
+        agents.change(user, params.id, payload)))
+    .handle("renew", ({ params, payload }) =>
+      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
+        agents.renew(user, params.id, payload.requestId)))
     .handle("remove", ({ params, payload }) =>
       Effect.flatMap(
         Effect.all([CurrentUser, Agents]),

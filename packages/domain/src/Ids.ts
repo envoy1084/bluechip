@@ -184,9 +184,9 @@ export type AgentId = typeof AgentId.Type
  * @category ids
  * @since 0.0.0
  */
-export const SessionId = typeId("session").pipe(
-  Schema.brand("SessionId"),
-  Schema.annotate({ identifier: "@bluechip/domain/Ids/SessionId" })
+export const AgentSessionId = typeId("agentsession").pipe(
+  Schema.brand("AgentSessionId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/AgentSessionId" })
 )
 
 /**
@@ -194,7 +194,7 @@ export const SessionId = typeId("session").pipe(
  * @category ids
  * @since 0.0.0
  */
-export type SessionId = typeof SessionId.Type
+export type AgentSessionId = typeof AgentSessionId.Type
 
 /**
  * @stability unstable

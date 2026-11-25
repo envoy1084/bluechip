@@ -9,6 +9,7 @@ import * as HttpServer from "effect/http/HttpServer"
 import * as Layer from "effect/Layer"
 import { randomBytes } from "node:crypto"
 import { Agents } from "../../src/agents/Agents.ts"
+import { SavedTemplates } from "../../src/agents/SavedTemplates.ts"
 import { ApiRoutes } from "../../src/api/Api.ts"
 import { AppConfig } from "../../src/Config.ts"
 import { Database } from "../../src/db/Database.ts"
@@ -36,7 +37,9 @@ const config = ConfigProvider.layer(ConfigProvider.fromEnvRecord({
 }))
 
 const Services = Layer.mergeAll(Withdrawals.layer, Trades.layer, Agents.layer, Charts.layer).pipe(
-  Layer.provideMerge(Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer)),
+  Layer.provideMerge(
+    Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer, SavedTemplates.layer)
+  ),
   Layer.provideMerge(Layer.mergeAll(AlpacaTest, Database.layer, AppConfig.layer)),
   Layer.provideMerge(LiveEvents.layer),
   Layer.provideMerge(DevnetTest.layer),
@@ -53,7 +56,7 @@ afterAll(() => dispose())
 
 /** One request to the API as the web app sends it: JSON, the contract version, the browser's Origin and cookie. */
 export const call = (
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "DELETE",
   path: string,
   options: { body?: unknown; cookie?: string; origin?: string } = {}
 ) =>

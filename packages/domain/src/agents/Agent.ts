@@ -7,7 +7,7 @@
  */
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
-import { AgentId, SessionId, SigningRequestId } from "../Ids.ts"
+import { AgentId, AgentSessionId, SigningRequestId } from "../Ids.ts"
 import { AgentSpec, PolicyId } from "../policies/AgentSpec.ts"
 import { FieldUnit } from "../policies/Policy.ts"
 import { CeremonyOptions } from "../WebAuthn.ts"
@@ -179,7 +179,7 @@ export type SessionAuthor = typeof SessionAuthor.Type
  * @since 0.0.0
  */
 export class AgentSession extends Schema.Class<AgentSession>("@bluechip/domain/agents/Agent/AgentSession")({
-  id: SessionId,
+  id: AgentSessionId,
   status: SessionStatus,
   spec: AgentSpec,
   createdBy: SessionAuthor,

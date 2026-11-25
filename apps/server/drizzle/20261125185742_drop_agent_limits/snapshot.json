@@ -1,0 +1,164 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "e2e761c1-2043-4cb6-adf8-1e14fb135844",
+  "prevIds": [
+    "a52e9e33-f925-44c0-b501-8fce1d2853e5"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "agent_keys"
+      ],
+      "writes": [
+        "s|fk|public.agent_keys.agent_keys_agent_id_agents_id_fkey",
+        "n|fk|public.agent_keys.agent_keys_agent_id_agents_id_fkey",
+        "e|fk|public.agent_keys.agent_keys_agent_id_agents_id_fkey",
+        "n|con|public.agent_keys.agent_keys_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.agent_keys",
+        "n|sch|public",
+        "e|col|public.agent_keys.agent_id"
+      ]
+    },
+    {
+      "statementType": "drop_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "agent_keys"
+      ],
+      "writes": [
+        "s|tbl|public.agent_keys",
+        "n|tbl|public.agent_keys",
+        "e|tbl|public.agent_keys",
+        "n|rel|public.agent_keys",
+        "n|type|public.agent_keys"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "agents"
+      ],
+      "writes": [
+        "s|tbl|public.agents",
+        "n|tbl|public.agents",
+        "e|tbl|public.agents",
+        "n|rel|public.agents",
+        "n|type|public.agents"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "tables\u0000[\"public\",\"agent_keys\"]"
+    },
+    {
+      "op": "drop",
+      "key": "tables\u0000[\"public\",\"agents\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agent_keys\",\"agent_id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agent_keys\",\"ciphertext\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agent_keys\",\"created_at\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"user_id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"name\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"template\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"status\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"paused\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"limits\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"pending_limits\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"session_key\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"locked_until\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"grant\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"user_op_hash\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"created_at\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"agents\",\"updated_at\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"agents_user_created_at_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"agent_keys\",\"agent_keys_agent_id_agents_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "fks\u0000[\"public\",\"agents\",\"agents_user_id_users_id_fkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "pks\u0000[\"public\",\"agent_keys\",\"agent_keys_pkey\"]"
+    },
+    {
+      "op": "drop",
+      "key": "pks\u0000[\"public\",\"agents\",\"agents_pkey\"]"
+    }
+  ]
+}

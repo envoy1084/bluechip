@@ -5,6 +5,7 @@ import * as HttpRouter from "effect/http/HttpRouter"
 import * as Layer from "effect/Layer"
 import { createServer } from "node:http"
 import { Agents } from "./agents/Agents.ts"
+import { SavedTemplates } from "./agents/SavedTemplates.ts"
 import { ApiRoutes } from "./api/Api.ts"
 import { AppConfig } from "./Config.ts"
 import { Database } from "./db/Database.ts"
@@ -34,7 +35,9 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
   })),
   // Namera checks at startup that the bundler and paymaster work together, and refuses to boot otherwise.
   Layer.provide(Layer.mergeAll(Withdrawals.layer, Trades.layer, Agents.layer, Charts.layer)),
-  Layer.provide(Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer)),
+  Layer.provide(
+    Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer, SavedTemplates.layer)
+  ),
   Layer.provide(Alpaca.layer),
   Layer.provide(LiveEvents.layer),
   Layer.provide(Database.layer),

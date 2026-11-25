@@ -1,52 +1,12 @@
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
-import { Limits } from "@bluechip/domain/agents/Limits"
-import { draftLimits } from "@bluechip/domain/agents/Templates"
+import { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
-import * as Schema from "effect/Schema"
 import { randomUUID } from "node:crypto"
+import { typeid } from "typeid-js"
+import { changed, createAgent, encode, lockedAgent, newCookie, PICKER, signed } from "../support/agents.ts"
 import { call, fundedUser, origin, signUp } from "../support/api.ts"
 import { softwareAuthenticator } from "../support/authenticator.ts"
-
-const encode = (limits: Limits) => Schema.encodeSync(Schema.toCodecJson(Limits))(limits)
-
-const PICKER = draftLimits({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
-
-type User = Effect.Success<ReturnType<typeof fundedUser>>
-
-const createAgent = (cookie: string, limits: Limits = PICKER, requestId: string = randomUUID()) =>
-  call("POST", "/api/agents", {
-    cookie,
-    body: { requestId, name: "Tech picker", template: "stockPicker", limits: encode(limits) }
-  })
-
-/** Signs a prepared request with the user's passkey and sends it; waits for the agent to reach `status`. */
-const signed = Effect.fnUntraced(function*(user: User, request: any, status: string) {
-  const credential = user.authenticator.authenticate(request.options.challenge)
-  const sent = yield* call("POST", `/api/agents/requests/${request.id}/confirm`, {
-    cookie: user.cookie,
-    body: { credential }
-  })
-  const settled = yield* user.events.next((event) =>
-    event._tag === "AgentChanged" && event.agent.id === request.agent.id && event.agent.status === status
-  )
-  return { sent, agent: settled.agent }
-})
-
-/** A funded user with a Stock picker locked onchain. */
-const lockedAgent = Effect.fnUntraced(function*() {
-  const user = yield* fundedUser()
-  const created = yield* createAgent(user.cookie)
-  const { agent } = yield* signed(user, created.json, "active")
-  return { user, agent }
-})
-
-// A new user with gas for owner operations (the devnet's accounts pay their own), without their event stream.
-const newCookie = Effect.gen(function*() {
-  const user = yield* fundedUser()
-  yield* user.events.close
-  return user.cookie
-})
 
 // A new user with a passkey of their own, and no money.
 const strangerCookie = Effect.suspend(() =>
@@ -56,36 +16,66 @@ const strangerCookie = Effect.suspend(() =>
   )
 )
 
+const statuses = (sessions: ReadonlyArray<{ status: string }>) => sessions.map((session) => session.status)
+
 layer(DevnetTest.layer)("agents", (it) => {
   describe("POST /api/agents", () => {
-    it.effect("a Stock picker is created as a draft, with its lock prepared for the passkey", () =>
+    it.effect("a Stock picker from its template is created as a draft, with its lock prepared for the passkey", () =>
       Effect.gen(function*() {
         const created = yield* createAgent(yield* newCookie)
 
         assert.strictEqual(created.status, 200)
-        assert.strictEqual(created.json.action, "lock")
-        assert.strictEqual(created.json.agent.status, "draft")
-        assert.strictEqual(created.json.agent.name, "Tech picker")
-        assert.deepStrictEqual(created.json.agent.limits, encode(PICKER))
+        assert.deepStrictEqual(
+          {
+            action: created.json.action,
+            status: created.json.agent.status,
+            template: created.json.agent.template,
+            spec: created.json.agent.spec,
+            pendingSpec: created.json.agent.pendingSpec
+          },
+          { action: "lock", status: "draft", template: "stockPicker", spec: encode(PICKER), pendingSpec: null }
+        )
       }))
 
-    it.effect("422 InvalidLimits: a Weekly buyer's daily budget over its $500 ceiling", () =>
+    it.effect("an agent built from scratch, without bluechip's hidden policies: they are added", () =>
       Effect.gen(function*() {
-        const limits = draftLimits({ template: "weeklyBuyer", preset: "active", stocks: ["NVDA"], targets: [] })
-        const created = yield* call("POST", "/api/agents", {
-          cookie: yield* newCookie,
-          body: {
-            requestId: randomUUID(),
-            name: "Weekly",
-            template: "weeklyBuyer",
-            limits: encode(new Limits({ ...limits, dailyBudget: BigInt(600_000_000) as never }))
-          }
+        const required = ["trade", "tradeSize", "fairPrice", "tradesPerDay"]
+        const created = yield* createAgent(yield* newCookie, {
+          template: null,
+          spec: new AgentSpec({ policies: PICKER.policies.filter((entry) => required.includes(entry.id)) })
         })
 
-        assert.strictEqual(created.status, 422)
-        assert.deepStrictEqual(created.json.problems.map((problem: { field: string }) => problem.field), [
-          "dailyBudget"
-        ])
+        assert.deepStrictEqual(
+          created.json.agent.spec.policies.map((entry: { id: string }) => entry.id),
+          ["trade", "tradeSize", "fairPrice", "tradesPerDay", "gasBudget", "anyCall"]
+        )
+      }))
+
+    it.effect("422 InvalidSpec: the largest trade over the daily budget", () =>
+      Effect.gen(function*() {
+        const created = yield* createAgent(yield* newCookie, {
+          spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: BigInt(300_000_000) } })
+        })
+
+        assert.deepStrictEqual([created.status, created.json.problems], [422, [{
+          policy: "tradeSize",
+          field: "maxPerTrade",
+          message: "Can't be more than the daily budget ($250)."
+        }]])
+      }))
+
+    it.effect("404: a saved template that isn't the user's", () =>
+      Effect.gen(function*() {
+        const created = yield* createAgent(yield* newCookie, { template: typeid("template").toString() })
+
+        assert.deepStrictEqual([created.status, created.json.resource], [404, "template"])
+      }))
+
+    it.effect("404: a template id that isn't one", () =>
+      Effect.gen(function*() {
+        const created = yield* createAgent(yield* newCookie, { template: "template_01jd0000000000000000000000" })
+
+        assert.deepStrictEqual([created.status, created.json.resource], [404, "template"])
       }))
 
     it.effect("the same request id twice prepares one agent", () =>
@@ -93,24 +83,26 @@ layer(DevnetTest.layer)("agents", (it) => {
         const cookie = yield* newCookie
         const requestId = randomUUID()
 
-        const first = yield* createAgent(cookie, PICKER, requestId)
-        const second = yield* createAgent(cookie, PICKER, requestId)
+        const first = yield* createAgent(cookie, { requestId })
+        const second = yield* createAgent(cookie, { requestId })
 
         assert.deepStrictEqual([second.json.id, second.json.agent.id], [first.json.id, first.json.agent.id])
       }))
   })
 
   describe("POST /api/agents/requests/:id/confirm", () => {
-    it.effect("a signed lock enables the agent's session: active, locked for 90 days", () =>
+    it.effect("a signed lock enables the agent's session: active, locked for 90 days, its first session", () =>
       Effect.gen(function*() {
         const user = yield* fundedUser()
         const created = yield* createAgent(user.cookie)
 
         const { agent, sent } = yield* signed(user, created.json, "active")
+        const sessions = yield* call("GET", `/api/agents/${agent.id}/sessions`, { cookie: user.cookie })
 
         assert.strictEqual(sent.json.status, "locking")
         const days = (Date.parse(agent.lockedUntil) - Date.now()) / 86_400_000
         assert.isTrue(days > 89.9 && days <= 90)
+        assert.deepStrictEqual(statuses(sessions.json), ["active"])
         yield* user.events.close
       }))
 
@@ -129,20 +121,52 @@ layer(DevnetTest.layer)("agents", (it) => {
       }))
   })
 
-  describe("POST /api/agents/:id/limits", () => {
-    it.effect("a signed change locks the new limits in place", () =>
+  describe("POST /api/agents/:id/sessions", () => {
+    it.effect("a signed change locks the new policies, and the old session is kept as replaced", () =>
       Effect.gen(function*() {
         const { agent, user } = yield* lockedAgent()
-        const tighter = new Limits({ ...PICKER, dailyBudget: BigInt(100_000_000) as never })
-        const prepared = yield* call("POST", `/api/agents/${agent.id}/limits`, {
+        const tighter = changed(PICKER, { id: "trade", config: { dailyBudget: BigInt(100_000_000) } })
+        const prepared = yield* call("POST", `/api/agents/${agent.id}/sessions`, {
           cookie: user.cookie,
-          body: { requestId: randomUUID(), limits: encode(tighter) }
+          body: { requestId: randomUUID(), spec: encode(tighter) }
         })
 
-        const { agent: changed, sent } = yield* signed(user, prepared.json, "active")
+        const { agent: after, sent } = yield* signed(user, prepared.json, "active")
+        const sessions = yield* call("GET", `/api/agents/${agent.id}/sessions`, { cookie: user.cookie })
 
-        assert.strictEqual(sent.json.status, "updating")
-        assert.deepStrictEqual([changed.limits.dailyBudget, changed.pendingLimits], ["100000000", null])
+        assert.deepStrictEqual([sent.json.status, after.spec, after.lockedUntil], [
+          "updating",
+          encode(tighter),
+          agent.lockedUntil
+        ])
+        assert.deepStrictEqual(statuses(sessions.json), ["replaced", "active"])
+        yield* user.events.close
+      }))
+
+    it.effect("a change prepared and never signed stays out of the history", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* lockedAgent()
+        yield* call("POST", `/api/agents/${agent.id}/sessions`, {
+          cookie: user.cookie,
+          body: { requestId: randomUUID(), spec: encode(changed(PICKER, { id: "stockCap", config: { maxBps: 2000 } })) }
+        })
+
+        const sessions = yield* call("GET", `/api/agents/${agent.id}/sessions`, { cookie: user.cookie })
+
+        assert.deepStrictEqual(statuses(sessions.json), ["active"])
+        yield* user.events.close
+      }))
+
+    it.effect("422 InvalidSpec: a change without a trade policy", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* lockedAgent()
+
+        const prepared = yield* call("POST", `/api/agents/${agent.id}/sessions`, {
+          cookie: user.cookie,
+          body: { requestId: randomUUID(), spec: { policies: encode(PICKER).policies.slice(1) } }
+        })
+
+        assert.deepStrictEqual([prepared.status, prepared.json.problems[0].policy], [422, "trade"])
         yield* user.events.close
       }))
 
@@ -151,9 +175,43 @@ layer(DevnetTest.layer)("agents", (it) => {
         const cookie = yield* newCookie
         const created = yield* createAgent(cookie)
 
-        const prepared = yield* call("POST", `/api/agents/${created.json.agent.id}/limits`, {
+        const prepared = yield* call("POST", `/api/agents/${created.json.agent.id}/sessions`, {
           cookie,
-          body: { requestId: randomUUID(), limits: encode(PICKER) }
+          body: { requestId: randomUUID(), spec: encode(PICKER) }
+        })
+
+        assert.deepStrictEqual([prepared.status, prepared.json.reason], [409, "agentBusy"])
+      }))
+  })
+
+  describe("POST /api/agents/:id/renew", () => {
+    it.effect("a signed renewal locks the same policies with a new key for another 90 days", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* lockedAgent()
+        const prepared = yield* call("POST", `/api/agents/${agent.id}/renew`, {
+          cookie: user.cookie,
+          body: { requestId: randomUUID() }
+        })
+
+        const { agent: renewed } = yield* signed(user, prepared.json, "active")
+        const sessions = yield* call("GET", `/api/agents/${agent.id}/sessions`, { cookie: user.cookie })
+
+        assert.deepStrictEqual(
+          [prepared.json.action, renewed.spec, statuses(sessions.json)],
+          ["renew", encode(PICKER), ["replaced", "active"]]
+        )
+        assert.isTrue(Date.parse(renewed.lockedUntil) >= Date.parse(agent.lockedUntil))
+        yield* user.events.close
+      }))
+
+    it.effect("409 agentBusy: a draft has nothing to renew", () =>
+      Effect.gen(function*() {
+        const cookie = yield* newCookie
+        const created = yield* createAgent(cookie)
+
+        const prepared = yield* call("POST", `/api/agents/${created.json.agent.id}/renew`, {
+          cookie,
+          body: { requestId: randomUUID() }
         })
 
         assert.deepStrictEqual([prepared.status, prepared.json.reason], [409, "agentBusy"])
@@ -184,72 +242,9 @@ layer(DevnetTest.layer)("agents", (it) => {
 
         yield* signed(user, prepared.json, "removed")
         const listed = yield* call("GET", "/api/agents", { cookie: user.cookie })
+        const sessions = yield* call("GET", `/api/agents/${agent.id}/sessions`, { cookie: user.cookie })
 
-        assert.deepStrictEqual(listed.json, [])
-        yield* user.events.close
-      }))
-  })
-
-  describe("POST /api/agents/:id/pause", () => {
-    it.effect("a locked agent pauses, and resumes", () =>
-      Effect.gen(function*() {
-        const { agent, user } = yield* lockedAgent()
-
-        const paused = yield* call("POST", `/api/agents/${agent.id}/pause`, { cookie: user.cookie })
-        const resumed = yield* call("POST", `/api/agents/${agent.id}/resume`, { cookie: user.cookie })
-
-        assert.deepStrictEqual([paused.json.paused, resumed.json.paused], [true, false])
-        yield* user.events.close
-      }))
-
-    it.effect("409 agentBusy: a draft has nothing to pause", () =>
-      Effect.gen(function*() {
-        const cookie = yield* newCookie
-        const created = yield* createAgent(cookie)
-
-        const paused = yield* call("POST", `/api/agents/${created.json.agent.id}/pause`, { cookie })
-
-        assert.deepStrictEqual([paused.status, paused.json.reason], [409, "agentBusy"])
-      }))
-  })
-
-  describe("POST /api/agents/pause-all", () => {
-    it.effect("pauses every locked agent and leaves drafts as they are", () =>
-      Effect.gen(function*() {
-        const { user } = yield* lockedAgent()
-        yield* createAgent(user.cookie)
-
-        const all = yield* call("POST", "/api/agents/pause-all", { cookie: user.cookie })
-
-        assert.deepStrictEqual(
-          all.json.map((agent: { status: string; paused: boolean }) => [agent.status, agent.paused]),
-          [["active", true], ["draft", false]]
-        )
-        yield* user.events.close
-      }))
-  })
-
-  describe("POST /api/agents/resume-all", () => {
-    it.effect("resumes every paused agent", () =>
-      Effect.gen(function*() {
-        const { user } = yield* lockedAgent()
-        yield* call("POST", "/api/agents/pause-all", { cookie: user.cookie })
-
-        const all = yield* call("POST", "/api/agents/resume-all", { cookie: user.cookie })
-
-        assert.deepStrictEqual(all.json.map((agent: { paused: boolean }) => agent.paused), [false])
-        yield* user.events.close
-      }))
-  })
-
-  describe("GET /api/agents/:id/usage", () => {
-    it.effect("a locked agent that hasn't traded has used nothing", () =>
-      Effect.gen(function*() {
-        const { agent, user } = yield* lockedAgent()
-
-        const usage = yield* call("GET", `/api/agents/${agent.id}/usage`, { cookie: user.cookie })
-
-        assert.deepStrictEqual(usage.json, { spentToday: "0", tradesToday: 0, slippageThisWeek: "0" })
+        assert.deepStrictEqual([listed.json, statuses(sessions.json)], [[], ["revoked"]])
         yield* user.events.close
       }))
   })

@@ -1,6 +1,6 @@
 // Every table, for drizzle-kit and the relations builder.
 export { accounts, passkeys, users } from "./accounts.ts"
-export { agentKeys, agents } from "./agents.ts"
+export { agents, agentSessions, agentTemplates, sessionKeys, sessionPolicies } from "./agents.ts"
 export { authChallenges, sessions } from "./auth.ts"
 export { transfers } from "./funding.ts"
 export { jobRuns } from "./jobRuns.ts"
