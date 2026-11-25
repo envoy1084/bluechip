@@ -1,11 +1,9 @@
 import type { ActivityKind, ActivityPeriod } from "@bluechip/domain/activity/Activity"
 import type { SigningRequestId } from "@bluechip/domain/Ids"
-import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
-import { startAuthentication } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
 import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../lib/api/client.ts"
-import { asCredential, ceremonyOptions } from "./account.ts"
+import { signWithPasskey } from "../lib/passkey.ts"
 
 /** Quotes a trade on the server, checks it against Chainlink and returns what the passkey signs. */
 export const prepareTradeAtom = BluechipApiClient.mutation("trades", "prepare")
@@ -14,13 +12,11 @@ export const prepareTradeAtom = BluechipApiClient.mutation("trades", "prepare")
 export const confirmTradeAtom = BluechipApiClient.runtime.fn(
   Effect.fnUntraced(function*(request: { readonly id: SigningRequestId; readonly options: Record<string, unknown> }) {
     const client = yield* BluechipApiClient
-    const credential = yield* Effect.tryPromise(() =>
-      startAuthentication({ optionsJSON: ceremonyOptions(request.options) })
-    )
+    const credential = yield* signWithPasskey(request.options)
 
     return yield* client.trades.confirm({
       params: { id: request.id },
-      payload: { credential: asCredential<typeof AuthenticationCredential.Type>(credential) }
+      payload: { credential }
     })
   })
 )

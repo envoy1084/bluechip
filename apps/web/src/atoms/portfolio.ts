@@ -2,14 +2,12 @@ import type { SigningRequestId } from "@bluechip/domain/Ids"
 import type { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
 import { Bps, bpsBetween, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { Holding, Portfolio } from "@bluechip/domain/portfolio/Portfolio"
-import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
-import { startAuthentication } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../lib/api/client.ts"
 import { livePricesAtom } from "../lib/api/events.ts"
-import { asCredential, ceremonyOptions } from "./account.ts"
+import { signWithPasskey } from "../lib/passkey.ts"
 
 const reactivityKeys = [portfolioReactivityKey, liveReactivityKey]
 
@@ -74,13 +72,11 @@ export const prepareWithdrawalAtom = BluechipApiClient.mutation("transfers", "pr
 export const confirmWithdrawalAtom = BluechipApiClient.runtime.fn(
   Effect.fnUntraced(function*(request: { readonly id: SigningRequestId; readonly options: Record<string, unknown> }) {
     const client = yield* BluechipApiClient
-    const credential = yield* Effect.tryPromise(() =>
-      startAuthentication({ optionsJSON: ceremonyOptions(request.options) })
-    )
+    const credential = yield* signWithPasskey(request.options)
 
     return yield* client.transfers.confirmWithdrawal({
       params: { id: request.id },
-      payload: { credential: asCredential<typeof AuthenticationCredential.Type>(credential) }
+      payload: { credential }
     })
   }),
   { reactivityKeys }

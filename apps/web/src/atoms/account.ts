@@ -1,7 +1,8 @@
-import type { AuthenticationCredential, RegistrationCredential } from "@bluechip/domain/WebAuthn"
-import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
+import type { RegistrationCredential } from "@bluechip/domain/WebAuthn"
+import { startRegistration } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import { BluechipApiClient, liveReactivityKey } from "../lib/api/client.ts"
+import { asCredential, ceremonyOptions, signWithPasskey } from "../lib/passkey.ts"
 
 /** Queries about the signed-in user refetch when this key is invalidated (sign-in, sign-out, eligibility). */
 export const accountReactivityKey = "account"
@@ -12,11 +13,6 @@ export const meAtom = BluechipApiClient.query("account", "me", {
 })
 
 export const passkeysAtom = BluechipApiClient.query("account", "passkeys", { reactivityKeys: [accountReactivityKey] })
-
-// The browser's WebAuthn JSON and the domain schemas describe the same objects (SimpleWebAuthn types its extension
-// outputs as an interface, the schema as a record); the server decodes and checks every field.
-export const ceremonyOptions = <A>(options: Record<string, unknown>) => options as A
-export const asCredential = <A>(credential: object) => credential as unknown as A
 
 /** Creates a passkey (Face ID / Touch ID), then the account it owns, and signs in. */
 export const signUpAtom = BluechipApiClient.runtime.fn(
@@ -43,15 +39,8 @@ export const signInAtom = BluechipApiClient.runtime.fn(
   Effect.fnUntraced(function*() {
     const client = yield* BluechipApiClient
     const ceremony = yield* client.auth.loginOptions()
-    const credential = yield* Effect.tryPromise(() =>
-      startAuthentication({ optionsJSON: ceremonyOptions(ceremony.options) })
-    )
-    return yield* client.auth.loginVerify({
-      payload: {
-        challengeId: ceremony.challengeId,
-        credential: asCredential<typeof AuthenticationCredential.Type>(credential)
-      }
-    })
+    const credential = yield* signWithPasskey(ceremony.options)
+    return yield* client.auth.loginVerify({ payload: { challengeId: ceremony.challengeId, credential } })
   }),
   { reactivityKeys: [accountReactivityKey] }
 )
