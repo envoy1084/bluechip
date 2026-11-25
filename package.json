@@ -30,7 +30,7 @@
     "@commitlint/config-conventional": "21.2.4",
     "@commitlint/types": "21.2.3",
     "@effect-kit/oxc": "0.1.0",
-    "@effect/tsgo": "0.73.2",
+    "@effect/tsgo": "0.73.4",
     "@effect/vitest": "4.1.5",
     "@interfere/landmines": "0.1.1",
     "@types/node": "catalog:",
