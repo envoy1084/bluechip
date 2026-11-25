@@ -23,6 +23,8 @@ export interface StockRowProps extends Omit<ComponentProps<"button">, "children"
 
 const NOTE: Readonly<Record<MarketState, { readonly label: string; readonly className: string }>> = {
   open: { label: "Open", className: "text-g-500" },
+  extended: { label: "Extended hours", className: "text-g-500" },
+  paused: { label: "Price paused", className: "text-warn" },
   closed: { label: "Last close", className: "text-g-500" },
   weekend: { label: "Last close", className: "text-g-500" },
   halted: { label: "Halted", className: "text-warn" }
@@ -56,7 +58,7 @@ export function StockRow(
         <span className={cn("inline-flex items-center gap-[5px] text-caption", note.className)}>
           {market === "open" ?
             <i aria-hidden className="size-1.5 rounded-full bg-green shadow-[0_0_0_2.5px_rgba(102,200,0,.2)]" /> :
-            <Icon name={market === "halted" ? "pause" : "moon"} size={12} />}
+            <Icon name={market === "halted" || market === "paused" ? "pause" : "moon"} size={12} />}
           {note.label}
         </span>
       </span>

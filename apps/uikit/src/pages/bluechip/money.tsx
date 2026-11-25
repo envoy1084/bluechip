@@ -350,6 +350,9 @@ export function StockList(
 
 const MARKET_COPY: Readonly<Record<MarketState, string>> = {
   open: "Prices are live. Your agents trade within their limits until 16:00 New York time.",
+  extended:
+    "Pre-market, after-hours and overnight trading keep prices moving, from Sunday 20:00 to Friday 20:00 New York time.",
+  paused: "Prices pause on weekends and holidays. Stock tokens still trade, with no live price to compare against.",
   closed: "Prices pause at today's close. Your agents start buying again at 09:30 New York time.",
   weekend: "Prices show Friday's close. Your agents start buying again Monday at 09:30 New York time.",
   halted: "The exchange paused SpaceX. bluechip shows the last price and no one can trade it until trading resumes."
@@ -358,7 +361,15 @@ const MARKET_COPY: Readonly<Record<MarketState, string>> = {
 export function MarketSection({ live }: { readonly live: "open" | "closed" }) {
   const [state, setState] = useState<MarketState>("open")
   const pill = (s: MarketState) => (
-    <MarketStatus state={s} closesAt={CLOSES} opensAt={OPENS} lastClose={FRIDAY_CLOSE} symbol="SPCX" />
+    <MarketStatus
+      state={s}
+      closesAt={CLOSES}
+      opensAt={OPENS}
+      lastClose={FRIDAY_CLOSE}
+      symbol="SPCX"
+      session="After hours"
+      resumesAt={OPENS}
+    />
   )
   return (
     <Section
@@ -372,6 +383,8 @@ export function MarketSection({ live }: { readonly live: "open" | "closed" }) {
       ]}
       states={[
         ["Open", pill("open")],
+        ["Extended", pill("extended")],
+        ["Paused", pill("paused")],
         ["Closed", pill("closed")],
         ["Weekend", pill("weekend"), true],
         ["Halted", pill("halted")],

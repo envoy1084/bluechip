@@ -24,6 +24,20 @@ describe("MarketStatus", () => {
     await expect.element(screen.getByText("· last close Fri 16:00 New York (21:00 UTC)")).toBeVisible()
   })
 
+  it("names the extended session and when regular trading opens", async () => {
+    const screen = await render(
+      <MarketStatus state="extended" session="After hours" opensAt={Date.UTC(2026, 10, 23, 14, 30)} />
+    )
+    await expect.element(screen.getByText("After hours")).toBeVisible()
+    await expect.element(screen.getByText("· market opens Mon 09:30 New York (14:30 UTC)")).toBeVisible()
+  })
+
+  it("says paused prices come back, and when", async () => {
+    const screen = await render(<MarketStatus state="paused" resumesAt={Date.UTC(2026, 10, 23, 1, 0)} />)
+    await expect.element(screen.getByText("Prices paused")).toBeVisible()
+    await expect.element(screen.getByText("· back Sun 20:00 New York (01:00 UTC)")).toBeVisible()
+  })
+
   it("names the halted stock", async () => {
     const screen = await render(<MarketStatus state="halted" symbol="SPCX" />)
     await expect.element(screen.getByText("SPCX halted")).toBeVisible()
