@@ -26,9 +26,14 @@ export interface Reply {
   readonly to: string
   /** The steps of each model round, in order: a round after tool calls reads their results. */
   readonly rounds: ReadonlyArray<ReadonlyArray<Step>>
-  /** The conversation model fails before streaming, so the small model answers instead. */
+  /** The conversation model can't answer: it fails with an error not worth retrying. */
   readonly conversationFails?: boolean
-  /** What the small model notes after the turn (no title and no memories when absent). */
+  /** The conversation model is rate limited this many times before it answers. */
+  readonly rateLimited?: number
+  /**
+   * The notes after the turn: the memories the conversation model notes, and the title the small model gives a new
+   * conversation (the message's first words when `null` or absent).
+   */
   readonly notes?: { readonly title: string | null; readonly memories: ReadonlyArray<MemoryCandidate> }
   /** Tokens each round reports (1,000 in and 100 out when absent). */
   readonly usage?: { readonly input: number; readonly output: number }
@@ -54,6 +59,7 @@ export class RecordedModel extends Context.Service<RecordedModel, {
   static readonly layer = Layer.unwrap(Effect.sync(() => {
     const replies = new Map<string, Reply>()
     const sent = new Map<string, Array<Prompt.Prompt>>()
+    const limits = new Map<string, number>()
     let ids = 0
     const nextId = (prefix: string) => `${prefix}_${++ids}`
 
@@ -128,12 +134,16 @@ export class RecordedModel extends Context.Service<RecordedModel, {
       LanguageModel.make({
         generateText: (options) =>
           Effect.sync(() => {
-            // The small model's notes after a turn, for the message quoted between the tags.
+            // A turn's notes or a conversation's title, for the message quoted between the tags.
             const prompt = options.prompt.content.map(textOf).join("\n")
             const quoted = /<user_message>\n([\s\S]*)\n<\/user_message>/.exec(prompt)?.[1] ?? ""
-            const notes = replies.get(quoted)?.notes ?? { title: null, memories: [] }
+            const notes = replies.get(quoted)?.notes
+            const answer =
+              options.responseFormat.type === "json" && options.responseFormat.objectName === "conversation_title" ?
+                { title: notes?.title ?? quoted.slice(0, 30) } :
+                { memories: notes?.memories ?? [] }
             return [
-              { type: "text", text: JSON.stringify(notes) },
+              { type: "text", text: JSON.stringify(answer) },
               {
                 type: "finish",
                 reason: "stop",
@@ -148,6 +158,13 @@ export class RecordedModel extends Context.Service<RecordedModel, {
             if (reply === undefined) return Stream.fail(failure(`No recording answers "${user}"`))
             if (modelId === CONVERSATION_MODEL && reply.conversationFails === true) {
               return Stream.fail(failure("The recorded conversation model is down"))
+            }
+            const limited = limits.get(user) ?? 0
+            if (modelId === CONVERSATION_MODEL && limited < (reply.rateLimited ?? 0)) {
+              limits.set(user, limited + 1)
+              return Stream.fail(
+                AiError.make({ module: "RecordedModel", method: "streamText", reason: new AiError.RateLimitError({}) })
+              )
             }
             sent.set(user, [...(sent.get(user) ?? []), options.prompt])
             const steps = reply.rounds[round]

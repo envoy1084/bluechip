@@ -30,6 +30,7 @@ import { type CardInput, Cards } from "./Cards.ts"
 import { Conversations } from "./Conversations.ts"
 import { Memories } from "./Memories.ts"
 import { MemoryExtractor } from "./MemoryExtractor.ts"
+import { Titles } from "./Titles.ts"
 import { promptOf, research, storedParts, toolCards, usageOf } from "./Transcript.ts"
 
 /** The most model rounds one turn runs: each round may call tools, and the next reads their results. */
@@ -39,7 +40,9 @@ const BUDGET_SPENT = "You've used today's assistant budget, so I'll stop here. I
   "everything else in bluechip still works."
 const TOO_MANY_STEPS = "That took more steps than I'm allowed in one go. Tell me what to do next and I'll carry on."
 const CANCELLED = "Stopped."
-const MODEL_FAILED = "The assistant couldn't answer just now. Try again in a moment."
+const UNAVAILABLE = "The assistant can't answer right now. Nothing was changed. Try again in a moment."
+const UNAVAILABLE_LATER = "The assistant can't answer right now. What it already did is on the cards above. " +
+  "Try again in a moment."
 
 interface Run {
   readonly userId: string
@@ -74,6 +77,7 @@ export class Assistant extends Context.Service<Assistant, {
       const agents = yield* Agents
       const models = yield* AssistantModels
       const extractor = yield* MemoryExtractor
+      const titles = yield* Titles
       const toolkit = yield* AssistantToolkit
       const runs = new Map<string, Run>()
 
@@ -118,16 +122,14 @@ export class Assistant extends Context.Service<Assistant, {
         // What the turn learned, then the cards still waiting for the user, as the run's outcome.
         const finish = (learn: boolean) =>
           Stream.unwrap(Effect.gen(function*() {
-            const learned = learn ?
-              yield* extractor.extract(owner, {
-                userText: context.userText,
-                messageId: context.userMessage.id,
-                wantsTitle: context.wantsTitle
-              }) :
-              { title: null, learned: [] }
-            if (learned.title !== null) yield* conversations.setTitle(conversationId, learned.title)
+            const [learned] = learn ?
+              yield* Effect.all([
+                extractor.extract(owner, { userText: context.userText, messageId: context.userMessage.id }),
+                context.wantsTitle ? titles.name(owner, conversationId, context.userText) : Effect.void
+              ], { concurrency: 2 }) :
+              [[]]
 
-            const memoryCards = yield* ownCards(learned.learned.map((memory) =>
+            const memoryCards = yield* ownCards(learned.map((memory) =>
               memory.confirmedAt === null ?
                 { _tag: "Memory", action: "confirm", memory, status: "pending" } as const :
                 { _tag: "Memory", action: "saved", memory, status: "applied" } as const
@@ -205,11 +207,21 @@ export class Assistant extends Context.Service<Assistant, {
               if (parts.some((part) => part.type === "finish")) yield* budgets.record(owner, model, usage)
 
               const fromTools = toolCards(parts)
+              // A later round only starts after tools ran, so nothing was changed only if this first round ran none.
+              const unchanged = step === 1 && !parts.some((part) => part.type === "tool-result")
+              const unavailable = unchanged ? UNAVAILABLE : UNAVAILABLE_LATER
               const searched = research(parts)
               const extras = yield* Effect.forEach(
                 [
                   ...(searched === undefined ? [] : [{ _tag: "Research", ...searched } as const]),
-                  ...(cancelled ? [{ _tag: "Error", reason: "cancelled", message: CANCELLED } as const] : [])
+                  ...(cancelled ? [{ _tag: "Error", reason: "cancelled", message: CANCELLED } as const] : []),
+                  ...(failure === undefined ? [] : [
+                    {
+                      _tag: "Error",
+                      reason: "unavailable",
+                      message: unavailable
+                    } as const
+                  ])
                 ],
                 (card) => cards.create(owner, conversationId, card)
               )
@@ -217,7 +229,7 @@ export class Assistant extends Context.Service<Assistant, {
                 ...storedParts(parts),
                 ...fromTools.map(({ card, toolCallId }) => ({ type: "card" as const, toolCallId, card })),
                 ...extras.map((card) => ({ type: "card" as const, toolCallId: null, card })),
-                ...(failure === undefined ? [] : [{ type: "error" as const, message: MODEL_FAILED }])
+                ...(failure === undefined ? [] : [{ type: "error" as const, message: unavailable }])
               ]
               if (stored.length > 0) {
                 yield* conversations.append(conversationId, {
@@ -238,7 +250,7 @@ export class Assistant extends Context.Service<Assistant, {
                 yield* Effect.logWarning("The assistant's model failed", failure)
                 return Stream.fromIterable<AgUiSchema.Event>([
                   ...extraEvents,
-                  { type: "RUN_ERROR", message: MODEL_FAILED, code: "model" }
+                  { type: "RUN_ERROR", message: unavailable, code: "model" }
                 ])
               }
               if (cancelled) return Stream.fromIterable([...extraEvents, finished({ type: "cancelled" })])

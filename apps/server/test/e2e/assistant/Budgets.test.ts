@@ -9,7 +9,7 @@ import { TestUsers } from "../../utils/TestUsers.ts"
 // The server runs on the real clock (see `TestServer`).
 layer(TestAssistant.layer, { excludeTestServices: true })("assistant budgets", (it) => {
   describe("GET /api/assistant/budget", () => {
-    it.effect("a turn adds the tokens and cost of its rounds and notes to today's spend", () =>
+    it.effect("a turn adds the tokens and cost of its rounds, notes and title to today's spend", () =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).signUp
         const assistant = yield* TestAssistant
@@ -24,12 +24,12 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant budgets", (
         const budget = yield* user.api.assistant.budget()
 
         // The recorded models aren't priced, so both are charged as Sonnet: the round's 1,000 tokens in and 100 out
-        // ($0.003), and the notes' 200 in and 20 out ($0.0006).
+        // ($0.003), then the notes' and the new conversation's title's 200 in and 20 out each ($0.0006 each).
         assert.deepStrictEqual({ ...budget }, {
           day: DateTime.formatIsoDateUtc(yield* DateTime.now),
-          inputTokens: 1200,
-          outputTokens: 120,
-          costMicros: 3600,
+          inputTokens: 1400,
+          outputTokens: 140,
+          costMicros: 4200,
           limitMicros: 1_000_000
         })
       }))

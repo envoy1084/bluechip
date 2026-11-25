@@ -6,7 +6,7 @@ import * as HttpApiError from "effect/http-api/HttpApiError"
 import * as Layer from "effect/Layer"
 import { randomUUID } from "node:crypto"
 import { typeid } from "typeid-js"
-import { CONVERSATION_MODEL, RecordedModel, SMALL_MODEL } from "../../utils/RecordedModel.ts"
+import { CONVERSATION_MODEL, RecordedModel } from "../../utils/RecordedModel.ts"
 import { TestAssistant } from "../../utils/TestAssistant.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
 
@@ -88,21 +88,41 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
         ])
       }))
 
-    it.effect("when the conversation model fails, the small model answers", () =>
+    it.effect("a rate-limited conversation model is tried again, and answers", () =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).signUp
         const assistant = yield* TestAssistant
-        yield* (yield* RecordedModel).record({
-          to: "Are you there?",
-          conversationFails: true,
-          rounds: [[{ text: "Yes." }]]
-        })
+        yield* (yield* RecordedModel).record({ to: "Are you there?", rateLimited: 2, rounds: [[{ text: "Yes." }]] })
         const conversation = yield* assistant.start(user)
 
-        yield* assistant.ask(user, conversation.id, "Are you there?")
+        const run = yield* assistant.ask(user, conversation.id, "Are you there?")
         const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
 
-        assert.deepStrictEqual(thread.messages.map((message) => message.model), [null, SMALL_MODEL])
+        assert.deepStrictEqual(
+          [run.events.at(-1)?.type, thread.messages.map((message) => message.model)],
+          ["RUN_FINISHED", [null, CONVERSATION_MODEL]]
+        )
+      }))
+
+    it.effect("a conversation model that can't answer ends the run with an unavailable card, then RUN_ERROR", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        yield* (yield* RecordedModel).record({ to: "Hello?", conversationFails: true, rounds: [[{ text: "Hi." }]] })
+        const conversation = yield* assistant.start(user)
+
+        const run = yield* assistant.ask(user, conversation.id, "Hello?")
+
+        assert.deepStrictEqual(
+          [
+            run.cards.map((card) => card._tag === "Error" ? [card.reason, card.message] : card._tag),
+            run.events.at(-1)?.type
+          ],
+          [
+            [["unavailable", "The assistant can't answer right now. Nothing was changed. Try again in a moment."]],
+            "RUN_ERROR"
+          ]
+        )
       }))
 
     it.effect("a turn needing more than 8 model rounds stops with an error card", () =>

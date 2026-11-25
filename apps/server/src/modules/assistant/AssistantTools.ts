@@ -255,7 +255,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
 
     proposeTrade: Effect.fn("AssistantTools.proposeTrade")(function*(params) {
       const leg = yield* legOf(params)
-      return yield* propose(params.agentId, leg, params.reason)
+      return yield* propose(params.agentId, leg, params.reason.trim())
     }, asProblem),
     proposeRebalance: Effect.fn("AssistantTools.proposeRebalance")(function*({ agentId, reason }) {
       const { spec } = yield* agentSpec(agentId)
@@ -265,7 +265,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
       const prices = new Map([...(yield* market.prices)].map(([symbol, price]) => [symbol, price.price]))
       const legs = rebalanceLegs(yield* portfolio, config, prices)
       const proposed: Array<Card> = []
-      for (const leg of legs) proposed.push(yield* propose(agentId, leg, reason))
+      for (const leg of legs) proposed.push(yield* propose(agentId, leg, reason.trim()))
       return proposed
     }, asProblem),
 

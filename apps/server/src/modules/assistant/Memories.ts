@@ -135,7 +135,7 @@ export class Memories extends Context.Service<Memories, {
       ) {
         const existing = yield* list(owner)
         const write = planMemoryWrite(existing, candidate)
-        const fields = { ...candidate, agentId: null, messageId }
+        const fields = { ...candidate, text: candidate.text.trim(), agentId: null, messageId }
 
         switch (write._tag) {
           case "Skip":

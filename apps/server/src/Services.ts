@@ -13,6 +13,7 @@ import { Cards } from "./modules/assistant/Cards.ts"
 import { Conversations } from "./modules/assistant/Conversations.ts"
 import { Memories } from "./modules/assistant/Memories.ts"
 import { MemoryExtractor } from "./modules/assistant/MemoryExtractor.ts"
+import { Titles } from "./modules/assistant/Titles.ts"
 import { AuditLog } from "./modules/audit/AuditLog.ts"
 import { Challenges } from "./modules/auth/Challenges.ts"
 import { Sessions } from "./modules/auth/Sessions.ts"
@@ -47,7 +48,8 @@ import { Namera } from "./platform/namera/Namera.ts"
  * the assistant's models (`AssistantModels`) and the durable engine.
  */
 export const ServicesLive = Layer.mergeAll(DeskLive, ExpireIntentsCron, PortfolioSnapshotCron, Assistant.layer).pipe(
-  Layer.provideMerge(Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Conversations.layer)),
+  Layer.provideMerge(Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer)),
+  Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),
   Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer)),
   Layer.provideMerge(Layer.mergeAll(Trades.layer, Withdrawals.layer, Agents.layer, AgentRequests.layer)),

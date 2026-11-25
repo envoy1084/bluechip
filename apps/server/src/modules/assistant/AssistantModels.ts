@@ -5,48 +5,70 @@ import type * as LanguageModel from "effect/ai/LanguageModel"
 import * as Config from "effect/Config"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
-import * as ExecutionPlan from "effect/ExecutionPlan"
 import * as FetchHttpClient from "effect/http/FetchHttpClient"
 import * as Layer from "effect/Layer"
+import * as Predicate from "effect/Predicate"
+import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 
+// A failure worth another try: overloaded, rate limited, or the network. Invalid requests fail at once.
+const retryable = (error: unknown): boolean =>
+  Predicate.isTagged(error, "AiError") && (error as AiError.AiError).isRetryable
+
+// Three tries in all, about half a second then a second apart, spread so retries from many runs don't line up.
+const retries = Schedule.exponential("500 millis").pipe(Schedule.jittered, Schedule.upTo({ times: 2 }))
+
 /**
- * The models the assistant runs on: the conversation model (falling back to the small one when it fails before
- * streaming anything) and the small model for side tasks (titles, memory extraction). A port: production runs
- * Anthropic's models, tests a recorded model.
+ * The models the assistant runs on: the conversation model for the conversation and its memory notes, retried when it
+ * fails for a reason worth retrying (never once it has streamed), and the small model for conversation titles. A
+ * port: production runs Anthropic's models, tests recorded ones.
  */
 export class AssistantModels extends Context.Service<AssistantModels, {
   /** The conversation model's id, as budgets price it. */
   readonly conversationModel: string
   readonly smallModel: string
+  /** Streams on the conversation model. */
   readonly converse: <A, E, R>(
     stream: Stream.Stream<A, E, R>
   ) => Stream.Stream<A, E | AiError.AiError, Exclude<R, LanguageModel.LanguageModel>>
+  /** Runs a side task on the conversation model (memory notes). */
+  readonly onConversation: <A, E, R>(
+    effect: Effect.Effect<A, E, R>
+  ) => Effect.Effect<A, E | AiError.AiError, Exclude<R, LanguageModel.LanguageModel>>
+  /** Runs a side task on the small model (titles). */
   readonly small: <A, E, R>(
     effect: Effect.Effect<A, E, R>
   ) => Effect.Effect<A, E | AiError.AiError, Exclude<R, LanguageModel.LanguageModel>>
 }>()("@bluechip/server/AssistantModels") {
-  /** The assistant on two language models: two tries of the conversation model, then one of the small one. */
+  /** The assistant on two language models. */
   static readonly make = (models: {
     readonly conversation: { readonly id: string; readonly layer: Layer.Layer<LanguageModel.LanguageModel> }
     readonly small: { readonly id: string; readonly layer: Layer.Layer<LanguageModel.LanguageModel> }
-  }) => {
-    const plan = ExecutionPlan.make(
-      { provide: models.conversation.layer, attempts: 2 },
-      { provide: models.small.layer, attempts: 1 }
-    )
-    return AssistantModels.of({
+  }) =>
+    AssistantModels.of({
       conversationModel: models.conversation.id,
       smallModel: models.small.id,
       converse: (stream) =>
-        stream.pipe(Stream.withExecutionPlan(plan, { preventFallbackOnPartialStream: true })) as never,
+        Stream.suspend(() => {
+          // Once a part has reached the client, a retry would repeat it: only a stream that sent nothing is retried.
+          let streamed = false
+          return stream.pipe(
+            Stream.tap(() => Effect.sync(() => (streamed = true))),
+            Stream.retry(retries.pipe(Schedule.while(({ input }) => !streamed && retryable(input)))),
+            Stream.provide(models.conversation.layer)
+          )
+        }) as never,
+      onConversation: (effect) =>
+        effect.pipe(
+          Effect.retry(retries.pipe(Schedule.while(({ input }) => retryable(input)))),
+          Effect.provide(models.conversation.layer)
+        ) as never,
       small: (effect) => Effect.provide(effect, models.small.layer) as never
     })
-  }
 
   /**
-   * Anthropic with `ANTHROPIC_API_KEY`: `ASSISTANT_MODEL` (default `claude-sonnet-5-5`) for conversations and
-   * `ASSISTANT_SMALL_MODEL` (default `claude-haiku-5-5`) for side tasks. Requests cache everything up to the newest
+   * Anthropic with `ANTHROPIC_API_KEY`: `ASSISTANT_MODEL` (default `claude-sonnet-5-5`) for conversations and memory
+   * notes, `ASSISTANT_SMALL_MODEL` (default `claude-haiku-5-5`) for titles. Requests cache everything up to the newest
    * message (tools, system prompt and history), so each round of a turn reads the rest from the cache.
    */
   static readonly layer = Layer.unwrap(Effect.gen(function*() {
@@ -56,9 +78,9 @@ export class AssistantModels extends Context.Service<AssistantModels, {
       Layer.provide(FetchHttpClient.layer)
     )
 
-    // Tool parameters aren't strict: Anthropic allows 20 strict tools and 16 nullable or union parameters across them
-    // in a request, and the toolkit has more. Parameters are decoded against their schemas either way, and a call that
-    // doesn't decode goes back to the model as a failure.
+    // Only the tools marked `Tool.Strict` are strict: Anthropic allows 20 strict tools and 16 nullable or union
+    // parameters across them in a request, and the toolkit has more. The rest are decoded against their schemas, and
+    // a call that doesn't decode goes back to the model as a failure.
     const model = (id: string, config: Omit<typeof AnthropicLanguageModel.Config.Service, "model">) =>
       AnthropicLanguageModel.layer({ model: id, config: { ...config, strictJsonSchema: false } }).pipe(
         Layer.provide(client),
@@ -78,8 +100,7 @@ export class AssistantModels extends Context.Service<AssistantModels, {
         },
         small: {
           id: small,
-          // Notes come back through a forced JSON tool: Haiku's native structured output didn't hold the schema.
-          layer: model(small, { max_tokens: 2000, cache_control: { type: "ephemeral" }, structuredOutputs: false })
+          layer: model(small, { max_tokens: 2000, cache_control: { type: "ephemeral" } })
         }
       })
     )
