@@ -1,16 +1,14 @@
 import { assert, describe, it } from "@effect/vitest"
 
-import { devProcesses, localChainProcesses, prefixLine } from "../commands/dev.ts"
+import { devProcesses, localChainProcesses, prefixLine } from "../../../commands/dev.ts"
 
 describe("devProcesses", () => {
-  const names = (options: { uikit: boolean }) => devProcesses(options).map((process) => process.name)
-
   it("the server, the web app and the kit", () => {
-    assert.deepStrictEqual(names({ uikit: true }), ["server", "web", "uikit"])
+    assert.deepStrictEqual(devProcesses({ uikit: true }).map((process) => process.name), ["server", "web", "uikit"])
   })
 
   it("without the kit", () => {
-    assert.deepStrictEqual(names({ uikit: false }), ["server", "web"])
+    assert.deepStrictEqual(devProcesses({ uikit: false }).map((process) => process.name), ["server", "web"])
   })
 
   it("each app is its package's script", () => {

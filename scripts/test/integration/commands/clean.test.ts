@@ -1,24 +1,10 @@
 import { NodeServices } from "@effect/platform-node"
 import { assert, describe, it } from "@effect/vitest"
-import { Effect, FileSystem, Path } from "effect"
+import { Effect } from "effect"
 import { globSync } from "glob"
 
-import { cleanWorkspace } from "../commands/clean.ts"
-
-// Writes `files` (empty) into a new temporary workspace, cleans it, and lists the files left.
-const cleanFiles = Effect.fn(function*(files: ReadonlyArray<string>) {
-  const fs = yield* FileSystem.FileSystem
-  const path = yield* Path.Path
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "clean-" })
-  for (const file of files) {
-    yield* fs.makeDirectory(path.dirname(path.join(root, file)), { recursive: true })
-    yield* fs.writeFileString(path.join(root, file), "")
-  }
-
-  yield* cleanWorkspace(root)
-
-  return globSync("**/*", { cwd: root, dot: true, nodir: true, posix: true }).sort()
-})
+import { cleanWorkspace } from "../../../commands/clean.ts"
+import { makeTempFolder } from "../../utils/TempFolder.ts"
 
 describe("cleanWorkspace", () => {
   it.effect.each([
@@ -31,28 +17,47 @@ describe("cleanWorkspace", () => {
     { name: "any .tsbuildinfo at the root", files: ["tsconfig.tests.tsbuildinfo"] }
   ])("removes $name", ({ files }) =>
     Effect.gen(function*() {
-      const left = yield* cleanFiles([...files, "packages/core/src/index.ts"])
+      const root = yield* makeTempFolder("clean-", {
+        ...Object.fromEntries(files.map((file) => [file, ""])),
+        "packages/core/src/index.ts": ""
+      })
+
+      yield* cleanWorkspace(root)
+
+      const left = globSync("**/*", { cwd: root, dot: true, nodir: true, posix: true }).sort()
 
       assert.deepStrictEqual(left, ["packages/core/src/index.ts"])
     }).pipe(Effect.provide(NodeServices.layer)))
 
   it.effect("keeps an output-named folder inside source", () =>
     Effect.gen(function*() {
-      const left = yield* cleanFiles(["packages/core/src/dist/index.ts"])
+      const root = yield* makeTempFolder("clean-", { "packages/core/src/dist/index.ts": "" })
+
+      yield* cleanWorkspace(root)
+
+      const left = globSync("**/*", { cwd: root, dot: true, nodir: true, posix: true }).sort()
 
       assert.deepStrictEqual(left, ["packages/core/src/dist/index.ts"])
     }).pipe(Effect.provide(NodeServices.layer)))
 
   it.effect("keeps a .tsbuildinfo other than tsconfig's in a package", () =>
     Effect.gen(function*() {
-      const left = yield* cleanFiles(["packages/core/tsconfig.build.tsbuildinfo"])
+      const root = yield* makeTempFolder("clean-", { "packages/core/tsconfig.build.tsbuildinfo": "" })
+
+      yield* cleanWorkspace(root)
+
+      const left = globSync("**/*", { cwd: root, dot: true, nodir: true, posix: true }).sort()
 
       assert.deepStrictEqual(left, ["packages/core/tsconfig.build.tsbuildinfo"])
     }).pipe(Effect.provide(NodeServices.layer)))
 
   it.effect("cleans a workspace with nothing to remove", () =>
     Effect.gen(function*() {
-      const left = yield* cleanFiles([])
+      const root = yield* makeTempFolder("clean-", {})
+
+      yield* cleanWorkspace(root)
+
+      const left = globSync("**/*", { cwd: root, dot: true, nodir: true, posix: true }).sort()
 
       assert.deepStrictEqual(left, [])
     }).pipe(Effect.provide(NodeServices.layer)))

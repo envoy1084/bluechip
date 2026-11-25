@@ -1,21 +1,9 @@
 import { NodeServices } from "@effect/platform-node"
 import { assert, describe, it } from "@effect/vitest"
-import { Effect, FileSystem, Path } from "effect"
+import { Effect } from "effect"
 
-import { javaScriptScripts } from "../commands/lint.ts"
-
-// Writes `files` (empty) into a new temporary repository and lists its JavaScript scripts.
-const scriptsIn = Effect.fn(function*(files: ReadonlyArray<string>) {
-  const fs = yield* FileSystem.FileSystem
-  const path = yield* Path.Path
-  const root = yield* fs.makeTempDirectoryScoped({ prefix: "lint-" })
-  for (const file of files) {
-    yield* fs.makeDirectory(path.dirname(path.join(root, file)), { recursive: true })
-    yield* fs.writeFileString(path.join(root, file), "")
-  }
-
-  return javaScriptScripts(root)
-})
+import { javaScriptScripts } from "../../../commands/lint.ts"
+import { makeTempFolder } from "../../utils/TempFolder.ts"
 
 describe("javaScriptScripts", () => {
   it.effect.each([
@@ -35,6 +23,10 @@ describe("javaScriptScripts", () => {
     { name: "an empty repository", files: [], expected: [] }
   ])("finds $name", ({ expected, files }) =>
     Effect.gen(function*() {
-      assert.deepStrictEqual(yield* scriptsIn(files), expected)
+      const root = yield* makeTempFolder("lint-", Object.fromEntries(files.map((file) => [file, ""])))
+
+      const scripts = javaScriptScripts(root)
+
+      assert.deepStrictEqual(scripts, expected)
     }).pipe(Effect.provide(NodeServices.layer)))
 })

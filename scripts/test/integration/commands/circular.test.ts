@@ -1,18 +1,9 @@
 import { NodeServices } from "@effect/platform-node"
 import { assert, describe, it } from "@effect/vitest"
-import { Effect, FileSystem, Path } from "effect"
+import { Effect, Path } from "effect"
 
-import { findCycles } from "../commands/circular.ts"
-
-// Writes `modules` into a new temporary folder and finds the cycles between them.
-const cyclesIn = Effect.fn(function*(modules: Record<string, string>) {
-  const fs = yield* FileSystem.FileSystem
-  const path = yield* Path.Path
-  const dir = yield* fs.makeTempDirectoryScoped({ prefix: "circular-" })
-  for (const [name, source] of Object.entries(modules)) yield* fs.writeFileString(path.join(dir, name), source)
-
-  return yield* findCycles(Object.keys(modules).map((name) => path.join(dir, name)))
-})
+import { findCycles } from "../../../commands/circular.ts"
+import { makeTempFolder } from "../../utils/TempFolder.ts"
 
 describe("findCycles", () => {
   it.effect.each([
@@ -68,6 +59,11 @@ describe("findCycles", () => {
     { name: "no modules", modules: {}, expected: [] }
   ])("$name", ({ expected, modules }) =>
     Effect.gen(function*() {
-      assert.deepStrictEqual(yield* cyclesIn(modules), expected)
+      const path = yield* Path.Path
+      const dir = yield* makeTempFolder("circular-", modules)
+
+      const cycles = yield* findCycles(Object.keys(modules).map((name) => path.join(dir, name)))
+
+      assert.deepStrictEqual(cycles, expected)
     }).pipe(Effect.provide(NodeServices.layer)))
 })

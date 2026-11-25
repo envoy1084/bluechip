@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest"
-import { feedUpdates } from "../devnet/sync.ts"
+import { feedUpdates } from "../../../devnet/sync.ts"
 
 const NOW = 1_795_000_000
 
