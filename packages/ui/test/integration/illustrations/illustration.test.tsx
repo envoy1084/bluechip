@@ -1,13 +1,7 @@
 import { Illustration, ILLUSTRATION_NAMES, ILLUSTRATIONS } from "@bluechip/ui/illustrations/illustration"
 import { assert, describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
-
-const nextFrames = (count: number) =>
-  new Promise<void>((resolve) => {
-    let left = count
-    const tick = () => (--left <= 0 ? resolve() : requestAnimationFrame(tick))
-    requestAnimationFrame(tick)
-  })
+import { nextFrames } from "../../utils/frames.ts"
 
 const hasInk = (canvas: HTMLCanvasElement) =>
   canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v > 0)

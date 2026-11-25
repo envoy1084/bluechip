@@ -1,14 +1,8 @@
 import { darkness, inkLevel, mount, type Palette, type Scene } from "@bluechip/ui/motion/halftone"
 import { assert, describe, it } from "@effect/vitest"
+import { nextFrames } from "../../utils/frames.ts"
 
 const PALETTE: Palette = ["#ff0000", "#00ff00", "#2a5bff", "#000000"]
-
-const nextFrames = (count: number) =>
-  new Promise<void>((resolve) => {
-    let left = count
-    const tick = () => (--left <= 0 ? resolve() : requestAnimationFrame(tick))
-    requestAnimationFrame(tick)
-  })
 
 const canvasOf = (width: number, height: number) => {
   const canvas = document.createElement("canvas")
