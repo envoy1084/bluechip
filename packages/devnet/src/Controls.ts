@@ -46,6 +46,27 @@ const developmentKey = (addressIndex: number): Hex =>
  */
 export const BUNDLER_KEYS = { executor: developmentKey(8), utility: developmentKey(9) } as const
 
+/**
+ * The devnet's base fee: Base's usual 0.01 gwei.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const BASE_FEE_WEI = BigInt(10_000_000)
+
+/**
+ * Fees for a user operation priced as on Base: twice the base fee, plus a 0.001 gwei tip.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const BASE_FEES = {
+  maxFeePerGas: BASE_FEE_WEI * BigInt(2) + BigInt(1_000_000),
+  maxPriorityFeePerGas: BigInt(1_000_000)
+} as const
+
 const abi = parseAbi([
   "function mint(address to, uint256 amount)",
   "function balanceOf(address account) view returns (uint256)",

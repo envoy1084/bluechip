@@ -1,4 +1,4 @@
-import { BUNDLER_KEYS } from "@bluechip/devnet/Controls"
+import { BASE_FEE_WEI, BUNDLER_KEYS } from "@bluechip/devnet/Controls"
 import { Array as Arr, Console, Effect, FileSystem, Path, Schedule, Stream } from "effect"
 import { Command, Flag } from "effect/cli"
 import { ChildProcess, ChildProcessSpawner } from "effect/process"
@@ -61,6 +61,8 @@ export const localChainProcesses = (options: { readonly stateFile: string; reado
       String(CHAIN_PORTS.anvil),
       "--state",
       options.stateFile,
+      "--block-base-fee-per-gas",
+      String(BASE_FEE_WEI),
       "--silent"
     ]
   } satisfies DevProcess,

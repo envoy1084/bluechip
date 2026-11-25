@@ -5,6 +5,7 @@ import type { Hex } from "viem"
 import { captureDevnet } from "../devnet/capture.ts"
 import { CheckFailed, ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
+import { builtContracts } from "./contracts.ts"
 
 /** Where the captured state lives: loaded by every devnet test worker. */
 export const DEVNET_STATE = "packages/devnet/state/devnet.state.gz"
@@ -49,12 +50,19 @@ const capture = Command.make("capture").pipe(
       )
 
       const helpers = yield* helperCode(root)
+      yield* (yield* Tools).run("forge", ["build", "--quiet"], { cwd: path.join(root, "contracts") })
+      const policies = (yield* builtContracts(root)).map(({ address, initCode, spec }) => ({
+        label: spec.label,
+        address,
+        initCode
+      }))
       const state = yield* Effect.tryPromise({
         try: () =>
           captureDevnet({
             forkRpcUrl: Redacted.value(forkRpcUrl),
             forkBlock: BigInt(forkBlock),
             helpers,
+            policies,
             log: (message) => console.log(`devnet: ${message}`)
           }),
         catch: (cause) => ToolFailed.make({ tool: "devnet capture", output: String(cause) })

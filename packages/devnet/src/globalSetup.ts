@@ -10,7 +10,7 @@ import * as path from "node:path"
 import { gunzipSync } from "node:zlib"
 import { Instance } from "prool"
 import { Server } from "prool/vitest"
-import { BUNDLER_KEYS } from "./Controls.ts"
+import { BASE_FEE_WEI, BUNDLER_KEYS } from "./Controls.ts"
 import { contextKey, type DevnetContext } from "./Devnet.ts"
 
 const entryPoint07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
@@ -49,7 +49,13 @@ export const globalSetup = (): GlobalSetup => {
   return Server.setup({
     instances: {
       // Base's latest hardfork runs the B20 precompiles; chain id 8453 so signatures match Base's.
-      anvil: Instance.anvil({ hardfork: "base:Denim" as never, chainId: 8453, loadState: state }),
+      // Base's fees too (about 0.01 gwei), so gas budgets behave as they do on Base.
+      anvil: Instance.anvil({
+        hardfork: "base:Denim" as never,
+        chainId: 8453,
+        loadState: state,
+        blockBaseFeePerGas: BASE_FEE_WEI
+      }),
       alto: (poolId: number) =>
         Instance.alto({
           entrypoints: [entryPoint07],

@@ -36,6 +36,8 @@ describe("localChainProcesses", () => {
       "8545",
       "--state",
       "/repo/.data/devnet/state.json",
+      "--block-base-fee-per-gas",
+      "10000000",
       "--silent"
     ])
   })

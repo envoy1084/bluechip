@@ -21,6 +21,7 @@ import {
   parseAbi,
   toHex
 } from "viem"
+import { CREATE2_DEPLOYER, SEQUENCER_FEED } from "../contracts/artifacts.ts"
 
 /** Where the devnet keeps the contract that seeds its pools. */
 export const POOL_SEEDER: Address = "0x00000000000000000000000000000000005eed00"
@@ -381,6 +382,32 @@ const samples = (): ReadonlyArray<Sample> => {
   ]
 }
 
+/** A contract bluechip deploys: its label (the CREATE2 salt's preimage), address and init code. */
+export interface Policy {
+  readonly label: string
+  readonly address: Address
+  readonly initCode: Hex
+}
+
+/**
+ * Deploys bluechip's policies the way they deploy on Base (CREATE2 through the deterministic deployer, which Anvil
+ * has at genesis), and puts a sequencer uptime feed at Base's address: up (answer 0) since long ago.
+ */
+const installPolicies = async (bare: Node, policies: ReadonlyArray<Policy>, mockFeed: Hex) => {
+  for (const policy of policies) {
+    await bare.send(`deploying ${policy.label}`, {
+      to: CREATE2_DEPLOYER,
+      data: `${keccak256(toHex(policy.label))}${policy.initCode.slice(2)}`
+    })
+    if (await bare.request<Hex>("eth_getCode", [policy.address, "latest"]) === "0x") {
+      throw new Error(`devnet capture: ${policy.label} is not at ${policy.address}`)
+    }
+  }
+
+  await bare.request("anvil_setCode", [SEQUENCER_FEED, mockFeed])
+  await bare.request("anvil_setStorageAt", [SEQUENCER_FEED, pad("0x01"), pad("0x01")])
+}
+
 /** The helper contracts' runtime bytecode, from `forge build` in `packages/devnet/contracts`. */
 export interface HelperCode {
   readonly mockFeed: Hex
@@ -395,6 +422,8 @@ export const captureDevnet = async (options: {
   readonly forkRpcUrl: string
   readonly forkBlock: bigint
   readonly helpers: HelperCode
+  /** bluechip's own contracts, deployed through the CREATE2 deployer at their addresses on Base. */
+  readonly policies: ReadonlyArray<Policy>
   readonly log: (message: string) => void
 }): Promise<Buffer> => {
   const forkInstance = Instance.anvil({
@@ -452,6 +481,9 @@ export const captureDevnet = async (options: {
     options.log("installing the price feeds and pools")
     await installFeeds(fork, bare, options.helpers.mockFeed)
     await installPools(bare, options.helpers.poolSeeder)
+
+    options.log("deploying bluechip's policies and Base's sequencer feed")
+    await installPolicies(bare, options.policies, options.helpers.mockFeed)
 
     const dump = await bare.request<Hex>("anvil_dumpState")
     return Buffer.from(dump.slice(2), "hex")
