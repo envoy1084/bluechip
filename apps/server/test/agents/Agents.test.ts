@@ -229,6 +229,19 @@ layer(DevnetTest.layer)("agents", (it) => {
       }))
   })
 
+  describe("POST /api/agents/resume-all", () => {
+    it.effect("resumes every paused agent", () =>
+      Effect.gen(function*() {
+        const { user } = yield* lockedAgent()
+        yield* call("POST", "/api/agents/pause-all", { cookie: user.cookie })
+
+        const all = yield* call("POST", "/api/agents/resume-all", { cookie: user.cookie })
+
+        assert.deepStrictEqual(all.json.map((agent: { paused: boolean }) => agent.paused), [false])
+        yield* user.events.close
+      }))
+  })
+
   describe("GET /api/agents/:id/usage", () => {
     it.effect("a locked agent that hasn't traded has used nothing", () =>
       Effect.gen(function*() {

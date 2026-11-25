@@ -103,6 +103,7 @@ export class Agents extends Context.Service<Agents, {
   readonly pause: (owner: Owner, id: AgentId) => Effect.Effect<Agent, NotFound | Conflict>
   readonly resume: (owner: Owner, id: AgentId) => Effect.Effect<Agent, NotFound | Conflict>
   readonly pauseAll: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
+  readonly resumeAll: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
 }>()("@bluechip/server/Agents") {
   static readonly layer = Layer.effect(
     Agents,
@@ -354,15 +355,16 @@ export class Agents extends Context.Service<Agents, {
           return row.paused === paused ? toAgent(row) : yield* save(row, { paused })
         })
 
-      const pauseAll = Effect.fn("Agents.pauseAll")(function*(owner: Owner) {
-        const rows = yield* db.select().from(agents).where(and(
-          eq(agents.userId, owner.id as `user_${string}`),
-          inArray(agents.status, ["locking", "active", "updating", "removing"]),
-          eq(agents.paused, false)
-        )).pipe(Effect.orDie)
-        for (const row of rows) yield* save(row, { paused: true })
-        return yield* list(owner)
-      })
+      const setAllPaused = (paused: boolean) =>
+        Effect.fnUntraced(function*(owner: Owner) {
+          const rows = yield* db.select().from(agents).where(and(
+            eq(agents.userId, owner.id as `user_${string}`),
+            inArray(agents.status, ["locking", "active", "updating", "removing"]),
+            eq(agents.paused, !paused)
+          )).pipe(Effect.orDie)
+          for (const row of rows) yield* save(row, { paused })
+          return yield* list(owner)
+        })
 
       return {
         list,
@@ -375,7 +377,8 @@ export class Agents extends Context.Service<Agents, {
         confirm,
         pause: Effect.fn("Agents.pause")(setPaused(true)),
         resume: Effect.fn("Agents.resume")(setPaused(false)),
-        pauseAll
+        pauseAll: Effect.fn("Agents.pauseAll")(setAllPaused(true)),
+        resumeAll: Effect.fn("Agents.resumeAll")(setAllPaused(false))
       }
     })
   )

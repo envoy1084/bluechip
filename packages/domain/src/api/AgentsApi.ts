@@ -83,5 +83,8 @@ export class AgentsApi extends HttpApiGroup.make("agents").add(
   }),
   HttpApiEndpoint.post("pauseAll", "/agents/pause-all", {
     success: Schema.Array(Agent)
+  }),
+  HttpApiEndpoint.post("resumeAll", "/agents/resume-all", {
+    success: Schema.Array(Agent)
   })
 ).middleware(Authentication) {}

@@ -44,4 +44,7 @@ export const AgentsHandlers = HttpApiBuilder.group(BluechipApi, "agents", (handl
         agents.resume(user, params.id)))
     .handle("pauseAll", () =>
       Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.pauseAll(user))))
+        agents.pauseAll(user)))
+    .handle("resumeAll", () =>
+      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
+        agents.resumeAll(user))))
