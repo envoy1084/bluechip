@@ -32,6 +32,7 @@ export default defineConfig({
     passWithNoTests: true,
     projects: [
       project("scripts", "scripts"),
+      project("domain", "packages/domain"),
       project("chain", "packages/chain"),
       project("server", "apps/server"),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.

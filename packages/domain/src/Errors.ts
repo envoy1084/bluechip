@@ -78,6 +78,32 @@ export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Err
 ) {}
 
 /**
+ * The stock has no pool to trade in.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class NotTradable extends Schema.TaggedError<NotTradable>("@bluechip/domain/Errors/NotTradable")(
+  "NotTradable",
+  { symbol: Schema.String },
+  { httpApiStatus: 422 }
+) {}
+
+/**
+ * No quote right now: the amount is more than the pool can fill, or the price couldn't be read.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>("@bluechip/domain/Errors/QuoteUnavailable")(
+  "QuoteUnavailable",
+  { symbol: Schema.String, reason: Schema.Literals(["tooLarge", "tooSmall", "noPrice", "poolError"]) },
+  { httpApiStatus: 422 }
+) {}
+
+/**
  * The client was built against another contract version; it should reload.
  *
  * @stability unstable

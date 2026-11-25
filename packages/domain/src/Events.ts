@@ -6,6 +6,7 @@
  */
 import * as Duration from "effect/Duration"
 import * as Schema from "effect/Schema"
+import { ReferencePrice } from "./market/Market.ts"
 
 /**
  * How often the server sends a `Heartbeat`. A client that hears nothing for a few intervals treats the connection as
@@ -26,7 +27,9 @@ export const heartbeatInterval = Duration.seconds(5)
  */
 export const LiveEvent = Schema.TaggedUnion({
   /** Sent every few seconds, so the client can show that the stream is alive. */
-  Heartbeat: { at: Schema.DateTimeUtc, sequence: Schema.Int }
+  Heartbeat: { at: Schema.DateTimeUtc, sequence: Schema.Int },
+  /** Reference prices that changed since the last tick. */
+  PriceTick: { prices: Schema.Array(ReferencePrice) }
 }).annotate({ identifier: "@bluechip/domain/Events/LiveEvent" })
 
 /**
