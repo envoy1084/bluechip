@@ -246,3 +246,94 @@ export const AuditEventId = typeId("audit").pipe(
  * @since 0.0.0
  */
 export type AuditEventId = typeof AuditEventId.Type
+
+/**
+ * A conversation with the assistant; also the AG-UI thread id of its runs.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const ConversationId = typeId("conversation").pipe(
+  Schema.brand("ConversationId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/ConversationId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type ConversationId = typeof ConversationId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const MessageId = typeId("message").pipe(
+  Schema.brand("MessageId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/MessageId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type MessageId = typeof MessageId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const MemoryId = typeId("memory").pipe(
+  Schema.brand("MemoryId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/MemoryId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type MemoryId = typeof MemoryId.Type
+
+/**
+ * A card the assistant showed: a trade, a draft agent, a change to confirm, a memory.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const CardId = typeId("card").pipe(
+  Schema.brand("CardId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/CardId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type CardId = typeof CardId.Type
+
+/**
+ * An AG-UI run, named by the client that starts it (`RunAgentInput.runId`).
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const RunId = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(100)).pipe(
+  Schema.brand("RunId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/RunId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type RunId = typeof RunId.Type
