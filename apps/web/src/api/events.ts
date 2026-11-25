@@ -1,5 +1,6 @@
 import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import { heartbeatInterval, type LiveEvent } from "@bluechip/domain/Events"
+import type { ReferencePrice, StockSymbol } from "@bluechip/domain/market/Market"
 import * as Data from "effect/Data"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
@@ -19,6 +20,9 @@ export type Connection = "connecting" | "live" | "reconnecting" | "outdated" | "
 
 export const connectionAtom = Atom.make<Connection>("connecting")
 
+/** Reference prices from `PriceTick` events, by stock: newer than any fetched list while the stream is live. */
+export const livePricesAtom = Atom.make<ReadonlyMap<StockSymbol, ReferencePrice>>(new Map())
+
 /** The stream ended or went silent (a deploy, a restart, a dead proxy); treated like a dropped connection. */
 class StreamClosed extends Data.TaggedError("StreamClosed") {}
 
@@ -36,10 +40,18 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
       get.set(connectionAtom, connection)
     })
   return Stream.unwrap(BluechipApiClient.use((client) => client.events.watch())).pipe(
-    Stream.tap(() =>
-      reconnecting
-        ? Effect.andThen(setConnection("live"), Reactivity.invalidate([liveReactivityKey]))
-        : setConnection("live")
+    Stream.tap((event) =>
+      Effect.andThen(
+        reconnecting
+          ? Effect.andThen(setConnection("live"), Reactivity.invalidate([liveReactivityKey]))
+          : setConnection("live"),
+        Effect.sync(() => {
+          if (event._tag !== "PriceTick") return
+          const prices = new Map(get(livePricesAtom))
+          for (const price of event.prices) prices.set(price.symbol, price)
+          get.set(livePricesAtom, prices)
+        })
+      )
     ),
     Stream.timeoutOrElse({
       duration: Duration.times(heartbeatInterval, 3),
