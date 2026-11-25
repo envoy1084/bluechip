@@ -5,8 +5,8 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import * as Workflow from "effect/workflow/Workflow"
 import { randomUUID } from "node:crypto"
-import { Database } from "../../src/db/Database.ts"
-import { engineLayer } from "../../src/engine/Engine.ts"
+import { Database } from "../../src/platform/db/Database.ts"
+import { engineLayer } from "../../src/platform/engine/Engine.ts"
 import { testDatabaseUrl } from "../support/config.ts"
 
 // The engine's message ids are time-based snowflakes: these tests run on the real clock (`excludeTestServices`), since a frozen

@@ -1,0 +1,12 @@
+// Every table, for drizzle-kit and the relations builder. The one module of platform/ that imports modules/.
+export { accounts, passkeys, users } from "../../modules/accounts/tables.ts"
+export { agents, agentSessions, sessionKeys, sessionPolicies } from "../../modules/agents/tables.ts"
+export { auditEvents } from "../../modules/audit/tables.ts"
+export { authChallenges, sessions } from "../../modules/auth/tables.ts"
+export { transfers } from "../../modules/funding/tables.ts"
+export { intents } from "../../modules/intents/tables.ts"
+export { agentTemplates } from "../../modules/policies/tables.ts"
+export { portfolioSnapshots } from "../../modules/portfolio/tables.ts"
+export { signingRequests } from "../../modules/signing/tables.ts"
+export { trades } from "../../modules/trading/tables.ts"
+export { jobRuns } from "../engine/tables.ts"

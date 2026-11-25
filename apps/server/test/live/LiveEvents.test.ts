@@ -4,7 +4,7 @@ import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Stream from "effect/Stream"
-import { LiveEvents } from "../../src/live/LiveEvents.ts"
+import { LiveEvents } from "../../src/platform/live/LiveEvents.ts"
 
 const ada = "user_01jd000000000000000000000a" as UserId
 const grace = "user_01jd000000000000000000000b" as UserId

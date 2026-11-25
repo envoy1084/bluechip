@@ -1,8 +1,8 @@
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { Database } from "../db/Database.ts"
-import { LoggingLive } from "../Logging.ts"
+import { LoggingLive } from "../config/Logging.ts"
+import { Database } from "../platform/db/Database.ts"
 
 // Applies every pending migration in `drizzle/` to DATABASE_URL, then exits.
 const program = Effect.gen(function*() {

@@ -8,7 +8,7 @@ import * as ConfigProvider from "effect/ConfigProvider"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { encodeFunctionData, erc20Abi, parseEther } from "viem"
-import { Namera } from "../src/Namera.ts"
+import { Namera } from "../src/platform/namera/Namera.ts"
 import { softwarePasskey } from "./support/passkey.ts"
 
 const recipient = "0x000000000000000000000000000000000000dEaD"

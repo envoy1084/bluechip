@@ -1,7 +1,7 @@
 import * as ConfigProvider from "effect/ConfigProvider"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { Database } from "../../src/db/Database.ts"
+import { Database } from "../../src/platform/db/Database.ts"
 import { testDatabaseUrl } from "../support/config.ts"
 
 // Migrates the test database once per run, so test files share it and run in parallel.

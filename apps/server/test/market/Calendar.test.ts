@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
-import { marketStatus, priceStatus } from "../../src/market/Calendar.ts"
+import { marketStatus, priceStatus } from "../../src/modules/market/Calendar.ts"
 
 const at = (iso: string) => DateTime.makeUnsafe(iso)
 const iso = (time: DateTime.Utc | null) => (time === null ? null : DateTime.formatIso(time))

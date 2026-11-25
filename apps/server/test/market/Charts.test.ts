@@ -2,7 +2,7 @@ import { PricePoint } from "@bluechip/domain/market/Market"
 import { Price } from "@bluechip/domain/market/Units"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
-import { pastDay, thin } from "../../src/market/Charts.ts"
+import { pastDay, thin } from "../../src/modules/market/Charts.ts"
 
 const series = (prices: ReadonlyArray<number>) =>
   prices.map((price, index) =>

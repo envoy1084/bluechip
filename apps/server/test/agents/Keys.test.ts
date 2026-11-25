@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest"
 import * as Redacted from "effect/Redacted"
 import { randomBytes } from "node:crypto"
 import { privateKeyToAccount } from "viem/accounts"
-import { decryptKey, encryptKey, newAgentKey } from "../../src/agents/Keys.ts"
+import { decryptKey, encryptKey, newAgentKey } from "../../src/modules/agents/Keys.ts"
 
 const secret = Redacted.make(randomBytes(32).toString("base64"))
 const agentId = "agent_01jdrawxyzabcdefghjkmnpqrs"

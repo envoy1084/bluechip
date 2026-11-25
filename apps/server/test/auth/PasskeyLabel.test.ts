@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest"
-import { passkeyLabel } from "../../src/auth/PasskeyLabel.ts"
+import { passkeyLabel } from "../../src/modules/auth/PasskeyLabel.ts"
 
 const mac =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"

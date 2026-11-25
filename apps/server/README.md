@@ -33,15 +33,16 @@ The fork keeps Base's chain id (8453), so contracts, Namera and signatures behav
 
 ## Jobs
 
-Scheduled jobs run on Effect's durable engine inside the server (`src/engine/`): one runner keeps entity
+Scheduled jobs run on Effect's durable engine inside the server (`src/platform/engine/`): one runner keeps entity
 mailboxes, workflow state and cron runs in Postgres (`cluster_*` tables, created by Effect's migrations at startup and
-excluded from drizzle-kit). Crons are in `src/engine/Crons.ts` (`portfolio.snapshot` every 4 hours); each run writes
-a `job_runs` row.
+excluded from drizzle-kit). Crons live with their feature and are wired in `src/Services.ts`:
+`src/modules/portfolio/SnapshotCron.ts` (`portfolio.snapshot` every 4 hours, each run writing a `job_runs` row) and
+`src/modules/intents/ExpireCron.ts`.
 
 ## Market
 
-- Market prices come from Alpaca (`src/market/alpaca/`): one snapshot request for every stock at startup and every
-  5 minutes (latest trade and previous close), its trade stream in between, sent to signed-in browsers as
+- Market prices come from Alpaca (`src/modules/market/alpaca/`): one snapshot request for every stock at startup and
+  every 5 minutes (latest trade and previous close), its trade stream in between, sent to signed-in browsers as
   `PriceTick` events at most once a second. Share prices become token prices with each B20 token's multiplier,
   read from the chain once a day. Only the server holds the Alpaca keys; the free plan allows one stream connection
   per account, so local and production use separate keys.
@@ -49,9 +50,9 @@ a `job_runs` row.
   and shared by every viewer. Nothing about prices is stored.
 - Chainlink is read on demand (`ReferencePrices`): one multicall shared for 15 seconds serves quotes (the fair-price
   check) and the stock pages' reference line. Nothing reads it while nobody asks.
-- Sessions (`src/market/Calendar.ts`): regular, pre-market, after-hours and overnight while prices move (Sunday
-  8 pm to Friday 8 pm New York), paused on weekends and NYSE holidays (2026-2028 from NYSE's release; add 2029 when
-  it's published). The stock tokens trade around the clock either way.
+- Sessions (`src/modules/market/Calendar.ts`): regular, pre-market, after-hours and overnight while prices move
+  (Sunday 8 pm to Friday 8 pm New York), paused on weekends and NYSE holidays (2026-2028 from NYSE's release; add 2029
+  when it's published). The stock tokens trade around the clock either way.
 - Quotes come from each stock's Aerodrome pool (pinned in `@bluechip/chain`'s `Contracts.ts`) via the MetaDEX
   quoter.
 
@@ -75,22 +76,23 @@ a `job_runs` row.
 - The fair-price check refuses a trade more than 1% worse than Chainlink, 0.5% while prices are paused (weekends,
   holidays; trading stays open for people and agents, with a warning), and any trade while Chainlink missed its
   heartbeat.
-- Signing is shared with withdrawals (`src/signing/`): the passkey signs the operation's hash, `confirm` sends it,
-  and the trade is followed to its receipt, where its fill (exact USDC and shares) is read from the logs.
+- Signing is shared with withdrawals (`src/modules/signing/`): the passkey signs the operation's hash, `confirm`
+  sends it, and the trade is followed to its receipt, where its fill (exact USDC and shares) is read from the logs.
 - `GET /api/activity` lists trades and withdrawals together, newest first.
 
 ## API
 
 1. Define endpoints in `packages/domain/src/api/<Feature>Api.ts` and add the group in `packages/domain/src/Api.ts`
    (before the middleware, so it applies).
-2. Implement them with `HttpApiBuilder.group` in `src/api/<Feature>.ts` and add the layer to `ApiHandlers` in
-   `src/api/Api.ts`.
+2. Implement them with `HttpApiBuilder.group` in `src/modules/<feature>/http.ts` and add the layer to `ApiHandlers` in
+   `src/Api.ts`.
 3. Errors are the domain's `Schema.TaggedError`s with an `httpApiStatus`; unexpected failures become
    `Internal { requestId }`. Clients send `x-contract-version`; a mismatch is `ClientOutdated` (426).
 
 ## Database changes
 
-1. Edit the tables in `src/db/schema/` (custom column types in `src/db/columns.ts`).
+1. Edit the feature's tables in `src/modules/<feature>/tables.ts` (a new table is also exported from
+   `src/platform/db/schema.ts`; custom column types in `src/platform/db/columns.ts`).
 2. `pnpm --filter @bluechip/server db:generate` writes a new SQL migration under `drizzle/`.
 3. Read the SQL, commit it with the schema change. Never edit a generated migration; write a new one.
 4. `db:migrate` applies pending migrations (`drizzle-orm/effect-postgres/migrator`); `db:studio` opens Drizzle Studio.

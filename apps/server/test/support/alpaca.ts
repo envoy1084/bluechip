@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Stream from "effect/Stream"
-import { Alpaca } from "../../src/market/alpaca/Alpaca.ts"
+import { Alpaca } from "../../src/modules/market/alpaca/Alpaca.ts"
 
 /** Every stock at $100 a share (previous close $98), two daily bars, and a trade stream that stays quiet. */
 export const AlpacaTest = Layer.succeed(Alpaca, {
