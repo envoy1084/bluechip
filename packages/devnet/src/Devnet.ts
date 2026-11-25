@@ -12,6 +12,7 @@ import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Server } from "prool/vitest"
+import { toHex } from "viem"
 import type { Address } from "viem"
 import * as Controls from "./Controls.ts"
 
@@ -61,8 +62,9 @@ export class Devnet extends Context.Service<Devnet, {
   readonly movePool: (symbol: string, price: bigint) => Effect.Effect<void>
 }>()("@bluechip/devnet/Devnet") {
   /**
-   * Connects to the current worker's devnet: mines a block so its clock reads now, and marks every price as just
-   * updated, since the captured state's prices are as old as the capture.
+   * Connects to the current worker's devnet: sets Base's base fee (loading the captured state brings the fork's own),
+   * mines a block so its clock reads now, and marks every price as just updated, since the captured state's prices are
+   * as old as the capture.
    *
    * @since 0.0.0
    */
@@ -85,6 +87,7 @@ export class Devnet extends Context.Service<Devnet, {
           Effect.promise(() => Controls.movePool(anvil, stockOf(symbol), price))
 
         yield* Effect.promise(async () => {
+          await anvil("anvil_setNextBlockBaseFeePerGas", [toHex(Controls.BASE_FEE_WEI)])
           await anvil("anvil_mine", ["0x1"])
           for (const { feed } of stocks) await Controls.setFeedTime(anvil, feed, now())
           // Alto starts on its first request; let it start now, against the ready chain.
