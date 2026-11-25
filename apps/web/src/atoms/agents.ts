@@ -3,7 +3,7 @@ import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import { startAuthentication } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
-import { agentsReactivityKey, BluechipApiClient, liveReactivityKey } from "../api/client.ts"
+import { agentsReactivityKey, BluechipApiClient, liveReactivityKey, usageReactivityKey } from "../api/client.ts"
 import { asCredential, ceremonyOptions } from "./account.ts"
 
 const reactivityKeys = [agentsReactivityKey, liveReactivityKey]
@@ -16,9 +16,12 @@ export const agentAtom = Atom.family((id: AgentId) =>
   BluechipApiClient.query("agents", "agent", { params: { id }, reactivityKeys })
 )
 
-/** What an agent has used, policy by policy, read from its session onchain. */
+/** What an agent has used, policy by policy, read from its session onchain; refetched when its trades fill. */
 export const agentUsageAtom = Atom.family((id: AgentId) =>
-  BluechipApiClient.query("agents", "usage", { params: { id }, reactivityKeys })
+  BluechipApiClient.query("agents", "usage", {
+    params: { id },
+    reactivityKeys: [...reactivityKeys, usageReactivityKey]
+  })
 )
 
 /** An agent's sessions, newest first: each set of policies locked for it, and how long it lasted. */

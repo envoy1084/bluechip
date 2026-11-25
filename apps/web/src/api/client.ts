@@ -26,3 +26,9 @@ export const agentsReactivityKey = "agents"
 
 /** Saved templates refetch when this key is invalidated (after saving or deleting one). */
 export const templatesReactivityKey = "templates"
+
+/** Intents and approvals refetch when this key is invalidated (live `IntentChanged` events). */
+export const intentsReactivityKey = "intents"
+
+/** Agents' usage refetches when this key is invalidated (an agent's trade filled). */
+export const usageReactivityKey = "usage"

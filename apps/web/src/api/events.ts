@@ -1,5 +1,6 @@
 import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import { heartbeatInterval, type LiveEvent } from "@bluechip/domain/Events"
+import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
 import type { Trade } from "@bluechip/domain/trading/Trade"
 import * as Data from "effect/Data"
@@ -11,7 +12,14 @@ import * as Atom from "effect/reactivity/Atom"
 import * as Reactivity from "effect/reactivity/Reactivity"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
-import { agentsReactivityKey, BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "./client.ts"
+import {
+  agentsReactivityKey,
+  BluechipApiClient,
+  intentsReactivityKey,
+  liveReactivityKey,
+  portfolioReactivityKey,
+  usageReactivityKey
+} from "./client.ts"
 
 /**
  * The state of the live stream, for the connection banner. `outdated` means this build must reload; `signedOut` means
@@ -26,6 +34,9 @@ export const livePricesAtom = Atom.make<ReadonlyMap<StockSymbol, MarketPrice>>(n
 
 /** Trades as `TradeUpdated` events report them, by id: newer than anything fetched while the stream is live. */
 export const liveTradesAtom = Atom.make<ReadonlyMap<string, Trade>>(new Map())
+
+/** Intents as `IntentChanged` events report them, by id: newer than anything fetched while the stream is live. */
+export const liveIntentsAtom = Atom.make<ReadonlyMap<string, Intent>>(new Map())
 
 /** The stream ended or went silent (a deploy, a restart, a dead proxy); treated like a dropped connection. */
 class StreamClosed extends Data.TaggedError("StreamClosed") {}
@@ -57,6 +68,16 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
             return Reactivity.invalidate([portfolioReactivityKey])
           }
           if (event._tag === "AgentChanged") return Reactivity.invalidate([agentsReactivityKey])
+          if (event._tag === "IntentChanged") {
+            const { intent } = event
+            get.set(liveIntentsAtom, new Map(get.once(liveIntentsAtom)).set(intent.id, intent))
+            // A fill through an agent moves what its session has used.
+            return Reactivity.invalidate(
+              intent.status === "filled" && intent.agentId !== null ?
+                [intentsReactivityKey, usageReactivityKey] :
+                [intentsReactivityKey]
+            )
+          }
           if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
             return Reactivity.invalidate([portfolioReactivityKey])
           }
