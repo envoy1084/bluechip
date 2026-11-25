@@ -140,6 +140,39 @@ regressions; leave what the type checker proves to `typetest/`. The landmines te
 enforced: no test doubles (use real implementations, test layers, MSW for the network), no fixed
 sleeps (`TestClock`, or await a signal), no polling races, and no retries or raised timeouts.
 
+Chain tests run on the devnet (`packages/devnet`): a local Base with every contract bluechip uses at its real
+address, one Anvil and Alto per Vitest worker, started from a captured state file, so they need no fork, no RPC and
+no Docker. Only `pnpm test:fork` (not part of `pnpm check`) reads the real chain, to check the facts the devnet copies.
+
+### Writing tests
+
+Every test guards one intended behaviour: it fails on a regression of that behaviour and on nothing else.
+
+- **Fastest level that proves it.** Pure function, then service, then API or component, then browser. A decision
+  (a branch, a calculation, a parse) is a pure function with a domain name, tested directly with a table of
+  examples; services, handlers and chain flows keep one test per outcome, not per case of a decision.
+- **One example per test**, differing from its neighbours in one visible way that the name says. `describe` is the
+  function, service or route (`describe("POST /api/trades")`, then the method); each `it` names the example (`"a
+  buy over the daily budget"`, `"409: a confirm replayed"`). Reading only the names lists what is covered.
+- **Input, call, output.** Write the input and the expected value out as literals in the test, call once, and
+  compare the whole value (`assert.deepStrictEqual(result, expected)`), one assertion per thing checked: what came
+  back, then each effect. Never derive the expected value with the code's own logic. A value the test can't know
+  (an id, a hash, a time) is matched by its shape (a pattern), never by "any".
+- **Cover every case** of each public function: every branch, each bound just inside, on and just outside, empty
+  and full input, every failure the caller can see, repeats (the same call twice), and every setting it reads.
+- **Isolated data.** Each test makes its own records (a new user, account or id) and reads back only those, so the
+  suite passes shuffled, alone and in parallel. Arrange through the front door: the API's routes, the service's
+  methods, the devnet's controls; never by reaching into private state.
+- **No doubles of our own code.** Real implementations inside the process; at the edge, test layers and MSW (or the
+  devnet for the chain). Assert state and results, not which internals were called.
+- **Prune** a test that guards nothing: one that asserts removed code stays gone, what the type checker or a
+  library already guarantees, a mock's own answer, private state or call order, or anything another test already
+  proves (keep the faster one). Delete production code that only existed for a pruned test.
+- **A bug found while testing** is not fixed in a refactor: pin today's behaviour in a test, add the right
+  behaviour next to it as `it.skip("… (bug: …)")`, and report it.
+- **Budgets:** about 5 ms for a pure function, 50 ms for a database or devnet round trip, 100 ms for an API request;
+  one-time setup (migrations, starting the devnet) goes in `globalSetup` or `beforeAll`, never in each test.
+
 ## Commits and pull requests
 
 Conventional Commits with kebab-case scopes (`feat(core): add retries`); commitlint checks commits
