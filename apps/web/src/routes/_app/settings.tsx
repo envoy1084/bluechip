@@ -1,12 +1,13 @@
 import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
 import { Button } from "@bluechip/ui/components/button"
+import { Input } from "@bluechip/ui/components/input"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
-import { accountReactivityKey, meAtom, passkeysAtom, signOutAtom } from "../../atoms/account.ts"
+import { accountReactivityKey, meAtom, passkeysAtom, setDisplayNameAtom, signOutAtom } from "../../atoms/account.ts"
 import { AppPage } from "../../shell/AppPage.tsx"
 
 export const Route = createFileRoute("/_app/settings")({ component: Settings })
@@ -64,6 +65,7 @@ function Settings() {
   return (
     <AppPage title="Settings">
       <Section title="Account" description="Your bluechip account lives on Base. Only your Face ID can move money out.">
+        <NameRow saved={me.value.user.displayName} />
         <Row title="Address" description="Send USDC on Base here to add cash.">
           <AddressChip address={account.address} />
         </Row>
@@ -99,14 +101,64 @@ function Settings() {
             <Row
               key={passkey.id}
               icon="face-id"
-              title={passkey.label ?? "Passkey"}
-              description={`Added ${formatDate(passkey.createdAt)}${
-                passkey.lastUsedAt === null ? "" : ` · last used ${formatDate(passkey.lastUsedAt)}`
-              }`}
+              title={
+                <>
+                  {passkey.label ?? "Passkey"}
+                  {passkey.current ?
+                    (
+                      <span className="rounded-full bg-g-100 px-2 py-0.5 text-[11.5px] font-semibold text-g-600">
+                        This device
+                      </span>
+                    ) :
+                    null}
+                </>
+              }
+              description={[
+                passkey.synced ? "Synced to your other devices" : "On this device only",
+                `added ${formatDate(passkey.createdAt)}`,
+                passkey.lastUsedAt === null ? null : `last used ${formatDate(passkey.lastUsedAt)}`
+              ].filter((part) => part !== null).join(" · ")}
             />
           )) :
           null}
       </Section>
     </AppPage>
+  )
+}
+
+/** The optional name bluechip greets you by; saved when it changes. */
+function NameRow({ saved }: Readonly<{ saved: string | null }>) {
+  const setDisplayName = useAtomSet(setDisplayNameAtom, { mode: "promise" })
+  const [name, setName] = useState(saved ?? "")
+  const [saving, setSaving] = useState(false)
+  const changed = name.trim() !== (saved ?? "")
+  const save = async () => {
+    setSaving(true)
+    await setDisplayName({
+      payload: { displayName: name.trim() === "" ? null : name.trim() },
+      reactivityKeys: [accountReactivityKey]
+    })
+      .finally(() => setSaving(false))
+  }
+  return (
+    <Row title="Your name" description="Optional. bluechip greets you by it.">
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (changed) void save()
+        }}
+      >
+        <Input
+          aria-label="Your name"
+          value={name}
+          maxLength={64}
+          placeholder="Add your name"
+          onChange={(event) => setName(event.target.value)}
+          className="w-48"
+        />
+        <Button type="submit" variant="secondary" size="sm" disabled={!changed} loading={saving}>Save</Button>
+      </form>
+    </Row>
   )
 }

@@ -16,6 +16,8 @@ import { Route as AppHomeRouteImport } from './routes/_app/home'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
+import { Route as LegalRiskRouteImport } from './routes/legal/risk'
+import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
 import { Route as WelcomeCashRouteImport } from './routes/welcome/cash'
 import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
@@ -54,6 +56,16 @@ const DevConnectionRoute = DevConnectionRouteImport.update({
   path: '/dev/connection',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LegalRiskRoute = LegalRiskRouteImport.update({
+  id: '/legal/risk',
+  path: '/legal/risk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalTermsRoute = LegalTermsRouteImport.update({
+  id: '/legal/terms',
+  path: '/legal/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
   id: '/welcome/',
   path: '/welcome/',
@@ -77,6 +89,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/legal/risk': typeof LegalRiskRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
@@ -88,6 +102,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/legal/risk': typeof LegalRiskRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome': typeof WelcomeIndexRoute
@@ -101,6 +117,8 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/legal/risk': typeof LegalRiskRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/welcome/cash': typeof WelcomeCashRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
@@ -114,6 +132,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/legal/risk'
+    | '/legal/terms'
     | '/welcome/cash'
     | '/welcome/eligibility'
     | '/welcome/'
@@ -125,6 +145,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/legal/risk'
+    | '/legal/terms'
     | '/welcome/cash'
     | '/welcome/eligibility'
     | '/welcome'
@@ -137,6 +159,8 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/legal/risk'
+    | '/legal/terms'
     | '/welcome/cash'
     | '/welcome/eligibility'
     | '/welcome/'
@@ -148,6 +172,8 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
+  LegalRiskRoute: typeof LegalRiskRoute
+  LegalTermsRoute: typeof LegalTermsRoute
   WelcomeCashRoute: typeof WelcomeCashRoute
   WelcomeEligibilityRoute: typeof WelcomeEligibilityRoute
   WelcomeIndexRoute: typeof WelcomeIndexRoute
@@ -204,6 +230,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevConnectionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/legal/risk': {
+      id: '/legal/risk'
+      path: '/legal/risk'
+      fullPath: '/legal/risk'
+      preLoaderRoute: typeof LegalRiskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/terms': {
+      id: '/legal/terms'
+      path: '/legal/terms'
+      fullPath: '/legal/terms'
+      preLoaderRoute: typeof LegalTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/welcome/': {
       id: '/welcome/'
       path: '/welcome'
@@ -246,6 +286,8 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,
+  LegalRiskRoute: LegalRiskRoute,
+  LegalTermsRoute: LegalTermsRoute,
   WelcomeCashRoute: WelcomeCashRoute,
   WelcomeEligibilityRoute: WelcomeEligibilityRoute,
   WelcomeIndexRoute: WelcomeIndexRoute,

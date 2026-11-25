@@ -7,7 +7,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import { Seal } from "@bluechip/ui/motion/seal"
 import { useAtomSet } from "@effect/atom-react/Hooks"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { signInAtom, signUpAtom } from "../../atoms/account.ts"
 import { OnboardingFrame, OnboardingTitle } from "../../shell/OnboardingFrame.tsx"
@@ -67,7 +67,12 @@ function Welcome() {
             Sign in with Face ID
           </Button>
         </div>
-        <p className="text-[12px] text-g-500">By continuing you agree to the Terms and the Risk disclosure.</p>
+        <p className="text-[12px] text-g-500">
+          By continuing you agree to the{" "}
+          <Link to="/legal/terms" className="font-medium text-g-700 underline underline-offset-2">Terms</Link> and the
+          {" "}
+          <Link to="/legal/risk" className="font-medium text-g-700 underline underline-offset-2">Risk disclosure</Link>.
+        </p>
       </OnboardingFrame>
     )
   }

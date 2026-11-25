@@ -59,3 +59,5 @@ export const signInAtom = BluechipApiClient.runtime.fn(
 export const signOutAtom = BluechipApiClient.mutation("auth", "logout")
 
 export const setEligibilityAtom = BluechipApiClient.mutation("account", "setEligibility")
+
+export const setDisplayNameAtom = BluechipApiClient.mutation("account", "setDisplayName")
