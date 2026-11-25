@@ -41,7 +41,7 @@ export function StockHeader({ stock }: Readonly<{ stock: Stock }>) {
         <TickerChip symbol={stock.symbol} size="lg" />
         <div className="grid min-w-0 gap-0.5">
           <span className="flex flex-wrap items-center gap-x-2 text-label-sm text-g-500">
-            {stock.name} · on Base
+            {stock.name} on Base
             {price === null ? null : <SessionNote price={price} />}
           </span>
           {price === null ?
@@ -64,8 +64,8 @@ export function StockHeader({ stock }: Readonly<{ stock: Stock }>) {
             <span className="inline-flex items-center gap-1.5 tabular-nums">
               <Icon name="shield" size={14} className="text-g-400" />
               Chainlink {formatMoney(priceDollars(reference.price))}
-              {gap === null ? null : ` · ${Math.abs(gap).toFixed(1)}% apart`}
-              {` · updated ${formatRelative(DateTime.toDateUtc(reference.updatedAt)).toLowerCase()}`}
+              {gap === null ? null : `, ${Math.abs(gap).toFixed(1)}% apart`}
+              {`, updated ${formatRelative(DateTime.toDateUtc(reference.updatedAt)).toLowerCase()}`}
             </span>
             <span
               className={cn(

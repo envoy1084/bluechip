@@ -67,7 +67,7 @@ export function TradeOrderPreview({ order, className }: { readonly order: TradeO
     <OrderPreview className={className}>
       <OrderPreviewRow label={order.side === "buy" ? "Buy" : "Sell"}>
         <TickerChip symbol={order.symbol} size="sm" />
-        {order.name} · {formatMoney(order.amount)}
+        {formatMoney(order.amount)} of {order.name}
       </OrderPreviewRow>
       <OrderPreviewRow label="Price">{formatMoney(order.price)} a share</OrderPreviewRow>
       <OrderPreviewRow label={order.side === "buy" ? "You get about" : "You sell about"}>

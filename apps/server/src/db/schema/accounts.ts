@@ -20,7 +20,7 @@ export const passkeys = pgTable("passkeys", {
   publicKey: text("public_key").notNull(),
   counter: integer("counter").notNull(),
   transports: text("transports").array().notNull(),
-  /** "iCloud Keychain · Mac": the provider (from the authenticator's AAGUID) and the device it was created on. */
+  /** "iCloud Keychain on Mac": the provider (from the authenticator's AAGUID) and the device it was created on. */
   label: text("label"),
   /** Backed up by the provider, so it works on the user's other devices too. */
   synced: boolean("synced").notNull().default(false),

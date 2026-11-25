@@ -42,6 +42,6 @@ export const LIMITS: ReadonlyArray<readonly [string, string]> = [
   ["Cash reserve", "$200"],
   ["Fair price check", "Within 1%"],
   ["Approval needed above", "$500"],
-  ["Stocks allowed", "NVDA · AAPL · MSFT"],
+  ["Stocks allowed", "NVDA, AAPL and MSFT"],
   ["Rebalance only", "Yes"]
 ]

@@ -48,7 +48,7 @@ export function HoldingRow(
           {state === "at" && <MiniBadge tone="warn">At max</MiniBadge>}
         </span>
         <span className="text-label-sm text-g-500 tabular-nums">
-          {formatShares(shares)} shares · {weight.toFixed(1)}%{cap === undefined ? " of your money" : ` of ${cap}% max`}
+          {formatShares(shares)} shares, {weight.toFixed(1)}%{cap === undefined ? " of your money" : ` of ${cap}% max`}
         </span>
         {cap !== undefined && <AllocationBar weight={weight} cap={cap} label={name} className="mt-1.5 max-w-[220px]" />}
       </span>
@@ -76,7 +76,7 @@ export function CashHoldingRow({ value, weight, reserve, className, ...props }: 
       <span className="grid min-w-0 gap-px leading-[1.35]">
         <span className="text-body-sm font-[550]">Cash</span>
         <span className="text-label-sm text-g-500">
-          {reserve === undefined ? "Ready to invest" : `Ready to invest · keep at least ${reserve}%`}
+          {reserve === undefined ? "Ready to invest" : `Ready to invest, keep at least ${reserve}%`}
         </span>
         {reserve !== undefined && (
           <AllocationBar weight={weight} cap={reserve} cash label="Cash" className="mt-1.5 max-w-[220px]" />

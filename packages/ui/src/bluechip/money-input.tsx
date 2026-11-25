@@ -65,7 +65,7 @@ export const checkMoneyInput = (amount: number | null, limits: MoneyLimits): Mon
 export interface MoneyInputProps extends MoneyLimits {
   /** What the money is for: "Buy Nvidia with". */
   readonly label: ReactNode
-  /** Shown under the label, like "Cash (USDC) · $1,497.64 available". */
+  /** Shown under the label, like "Cash (USDC), $1,497.64 available". */
   readonly description?: ReactNode
   /** `usd` shows a `$` before the amount; `usdc` shows the USDC token after it. */
   readonly currency?: "usd" | "usdc"

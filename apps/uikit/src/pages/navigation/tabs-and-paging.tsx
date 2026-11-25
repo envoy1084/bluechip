@@ -121,7 +121,7 @@ export function TabsSection() {
           <TabsTab value="agents">Agents</TabsTab>
         </TabsList>
         <TabsPanel value="stocks">
-          6 stocks · <b className="tabular-nums">$9,212.40</b>
+          6 stocks worth <b className="tabular-nums">$9,212.40</b>
         </TabsPanel>
         <TabsPanel value="cash">
           <b className="tabular-nums">1,240.50 USDC</b> ready to use.

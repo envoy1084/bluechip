@@ -26,7 +26,7 @@ export const STOCKS: ReadonlyArray<Stock> = [
 ].map(([value, name, price]) => ({
   value: String(value),
   name: String(name),
-  label: `${value} · ${name}`,
+  label: `${value} (${name})`,
   price: Number(price)
 }))
 

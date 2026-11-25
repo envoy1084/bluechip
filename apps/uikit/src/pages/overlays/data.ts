@@ -1,5 +1,5 @@
 export const LIMITS: ReadonlyArray<readonly [string, string]> = [
-  ["Stocks allowed", "NVDA · AAPL · MSFT"],
+  ["Stocks allowed", "NVDA, AAPL and MSFT"],
   ["Spend per day", "$250"],
   ["Max per trade", "$100"],
   ["Max in one stock", "25%"],

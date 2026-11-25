@@ -162,7 +162,7 @@ export function MoneySection({ cash, nvidia }: { readonly cash: number; readonly
           label="Buy Nvidia with"
           description={
             <span className="inline-flex flex-wrap items-center gap-1.5">
-              Cash (USDC) · {formatMoney(cash)} available
+              Cash (USDC), {formatMoney(cash)} available
             </span>
           }
           available={cash}
@@ -230,13 +230,13 @@ export function AllocationBarSection() {
         "Label always states both numbers"
       ]}
       states={[
-        ["Under", <Stacked key="u" bar={<AllocationBar weight={22} cap={CAP} size="md" />} text="22% · max 30%" />],
+        ["Under", <Stacked key="u" bar={<AllocationBar weight={22} cap={CAP} size="md" />} text="22% of a 30% max" />],
         [
           "At your max",
           <Stacked
             key="a"
             bar={<AllocationBar weight={29.6} cap={CAP} size="md" />}
-            text="29.6% · at your max"
+            text="29.6%, at your max"
             tone="text-warn"
           />
         ],
@@ -245,7 +245,7 @@ export function AllocationBarSection() {
           <Stacked
             key="o"
             bar={<AllocationBar weight={36} cap={CAP} size="md" />}
-            text="36% · 6% over your max"
+            text="36%, 6% over your max"
             tone="text-loss"
           />
         ],
@@ -254,7 +254,7 @@ export function AllocationBarSection() {
           <Stacked
             key="c"
             bar={<AllocationBar weight={12.2} cap={RESERVE} cash size="md" />}
-            text="12.2% · keep at least 10%"
+            text="12.2%, keep at least 10%"
           />
         ]
       ]}

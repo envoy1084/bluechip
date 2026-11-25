@@ -86,7 +86,7 @@ export function ChatComposer({
         />
         <div className="flex items-center justify-between gap-2 py-0.5 pr-0.5 pl-2.5">
           <span id={`${id}-hint`} className="text-label-sm text-g-500 max-sm:sr-only">
-            Enter to send · Shift + Enter for a new line
+            Enter to send, Shift + Enter for a new line
           </span>
           {sending && onStop ?
             (

@@ -10,11 +10,11 @@ describe("passkeyLabel", () => {
   it("names the provider and the device", () => {
     assert.strictEqual(
       passkeyLabel({ aaguid: "ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4", userAgent: android }),
-      "Google Password Manager · Android"
+      "Google Password Manager on Android"
     )
     assert.strictEqual(
       passkeyLabel({ aaguid: "BADA5566-A7AA-401F-BD96-45619A55120D", userAgent: mac }),
-      "1Password · Mac"
+      "1Password on Mac"
     )
   })
 

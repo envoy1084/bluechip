@@ -123,10 +123,10 @@ export function OrderSection({ nvidia, tesla }: { readonly nvidia: number; reado
           <TabsPanel value="rebalance">
             <OrderPreview>
               <OrderPreviewRow label="Sell">
-                <TickerChip symbol="NVDA" size="sm" />Nvidia · $73.61
+                <TickerChip symbol="NVDA" size="sm" />$73.61 of Nvidia
               </OrderPreviewRow>
               <OrderPreviewRow label="Buy">
-                <TickerChip symbol="AAPL" size="sm" />Apple · $73.61
+                <TickerChip symbol="AAPL" size="sm" />$73.61 of Apple
               </OrderPreviewRow>
               <OrderPreviewRow label="Fair price check">
                 <FairPriceCheck>Both within 1%</FairPriceCheck>

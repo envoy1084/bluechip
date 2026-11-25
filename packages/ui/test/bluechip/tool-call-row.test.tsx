@@ -12,7 +12,7 @@ describe("ToolCallRow", () => {
     await screen.rerender(<ToolCallRow state="done" label="Checked Nvidia's price" result="$181.42" />)
     await expect.element(row).toHaveTextContent("Done: Checked Nvidia's price$181.42")
 
-    await screen.rerender(<ToolCallRow state="failed" label="Couldn't check Tesla's price · market closed" />)
-    await expect.element(row).toHaveTextContent("Failed: Couldn't check Tesla's price · market closed")
+    await screen.rerender(<ToolCallRow state="failed" label="Couldn't check Tesla's price, market closed" />)
+    await expect.element(row).toHaveTextContent("Failed: Couldn't check Tesla's price, market closed")
   })
 })

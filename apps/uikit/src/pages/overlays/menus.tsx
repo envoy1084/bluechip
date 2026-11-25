@@ -80,7 +80,7 @@ export function MenuSections({ open }: { readonly open: string | undefined }) {
               <Ticker symbol="NVDA" />
               <div className="grid flex-1">
                 <strong className="text-[14.5px] font-semibold">Nvidia</strong>
-                <span className="text-label text-g-500">12.4 shares · Rebalancer</span>
+                <span className="text-label text-g-500">12.4 shares, bought by Rebalancer</span>
               </div>
               <div className="grid justify-items-end">
                 <b className="text-body tabular-nums">$2,249.61</b>
@@ -93,7 +93,7 @@ export function MenuSections({ open }: { readonly open: string | undefined }) {
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuGroup>
-              <ContextMenuLabel>NVDA · Nvidia</ContextMenuLabel>
+              <ContextMenuLabel>Nvidia (NVDA)</ContextMenuLabel>
               <ContextMenuItem onClick={() => toast("Opening buy")}>
                 <Icon name="plus" />Buy more
               </ContextMenuItem>

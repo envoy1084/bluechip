@@ -43,7 +43,7 @@ Reuse a maintained library before writing behaviour from scratch. The chosen set
 | Tables                                                    | `@tanstack/react-table`                                                                                                                                     |
 | Carousels                                                 | `embla-carousel-react`                                                                                                                                      |
 | Resizable panels                                          | `react-resizable-panels`                                                                                                                                    |
-| Charts                                                    | `recharts` (sparklines stay plain SVG)                                                                                                                      |
+| Charts                                                    | `@tanstack/charts` (sparklines stay plain SVG)                                                                                                              |
 | Easing                                                    | tokens in `theme.css` (`ease-brand`, `ease-spring`, from easing.dev's curves)                                                                               |
 
 The halftone engine, scenes and illustrations are bluechip's own art and stay in `src/motion` and

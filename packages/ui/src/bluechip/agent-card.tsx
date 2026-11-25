@@ -22,7 +22,7 @@ export interface Agent {
 
 export interface AgentCardProps extends Omit<ComponentProps<"div">, "children"> {
   readonly agent: Agent
-  /** The last thing it did, with when: "Sold $73.61 of Nvidia · 9:41". */
+  /** The last thing it did, with when: "Sold $73.61 of Nvidia at 9:41". */
   readonly lastAction?: string
   readonly onEditLimits?: () => void
 }

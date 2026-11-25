@@ -50,11 +50,11 @@ export interface LimitEditorProps extends Omit<ComponentProps<"div">, "children"
 
 const CHANGE_MARK: Readonly<Record<Exclude<LimitChange, "same">, { readonly text: string; readonly tone: string }>> = {
   tighter: {
-    text: "Tighter · applies now",
+    text: "Tighter, applies now",
     tone: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]"
   },
   looser: {
-    text: "Looser · needs Face ID",
+    text: "Looser, needs Face ID",
     tone: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]"
   }
 }

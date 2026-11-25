@@ -16,9 +16,9 @@ interface Stock {
 }
 
 const stocks: ReadonlyArray<Stock> = [
-  { value: "NVDA", label: "NVDA · Nvidia" },
-  { value: "AAPL", label: "AAPL · Apple" },
-  { value: "TSLA", label: "TSLA · Tesla" }
+  { value: "NVDA", label: "NVDA (Nvidia)" },
+  { value: "AAPL", label: "AAPL (Apple)" },
+  { value: "TSLA", label: "TSLA (Tesla)" }
 ]
 
 const StockPicker = ({ onValueChange }: { readonly onValueChange: (stock: Stock | null) => void }) => (
@@ -39,11 +39,11 @@ describe("Combobox", () => {
     const screen = await render(<StockPicker onValueChange={(stock) => (chosen = stock)} />)
     const input = screen.getByRole("combobox", { name: "Add a stock" })
     await userEvent.type(input, "tes")
-    await expect.element(screen.getByRole("option", { name: "TSLA · Tesla" })).toBeVisible()
-    await expect.element(screen.getByRole("option", { name: "NVDA · Nvidia" })).not.toBeInTheDocument()
+    await expect.element(screen.getByRole("option", { name: "TSLA (Tesla)" })).toBeVisible()
+    await expect.element(screen.getByRole("option", { name: "NVDA (Nvidia)" })).not.toBeInTheDocument()
     await userEvent.keyboard("{ArrowDown}{Enter}")
     expect(chosen).toEqual(stocks[2])
-    await expect.element(input).toHaveValue("TSLA · Tesla")
+    await expect.element(input).toHaveValue("TSLA (Tesla)")
   })
 
   it("says so when nothing matches", async () => {

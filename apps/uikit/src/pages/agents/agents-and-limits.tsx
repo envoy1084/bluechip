@@ -251,7 +251,7 @@ export function DraftSection() {
             agentId="rebalancer"
             name="Rebalancer"
             template="Rebalancer"
-            summary="$200 a day · rebalance only"
+            summary="$200 a day, rebalance only"
             limits={REBALANCER.limits}
             onReview={() => toast("Opening review")}
           />

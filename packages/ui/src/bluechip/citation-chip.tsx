@@ -51,7 +51,7 @@ export function CitationChip({ index, source, className }: CitationChipProps) {
           {source.kind}
         </span>
         <b className="text-label font-semibold text-ink">{source.title}</b>
-        <span>{source.from} · {source.when}</span>
+        <span>{source.from}, {source.when}</span>
       </PopoverContent>
     </Popover>
   )

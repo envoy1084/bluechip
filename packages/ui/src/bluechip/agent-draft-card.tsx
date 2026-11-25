@@ -55,7 +55,7 @@ export function AgentDraftCard({
         <AgentAvatar agentId={agentId} />
         <span className="grid min-w-0 flex-1">
           <b className="text-[13.5px] font-semibold">{name}</b>
-          <span className="text-label-sm text-g-500">Draft · {summary}</span>
+          <span className="text-label-sm text-g-500">Draft: {summary}</span>
         </span>
         <Button size="sm" onClick={onReview}>Review and lock</Button>
       </div>
@@ -87,7 +87,7 @@ export function AgentDraftCard({
         <AgentAvatar agentId={agentId} size="lg" />
         <div className="grid min-w-0">
           <h3 className="text-[17px] font-semibold tracking-[-0.015em]">{name}</h3>
-          <span className="text-label text-g-500">{template} · {summary}</span>
+          <span className="text-label text-g-500">{template}: {summary}</span>
         </div>
       </div>
       <ul className="grid py-1.5 pr-2.5 pl-[18px]">

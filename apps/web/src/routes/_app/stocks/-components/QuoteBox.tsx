@@ -85,7 +85,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
   const available = side === "buy" ?
     `${formatMoney(usdcDollars(cash))} cash available` :
     `${formatShares(shareCount(held))} shares${
-      price === null ? "" : ` · ${formatMoney(usdcDollars(valueOf(Shares.make(held), price)))}`
+      price === null ? "" : `, worth ${formatMoney(usdcDollars(valueOf(Shares.make(held), price)))}`
     }`
   const hint = over ?
     side === "buy" ? "That's more than your cash." : "That's more than you have." :

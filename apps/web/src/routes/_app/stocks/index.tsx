@@ -73,7 +73,7 @@ function Stocks() {
         >
           <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-g-100 px-4 py-[13px]">
             <h2 id="stocks-title" className="text-body-sm font-semibold tracking-normal">Stocks on bluechip</h2>
-            <span className="text-label-sm text-g-500">Price · past day</span>
+            <span className="text-label-sm text-g-500">Past day and price</span>
           </div>
           <div className="grid">
             <StockRows query={query} />

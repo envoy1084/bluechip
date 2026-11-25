@@ -95,7 +95,7 @@ export function ScrollAreaSection() {
               >
                 <Ticker symbol={t.symbol} />
                 <span className="min-w-0 flex-1">
-                  {t.agent.name} · {t.side === "Buy" ? "bought" : "sold"} {formatMoney(t.amount)}
+                  {t.agent.name} {t.side === "Buy" ? "bought" : "sold"} {formatMoney(t.amount)}
                 </span>
                 <span className="text-label-sm text-g-500 tabular-nums">Nov {t.day}</span>
               </div>

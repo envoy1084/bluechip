@@ -76,10 +76,10 @@ export const AGENTS: ReadonlyArray<Agent> = [
 export const [REBALANCER, PICKER, WEEKLY, GUARD] = AGENTS as [Agent, Agent, Agent, Agent]
 
 export const LAST_ACTION: Readonly<Record<string, string>> = {
-  rebalancer: "Sold $73.61 of Nvidia, bought Apple · 9:41",
-  picker: "Wants to buy $600 of Nvidia · Just now",
-  weekly: "Bought $50 of Microsoft · Mon 09:30",
-  guard: "Watching Tesla, 4% above your stop · 2 min ago"
+  rebalancer: "Sold $73.61 of Nvidia and bought Apple at 9:41",
+  picker: "Wants to buy $600 of Nvidia, just now",
+  weekly: "Bought $50 of Microsoft on Mon at 09:30",
+  guard: "Watching Tesla, 4% above your stop, 2 min ago"
 }
 
 const BALANCED = LIMIT_PRESETS[1]!.limits

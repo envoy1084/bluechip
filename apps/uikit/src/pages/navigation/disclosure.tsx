@@ -169,7 +169,7 @@ export function ResizableSection() {
               <ResizablePanel id="limits" minSize="20%">
                 <div className="grid content-start gap-2.5 p-4 text-[13.5px]">
                   <span className="text-caption font-semibold text-g-400">Limits preview</span>
-                  <p className="text-label text-g-600">Rebalance only · Max 25% in one stock · Cash reserve $200</p>
+                  <p className="text-label text-g-600">Rebalance only, at most 25% in one stock, keep $200 in cash</p>
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -190,7 +190,7 @@ export function ResizableSection() {
           <ResizablePanel id="activity">
             <div className="grid content-start gap-1 p-4 text-[13.5px]">
               <span className="text-caption font-semibold text-g-400">Activity</span>
-              <p className="text-label text-g-600">Rebalancer bought $40.00 of Apple · 2 minutes ago</p>
+              <p className="text-label text-g-600">Rebalancer bought $40.00 of Apple 2 minutes ago</p>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

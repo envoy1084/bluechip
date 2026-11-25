@@ -39,7 +39,7 @@ describe("PermissionCard", () => {
       "aria-valuetext",
       "$140 of $200"
     )
-    await expect.element(screen.getByText("Locked with Face ID · until 21 Feb")).toBeVisible()
+    await expect.element(screen.getByText("Locked with Face ID until 21 Feb")).toBeVisible()
     await userEvent.click(screen.getByRole("button", { name: "Edit limits" }))
     expect(edits).toBe(1)
   })

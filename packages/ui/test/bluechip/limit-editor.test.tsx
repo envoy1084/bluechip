@@ -53,7 +53,7 @@ describe("LimitEditor", () => {
     const applied: Array<AgentLimits> = []
     const screen = await render(<LimitEditor locked={LOCKED} onApply={(limits) => applied.push(limits)} />)
     await userEvent.fill(screen.getByRole("textbox", { name: "Daily spend" }), "200")
-    await expect.element(screen.getByText("Tighter · applies now")).toBeVisible()
+    await expect.element(screen.getByText("Tighter, applies now")).toBeVisible()
     await userEvent.click(screen.getByRole("button", { name: "Apply now" }))
     expect(applied).toEqual([{ ...LOCKED, dailySpend: 200 }])
   })
@@ -62,7 +62,7 @@ describe("LimitEditor", () => {
     const locked: Array<AgentLimits> = []
     const screen = await render(<LimitEditor locked={LOCKED} onLock={(limits) => void locked.push(limits)} />)
     await userEvent.click(screen.getByRole("button", { name: /Tesla/ }))
-    await expect.element(screen.getByText("Looser · needs Face ID")).toBeVisible()
+    await expect.element(screen.getByText("Looser, needs Face ID")).toBeVisible()
     await expect.element(screen.getByRole("button", { name: "Apply now" })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Lock with Face ID" }))
     expect(locked.map((limits) => limits.stocks)).toEqual([["NVDA", "AAPL", "MSFT", "TSLA"]])

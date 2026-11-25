@@ -117,7 +117,7 @@ function Settings() {
                 passkey.synced ? "Synced to your other devices" : "On this device only",
                 `added ${formatDate(passkey.createdAt)}`,
                 passkey.lastUsedAt === null ? null : `last used ${formatDate(passkey.lastUsedAt)}`
-              ].filter((part) => part !== null).join(" · ")}
+              ].filter((part) => part !== null).join(", ")}
             />
           )) :
           null}

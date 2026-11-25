@@ -128,6 +128,9 @@ The brand kit artifact (`kit/views/screens.js` and `screens.css`) is the referen
 layout and copy with the components of `@bluechip/ui`. Never ship its example scaffolding (`Example` flags,
 example patterns, simulated actions or fake data); show real data or an honest empty state.
 
+Copy never uses a middle dot (`·`) as a separator. Write it as people speak: a sentence, commas or joining words
+("Chainlink $152.04, 0.3% apart", "Locked with Face ID until 21 Feb", "$50 of Nvidia").
+
 ## Tests
 
 Tests live in each package's `test/` folder and use `@effect/vitest` (`it.effect`, `assert`), never

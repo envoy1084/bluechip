@@ -86,7 +86,7 @@ export function PermissionCard(
       >
         <span className="inline-flex items-center gap-1.5 text-label-sm text-g-500">
           <Icon name="lock" size={14} />
-          {locked ? `Locked with Face ID · until ${lockedUntil}` : "Not locked yet"}
+          {locked ? `Locked with Face ID until ${lockedUntil}` : "Not locked yet"}
         </span>
         {onEditLimits && (
           <Button variant="secondary" size="sm" onClick={onEditLimits}>

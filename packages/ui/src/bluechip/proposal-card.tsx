@@ -96,7 +96,7 @@ export function ProposalCard({
       <div className="flex flex-wrap items-start justify-between gap-2.5 px-[18px] pt-[18px] pb-3">
         <div className="grid min-w-[200px] flex-1">
           <span className="flex items-center gap-2 text-label-sm font-medium text-g-500">
-            Proposal · from your chat{flag}
+            Proposal from your chat{flag}
           </span>
           <h3 className="text-[19px] font-semibold tracking-[-0.02em]">{title}</h3>
         </div>

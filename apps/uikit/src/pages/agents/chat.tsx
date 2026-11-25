@@ -107,7 +107,7 @@ export function ChatDemoSection() {
                           agentId="ai-chips"
                           name="AI chips keeper"
                           template="Rebalancer"
-                          summary="$200 a day · rebalance only"
+                          summary="$200 a day, rebalance only"
                           limits={REBALANCER.limits}
                           onReview={() => toast("Opening review")}
                         />
@@ -213,7 +213,7 @@ export function ToolCallSection() {
           <ToolCallRow state="done" label="Checked Nvidia's price" result="$181.42" />
         </Demo>
         <Demo label="Failed">
-          <ToolCallRow state="failed" label="Couldn't check Tesla's price · market closed" />
+          <ToolCallRow state="failed" label="Couldn't check Tesla's price, the market is closed" />
         </Demo>
       </States>
     </Section>

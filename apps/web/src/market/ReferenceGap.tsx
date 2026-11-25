@@ -7,14 +7,14 @@ import { priceDollars } from "./amounts.ts"
 export const referenceGap = (stock: Stock): number | null =>
   stock.price === null || stock.reference === null ? null : bpsBetween(stock.price.price, stock.reference.price) / 100
 
-/** "Chainlink $152.04 · 0.1% apart": the price trades are checked against, next to the market's. */
+/** "Chainlink $152.04, 0.1% apart": the price trades are checked against, next to the market's. */
 export function ReferenceGap({ stock }: Readonly<{ stock: Stock }>) {
   const gap = referenceGap(stock)
   if (gap === null || stock.reference === null) return null
 
   return (
     <span className="text-caption text-g-500 tabular-nums">
-      Chainlink {formatMoney(priceDollars(stock.reference.price))} · {Math.abs(gap).toFixed(1)}% apart
+      Chainlink {formatMoney(priceDollars(stock.reference.price))}, {Math.abs(gap).toFixed(1)}% apart
     </span>
   )
 }

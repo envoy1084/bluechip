@@ -99,7 +99,7 @@ export function BlockedTradeCard({
         <div className="grid min-w-0 gap-px">
           <h3 className="text-[17px] font-semibold tracking-[-0.02em]">Your limit stopped a trade</h3>
           <span className="flex flex-wrap items-center gap-1.5 text-label-sm text-g-500">
-            {agentName} · {time}
+            {agentName}, {time}
             {meta}
           </span>
         </div>
