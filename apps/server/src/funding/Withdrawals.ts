@@ -12,7 +12,7 @@ import {
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { Address, SigningRequestId, UserId } from "@bluechip/domain/Ids"
 import { Usdc } from "@bluechip/domain/market/Units"
-import { SigningRequest } from "@bluechip/domain/portfolio/Transfer"
+import { SigningRequest, type Transfer } from "@bluechip/domain/portfolio/Transfer"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import { and, eq, isNotNull } from "drizzle-orm"
 import * as Context from "effect/Context"
@@ -22,33 +22,14 @@ import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import { typeid } from "typeid-js"
 import { encodeFunctionData, erc20Abi, getAddress, type Hex, isAddress, zeroAddress } from "viem"
-import type { AppConfig } from "../Config.ts"
+import { Accounts } from "../accounts/Accounts.ts"
 import { Database } from "../db/Database.ts"
 import { transfers } from "../db/schema/funding.ts"
 import { LiveEvents } from "../live/LiveEvents.ts"
-import type { Namera } from "../Namera.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
-import { type OwnerPasskey, sendOperation, waitForOperation } from "../signing/OwnerOperations.ts"
-import {
-  claimSigningRequest,
-  createSigningRequest,
-  findPrepared,
-  type Owner,
-  ownerPasskey,
-  type SigningRequestRow,
-  webAuthnOptions
-} from "../signing/SigningRequests.ts"
-import { toTransfer } from "./TransferRecords.ts"
-
-const toSigningRequest = Effect.fnUntraced(function*(row: SigningRequestRow) {
-  return new SigningRequest({
-    id: row.id as SigningRequestId,
-    options: yield* webAuthnOptions(row),
-    withdrawal: { amount: Usdc.make(BigInt(row.payload["amount"]!)), to: row.payload["to"] as Address },
-    deploysAccount: row.deploysAccount,
-    expiresAt: row.expiresAt
-  })
-})
+import { OwnerOperations, type OwnerPasskey } from "../signing/OwnerOperations.ts"
+import { type Owner, type SigningRequestRow, SigningRequests } from "../signing/SigningRequests.ts"
+import { toTransfer } from "./Transfers.ts"
 
 /**
  * USDC withdrawals, signed by the account's passkey: `prepare` builds the user operation and returns its hash for the
@@ -64,7 +45,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
     owner: Owner,
     id: SigningRequestId,
     credential: typeof AuthenticationCredential.Type
-  ) => Effect.Effect<ReturnType<typeof toTransfer>, NotFound | SignatureRejected | Unavailable>
+  ) => Effect.Effect<Transfer, NotFound | SignatureRejected | Unavailable>
 }>()("@bluechip/server/Withdrawals") {
   static readonly layer = Layer.effect(
     Withdrawals,
@@ -73,13 +54,25 @@ export class Withdrawals extends Context.Service<Withdrawals, {
       const chain = yield* ChainClient
       const live = yield* LiveEvents
       const balances = yield* AccountBalances
-      const context = yield* Effect.context<Namera | Database | AppConfig>()
+      const owners = yield* Accounts
+      const operations = yield* OwnerOperations
+      const signing = yield* SigningRequests
       const scope = yield* Effect.scope
 
-      /** Follows a sent withdrawal to its receipt, then tells its owner and refreshes balances. */
+      const toSigningRequest = Effect.fnUntraced(function*(row: SigningRequestRow) {
+        return new SigningRequest({
+          id: row.id as SigningRequestId,
+          options: yield* signing.webAuthnOptions(row),
+          withdrawal: { amount: Usdc.make(BigInt(row.payload["amount"]!)), to: row.payload["to"] as Address },
+          deploysAccount: row.deploysAccount,
+          expiresAt: row.expiresAt
+        })
+      })
+
+      // Follows a sent withdrawal to its receipt, then tells its owner and refreshes balances. */
       const track = Effect.fnUntraced(
         function*(transferId: string, owner: Owner, passkey: OwnerPasskey, userOpHash: Hex) {
-          const outcome = yield* waitForOperation(passkey, userOpHash).pipe(Effect.result)
+          const outcome = yield* operations.wait(passkey, userOpHash).pipe(Effect.result)
           const [row] = yield* db.update(transfers).set(
             outcome._tag === "Success"
               ? { status: outcome.success.success ? "confirmed" : "failed", txHash: outcome.success.txHash }
@@ -93,7 +86,6 @@ export class Withdrawals extends Context.Service<Withdrawals, {
           }
           yield* live.publish(LiveEvent.cases.PortfolioChanged.make({}), owner.id)
         },
-        Effect.provideContext(context),
         Effect.forkIn(scope),
         Effect.asVoid
       )
@@ -102,7 +94,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
         .where(and(eq(transfers.kind, "withdrawal"), eq(transfers.status, "pending"), isNotNull(transfers.userOpHash)))
         .pipe(Effect.orDie)
       for (const row of pending) {
-        const passkey = yield* ownerPasskey(row.userId as UserId).pipe(Effect.provideContext(context))
+        const passkey = yield* owners.ownerPasskey(row.userId as UserId)
         yield* track(row.id, { id: row.userId as UserId, account: row.from as Address }, passkey, row.userOpHash as Hex)
       }
 
@@ -118,7 +110,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
         if (refused.includes(to)) return yield* new InvalidRequest({ field: "to", problem: "notAllowed" })
         if (input.amount <= BigInt(0)) return yield* new InvalidRequest({ field: "amount", problem: "outOfRange" })
 
-        const existing = yield* findPrepared(
+        const existing = yield* signing.findPrepared(
           owner,
           input.requestId,
           (payload) => payload["to"] === to && payload["amount"] === input.amount.toString()
@@ -137,7 +129,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
         ).pipe(Effect.catch(() => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 }))))
         if (input.amount > cash) return yield* new InsufficientCash({ available: cash })
 
-        const row = yield* createSigningRequest(owner, {
+        const row = yield* signing.create(owner, {
           requestId: input.requestId,
           kind: "withdrawal",
           payload: { amount: input.amount.toString(), to },
@@ -147,15 +139,15 @@ export class Withdrawals extends Context.Service<Withdrawals, {
           }]
         })
         return yield* toSigningRequest(row)
-      }, Effect.provideContext(context))
+      })
 
       const confirm = Effect.fn("Withdrawals.confirm")(function*(
         owner: Owner,
         id: SigningRequestId,
         credential: typeof AuthenticationCredential.Type
       ) {
-        const { passkey, request } = yield* claimSigningRequest(owner, id, "withdrawal", credential)
-        const userOpHash = yield* sendOperation(passkey, request.userOperation, credential)
+        const { passkey, request } = yield* signing.claim(owner, id, "withdrawal", credential)
+        const userOpHash = yield* operations.send(passkey, request.userOperation, credential)
 
         const [row] = yield* db.insert(transfers).values({
           id: typeid("transfer").toString() as `transfer_${string}`,
@@ -172,9 +164,9 @@ export class Withdrawals extends Context.Service<Withdrawals, {
 
         yield* track(row!.id, owner, passkey, userOpHash)
         return toTransfer(row!)
-      }, Effect.provideContext(context))
+      })
 
-      return { prepare, confirm }
+      return Withdrawals.of({ prepare, confirm })
     })
   )
 }

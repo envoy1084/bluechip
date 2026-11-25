@@ -10,10 +10,11 @@ import { LiveEvents } from "../live/LiveEvents.ts"
 export const EventsHandlers = HttpApiBuilder.group(
   BluechipApi,
   "events",
-  (handlers) =>
-    handlers.handle("watch", () =>
-      Effect.gen(function*() {
-        const live = yield* LiveEvents
+  Effect.fn(function*(handlers) {
+    const live = yield* LiveEvents
+
+    return handlers.handleAll({
+      watch: Effect.fn(function*() {
         const user = yield* CurrentUser
         const heartbeats = Stream.tick(heartbeatInterval).pipe(
           Stream.zipWithIndex,
@@ -23,5 +24,7 @@ export const EventsHandlers = HttpApiBuilder.group(
         )
         // Subscribed before the first heartbeat: a client that has heard one misses no event published after it.
         return Stream.unwrap(Effect.map(live.subscribe(user.id), (events) => Stream.merge(heartbeats, events)))
-      }))
+      })
+    })
+  })
 )

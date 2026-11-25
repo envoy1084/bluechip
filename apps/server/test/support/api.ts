@@ -8,22 +8,11 @@ import * as HttpRouter from "effect/http/HttpRouter"
 import * as HttpServer from "effect/http/HttpServer"
 import * as Layer from "effect/Layer"
 import { randomBytes } from "node:crypto"
-import { Agents } from "../../src/agents/Agents.ts"
-import { SavedTemplates } from "../../src/agents/SavedTemplates.ts"
 import { ApiRoutes } from "../../src/api/Api.ts"
 import { AppConfig } from "../../src/Config.ts"
 import { Database } from "../../src/db/Database.ts"
-import { Withdrawals } from "../../src/funding/Withdrawals.ts"
 import { OriginCheckMiddleware } from "../../src/http/OriginCheck.ts"
-import { DeskLive } from "../../src/intents/Desk.ts"
-import { Intents } from "../../src/intents/Intents.ts"
-import { LiveEvents } from "../../src/live/LiveEvents.ts"
-import { Charts } from "../../src/market/Charts.ts"
-import { MarketPrices } from "../../src/market/MarketPrices.ts"
-import { ReferencePrices } from "../../src/market/ReferencePrices.ts"
-import { Namera } from "../../src/Namera.ts"
-import { AccountBalances } from "../../src/portfolio/AccountBalances.ts"
-import { Trades } from "../../src/trading/Trades.ts"
+import { ServicesLive } from "../../src/Services.ts"
 import { AlpacaTest } from "./alpaca.ts"
 import { softwareAuthenticator } from "./authenticator.ts"
 import { origin, testDatabaseUrl } from "./config.ts"
@@ -39,13 +28,8 @@ const config = ConfigProvider.layer(ConfigProvider.fromEnvRecord({
   BUNDLER_URL: DevnetTest.urls().bundlerUrl
 }))
 
-const Services = Layer.mergeAll(Intents.layer, DeskLive).pipe(
-  Layer.provideMerge(Layer.mergeAll(Withdrawals.layer, Trades.layer, Agents.layer, Charts.layer)),
-  Layer.provideMerge(
-    Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer, SavedTemplates.layer)
-  ),
+const Services = ServicesLive.pipe(
   Layer.provideMerge(Layer.mergeAll(AlpacaTest, Database.layer, AppConfig.layer)),
-  Layer.provideMerge(LiveEvents.layer),
   Layer.provideMerge(EngineTest),
   Layer.provideMerge(DevnetTest.layer),
   Layer.provide(config)

@@ -2,55 +2,31 @@ import { BluechipApi } from "@bluechip/domain/Api"
 import { CurrentUser } from "@bluechip/domain/Auth"
 import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
+import { AgentRequests } from "../agents/AgentRequests.ts"
 import { Agents } from "../agents/Agents.ts"
 
-export const AgentsHandlers = HttpApiBuilder.group(BluechipApi, "agents", (handlers) =>
-  handlers
-    .handle("list", () => Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) => agents.list(user)))
-    .handle("agent", ({ params }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) => agents.find(user, params.id)))
-    .handle("usage", ({ params }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.usage(user, params.id)))
-    .handle("create", ({ payload }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.create(user, payload)))
-    .handle("lock", ({ params, payload }) =>
-      Effect.flatMap(
-        Effect.all([CurrentUser, Agents]),
-        ([user, agents]) =>
-          agents.lock(user, params.id, payload.requestId)
-      ))
-    .handle("sessions", ({ params }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.sessions(user, params.id)))
-    .handle("change", ({ params, payload }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.change(user, params.id, payload)))
-    .handle("renew", ({ params, payload }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.renew(user, params.id, payload.requestId)))
-    .handle("remove", ({ params, payload }) =>
-      Effect.flatMap(
-        Effect.all([CurrentUser, Agents]),
-        ([user, agents]) =>
-          agents.remove(user, params.id, payload.requestId)
-      ))
-    .handle("confirm", ({ params, payload }) =>
-      Effect.flatMap(
-        Effect.all([CurrentUser, Agents]),
-        ([user, agents]) =>
-          agents.confirm(user, params.id, payload.credential)
-      ))
-    .handle("pause", ({ params }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.pause(user, params.id)))
-    .handle("resume", ({ params }) =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.resume(user, params.id)))
-    .handle("pauseAll", () =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.pauseAll(user)))
-    .handle("resumeAll", () =>
-      Effect.flatMap(Effect.all([CurrentUser, Agents]), ([user, agents]) =>
-        agents.resumeAll(user))))
+export const AgentsHandlers = HttpApiBuilder.group(
+  BluechipApi,
+  "agents",
+  Effect.fn(function*(handlers) {
+    const agents = yield* Agents
+    const requests = yield* AgentRequests
+
+    return handlers.handleAll({
+      list: () => CurrentUser.use((user) => agents.list(user)),
+      agent: ({ params }) => CurrentUser.use((user) => agents.find(user, params.id)),
+      usage: ({ params }) => CurrentUser.use((user) => agents.usage(user, params.id)),
+      sessions: ({ params }) => CurrentUser.use((user) => agents.sessions(user, params.id)),
+      pause: ({ params }) => CurrentUser.use((user) => agents.pause(user, params.id)),
+      resume: ({ params }) => CurrentUser.use((user) => agents.resume(user, params.id)),
+      pauseAll: () => CurrentUser.use((user) => agents.pauseAll(user)),
+      resumeAll: () => CurrentUser.use((user) => agents.resumeAll(user)),
+      create: ({ payload }) => CurrentUser.use((user) => requests.create(user, payload)),
+      lock: ({ params, payload }) => CurrentUser.use((user) => requests.lock(user, params.id, payload.requestId)),
+      change: ({ params, payload }) => CurrentUser.use((user) => requests.change(user, params.id, payload)),
+      renew: ({ params, payload }) => CurrentUser.use((user) => requests.renew(user, params.id, payload.requestId)),
+      remove: ({ params, payload }) => CurrentUser.use((user) => requests.remove(user, params.id, payload.requestId)),
+      confirm: ({ params, payload }) => CurrentUser.use((user) => requests.confirm(user, params.id, payload.credential))
+    })
+  })
+)

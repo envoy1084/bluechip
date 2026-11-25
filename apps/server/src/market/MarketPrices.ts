@@ -1,4 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import type { ChainError } from "@bluechip/chain/ChainError"
 import { stocks } from "@bluechip/chain/Contracts"
 import { multiplierScale, readMultipliers } from "@bluechip/chain/market/Multipliers"
 import { LiveEvent } from "@bluechip/domain/Events"
@@ -12,32 +13,13 @@ import * as Ref from "effect/Ref"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 import { LiveEvents } from "../live/LiveEvents.ts"
-import { Alpaca } from "./alpaca/Alpaca.ts"
+import { Alpaca, type AlpacaError } from "./alpaca/Alpaca.ts"
 
 const symbols = stocks.map((stock) => stock.symbol)
 
 /** A share's price in dollars as a token's price (USD × 1e8): the share price times the token's multiplier. */
 export const toTokenPrice = (dollars: number, multiplier: bigint): Price =>
   Price.make((BigInt(Math.round(dollars * 1e8)) * multiplier) / multiplierScale)
-
-/** Every stock's latest market price from one Alpaca snapshot request, converted with the given multipliers. */
-export const readMarketPrices = Effect.fnUntraced(function*(multipliers: ReadonlyMap<string, bigint>) {
-  const alpaca = yield* Alpaca
-  const snapshots = yield* alpaca.snapshots(symbols)
-
-  return new Map([...snapshots].map(([symbol, snapshot]) => {
-    const multiplier = multipliers.get(symbol) ?? multiplierScale
-    return [
-      symbol as StockSymbol,
-      new MarketPrice({
-        symbol: symbol as StockSymbol,
-        price: toTokenPrice(snapshot.price, multiplier),
-        tradedAt: DateTime.makeUnsafe(snapshot.tradedAt),
-        previousClose: snapshot.previousClose === null ? null : toTokenPrice(snapshot.previousClose, multiplier)
-      })
-    ]
-  }))
-})
 
 /**
  * Every stock's market price per token, live: Alpaca's snapshots at startup and every 5 minutes (they also carry the
@@ -47,6 +29,8 @@ export const readMarketPrices = Effect.fnUntraced(function*(multipliers: Readonl
 export class MarketPrices extends Context.Service<MarketPrices, {
   readonly prices: Effect.Effect<ReadonlyMap<StockSymbol, MarketPrice>>
   readonly multipliers: Effect.Effect<ReadonlyMap<string, bigint>>
+  /** Every stock's price now, read afresh: its multiplier from the chain and one Alpaca snapshot request. */
+  readonly read: Effect.Effect<ReadonlyMap<StockSymbol, MarketPrice>, ChainError | AlpacaError>
 }>()("@bluechip/server/MarketPrices") {
   static readonly layer = Layer.effect(
     MarketPrices,
@@ -58,6 +42,23 @@ export class MarketPrices extends Context.Service<MarketPrices, {
       const multipliers = yield* Ref.make<ReadonlyMap<string, bigint>>(new Map())
       const prices = yield* Ref.make<ReadonlyMap<StockSymbol, MarketPrice>>(new Map())
       const changed = yield* Ref.make<ReadonlySet<StockSymbol>>(new Set())
+
+      // Every stock's latest market price from one Alpaca snapshot request, converted with the given multipliers.
+      const readWith = Effect.fnUntraced(function*(known: ReadonlyMap<string, bigint>) {
+        const snapshots = yield* alpaca.snapshots(symbols)
+        return new Map([...snapshots].map(([symbol, snapshot]) => {
+          const multiplier = known.get(symbol) ?? multiplierScale
+          return [
+            symbol as StockSymbol,
+            new MarketPrice({
+              symbol: symbol as StockSymbol,
+              price: toTokenPrice(snapshot.price, multiplier),
+              tradedAt: DateTime.makeUnsafe(snapshot.tradedAt),
+              previousClose: snapshot.previousClose === null ? null : toTokenPrice(snapshot.previousClose, multiplier)
+            })
+          ]
+        }))
+      })
 
       const multiplierOf = (symbol: string) =>
         Effect.map(Ref.get(multipliers), (known) => known.get(symbol) ?? multiplierScale)
@@ -73,10 +74,9 @@ export class MarketPrices extends Context.Service<MarketPrices, {
       )
 
       const refreshSnapshots = Effect.gen(function*() {
-        const latest = yield* readMarketPrices(yield* Ref.get(multipliers))
+        const latest = yield* readWith(yield* Ref.get(multipliers))
         for (const price of latest.values()) yield* update(price)
       }).pipe(
-        Effect.provideService(Alpaca, alpaca),
         Effect.catch((error) => Effect.logWarning("Could not read Alpaca snapshots", error))
       )
 
@@ -119,7 +119,11 @@ export class MarketPrices extends Context.Service<MarketPrices, {
       yield* Effect.forkScoped(followTrades)
       yield* Effect.forkScoped(announce.pipe(Effect.repeat(Schedule.spaced("1 second"))))
 
-      return { prices: Ref.get(prices), multipliers: Ref.get(multipliers) }
+      return MarketPrices.of({
+        prices: Ref.get(prices),
+        multipliers: Ref.get(multipliers),
+        read: readMultipliers(chain).pipe(Effect.flatMap(readWith), Effect.withSpan("MarketPrices.read"))
+      })
     })
   )
 }

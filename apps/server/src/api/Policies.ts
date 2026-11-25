@@ -13,26 +13,30 @@ import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
 import { SavedTemplates } from "../agents/SavedTemplates.ts"
 
-const nameOf = (symbol: string) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
+export const PoliciesHandlers = HttpApiBuilder.group(
+  BluechipApi,
+  "policies",
+  Effect.fn(function*(handlers) {
+    const templates = yield* SavedTemplates
 
-export const PoliciesHandlers = HttpApiBuilder.group(BluechipApi, "policies", (handlers) =>
-  handlers
-    .handle("catalog", () => Effect.succeed(catalogInfo()))
-    .handle("templates", () =>
-      Effect.flatMap(Effect.all([CurrentUser, SavedTemplates]), ([user, templates]) => templates.list(user)))
-    .handle("saveTemplate", ({ payload }) =>
-      Effect.flatMap(Effect.all([CurrentUser, SavedTemplates]), ([user, templates]) =>
-        templates.save(user, payload)))
-    .handle("deleteTemplate", ({ params }) =>
-      Effect.flatMap(Effect.all([CurrentUser, SavedTemplates]), ([user, templates]) =>
-        templates.remove(user, params.id)))
-    .handle("check", ({ payload }) => {
-      const spec = complete(payload.spec)
-      return Effect.succeed(
-        new SpecCheck({
-          problems: checkSpec(spec),
-          description: describeSpec(spec, nameOf),
-          changes: payload.before === null ? null : compareSpecs(complete(payload.before), spec)
-        })
-      )
-    }))
+    return handlers.handleAll({
+      catalog: () => Effect.succeed(catalogInfo()),
+      templates: () => CurrentUser.use((user) => templates.list(user)),
+      saveTemplate: ({ payload }) => CurrentUser.use((user) => templates.save(user, payload)),
+      deleteTemplate: ({ params }) => CurrentUser.use((user) => templates.remove(user, params.id)),
+      check: ({ payload }) => {
+        const spec = complete(payload.spec)
+        return Effect.succeed(
+          new SpecCheck({
+            problems: checkSpec(spec),
+            description: describeSpec(
+              spec,
+              (symbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
+            ),
+            changes: payload.before === null ? null : compareSpecs(complete(payload.before), spec)
+          })
+        )
+      }
+    })
+  })
+)

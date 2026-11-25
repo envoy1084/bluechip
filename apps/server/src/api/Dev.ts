@@ -13,14 +13,15 @@ import { AccountBalances } from "../portfolio/AccountBalances.ts"
 export const DevHandlers = HttpApiBuilder.group(
   BluechipApi,
   "dev",
-  (handlers) =>
-    handlers.handle("fund", () =>
-      Effect.gen(function*() {
-        const chain = yield* ChainClient
+  Effect.fn(function*(handlers) {
+    const chain = yield* ChainClient
+    const balances = yield* AccountBalances
+    const live = yield* LiveEvents
+
+    return handlers.handleAll({
+      fund: Effect.fn(function*() {
         if (chain.network !== "local") return yield* new Forbidden()
         const user = yield* CurrentUser
-        const balances = yield* AccountBalances
-        const live = yield* LiveEvents
         const account = user.account as `0x${string}`
 
         yield* Effect.gen(function*() {
@@ -28,14 +29,18 @@ export const DevHandlers = HttpApiBuilder.group(
           // ETH for gas (production sponsors it), then USDC as a real transfer, so it arrives like any deposit.
           yield* dev.setEthBalance(account, parseEther("0.05"))
           yield* dev.sendUsdc(account, parseUnits("1000", 6))
-        }).pipe(Effect.provide(DevChain.layer))
+        }).pipe(
+          Effect.provide(DevChain.layer),
+          Effect.provideService(ChainClient, chain),
+          Effect.catchTag(
+            "ChainError",
+            () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: null }))
+          )
+        )
 
         yield* balances.invalidate(account)
         yield* live.publish(LiveEvent.cases.PortfolioChanged.make({}), user.id)
-      }).pipe(
-        Effect.catchTag(
-          "ChainError",
-          () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: null }))
-        )
-      ))
+      })
+    })
+  })
 )

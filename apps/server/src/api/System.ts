@@ -9,10 +9,13 @@ import { release } from "../Release.ts"
 export const SystemHandlers = HttpApiBuilder.group(
   BluechipApi,
   "system",
-  (handlers) =>
-    handlers.handle("version", () =>
-      Effect.map(
-        DateTime.now,
-        (serverTime) => new ServerVersion({ version: release, contract: ContractVersion, serverTime })
-      ))
+  Effect.fn(function*(handlers) {
+    return handlers.handleAll({
+      version: () =>
+        Effect.map(
+          DateTime.now,
+          (serverTime) => new ServerVersion({ version: release, contract: ContractVersion, serverTime })
+        )
+    })
+  })
 )

@@ -9,32 +9,38 @@ import * as Option from "effect/Option"
 import type { Address } from "viem"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
-import { readSnapshots } from "../portfolio/Snapshots.ts"
+import { PortfolioSnapshots } from "../portfolio/PortfolioSnapshots.ts"
 import { valueHoldings } from "../portfolio/Valuation.ts"
 
-const currentPortfolio = Effect.gen(function*() {
-  const user = yield* CurrentUser
-  const balances = yield* AccountBalances
-  const market = yield* MarketPrices
+export const PortfolioHandlers = HttpApiBuilder.group(
+  BluechipApi,
+  "portfolio",
+  Effect.fn(function*(handlers) {
+    const balances = yield* AccountBalances
+    const market = yield* MarketPrices
+    const snapshots = yield* PortfolioSnapshots
 
-  const holdings = yield* balances.of(user.account as Address).pipe(
-    Effect.catchTag("ChainError", () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 })))
-  )
-  return valueHoldings(holdings, yield* market.prices, yield* DateTime.now)
-})
+    const current = Effect.gen(function*() {
+      const user = yield* CurrentUser
+      const holdings = yield* balances.of(user.account as Address).pipe(
+        Effect.catchTag("ChainError", () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 })))
+      )
+      return valueHoldings(holdings, yield* market.prices, yield* DateTime.now)
+    })
 
-export const PortfolioHandlers = HttpApiBuilder.group(BluechipApi, "portfolio", (handlers) =>
-  handlers
-    .handle("portfolio", () => currentPortfolio)
-    .handle("history", () =>
-      Effect.gen(function*() {
+    return handlers.handleAll({
+      portfolio: () => current,
+      history: Effect.fn(function*() {
         const user = yield* CurrentUser
-        const snapshots = yield* readSnapshots(user.id)
+        const history = yield* snapshots.history(user.id)
         // The chart ends at the value now; if the chain can't be read, it ends at the last snapshot.
-        const now = yield* currentPortfolio.pipe(Effect.option)
+        const now = yield* current.pipe(Effect.option)
 
         return Option.match(now, {
-          onNone: () => snapshots,
-          onSome: (portfolio) => [...snapshots, new PortfolioPoint({ at: portfolio.asOf, value: portfolio.value })]
+          onNone: () => history,
+          onSome: (portfolio) => [...history, new PortfolioPoint({ at: portfolio.asOf, value: portfolio.value })]
         })
-      })))
+      })
+    })
+  })
+)

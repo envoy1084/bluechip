@@ -9,18 +9,24 @@ import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
 import { marketStatus } from "../market/Calendar.ts"
 import { Charts } from "../market/Charts.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
-import { quote } from "../market/Quoter.ts"
+import { Quoter } from "../market/Quoter.ts"
 import { ReferencePrices } from "../market/ReferencePrices.ts"
 
-export const MarketHandlers = HttpApiBuilder.group(BluechipApi, "market", (handlers) =>
-  handlers
-    .handle("status", () => Effect.map(DateTime.now, marketStatus))
-    .handle("stocks", () =>
-      Effect.gen(function*() {
-        const market = yield* MarketPrices
+export const MarketHandlers = HttpApiBuilder.group(
+  BluechipApi,
+  "market",
+  Effect.fn(function*(handlers) {
+    const market = yield* MarketPrices
+    const references = yield* ReferencePrices
+    const charts = yield* Charts
+    const quoter = yield* Quoter
+
+    return handlers.handleAll({
+      status: () => Effect.map(DateTime.now, marketStatus),
+      stocks: Effect.fn(function*() {
         const prices = yield* market.prices
         // The list still works when the chain doesn't answer; only the reference line goes missing.
-        const references = yield* (yield* ReferencePrices).all.pipe(Effect.orElseSucceed(() => new Map()))
+        const referenceOf = yield* references.all.pipe(Effect.orElseSucceed(() => new Map()))
 
         return stocks.map((stock) => {
           const symbol = stock.symbol as StockSymbol
@@ -33,19 +39,18 @@ export const MarketHandlers = HttpApiBuilder.group(BluechipApi, "market", (handl
             tradable: stock.pool !== null,
             logoUrl: stock.logoUrl,
             price,
-            reference: references.get(symbol) ?? null,
+            reference: referenceOf.get(symbol) ?? null,
             change24h: price?.previousClose == null ? null : bpsBetween(price.price, price.previousClose)
           })
         })
-      }))
-    .handle("history", ({ params, query }) =>
-      Effect.gen(function*() {
-        const charts = yield* Charts
-        return yield* charts.history(params.symbol, query.range)
-      }))
-    .handle("quote", ({ payload }) =>
-      quote(
-        "usdc" in payload.amount
-          ? { symbol: payload.symbol, side: "buy", usdc: payload.amount.usdc }
-          : { symbol: payload.symbol, side: "sell", shares: payload.amount.shares }
-      )))
+      }),
+      history: ({ params, query }) => charts.history(params.symbol, query.range),
+      quote: ({ payload }) =>
+        quoter.quote(
+          "usdc" in payload.amount
+            ? { symbol: payload.symbol, side: "buy", usdc: payload.amount.usdc }
+            : { symbol: payload.symbol, side: "sell", shares: payload.amount.shares }
+        )
+    })
+  })
+)

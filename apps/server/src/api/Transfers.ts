@@ -2,21 +2,21 @@ import { BluechipApi } from "@bluechip/domain/Api"
 import { CurrentUser } from "@bluechip/domain/Auth"
 import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
-import { listTransfers } from "../funding/TransferRecords.ts"
+import { Transfers } from "../funding/Transfers.ts"
 import { Withdrawals } from "../funding/Withdrawals.ts"
 
-export const TransfersHandlers = HttpApiBuilder.group(BluechipApi, "transfers", (handlers) =>
-  handlers
-    .handle("list", ({ query }) => Effect.flatMap(CurrentUser, (user) => listTransfers(user.id, query)))
-    .handle("prepareWithdrawal", ({ payload }) =>
-      Effect.gen(function*() {
-        const user = yield* CurrentUser
-        const withdrawals = yield* Withdrawals
-        return yield* withdrawals.prepare(user, payload)
-      }))
-    .handle("confirmWithdrawal", ({ params, payload }) =>
-      Effect.gen(function*() {
-        const user = yield* CurrentUser
-        const withdrawals = yield* Withdrawals
-        return yield* withdrawals.confirm(user, params.id, payload.credential)
-      })))
+export const TransfersHandlers = HttpApiBuilder.group(
+  BluechipApi,
+  "transfers",
+  Effect.fn(function*(handlers) {
+    const transfers = yield* Transfers
+    const withdrawals = yield* Withdrawals
+
+    return handlers.handleAll({
+      list: ({ query }) => CurrentUser.use((user) => transfers.list(user.id, query)),
+      prepareWithdrawal: ({ payload }) => CurrentUser.use((user) => withdrawals.prepare(user, payload)),
+      confirmWithdrawal: ({ params, payload }) =>
+        CurrentUser.use((user) => withdrawals.confirm(user, params.id, payload.credential))
+    })
+  })
+)
