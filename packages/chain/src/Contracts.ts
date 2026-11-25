@@ -37,6 +37,11 @@ export interface Stock {
   readonly name: string
   readonly token: Address
   readonly feed: Address
+  /**
+   * Its deepest USDC pool in Aerodrome's Slipstream (MetaDEX factory), all at tick spacing 10; `null` when it has
+   * none to trade in. Found by scanning the factory's tick spacings on 2026-11-25; a fork test re-checks each.
+   */
+  readonly pool: { readonly address: Address; readonly tickSpacing: number } | null
 }
 
 /**
@@ -55,84 +60,98 @@ export const stocks: ReadonlyArray<Stock> = [
     symbol: "AAPL",
     name: "Apple",
     token: "0xb200000000000000000000C2e324d24d7eEcd1fb",
-    feed: "0x787f13dEa48Db0897CbCDD985de77809D837F988"
+    feed: "0x787f13dEa48Db0897CbCDD985de77809D837F988",
+    pool: { address: "0xF5FCB9CDAFcE67d50AfEf298F88E709d2B946BA6", tickSpacing: 10 }
   },
   {
     symbol: "AMZN",
     name: "Amazon",
     token: "0xb200000000000000000000d9192b6B456483C2E8",
-    feed: "0x06A8E4b3aBB3B7543d8396FB2B763d22820cB295"
+    feed: "0x06A8E4b3aBB3B7543d8396FB2B763d22820cB295",
+    pool: { address: "0x532e0F46d1e528507FC9454d5847C231f23bDDf6", tickSpacing: 10 }
   },
   {
     symbol: "ANT",
     name: "Anthropic",
     token: "0xb20000000000000000000016e38FD364d271Ba28",
-    feed: "0xeEDc7412E991a3F2BD693eb2aC7fB0F27d4660dA"
+    feed: "0xeEDc7412E991a3F2BD693eb2aC7fB0F27d4660dA",
+    pool: { address: "0x599C4225FE90214795a0be228D20d7680f8CED15", tickSpacing: 10 }
   },
   {
     symbol: "COIN",
     name: "Coinbase",
     token: "0xb200000000000000000000c85a31389D71F3ecfb",
-    feed: "0x408e44f504A7371a345F03a73dDC96A4b48e8aa7"
+    feed: "0x408e44f504A7371a345F03a73dDC96A4b48e8aa7",
+    pool: null
   },
   {
     symbol: "CRCL",
     name: "Circle",
     token: "0xB20000000000000000000019f6E7C675b73C2e4D",
-    feed: "0x0231cF2635D1E17bB5c2462cc7504Ba1fBd61f33"
+    feed: "0x0231cF2635D1E17bB5c2462cc7504Ba1fBd61f33",
+    pool: { address: "0x294666AD6a415E8C33Af801225c04079BB4f1133", tickSpacing: 10 }
   },
   {
     symbol: "GOOGL",
     name: "Alphabet",
     token: "0xb2000000000000000000002D0BA3164cc74f58B7",
-    feed: "0x5bF49E0ffA937CE2FfF033c739aD7C634c4D34F2"
+    feed: "0x5bF49E0ffA937CE2FfF033c739aD7C634c4D34F2",
+    pool: { address: "0x16c70F04C3080a127486Cdf5a4C33c066bBF47C3", tickSpacing: 10 }
   },
   {
     symbol: "INTC",
     name: "Intel",
     token: "0xB2000000000000000000004AFF16039bA04bdFBc",
-    feed: "0xAB657C39bac0D5886250D70849e2E3E008F2EECB"
+    feed: "0xAB657C39bac0D5886250D70849e2E3E008F2EECB",
+    pool: { address: "0x3D384288fA79B51De882B06B617aB7989CcAd4f3", tickSpacing: 10 }
   },
   {
     symbol: "META",
     name: "Meta Platforms",
     token: "0xb2000000000000000000008bC8786B856E61707C",
-    feed: "0x6526aE6797A76123638b863AeE4dD27Ba4E4b27D"
+    feed: "0x6526aE6797A76123638b863AeE4dD27Ba4E4b27D",
+    pool: { address: "0xd072410fa13D242e1d53721Bcf7AF02e3455DC96", tickSpacing: 10 }
   },
   {
     symbol: "MSFT",
     name: "Microsoft",
     token: "0xB200000000000000000000Ab99cFa739E253872B",
-    feed: "0xeB10A6c9aa7E537aEd766C08c35Dae35B321b18c"
+    feed: "0xeB10A6c9aa7E537aEd766C08c35Dae35B321b18c",
+    pool: { address: "0x2740C0faAb738F6e346e545fDE02aEF9B1A01ee7", tickSpacing: 10 }
   },
   {
     symbol: "MSTR",
     name: "Strategy",
     token: "0xb2000000000000000000004884b426556b92883d",
-    feed: "0xB3cE282CD188b35DA0E38D8Bc7d58e33173D202a"
+    feed: "0xB3cE282CD188b35DA0E38D8Bc7d58e33173D202a",
+    pool: { address: "0x66DCd42E6314B287110922AE36cB2a8bdEECc153", tickSpacing: 10 }
   },
   {
     symbol: "NVDA",
     name: "NVIDIA",
     token: "0xb20000000000000000000078ee7ce2fE4908108C",
-    feed: "0x04689a41629776563E6822F76f2e57D148d28513"
+    feed: "0x04689a41629776563E6822F76f2e57D148d28513",
+    pool: { address: "0xF668e21993f0ACd7ab00BB1cFbAeD0df28A3C8EC", tickSpacing: 10 }
   },
   {
     symbol: "SNDK",
     name: "Sandisk",
     token: "0xb200000000000000000000397293Cb8cda9a10c5",
-    feed: "0x388b0dC46C0Fb05A74BeE0994fa5b02c6Fcca2eA"
+    feed: "0x388b0dC46C0Fb05A74BeE0994fa5b02c6Fcca2eA",
+    pool: { address: "0x2836e062a3fe75943a7F4A552E2365b98E414E75", tickSpacing: 10 }
   },
   {
     symbol: "SPCX",
     name: "SpaceX",
     token: "0xb2000000000000000000007b9fcbd005511aCBd5",
-    feed: "0x6A634B235903C4ad6376892180d6fF8612e3Fa68"
+    feed: "0x6A634B235903C4ad6376892180d6fF8612e3Fa68",
+    pool: { address: "0x880dB7Dda4407D99508574E680d067D1164B3cFE", tickSpacing: 10 }
   },
   {
     symbol: "TSLA",
     name: "Tesla",
     token: "0xb2000000000000000000001e800a7f5189430cD0",
-    feed: "0xFaf869185383a24F8cb00e27BdA6b63B9905DCb4"
+    feed: "0xFaf869185383a24F8cb00e27BdA6b63B9905DCb4",
+    pool: { address: "0x7A33000372f3F028f074182CCb9d16cBEEfBF920", tickSpacing: 10 }
   }
 ]
