@@ -140,7 +140,30 @@ Code is organized so a maintainer can find and review any change quickly.
   (one feature, screen section or concern per file), never at an arbitrary line.
 - Group files into folders by feature or domain, not by kind: `apps/server/src/auth/`, `accounts/`, `api/`;
   `apps/web/src/routes/welcome/`, `shell/`, `atoms/`; a large page's sections in `apps/uikit/src/pages/<page>/`.
-- Tests mirror the source tree (`test/api/` for `src/api/`), with shared test helpers in `test/support/`.
+- Tests are split by tier, each mirroring the source tree (see [Test layout](#test-layout)).
+
+### Effect conventions
+
+bluechip is written the way Effect writes Effect: read the analogue in `node_modules/effect/ai-docs` (or the reference
+clone `~/.cache/effect-reference`) before inventing a shape.
+
+- **Schemas own their codecs.** Never write `encodeX`/`decodeX` pairs or module-level `XJson =
+  Schema.toCodecJson(X)` constants. JSON in Postgres is a schema-typed column (`jsonbSchema(AgentSpec)` in
+  `apps/server/src/db/columns.ts`), so rows carry domain values; other boundaries decode where the value enters
+  (`Schema.decodeUnknownEffect(X)(input)`), with the schema written at the call.
+- **Behaviour lives in services.** Logic that reaches for other services is a `Context.Service` with a `layer` (and a
+  `layerNoDeps` when tests swap a dependency, `layerTest` for an in-memory version), built with `Effect.gen` and
+  `Effect.fn("Service.method")`. Don't export free-standing effect functions that `yield*` services from a module of
+  loose functions; group them into the service that owns the data (`IntentStore`, `AgentSessions`, `AuditLog`).
+- **Inline one-offs.** A function used once is written where it is used. Extract only what is reused, or what names a
+  domain concept worth a name, into a module named for that concept. Pure domain decisions (a calculation, a
+  transition) stay pure functions in `packages/domain`, tested directly.
+- **Rows to domain values** are mapped inside the service that owns the table, not in `*Records.ts` modules of loose
+  functions.
+- **HTTP handlers** take their services once: `HttpApiBuilder.group(Api, "group", Effect.fn(function*(handlers) {
+  const agents = yield* Agents; return handlers.handleAll({ ... }) }))`.
+- **Errors** are tagged (`Schema.TaggedError`), failed with `return yield* new Error(...)`, and translated at the
+  boundary that knows better (`Effect.catchTag`), never swallowed.
 
 ### Screens
 
@@ -198,6 +221,29 @@ sleeps (`TestClock`, or await a signal), no polling races, and no retries or rai
 Chain tests run on the devnet (`packages/devnet`): a local Base with every contract bluechip uses at its real
 address, one Anvil and Alto per Vitest worker, started from a captured state file, so they need no fork, no RPC and
 no Docker. Only `pnpm test:fork` (not part of `pnpm check`) reads the real chain, to check the facts the devnet copies.
+
+### Test layout
+
+Every package's `test/` folder is split by tier; each tier mirrors `src/`:
+
+| Folder              | Holds                                                                                    | Runs against                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `test/unit/`        | Pure functions and domain logic                                                          | Nothing: no IO                                                   |
+| `test/integration/` | One service (or a chain flow) with its real dependencies                                 | Postgres, the devnet                                             |
+| `test/e2e/`         | The HTTP API through the typed client, as the web app calls it                           | A test server (`NodeHttpServer.layerTest`), the devnet, Postgres |
+| `test/fixtures/`    | Known values and builders (specs, legs, amounts)                                         | –                                                                |
+| `test/utils/`       | Test layers and harness services (`TestServer`, `TestUsers`, `TestEvents`, `EngineTest`) | –                                                                |
+| `test/setup/`       | Vitest `globalSetup` files                                                               | –                                                                |
+
+Tests are Effect code, like the code they test:
+
+- `it.effect` and `layer(...)` from `@effect/vitest`; `TestClock` for time; `layer(..., { excludeTestServices: true })`
+  only where real time matters (and say why).
+- API tests call the typed client (`HttpApiClient` against the test server, a client per user with its own cookie
+  ref): typed payloads, typed successes, typed errors through `Effect.flip`. Never raw `fetch`, JSON strings,
+  `any`, or hand-built requests.
+- No helper functions at the top of a test file. A table of examples (`it.each`) belongs to its test; builders used by
+  several files go to `fixtures/`, harness pieces to `utils/` as services or layers.
 
 ### Writing tests
 
