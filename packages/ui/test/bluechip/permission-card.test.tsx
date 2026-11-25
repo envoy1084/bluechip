@@ -121,6 +121,18 @@ describe("PermissionCard", () => {
     await expect.element(screen.getByText("Locked with Face ID until 21 Feb")).toBeVisible()
   })
 
+  it("says a removed agent's limits no longer apply", async () => {
+    const screen = await render(<PermissionCard limits={REBALANCER} lockedUntil="21 Feb" removed />)
+    await expect.element(screen.getByText("Removed, so these limits no longer apply")).toBeVisible()
+  })
+
+  it("says when a full daily spend starts again", async () => {
+    const screen = await render(
+      <PermissionCard limits={REBALANCER} spentToday={200} resetsAt="midnight UTC" lockedUntil="21 Feb" />
+    )
+    await expect.element(screen.getByText("Limit reached. Resets at midnight UTC.")).toBeVisible()
+  })
+
   it("says a draft isn't locked yet", async () => {
     const screen = await render(<PermissionCard limits={REBALANCER} />)
     await expect.element(screen.getByText("Not locked yet")).toBeVisible()
