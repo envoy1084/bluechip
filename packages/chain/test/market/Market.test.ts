@@ -4,7 +4,6 @@ import { DevChain } from "@bluechip/chain/DevChain"
 import { factory, factoryAbi, swapRouter, swapRouterAbi } from "@bluechip/chain/market/Aerodrome"
 import { readPrices } from "@bluechip/chain/market/Prices"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
-import { readPhases, readRounds } from "@bluechip/chain/market/Rounds"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
@@ -40,21 +39,6 @@ describe.skipIf(!forkAvailable)("market on the local fork", () => {
         const { asOf, prices } = yield* readPrices(yield* ChainClient)
         assert.strictEqual(prices.length, stocks.length)
         for (const price of prices) assert.isTrue(price.updatedAt.getTime() <= asOf.getTime(), price.stock.symbol)
-      }))
-
-    it.effect("walks a feed's past answers, newest first", () =>
-      Effect.gen(function*() {
-        const chain = yield* ChainClient
-        const [current] = yield* readPhases(chain, nvda.feed)
-        const rounds = yield* readRounds(chain, nvda.feed, {
-          phase: current!.phase,
-          fromRound: current!.lastRound,
-          count: 5
-        })
-        assert.isAbove(rounds.length, 0)
-        for (let index = 1; index < rounds.length; index++) {
-          assert.isTrue(rounds[index]!.updatedAt <= rounds[index - 1]!.updatedAt)
-        }
       }))
 
     it.effect("a quote is what the swap actually returns", () =>

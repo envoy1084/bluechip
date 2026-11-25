@@ -9,13 +9,25 @@ import type { ChainClient } from "../ChainClient.ts"
 import { stocks, usdc } from "../Contracts.ts"
 
 /**
- * The tokens an account can hold: USDC, then every stock's token.
+ * What an account can hold: USDC, then every stock, each with its token.
  *
  * @stability unstable
  * @category addresses
  * @since 0.0.0
  */
-export const assetTokens: ReadonlyArray<Address> = [usdc, ...stocks.map((stock) => stock.token)]
+export const assets: ReadonlyArray<{ readonly symbol: string; readonly token: Address }> = [
+  { symbol: "USDC", token: usdc },
+  ...stocks.map((stock) => ({ symbol: stock.symbol, token: stock.token }))
+]
+
+/**
+ * The tokens of {@link assets}, in the same order.
+ *
+ * @stability unstable
+ * @category addresses
+ * @since 0.0.0
+ */
+export const assetTokens: ReadonlyArray<Address> = assets.map((asset) => asset.token)
 
 /**
  * Balances at one block: `balances.get(account)` lists each of {@link assetTokens}' balance in the same order.
