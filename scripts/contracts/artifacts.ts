@@ -1,5 +1,5 @@
 // What `contracts build` hands the TypeScript side: each contract's ABI, its constructor arguments and init code,
-// and its deterministic address (CREATE2 through the Arachnid deployer, salt `keccak256("bluechip.<name>.v1")`), the
+// and its deterministic address (CREATE2 through the Arachnid deployer, salt `keccak256("bluechip.<name>")`), the
 // same on every chain where the constructor arguments match (all of Base's).
 import { usdc } from "@bluechip/chain/Contracts"
 import { swapRouter } from "@bluechip/chain/market/Aerodrome"
@@ -14,27 +14,41 @@ export const SEQUENCER_FEED: Address = "0xBCF85224fc0756B9Fa45aA7892530B47e10b64
 /** How long after Base's sequencer comes back prices aren't trusted: Chainlink's recommendation. */
 export const SEQUENCER_GRACE_SECONDS = 3600
 
+/** The rules `TradeGuard` runs, each its own contract with no constructor arguments. */
+export const RULES = [
+  "TradeSizeRule",
+  "FairPriceRule",
+  "StockCapRule",
+  "CashReserveRule",
+  "RebalanceRule",
+  "SlippageBudgetRule"
+] as const
+
 /** A contract bluechip deploys: its label, Foundry artifact, and constructor arguments. */
 export interface ContractSpec {
-  readonly name: "AerodromeTradePolicy" | "TradeGuard"
+  readonly name: "AerodromeTradePolicy" | "TradeGuard" | typeof RULES[number]
   readonly label: string
   readonly constructorTypes: ReadonlyArray<{ readonly type: string }>
   readonly constructorArgs: ReadonlyArray<unknown>
 }
 
+// `TradeSizeRule` → `trade-size-rule`.
+const kebab = (name: string) => name.replace(/[A-Z]/g, (letter, at) => `${at === 0 ? "" : "-"}${letter.toLowerCase()}`)
+
 export const CONTRACTS: ReadonlyArray<ContractSpec> = [
   {
     name: "AerodromeTradePolicy",
-    label: "bluechip.aerodrome-trade-policy.v1",
+    label: "bluechip.aerodrome-trade-policy",
     constructorTypes: [{ type: "address" }, { type: "address" }],
     constructorArgs: [usdc, swapRouter]
   },
   {
     name: "TradeGuard",
-    label: "bluechip.trade-guard.v1",
+    label: "bluechip.trade-guard",
     constructorTypes: [{ type: "address" }, { type: "address" }, { type: "uint256" }],
     constructorArgs: [usdc, SEQUENCER_FEED, BigInt(SEQUENCER_GRACE_SECONDS)]
-  }
+  },
+  ...RULES.map((name) => ({ name, label: `bluechip.${kebab(name)}`, constructorTypes: [], constructorArgs: [] }))
 ]
 
 /** A contract's salt: its label, hashed. */

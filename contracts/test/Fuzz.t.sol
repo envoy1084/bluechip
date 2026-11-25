@@ -5,10 +5,10 @@ import {Test} from "forge-std/Test.sol";
 
 import {UserOpCalls} from "namera/policies/lib/UserOpCalls.sol";
 
-import {GuardRules} from "../src/lib/GuardRules.sol";
 import {TradeMath} from "../src/lib/TradeMath.sol";
 import {TradeShape} from "../src/lib/TradeShape.sol";
-import {AerodromeTradePolicyHarness, RulesHarness, TradeGuardHarness} from "./utils/Mocks.sol";
+import {GuardInput, GuardPipeline} from "./utils/GuardInput.sol";
+import {AerodromeTradePolicyHarness, RulesHarness} from "./utils/Mocks.sol";
 
 /// @notice Properties the rules keep for any input: no batch but approve-then-swap pairs passes, nothing is ever
 /// paid to another address, no accepted trade loses more than the collar, an accepted rebalance always gets closer to
@@ -16,7 +16,7 @@ import {AerodromeTradePolicyHarness, RulesHarness, TradeGuardHarness} from "./ut
 /// stored.
 contract FuzzTest is Test {
     RulesHarness internal rules = new RulesHarness();
-    TradeGuardHarness internal guard = new TradeGuardHarness();
+    GuardPipeline internal guard = new GuardPipeline();
     AerodromeTradePolicyHarness internal policy = new AerodromeTradePolicyHarness();
 
     address internal constant USDC = address(0xC0);
@@ -29,7 +29,7 @@ contract FuzzTest is Test {
     // The shape ------------------------------------------------------------------------------------------------------
 
     function settings() internal pure returns (TradeShape.Settings memory s) {
-        s.mode = GuardRules.BOTH;
+        s.mode = GuardInput.BOTH;
         s.maxUsdcIn = 100e6;
         s.dailyBudget = 250e6;
         s.markets = new TradeShape.Market[](1);
@@ -90,9 +90,9 @@ contract FuzzTest is Test {
     function guardInput(uint8 mode, uint256 cash, uint256 nvda, uint256 aapl)
         internal
         pure
-        returns (GuardRules.Input memory input)
+        returns (GuardInput.Input memory input)
     {
-        input.settings = GuardRules.Settings({
+        input.settings = GuardInput.Settings({
             mode: mode,
             tradeWhilePaused: false,
             collarBps: 100,
@@ -112,20 +112,20 @@ contract FuzzTest is Test {
         });
         input.cashBefore = cash;
         input.cashAfter = cash;
-        input.stocks = new GuardRules.Stock[](2);
-        input.stocks[0] = GuardRules.Stock(NVDA, true, 3000, nvda, nvda, 100e8, NOW - 60);
-        input.stocks[1] = GuardRules.Stock(AAPL, true, 3000, aapl, aapl, 200e8, NOW - 60);
+        input.stocks = new GuardInput.Stock[](2);
+        input.stocks[0] = GuardInput.Stock(NVDA, true, 3000, nvda, nvda, 100e8, NOW - 60);
+        input.stocks[1] = GuardInput.Stock(AAPL, true, 3000, aapl, aapl, 200e8, NOW - 60);
         input.time = NOW;
     }
 
     function testFuzz_noAcceptedBuyLosesMoreThanTheCollar(uint256 cost, uint256 shares) public view {
         cost = bound(cost, 5e6, 1000e6);
         shares = bound(shares, 1, 20e8);
-        GuardRules.Input memory input = guardInput(GuardRules.BOTH, 2000e6, 5e8, 2.5e8);
+        GuardInput.Input memory input = guardInput(GuardInput.BOTH, 2000e6, 5e8, 2.5e8);
         input.cashAfter = input.cashBefore - cost;
         input.stocks[0].balanceAfter = input.stocks[0].balanceBefore + shares;
 
-        try rules.check(input) {
+        try guard.check(input) {
             uint256 received = TradeMath.valueOf(shares, 100e8);
             uint256 lost = cost > received ? cost - received : 0;
             assertLe(lost * 10_000, 100 * cost);
@@ -143,7 +143,7 @@ contract FuzzTest is Test {
         nvda = bound(nvda, 0, 40e8);
         aapl = bound(aapl, 0, 20e8);
         dollars = bound(dollars, 5, 400);
-        GuardRules.Input memory input = guardInput(GuardRules.REBALANCE, cash, nvda, aapl);
+        GuardInput.Input memory input = guardInput(GuardInput.REBALANCE, cash, nvda, aapl);
 
         // A fair trade of NVDA at $100: `dollars` of USDC for `dollars / 100` shares, either way.
         uint256 usdc = dollars * 1e6;
@@ -158,7 +158,7 @@ contract FuzzTest is Test {
             input.stocks[0].balanceAfter = nvda - shares;
         }
 
-        try rules.check(input) {
+        try guard.check(input) {
             assertLt(_drift(input.cashAfter, input.stocks[0].balanceAfter, aapl), _drift(cash, nvda, aapl));
         } catch {}
     }
@@ -184,11 +184,7 @@ contract FuzzTest is Test {
         return TradeMath.drift(values, values[0] + values[1] + values[2], targets);
     }
 
-    // TradeGuard's storage -------------------------------------------------------------------------------------------
-
-    function testFuzz_settingsComeBackAsStored(GuardRules.Settings memory s) public view {
-        assertEq(abi.encode(guard.roundTrip(s)), abi.encode(s));
-    }
+    // Stored settings -------------------------------------------------------------------------------------------
 
     function testFuzz_policySettingsComeBackAsStored(TradeShape.Settings memory s) public view {
         s.maxUsdcIn = uint128(bound(s.maxUsdcIn, 0, (uint256(1) << 124) - 1));

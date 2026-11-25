@@ -24,14 +24,20 @@ describe("deployContracts", () => {
     const second = await deployContracts(node, contracts)
 
     assert.deepStrictEqual(first, [
-      { name: "AerodromeTradePolicy", address: "0x72459B516f9De0dfE63AB53684ca1f3248d6ed15", status: "deployed" },
-      { name: "TradeGuard", address: "0xA7dB12C856Ca06b2d4d19DAFf749907b0E5c9eD3", status: "deployed" }
+      { name: "AerodromeTradePolicy", address: "0x3FdF29585d00d26240da3c45168Cad0148Ac9073", status: "deployed" },
+      { name: "TradeGuard", address: "0x6131C37391279FFD3831dB2F89C10C29D52fc57D", status: "deployed" },
+      { name: "TradeSizeRule", address: "0x240274AB59bd003C39eDf22542910EA9BBc3121e", status: "deployed" },
+      { name: "FairPriceRule", address: "0x8482F4E90a5101422044e1D54D45AF72A75d28e3", status: "deployed" },
+      { name: "StockCapRule", address: "0x6Ec294E0c7D091E57c67Cf4dE4f0965170Ff61DA", status: "deployed" },
+      { name: "CashReserveRule", address: "0x1A9aB2684e08C8fAd79D6014eeeFe874AC67E701", status: "deployed" },
+      { name: "RebalanceRule", address: "0xf7859d6DC9265D229F4F38e3d022bAf6a02B923E", status: "deployed" },
+      { name: "SlippageBudgetRule", address: "0x1167EC36224BCd2FAce8502Bc7284a84b01bef4E", status: "deployed" }
     ])
-    assert.deepStrictEqual(second.map((deployment) => deployment.status), ["present", "present"])
-    assert.deepStrictEqual((await contractStatus(node, contracts)).map((deployment) => deployment.status), [
-      "present",
-      "present"
-    ])
+    assert.deepStrictEqual(second.map((deployment) => deployment.status), Array(8).fill("present"))
+    assert.deepStrictEqual(
+      (await contractStatus(node, contracts)).map((deployment) => deployment.status),
+      Array(8).fill("present")
+    )
   })
 
   it("refuses a node that isn't Anvil", async () => {

@@ -5,12 +5,11 @@ import type { Abi, Hex } from "viem"
 
 import { addressOf, CONTRACTS, type ContractSpec, deployedModule, initCodeOf } from "../contracts/artifacts.ts"
 import { contractStatus, deployContracts, type Deployment } from "../contracts/deploy.ts"
-import { contractVectors } from "../contracts/vectors.ts"
 import { ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
 
 /** Where the generated addresses and ABIs go. */
-export const DEPLOYED_MODULE = "packages/chain/src/agents/Deployed.ts"
+export const DEPLOYED_MODULE = "packages/chain/src/policies/Deployed.ts"
 
 const Artifact = Schema.Struct({
   abi: Schema.Array(Schema.Unknown),
@@ -31,15 +30,15 @@ export const readArtifact = Effect.fn("contracts.readArtifact")(function*(root: 
   return { abi: artifact.abi as Abi, bytecode: artifact.bytecode.object as Hex }
 }, Effect.orDie)
 
-/** Each contract with its ABI (TradeGuard's with the rule errors it reverts with), init code and address. */
+/** Each contract with its ABI (TradeGuard's with the errors of `Outcome`, its checks), init code and address. */
 export const builtContracts = Effect.fn("contracts.builtContracts")(function*(root: string) {
-  const rules = yield* readArtifact(root, "GuardRules")
+  const outcome = yield* readArtifact(root, "Outcome")
   return yield* Effect.forEach(
     CONTRACTS,
     (spec: ContractSpec) =>
       Effect.map(readArtifact(root, spec.name), ({ abi, bytecode }) => {
         const initCode = initCodeOf(spec, bytecode)
-        const errors = spec.name === "TradeGuard" ? rules.abi.filter((item) => item.type === "error") : []
+        const errors = spec.name === "TradeGuard" ? outcome.abi.filter((item) => item.type === "error") : []
         return { spec, abi: [...abi, ...errors] as Abi, initCode, address: addressOf(spec, initCode) }
       })
   )
@@ -88,22 +87,6 @@ const snapshot = Command.make("snapshot").pipe(
   Command.withHandler(() => forge(["snapshot", "--no-match-path", "test/Fuzz.t.sol"]))
 )
 
-const vectors = Command.make("vectors").pipe(
-  Command.withDescription("Export the shared agent-rule vectors to contracts/test/vectors.json"),
-  Command.withHandler(() =>
-    Effect.gen(function*() {
-      const fs = yield* FileSystem.FileSystem
-      const path = yield* Path.Path
-      const data = contractVectors()
-      yield* fs.writeFileString(
-        path.join(process.cwd(), "contracts", "test", "vectors.json"),
-        `${JSON.stringify(data, null, 2)}\n`
-      )
-      yield* Console.log(`contracts: ${data.guard.length} guard and ${data.shape.length} shape vectors`)
-    })
-  )
-)
-
 const rpcUrl = Flag.String("rpc-url").pipe(
   Flag.withDefault("http://localhost:8545"),
   Flag.withDescription("The chain's JSON-RPC URL (default: the local chain `pnpm dev` runs)")
@@ -144,5 +127,5 @@ const status = Command.make("status", { rpcUrl }).pipe(
 
 export const contracts = Command.make("contracts").pipe(
   Command.withDescription("bluechip's onchain policies (Foundry, in contracts/)"),
-  Command.withSubcommands([build, test, snapshot, vectors, deploy, status])
+  Command.withSubcommands([build, test, snapshot, deploy, status])
 )

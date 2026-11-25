@@ -6,12 +6,14 @@ import {Test} from "forge-std/Test.sol";
 import {UserOpCalls} from "namera/policies/lib/UserOpCalls.sol";
 
 import {TradeShape} from "../src/lib/TradeShape.sol";
+import {GuardPipeline} from "./utils/GuardInput.sol";
 import {RulesHarness} from "./utils/Mocks.sol";
 
-/// @notice bluechip's shared agent-rule vectors (`packages/domain/test/agents/vectors.ts`, exported by
-/// `node scripts/bin.ts contracts vectors`): every case gives the same answer here as in TypeScript.
+/// @notice bluechip's agent-rule vectors (`test/vectors.json`, a fixture): `TradeGuard`'s checks and rules and
+/// `AerodromeTradePolicy`'s call shapes each give the recorded answer.
 contract VectorsTest is Test {
     RulesHarness internal rules = new RulesHarness();
+    GuardPipeline internal guard = new GuardPipeline();
 
     function test_everyGuardVector() public view {
         string memory json = vm.readFile("test/vectors.json");
@@ -24,7 +26,7 @@ contract VectorsTest is Test {
             bytes memory input = vm.parseJsonBytes(json, string.concat(path, ".input"));
             bytes memory expected = vm.parseJsonBytes(json, string.concat(path, ".error"));
 
-            try rules.checkEncoded(input) {
+            try guard.checkEncoded(input) {
                 assertEq(expected.length, 0, string.concat(name, ": passed, but should revert"));
             } catch (bytes memory reason) {
                 assertEq(expected.length, 4, string.concat(name, ": reverted, but should pass"));

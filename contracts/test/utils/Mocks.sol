@@ -4,8 +4,6 @@ pragma solidity 0.8.38;
 import {ERC20} from "solady/tokens/ERC20.sol";
 
 import {AerodromeTradePolicy} from "../../src/AerodromeTradePolicy.sol";
-import {TradeGuard} from "../../src/TradeGuard.sol";
-import {GuardRules} from "../../src/lib/GuardRules.sol";
 import {TradeShape} from "../../src/lib/TradeShape.sol";
 import {UserOpCalls} from "namera/policies/lib/UserOpCalls.sol";
 
@@ -57,16 +55,8 @@ contract MockAggregator {
     }
 }
 
-/// @notice The pure libraries behind an external function each, so tests can expect their reverts.
+/// @notice `TradeShape` behind an external function, so tests can expect its answers.
 contract RulesHarness {
-    function check(GuardRules.Input memory input) external pure returns (bool traded, uint256 slippageUsed) {
-        return GuardRules.check(input);
-    }
-
-    function checkEncoded(bytes calldata input) external pure returns (bool traded, uint256 slippageUsed) {
-        return GuardRules.check(abi.decode(input, (GuardRules.Input)));
-    }
-
     function shape(
         TradeShape.Settings memory settings,
         UserOpCalls.Call[] memory calls,
@@ -75,16 +65,6 @@ contract RulesHarness {
         address router
     ) external pure returns (bool ok, uint256 buys) {
         return TradeShape.check(settings, calls, account, usdc, router);
-    }
-}
-
-/// @notice TradeGuard's settings packing, for the round trip.
-contract TradeGuardHarness is TradeGuard {
-    constructor() TradeGuard(address(0), address(0), 0) {}
-
-    function roundTrip(GuardRules.Settings memory s) external pure returns (GuardRules.Settings memory) {
-        (uint256 sizes, uint256 rest) = _packSettings(s);
-        return _unpackSettings(sizes, rest);
     }
 }
 
