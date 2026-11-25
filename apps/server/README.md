@@ -80,6 +80,25 @@ excluded from drizzle-kit). Crons live with their feature and are wired in `src/
   sends it, and the trade is followed to its receipt, where its fill (exact USDC and shares) is read from the logs.
 - `GET /api/activity` lists trades and withdrawals together, newest first.
 
+## Assistant
+
+- `POST /api/assistant/run` is an AG-UI run (`AgUiServer.endpoint`): `threadId` is the conversation's id and the last
+  message is the user's; the history is read from `conversations` and `messages`, never from the client. Each model
+  round is stored as typed parts (text, thinking, tool calls and results, cards, errors) when it ends.
+- Tools (`packages/domain/src/tools/`) carry a risk level: `read` tools run at once, `propose` tools create intents the
+  desk decides, `configure` tools store a pending card applied by `POST /api/assistant/cards/:id/confirm` (or a
+  `resume` entry on the next run), and `sign` tools prepare a signing request only the passkey completes. Cards stream
+  as AG-UI `CUSTOM` events named `bluechip.card`.
+- A turn runs at most 8 model rounds on `ASSISTANT_MODEL`, falling back to `ASSISTANT_SMALL_MODEL` when it fails
+  before streaming; the small model then writes the conversation's title and memory notes. Requests cache the tools,
+  system prompt and history. Research is Anthropic's web search; its pages are untrusted text, shown as a card.
+- `usage_budgets` counts each user's tokens and cost per UTC day; a spent day stops the model with a card until
+  midnight UTC, and cards can still be confirmed.
+- Memories (`memories`) are what the user said (confirmed at once) or what the notes inferred (confirmed when sure,
+  otherwise shown as a card to confirm). Only confirmed memories reach the system prompt; deleting one removes it.
+- Tests run on `RecordedModel` (`test/utils/`): replies replayed by the user's message, so runs are exact and free.
+  `test/e2e/assistant/Evals.test.ts` runs recorded conversations (`test/fixtures/assistant/`).
+
 ## API
 
 1. Define endpoints in `packages/domain/src/api/<Feature>Api.ts` and add the group in `packages/domain/src/Api.ts`
@@ -99,20 +118,24 @@ excluded from drizzle-kit). Crons live with their feature and are wired in `src/
 
 ## Configuration
 
-| Variable                | Default                 | Meaning                                                          |
-| ----------------------- | ----------------------- | ---------------------------------------------------------------- |
-| `DATABASE_URL`          | required                | Postgres connection string (redacted in logs)                    |
-| `PORT`                  | `8080`                  | HTTP port                                                        |
-| `PUBLIC_ORIGIN`         | `http://localhost:3000` | The web app's origin                                             |
-| `NODE_ENV`              | `development`           | `development`, `test` or `production` (JSON logs in production)  |
-| `LOG_LEVEL`             | `Info`                  | Minimum log level                                                |
-| `NETWORK`               | `local`                 | `local` (the Anvil fork) or `base` (Base mainnet)                |
-| `BASE_RPC_URL`          | `http://localhost:8545` | The node the server reads and sends through                      |
-| `BUNDLER`               | `local`                 | `local` (Alto at `BUNDLER_URL`) or `alchemy`                     |
-| `BUNDLER_URL`           | `http://localhost:4337` | The local bundler                                                |
-| `GAS_SPONSORSHIP`       | `none`                  | `none`, `alchemy-bso` (Alchemy's bundler) or `alchemy-paymaster` |
-| `ALCHEMY_API_KEY`       | —                       | Alchemy key (redacted), when `BUNDLER=alchemy`                   |
-| `ALCHEMY_GAS_POLICY_ID` | —                       | Gas Manager policy that pays sponsored gas                       |
-| `ALPACA_API_KEY_ID`     | required                | Alpaca market data key (paper account is enough)                 |
-| `ALPACA_API_SECRET_KEY` | required                | Its secret (redacted)                                            |
-| `ALPACA_FEED`           | `iex`                   | `iex` (free plan) or `sip` (Algo Trader Plus)                    |
+| Variable                 | Default                 | Meaning                                                          |
+| ------------------------ | ----------------------- | ---------------------------------------------------------------- |
+| `DATABASE_URL`           | required                | Postgres connection string (redacted in logs)                    |
+| `PORT`                   | `8080`                  | HTTP port                                                        |
+| `PUBLIC_ORIGIN`          | `http://localhost:3000` | The web app's origin                                             |
+| `NODE_ENV`               | `development`           | `development`, `test` or `production` (JSON logs in production)  |
+| `LOG_LEVEL`              | `Info`                  | Minimum log level                                                |
+| `NETWORK`                | `local`                 | `local` (the Anvil fork) or `base` (Base mainnet)                |
+| `BASE_RPC_URL`           | `http://localhost:8545` | The node the server reads and sends through                      |
+| `BUNDLER`                | `local`                 | `local` (Alto at `BUNDLER_URL`) or `alchemy`                     |
+| `BUNDLER_URL`            | `http://localhost:4337` | The local bundler                                                |
+| `GAS_SPONSORSHIP`        | `none`                  | `none`, `alchemy-bso` (Alchemy's bundler) or `alchemy-paymaster` |
+| `ALCHEMY_API_KEY`        | —                       | Alchemy key (redacted), when `BUNDLER=alchemy`                   |
+| `ALCHEMY_GAS_POLICY_ID`  | —                       | Gas Manager policy that pays sponsored gas                       |
+| `ALPACA_API_KEY_ID`      | required                | Alpaca market data key (paper account is enough)                 |
+| `ALPACA_API_SECRET_KEY`  | required                | Its secret (redacted)                                            |
+| `ALPACA_FEED`            | `iex`                   | `iex` (free plan) or `sip` (Algo Trader Plus)                    |
+| `ANTHROPIC_API_KEY`      | —                       | Anthropic key (redacted) for the assistant                       |
+| `ASSISTANT_MODEL`        | `claude-sonnet-5-5`     | The assistant's conversation model                               |
+| `ASSISTANT_SMALL_MODEL`  | `claude-haiku-5-5`      | Titles, memory notes, and the conversation model's fallback      |
+| `ASSISTANT_DAILY_BUDGET` | `1`                     | Each user's assistant budget per UTC day, in dollars             |
