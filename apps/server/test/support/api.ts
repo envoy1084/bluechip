@@ -18,8 +18,9 @@ import { MarketPrices } from "../../src/market/MarketPrices.ts"
 import { ReferencePrices } from "../../src/market/ReferencePrices.ts"
 import { Namera } from "../../src/Namera.ts"
 import { AccountBalances } from "../../src/portfolio/AccountBalances.ts"
+import { Trades } from "../../src/trading/Trades.ts"
 import { AlpacaTest } from "./alpaca.ts"
-import type { softwareAuthenticator } from "./authenticator.ts"
+import { softwareAuthenticator } from "./authenticator.ts"
 
 export const origin = "http://localhost:3000"
 
@@ -31,7 +32,7 @@ const config = ConfigProvider.layer(ConfigProvider.fromEnvRecord({
 }))
 
 // Sign-up reads the chain (Namera checks for Base's P-256 precompile), so these tests run on the local fork.
-const Services = Layer.mergeAll(Withdrawals.layer, Charts.layer).pipe(
+const Services = Layer.mergeAll(Withdrawals.layer, Trades.layer, Charts.layer).pipe(
   Layer.provideMerge(Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer)),
   Layer.provideMerge(Layer.mergeAll(AlpacaTest, Database.layerMigrated, AppConfig.layer)),
   Layer.provideMerge(LiveEvents.layer),
@@ -116,4 +117,16 @@ export const openEvents = Effect.fnUntraced(function*(cookie: string) {
     })
   yield* next((event) => event._tag === "Heartbeat")
   return { next, close: Effect.promise(() => reader.cancel()) }
+})
+
+/** A new user with 1,000 test USDC (and gas), and their live events. */
+export const fundedUser = Effect.fnUntraced(function*() {
+  const authenticator = softwareAuthenticator({ rpId: "localhost", origin })
+  const created = yield* signUp(authenticator)
+  const cookie = `bluechip_session=${created.session}`
+  const events = yield* openEvents(cookie)
+
+  const funded = yield* call("POST", "/api/dev/fund", { cookie })
+  if (funded.status !== 204) return yield* Effect.die(new Error(`dev fund answered ${funded.status}`))
+  return { authenticator, cookie, events, address: created.json.account.address as `0x${string}` }
 })

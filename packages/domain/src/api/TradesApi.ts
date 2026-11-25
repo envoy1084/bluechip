@@ -47,6 +47,7 @@ export class TradesApi extends HttpApiGroup.make("trades").add(
       NotTradable,
       QuoteUnavailable,
       PriceCheckFailed,
+      NotFound,
       Conflict,
       Unavailable
     ]

@@ -19,6 +19,7 @@ import { MarketPrices } from "./market/MarketPrices.ts"
 import { ReferencePrices } from "./market/ReferencePrices.ts"
 import { Namera } from "./Namera.ts"
 import { AccountBalances } from "./portfolio/AccountBalances.ts"
+import { Trades } from "./trading/Trades.ts"
 
 /** Every HTTP route the server answers: health and the API under `/api` (passkey auth included). */
 export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware, OriginCheckMiddleware)
@@ -31,7 +32,7 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
     gracefulShutdownTimeout: Config.succeed("2 seconds")
   })),
   // Namera checks at startup that the bundler and paymaster work together, and refuses to boot otherwise.
-  Layer.provide(Layer.mergeAll(Withdrawals.layer, Charts.layer)),
+  Layer.provide(Layer.mergeAll(Withdrawals.layer, Trades.layer, Charts.layer)),
   Layer.provide(Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer)),
   Layer.provide(Alpaca.layer),
   Layer.provide(LiveEvents.layer),

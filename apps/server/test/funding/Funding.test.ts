@@ -5,21 +5,10 @@ import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
 import { erc20Abi } from "viem"
 import { generatePrivateKey, privateKeyToAddress } from "viem/accounts"
-import { call, openEvents, origin, signUp } from "../support/api.ts"
-import { softwareAuthenticator } from "../support/authenticator.ts"
+import { call, fundedUser } from "../support/api.ts"
 import { chainAvailable } from "../support/fork.ts"
 
 const thousand = String(1_000_000_000)
-
-/** A new user with 1,000 test USDC, and their live events. */
-const fundedUser = Effect.fnUntraced(function*() {
-  const authenticator = softwareAuthenticator({ rpId: "localhost", origin })
-  const created = yield* signUp(authenticator)
-  const cookie = `bluechip_session=${created.session}`
-  const events = yield* openEvents(cookie)
-  assert.strictEqual((yield* call("POST", "/api/dev/fund", { cookie })).status, 204)
-  return { authenticator, cookie, events, address: created.json.account.address as string }
-})
 
 describe.skipIf(!chainAvailable)("funding", () => {
   it.effect("test money shows up as cash, live", () =>

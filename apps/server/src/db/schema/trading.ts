@@ -1,0 +1,25 @@
+import { index, integer, pgTable, text } from "drizzle-orm/pg-core"
+import { dateTimeUtc, typeId, units } from "../columns.ts"
+import { users } from "./accounts.ts"
+
+/**
+ * Trades the user signed: quoted amounts until filled, then exactly what moved (from the transaction's logs), with
+ * the Chainlink price it was checked against.
+ */
+export const trades = pgTable("trades", {
+  id: typeId("trade")("id").primaryKey(),
+  userId: typeId("user")("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  symbol: text("symbol").notNull(),
+  side: text("side", { enum: ["buy", "sell"] }).notNull(),
+  status: text("status", { enum: ["sending", "confirming", "filled", "failed"] }).notNull(),
+  usdc: units("usdc").notNull(),
+  shares: units("shares").notNull(),
+  price: units("price").notNull(),
+  reference: units("reference").notNull(),
+  referenceStatus: text("reference_status", { enum: ["live", "paused", "stale"] }).notNull(),
+  gapBps: integer("gap_bps").notNull(),
+  userOpHash: text("user_op_hash"),
+  txHash: text("tx_hash"),
+  createdAt: dateTimeUtc("created_at").notNull(),
+  settledAt: dateTimeUtc("settled_at")
+}, (table) => [index("trades_user_created_at_idx").on(table.userId, table.createdAt)])

@@ -63,17 +63,23 @@ export const challengeOf = (hash: Hex) => isoBase64URL.fromBuffer(hexToBytes(has
 
 /**
  * Builds the account's user operation for `calls` (deploying the account too when it has no code yet), with gas and
- * fees from the bundler, and the hash its owner signs. Stored as is, so what the user signs is what gets sent.
+ * fees from the bundler (call gas at least `minCallGas`), and the hash its owner signs. Stored as is, so what the
+ * user signs is what gets sent.
  */
 export const prepareOperation = Effect.fn("OwnerOperations.prepare")(
-  function*(passkey: OwnerPasskey, calls: ReadonlyArray<Call>) {
+  function*(passkey: OwnerPasskey, calls: ReadonlyArray<Call>, minCallGas?: bigint) {
     const namera = yield* Namera
     const account = yield* namera.kernelAccount(yield* owner(passkey)).pipe(Effect.catch(unavailable))
     const bundler = namera.bundlerClient(account)
     const prepared = yield* Effect.tryPromise(() => bundler.prepareUserOperation({ account, calls: [...calls] })).pipe(
       Effect.catch(unavailable)
     )
-    const userOperation = { ...prepared, signature: "0x" } as UserOperation<"0.7">
+    const userOperation = {
+      ...prepared,
+      // Some calls are estimated short (Anvil undercounts swaps through B20 stock tokens): a floor keeps them whole.
+      callGasLimit: minCallGas !== undefined && prepared.callGasLimit < minCallGas ? minCallGas : prepared.callGasLimit,
+      signature: "0x"
+    } as UserOperation<"0.7">
     const hash = getUserOperationHash({
       userOperation,
       entryPointAddress: account.entryPoint.address,
@@ -108,12 +114,12 @@ export const sendOperation = Effect.fn("OwnerOperations.send")(function*(
   }).pipe(Effect.catch(unavailable))
 })
 
-/** Waits for the operation to land: its transaction and whether its calls succeeded. */
+/** Waits for the operation to land: its transaction, whether its calls succeeded, and the logs they emitted. */
 export const waitForOperation = Effect.fn("OwnerOperations.wait")(function*(passkey: OwnerPasskey, hash: Hex) {
   const namera = yield* Namera
   const account = yield* namera.kernelAccount(yield* owner(passkey)).pipe(Effect.catch(unavailable))
   const receipt = yield* Effect.tryPromise(() =>
     namera.bundlerClient(account).waitForUserOperationReceipt({ hash, timeout: 120_000 })
   ).pipe(Effect.catch(unavailable))
-  return { success: receipt.success, txHash: receipt.receipt.transactionHash }
+  return { success: receipt.success, txHash: receipt.receipt.transactionHash, logs: receipt.logs }
 })

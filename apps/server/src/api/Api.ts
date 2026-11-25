@@ -4,6 +4,7 @@ import * as HttpApiScalar from "effect/http-api/HttpApiScalar"
 import * as Layer from "effect/Layer"
 import { AuthenticationLive } from "../auth/Authentication.ts"
 import { AccountHandlers } from "./Account.ts"
+import { ActivityHandlers } from "./Activity.ts"
 import { AuthHandlers } from "./Auth.ts"
 import { ContractCheckLive, DefectReportingLive } from "./Contract.ts"
 import { DevHandlers } from "./Dev.ts"
@@ -11,6 +12,7 @@ import { EventsHandlers } from "./Events.ts"
 import { MarketHandlers } from "./Market.ts"
 import { PortfolioHandlers } from "./Portfolio.ts"
 import { SystemHandlers } from "./System.ts"
+import { TradesHandlers } from "./Trades.ts"
 import { TransfersHandlers } from "./Transfers.ts"
 
 /** Every group's handlers with the contract middleware; tests serve these in memory. */
@@ -22,6 +24,8 @@ export const ApiHandlers = Layer.mergeAll(
   MarketHandlers,
   PortfolioHandlers,
   TransfersHandlers,
+  TradesHandlers,
+  ActivityHandlers,
   DevHandlers
 )
   .pipe(
