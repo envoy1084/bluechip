@@ -1,3 +1,4 @@
+import { Logo } from "@bluechip/ui/bluechip/logo"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { SweepProvider } from "@bluechip/ui/motion/sweep"
 import { createRootRoute, Link, Outlet } from "@tanstack/react-router"
@@ -22,7 +23,10 @@ function KitLayout() {
   return (
     <div className="grid min-h-dvh md:grid-cols-[232px_minmax(0,1fr)]">
       <aside className="sticky top-0 hidden h-dvh flex-col gap-4 border-r border-ink/5 bg-g-50 px-3 py-5 md:flex">
-        <span className="px-2 text-title-3 font-semibold">bluechip kit</span>
+        <span className="flex items-center justify-between px-2">
+          <Logo />
+          <span className="rounded-full bg-g-100 px-[7px] py-0.5 text-[11.5px] font-semibold text-g-500">Kit</span>
+        </span>
         <nav className="grid gap-px" aria-label="Kit sections">
           {SECTIONS.map((s) => (
             <Link
