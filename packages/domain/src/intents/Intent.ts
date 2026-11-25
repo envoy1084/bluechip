@@ -163,15 +163,6 @@ export type IntentEvent =
   | { readonly _tag: "Expired" }
   | { readonly _tag: "Cancelled" }
 
-const DECIDED: Readonly<Record<Decision["_tag"], IntentStatus>> = {
-  Passes: "sending",
-  OverLargestTrade: "needsApproval",
-  Refused: "blocked",
-  Wait: "waiting"
-}
-
-const ENDED = ["filled", "failed", "blocked", "declined", "expired", "cancelled"] as const
-
 /**
  * Whether nothing will happen to it any more.
  *
@@ -179,7 +170,8 @@ const ENDED = ["filled", "failed", "blocked", "declined", "expired", "cancelled"
  * @category predicates
  * @since 0.0.0
  */
-export const isEnded = (status: IntentStatus): boolean => (ENDED as ReadonlyArray<IntentStatus>).includes(status)
+export const isEnded = (status: IntentStatus): boolean =>
+  (["filled", "failed", "blocked", "declined", "expired", "cancelled"] as ReadonlyArray<IntentStatus>).includes(status)
 
 const step = (status: IntentStatus, from: ReadonlyArray<IntentStatus>, to: IntentStatus, what: string) =>
   from.includes(status) ? Result.succeed(to) : Result.fail(`a ${status} intent can't ${what}`)
@@ -205,8 +197,15 @@ export const transition = (status: IntentStatus, event: IntentEvent): Result.Res
   switch (event._tag) {
     case "Decide":
       return step(status, ["proposed", "waiting"], "deciding", "be decided")
-    case "Decided":
-      return step(status, ["deciding"], DECIDED[event.decision._tag], "take a decision")
+    case "Decided": {
+      const decided: Readonly<Record<Decision["_tag"], IntentStatus>> = {
+        Passes: "sending",
+        OverLargestTrade: "needsApproval",
+        Refused: "blocked",
+        Wait: "waiting"
+      }
+      return step(status, ["deciding"], decided[event.decision._tag], "take a decision")
+    }
     case "Prepared":
       return step(status, ["proposed", "needsApproval"], "awaitingSignature", "wait for a signature")
     case "Signed":

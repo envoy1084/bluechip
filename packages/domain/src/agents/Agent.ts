@@ -59,13 +59,6 @@ export const AgentAction = Schema.Literals(["lock", "update", "renew", "remove"]
  */
 export type AgentAction = typeof AgentAction.Type
 
-const SENDS_FROM: Readonly<Record<AgentAction, { readonly from: AgentStatus; readonly to: AgentStatus }>> = {
-  lock: { from: "draft", to: "locking" },
-  update: { from: "active", to: "updating" },
-  renew: { from: "active", to: "updating" },
-  remove: { from: "active", to: "removing" }
-}
-
 /**
  * The next status after `event`, or why it can't happen. One operation at a time: a lock only from a draft, a change,
  * renewal or removal only while active; a failed operation leaves the session as it was, and a removed agent never changes.
@@ -87,7 +80,13 @@ const SENDS_FROM: Readonly<Record<AgentAction, { readonly from: AgentStatus; rea
 export const transition = (status: AgentStatus, event: AgentEvent): Result.Result<AgentStatus, string> => {
   switch (event._tag) {
     case "Sent": {
-      const step = SENDS_FROM[event.action]
+      const sends: Readonly<Record<AgentAction, { readonly from: AgentStatus; readonly to: AgentStatus }>> = {
+        lock: { from: "draft", to: "locking" },
+        update: { from: "active", to: "updating" },
+        renew: { from: "active", to: "updating" },
+        remove: { from: "active", to: "removing" }
+      }
+      const step = sends[event.action]
       return status === step.from ? Result.succeed(step.to) : Result.fail(`a ${status} agent can't ${event.action}`)
     }
     case "Landed":

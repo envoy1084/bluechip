@@ -56,17 +56,6 @@ export type TradeConfig = typeof TradeConfig.Type
  */
 export const DAY_SECONDS = 24 * 60 * 60
 
-// A rebalance or a sale only ever narrows "both"; any other change of direction lets the agent do something new.
-const compareDirections = (before: Direction, after: Direction): Policy.Change => {
-  if (before === after) return "same"
-  return before === "both" ? "tighter" : "looser"
-}
-
-const compareStocks = (before: ReadonlyArray<StockSymbol>, after: ReadonlyArray<StockSymbol>): Policy.Change => {
-  if (after.some((symbol) => !before.includes(symbol))) return "looser"
-  return before.some((symbol) => !after.includes(symbol)) ? "tighter" : "same"
-}
-
 /**
  * @stability unstable
  * @category policies
@@ -130,8 +119,13 @@ export const trade = Policy.make({
   },
   compare: (before, after) =>
     Policy.combine([
-      compareStocks(before.stocks, after.stocks),
-      compareDirections(before.direction, after.direction),
+      after.stocks.some((symbol) => !before.stocks.includes(symbol)) ?
+        "looser" :
+        before.stocks.some((symbol) => !after.stocks.includes(symbol)) ?
+        "tighter" :
+        "same",
+      // A rebalance or a sale only ever narrows "both"; any other change of direction lets the agent do something new.
+      before.direction === after.direction ? "same" : before.direction === "both" ? "tighter" : "looser",
       Policy.compareNumbers(before.dailyBudget, after.dailyBudget, "lower")
     ])
 })

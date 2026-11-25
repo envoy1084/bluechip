@@ -35,32 +35,11 @@ export const complete = (spec: AgentSpec): AgentSpec => {
       config: policy.defaults
     }) as PolicyEntry
   )
-  return new AgentSpec({ policies: order([...visible, ...hidden]) })
+  const policies = [...visible, ...hidden].sort((a, b) =>
+    PolicyId.literals.indexOf(a.id) - PolicyId.literals.indexOf(b.id)
+  )
+  return new AgentSpec({ policies })
 }
-
-const order = (entries: ReadonlyArray<PolicyEntry>): ReadonlyArray<PolicyEntry> =>
-  [...entries].sort((a, b) => PolicyId.literals.indexOf(a.id) - PolicyId.literals.indexOf(b.id))
-
-const rangeMessage = (field: Policy.Field, min: number, max: number): string => {
-  switch (field.unit) {
-    case "usd":
-      return `Pick ${formatDollars(min)} to ${formatDollars(max)}.`
-    case "bps":
-      return `Pick ${formatPercent(min)} to ${formatPercent(max)}.`
-    default:
-      return `Pick ${min} to ${max}.`
-  }
-}
-
-const rangeProblems = (policy: Policy.PolicyType<PolicyId, Schema.Top>, config: unknown) =>
-  Object.entries(policy.fields as Record<string, Policy.Field>).flatMap(([name, field]) => {
-    const value = (config as Record<string, unknown>)[name]
-    if (field.min === undefined || field.max === undefined) return []
-    if (typeof value !== "number" && typeof value !== "bigint") return []
-    return value < field.min || value > field.max
-      ? [{ field: name, message: rangeMessage(field, field.min, field.max) }]
-      : []
-  })
 
 /**
  * Every reason `spec` can't be locked; empty when it can. Hidden policies are checked after `complete`.
@@ -105,7 +84,19 @@ export const checkSpec = (spec: AgentSpec): ReadonlyArray<PolicyProblem> => {
         problem(entry.id, null, `Can't be added with ${policyOf(conflict as PolicyId).title.toLowerCase()}.`)
       }
     }
-    for (const found of [...rangeProblems(policy, entry.config), ...policy.validate(entry.config, policies)]) {
+    for (const [name, field] of Object.entries(policy.fields as Record<string, Policy.Field>)) {
+      const value = (entry.config as Record<string, unknown>)[name]
+      if (field.min === undefined || field.max === undefined) continue
+      if (typeof value !== "number" && typeof value !== "bigint") continue
+      if (value >= field.min && value <= field.max) continue
+      const range = field.unit === "usd" ?
+        `${formatDollars(field.min)} to ${formatDollars(field.max)}` :
+        field.unit === "bps" ?
+        `${formatPercent(field.min)} to ${formatPercent(field.max)}` :
+        `${field.min} to ${field.max}`
+      problem(entry.id, name, `Pick ${range}.`)
+    }
+    for (const found of policy.validate(entry.config, policies)) {
       problem(entry.id, found.field, found.message)
     }
   }

@@ -116,10 +116,6 @@ const targetProblems = (config: RebalanceConfig, policies: Policy.Entries): Read
   return cash < reserve ? [`Cash's target can't be under the cash reserve (${formatPercent(reserve)}).`] : []
 }
 
-const sameTargets = (before: ReadonlyArray<Target>, after: ReadonlyArray<Target>): boolean =>
-  before.length === after.length &&
-  before.every((target) => after.some((other) => other.asset === target.asset && other.weight === target.weight))
-
 /**
  * @stability unstable
  * @category policies
@@ -164,7 +160,12 @@ export const rebalance = Policy.make({
   compare: (before, after) =>
     Policy.combine([
       // A new mix lets the agent trade toward weights you haven't agreed to yet.
-      sameTargets(before.targets, after.targets) ? "same" : "looser",
+      before.targets.length === after.targets.length &&
+        before.targets.every((target) =>
+          after.targets.some((other) => other.asset === target.asset && other.weight === target.weight)
+        ) ?
+        "same" :
+        "looser",
       Policy.compareNumbers(before.triggerBps, after.triggerBps, "higher")
     ])
 })

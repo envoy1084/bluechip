@@ -36,14 +36,6 @@ export const describeLeg = (leg: Leg, name: (symbol: StockSymbol) => string): st
   return `${verb} ${shareFormat.format(shares)} ${shares === 1 ? "share" : "shares"} of ${name(leg.symbol)}`
 }
 
-const WAITING: Readonly<Record<WaitReason, string>> = {
-  pricesPaused: "prices are paused and this agent doesn't trade on them",
-  pricesStale: "Chainlink's price is too old to trade on",
-  noGas: "your account needs a little ETH for gas",
-  dayEnding: "the UTC day is about to end",
-  unavailable: "Base isn't answering"
-}
-
 /**
  * What the pipeline decided, as a sentence.
  *
@@ -59,7 +51,15 @@ export const describeDecision = (decision: Decision): string => {
       return `Over the agent's largest trade (${formatDollars(decision.maxPerTrade)}): it needs your Face ID.`
     case "Refused":
       return `Blocked by ${policyOf(decision.policy).title}: ${decision.message}`
-    case "Wait":
-      return `Waiting: ${WAITING[decision.reason]}.`
+    case "Wait": {
+      const reasons: Readonly<Record<WaitReason, string>> = {
+        pricesPaused: "prices are paused and this agent doesn't trade on them",
+        pricesStale: "Chainlink's price is too old to trade on",
+        noGas: "your account needs a little ETH for gas",
+        dayEnding: "the UTC day is about to end",
+        unavailable: "Base isn't answering"
+      }
+      return `Waiting: ${reasons[decision.reason]}.`
+    }
   }
 }
