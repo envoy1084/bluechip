@@ -1,9 +1,6 @@
 import type { MarketSession, MarketStatus } from "@bluechip/domain/market/Market"
 import type { MarketStatusProps } from "@bluechip/ui/bluechip/market-status"
-import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
-import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { marketStatusAtom } from "../atoms/market.ts"
 
 /** How each session outside regular hours is named. */
 export const SESSION_LABEL: Readonly<Record<Exclude<MarketSession, "regular" | "paused">, string>> = {
@@ -25,10 +22,4 @@ export const marketPillProps = (status: MarketStatus): MarketStatusProps => {
     default:
       return { state: "extended", session: SESSION_LABEL[status.session], opensAt: DateTime.toDateUtc(status.opensAt) }
   }
-}
-
-/** The market's session, once known. */
-export const useMarketStatus = (): MarketStatus | undefined => {
-  const status = useAtomValue(marketStatusAtom)
-  return AsyncResult.isSuccess(status) ? status.value : undefined
 }

@@ -1,7 +1,7 @@
 import { formatMarketTime } from "@bluechip/ui/lib/format"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import * as DateTime from "effect/DateTime"
-import { useMarketStatus } from "../../../../market/marketState.ts"
+import { useMarketStatus } from "../hooks/useMarketStatus.ts"
 
 /**
  * While prices are paused (weekends, holidays): night clouds, when they move again, and that the tokens still trade,

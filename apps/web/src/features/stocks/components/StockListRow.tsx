@@ -5,10 +5,10 @@ import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { bpsPercent, priceDollars } from "../../../../lib/amounts.ts"
-import { dayHistoryAtom } from "../../../../market/historyAtoms.ts"
-import { ReferenceGap } from "../../../../market/ReferenceGap.tsx"
-import { SessionNote } from "../../../../market/SessionNote.tsx"
+import { bpsPercent, priceDollars } from "../../../lib/amounts.ts"
+import { dayHistoryAtom } from "../atoms/history.ts"
+import { ReferenceGap } from "./ReferenceGap.tsx"
+import { SessionNote } from "./SessionNote.tsx"
 
 /** The stock's past day as a sparkline; an empty slot of the same size until it loads or when there is too little. */
 function DaySparkline({ stock }: Readonly<{ stock: Stock }>) {

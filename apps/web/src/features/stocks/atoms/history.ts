@@ -1,6 +1,6 @@
 import type { HistoryRange, StockSymbol } from "@bluechip/domain/market/Market"
 import * as Atom from "effect/reactivity/Atom"
-import { historyAtom } from "../atoms/market.ts"
+import { BluechipApiClient, liveReactivityKey } from "../../../lib/api/client.ts"
 
 export const HISTORY_RANGES: ReadonlyArray<
   { readonly id: HistoryRange; readonly label: string; readonly description: string }
@@ -10,6 +10,15 @@ export const HISTORY_RANGES: ReadonlyArray<
   { id: "1M", label: "1M", description: "Past month" },
   { id: "ALL", label: "All", description: "All time" }
 ]
+
+/** A stock's price history over a range. */
+const historyAtom = (symbol: StockSymbol, range: HistoryRange) =>
+  BluechipApiClient.query("market", "history", {
+    params: { symbol },
+    query: { range },
+    reactivityKeys: [liveReactivityKey],
+    timeToLive: "5 minutes"
+  })
 
 // `historyAtom` builds a new atom per call, so each stock's ranges are made once and reused across renders: the list's
 // sparklines and the stock page's chart then share one request per range.

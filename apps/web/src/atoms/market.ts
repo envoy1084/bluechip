@@ -1,4 +1,4 @@
-import { type HistoryRange, type MarketPrice, Stock, type StockSymbol } from "@bluechip/domain/market/Market"
+import { type MarketPrice, Stock } from "@bluechip/domain/market/Market"
 import { bpsBetween } from "@bluechip/domain/market/Units"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -30,20 +30,3 @@ export const stocksAtom = Atom.make((get) =>
     })
   })
 )
-
-/** One stock from {@link stocksAtom}. */
-export const stockAtom = Atom.family((symbol: StockSymbol) =>
-  Atom.make((get) => AsyncResult.map(get(stocksAtom), (stocks) => stocks.find((stock) => stock.symbol === symbol)))
-)
-
-/** A stock's price history over a range. */
-export const historyAtom = (symbol: StockSymbol, range: HistoryRange) =>
-  BluechipApiClient.query("market", "history", {
-    params: { symbol },
-    query: { range },
-    reactivityKeys: [liveReactivityKey],
-    timeToLive: "5 minutes"
-  })
-
-/** Asks for a quote; each call replaces the last. */
-export const quoteAtom = BluechipApiClient.mutation("market", "quote")

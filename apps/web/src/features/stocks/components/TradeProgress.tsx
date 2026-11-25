@@ -2,7 +2,7 @@ import type { Trade } from "@bluechip/domain/trading/Trade"
 import { TransactionStatus } from "@bluechip/ui/bluechip/transaction-status"
 import { Button } from "@bluechip/ui/components/button"
 import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
-import { shareCount, usdcDollars } from "../../../../lib/amounts.ts"
+import { shareCount, usdcDollars } from "../../../lib/amounts.ts"
 
 /** Where a sent trade is, then what it did, with the way to the next one. */
 export function TradeProgress(

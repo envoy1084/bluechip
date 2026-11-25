@@ -3,7 +3,8 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { formatTime, MARKET_TIME_ZONE } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import * as Duration from "effect/Duration"
-import { SESSION_LABEL, useMarketStatus } from "./marketState.ts"
+import { SESSION_LABEL } from "../../../lib/marketSession.ts"
+import { useMarketStatus } from "../hooks/useMarketStatus.ts"
 
 // Alpaca's free feed is IEX only: thin after hours and silent overnight, so an old last trade is said as such.
 const QUIET = Duration.minutes(30)

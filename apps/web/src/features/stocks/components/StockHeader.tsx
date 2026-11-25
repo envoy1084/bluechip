@@ -5,9 +5,9 @@ import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney, formatRelative } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
-import { bpsPercent, priceDollars } from "../../../../lib/amounts.ts"
-import { referenceGap } from "../../../../market/ReferenceGap.tsx"
-import { SessionNote } from "../../../../market/SessionNote.tsx"
+import { bpsPercent, priceDollars } from "../../../lib/amounts.ts"
+import { referenceGap } from "./ReferenceGap.tsx"
+import { SessionNote } from "./SessionNote.tsx"
 
 const REFERENCE_PILL: Readonly<Record<PriceStatus, { label: string; icon: IconName; className: string }>> = {
   live: {

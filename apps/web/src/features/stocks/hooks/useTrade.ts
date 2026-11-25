@@ -4,9 +4,9 @@ import type { Shares, Usdc } from "@bluechip/domain/market/Units"
 import type { Trade } from "@bluechip/domain/trading/Trade"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { useState } from "react"
+import { liveTradesAtom } from "../../../lib/api/events.ts"
+import { tradeProblem } from "../../../lib/tradeProblem.ts"
 import { confirmTradeAtom, prepareTradeAtom } from "../atoms/trading.ts"
-import { liveTradesAtom } from "../lib/api/events.ts"
-import { tradeProblem } from "../lib/tradeProblem.ts"
 
 export type TradeFlow =
   | { readonly status: "idle" }

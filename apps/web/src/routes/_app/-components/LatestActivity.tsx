@@ -5,8 +5,8 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useMemo } from "react"
 import { ActivityLine } from "../../../activity/ActivityLine.tsx"
+import { activityAtom } from "../../../atoms/activity.ts"
 import { stocksAtom } from "../../../atoms/market.ts"
-import { activityAtom } from "../../../atoms/trading.ts"
 
 /** The three latest trades or withdrawals, with the way to the rest. Nothing shows before the first one. */
 export function LatestActivity() {
