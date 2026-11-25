@@ -10,27 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as KitRouteRouteImport } from './routes/kit/route'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
-import { Route as KitIndexRouteImport } from './routes/kit/index'
-import { Route as KitAgentsRouteImport } from './routes/kit/agents'
-import { Route as KitBluechipRouteImport } from './routes/kit/bluechip'
-import { Route as KitDisplayRouteImport } from './routes/kit/display'
-import { Route as KitFormsRouteImport } from './routes/kit/forms'
-import { Route as KitFoundationsRouteImport } from './routes/kit/foundations'
-import { Route as KitIllustrationsRouteImport } from './routes/kit/illustrations'
-import { Route as KitMotionRouteImport } from './routes/kit/motion'
-import { Route as KitNavigationRouteImport } from './routes/kit/navigation'
-import { Route as KitOverlaysRouteImport } from './routes/kit/overlays'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KitRouteRoute = KitRouteRouteImport.update({
-  id: '/kit',
-  path: '/kit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevConnectionRoute = DevConnectionRouteImport.update({
@@ -38,152 +22,30 @@ const DevConnectionRoute = DevConnectionRouteImport.update({
   path: '/dev/connection',
   getParentRoute: () => rootRouteImport,
 } as any)
-const KitIndexRoute = KitIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitAgentsRoute = KitAgentsRouteImport.update({
-  id: '/agents',
-  path: '/agents',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitBluechipRoute = KitBluechipRouteImport.update({
-  id: '/bluechip',
-  path: '/bluechip',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitDisplayRoute = KitDisplayRouteImport.update({
-  id: '/display',
-  path: '/display',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitFormsRoute = KitFormsRouteImport.update({
-  id: '/forms',
-  path: '/forms',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitFoundationsRoute = KitFoundationsRouteImport.update({
-  id: '/foundations',
-  path: '/foundations',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitIllustrationsRoute = KitIllustrationsRouteImport.update({
-  id: '/illustrations',
-  path: '/illustrations',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitMotionRoute = KitMotionRouteImport.update({
-  id: '/motion',
-  path: '/motion',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitNavigationRoute = KitNavigationRouteImport.update({
-  id: '/navigation',
-  path: '/navigation',
-  getParentRoute: () => KitRouteRoute,
-} as any)
-const KitOverlaysRoute = KitOverlaysRouteImport.update({
-  id: '/overlays',
-  path: '/overlays',
-  getParentRoute: () => KitRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/kit': typeof KitRouteRouteWithChildren
   '/dev/connection': typeof DevConnectionRoute
-  '/kit/agents': typeof KitAgentsRoute
-  '/kit/bluechip': typeof KitBluechipRoute
-  '/kit/display': typeof KitDisplayRoute
-  '/kit/forms': typeof KitFormsRoute
-  '/kit/foundations': typeof KitFoundationsRoute
-  '/kit/illustrations': typeof KitIllustrationsRoute
-  '/kit/motion': typeof KitMotionRoute
-  '/kit/navigation': typeof KitNavigationRoute
-  '/kit/overlays': typeof KitOverlaysRoute
-  '/kit/': typeof KitIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dev/connection': typeof DevConnectionRoute
-  '/kit/agents': typeof KitAgentsRoute
-  '/kit/bluechip': typeof KitBluechipRoute
-  '/kit/display': typeof KitDisplayRoute
-  '/kit/forms': typeof KitFormsRoute
-  '/kit/foundations': typeof KitFoundationsRoute
-  '/kit/illustrations': typeof KitIllustrationsRoute
-  '/kit/motion': typeof KitMotionRoute
-  '/kit/navigation': typeof KitNavigationRoute
-  '/kit/overlays': typeof KitOverlaysRoute
-  '/kit': typeof KitIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/kit': typeof KitRouteRouteWithChildren
   '/dev/connection': typeof DevConnectionRoute
-  '/kit/agents': typeof KitAgentsRoute
-  '/kit/bluechip': typeof KitBluechipRoute
-  '/kit/display': typeof KitDisplayRoute
-  '/kit/forms': typeof KitFormsRoute
-  '/kit/foundations': typeof KitFoundationsRoute
-  '/kit/illustrations': typeof KitIllustrationsRoute
-  '/kit/motion': typeof KitMotionRoute
-  '/kit/navigation': typeof KitNavigationRoute
-  '/kit/overlays': typeof KitOverlaysRoute
-  '/kit/': typeof KitIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/kit'
-    | '/dev/connection'
-    | '/kit/agents'
-    | '/kit/bluechip'
-    | '/kit/display'
-    | '/kit/forms'
-    | '/kit/foundations'
-    | '/kit/illustrations'
-    | '/kit/motion'
-    | '/kit/navigation'
-    | '/kit/overlays'
-    | '/kit/'
+  fullPaths: '/' | '/dev/connection'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/dev/connection'
-    | '/kit/agents'
-    | '/kit/bluechip'
-    | '/kit/display'
-    | '/kit/forms'
-    | '/kit/foundations'
-    | '/kit/illustrations'
-    | '/kit/motion'
-    | '/kit/navigation'
-    | '/kit/overlays'
-    | '/kit'
-  id:
-    | '__root__'
-    | '/'
-    | '/kit'
-    | '/dev/connection'
-    | '/kit/agents'
-    | '/kit/bluechip'
-    | '/kit/display'
-    | '/kit/forms'
-    | '/kit/foundations'
-    | '/kit/illustrations'
-    | '/kit/motion'
-    | '/kit/navigation'
-    | '/kit/overlays'
-    | '/kit/'
+  to: '/' | '/dev/connection'
+  id: '__root__' | '/' | '/dev/connection'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  KitRouteRoute: typeof KitRouteRouteWithChildren
   DevConnectionRoute: typeof DevConnectionRoute
 }
 
@@ -196,13 +58,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/kit': {
-      id: '/kit'
-      path: '/kit'
-      fullPath: '/kit'
-      preLoaderRoute: typeof KitRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dev/connection': {
       id: '/dev/connection'
       path: '/dev/connection'
@@ -210,112 +65,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevConnectionRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/kit/': {
-      id: '/kit/'
-      path: '/'
-      fullPath: '/kit/'
-      preLoaderRoute: typeof KitIndexRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/agents': {
-      id: '/kit/agents'
-      path: '/agents'
-      fullPath: '/kit/agents'
-      preLoaderRoute: typeof KitAgentsRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/bluechip': {
-      id: '/kit/bluechip'
-      path: '/bluechip'
-      fullPath: '/kit/bluechip'
-      preLoaderRoute: typeof KitBluechipRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/display': {
-      id: '/kit/display'
-      path: '/display'
-      fullPath: '/kit/display'
-      preLoaderRoute: typeof KitDisplayRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/forms': {
-      id: '/kit/forms'
-      path: '/forms'
-      fullPath: '/kit/forms'
-      preLoaderRoute: typeof KitFormsRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/foundations': {
-      id: '/kit/foundations'
-      path: '/foundations'
-      fullPath: '/kit/foundations'
-      preLoaderRoute: typeof KitFoundationsRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/illustrations': {
-      id: '/kit/illustrations'
-      path: '/illustrations'
-      fullPath: '/kit/illustrations'
-      preLoaderRoute: typeof KitIllustrationsRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/motion': {
-      id: '/kit/motion'
-      path: '/motion'
-      fullPath: '/kit/motion'
-      preLoaderRoute: typeof KitMotionRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/navigation': {
-      id: '/kit/navigation'
-      path: '/navigation'
-      fullPath: '/kit/navigation'
-      preLoaderRoute: typeof KitNavigationRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
-    '/kit/overlays': {
-      id: '/kit/overlays'
-      path: '/overlays'
-      fullPath: '/kit/overlays'
-      preLoaderRoute: typeof KitOverlaysRouteImport
-      parentRoute: typeof KitRouteRoute
-    }
   }
 }
 
-interface KitRouteRouteChildren {
-  KitAgentsRoute: typeof KitAgentsRoute
-  KitBluechipRoute: typeof KitBluechipRoute
-  KitDisplayRoute: typeof KitDisplayRoute
-  KitFormsRoute: typeof KitFormsRoute
-  KitFoundationsRoute: typeof KitFoundationsRoute
-  KitIllustrationsRoute: typeof KitIllustrationsRoute
-  KitMotionRoute: typeof KitMotionRoute
-  KitNavigationRoute: typeof KitNavigationRoute
-  KitOverlaysRoute: typeof KitOverlaysRoute
-  KitIndexRoute: typeof KitIndexRoute
-}
-
-const KitRouteRouteChildren: KitRouteRouteChildren = {
-  KitAgentsRoute: KitAgentsRoute,
-  KitBluechipRoute: KitBluechipRoute,
-  KitDisplayRoute: KitDisplayRoute,
-  KitFormsRoute: KitFormsRoute,
-  KitFoundationsRoute: KitFoundationsRoute,
-  KitIllustrationsRoute: KitIllustrationsRoute,
-  KitMotionRoute: KitMotionRoute,
-  KitNavigationRoute: KitNavigationRoute,
-  KitOverlaysRoute: KitOverlaysRoute,
-  KitIndexRoute: KitIndexRoute,
-}
-
-const KitRouteRouteWithChildren = KitRouteRoute._addFileChildren(
-  KitRouteRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  KitRouteRoute: KitRouteRouteWithChildren,
   DevConnectionRoute: DevConnectionRoute,
 }
 export const routeTree = rootRouteImport

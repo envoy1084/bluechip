@@ -6,7 +6,7 @@ import {
 } from "@bluechip/ui/illustrations/illustration"
 import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/kit/illustrations")({ component: KitIllustrations })
+export const Route = createFileRoute("/illustrations")({ component: KitIllustrations })
 
 const SIZES: ReadonlyArray<readonly [number, string]> = [
   [24, "Inline with text, list rows, toasts"],

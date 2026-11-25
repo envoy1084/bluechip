@@ -7,7 +7,7 @@ kit artifact (`research/brand/brand-kit.html` with `research/brand/kit/**`, run 
 ## Rules
 
 - **Presentational only.** Components take props and callbacks. No data fetching, no Effect services, no wagmi,
-  no global state. Demo data lives in `apps/web/src/routes/kit/*`.
+  no global state. Demo data lives in `apps/uikit/src/routes/*`.
 - **One component per file**, kebab-case, shadcn names (`dropdown-menu.tsx`). Compound parts are named exports of
   the same file (`Dialog`, `DialogTrigger`, `DialogContent`, …), like shadcn. No barrel files.
 - **Primitives from Base UI** (`@base-ui/react/<part>`) for anything with behaviour (focus, keyboard, overlays,
@@ -58,6 +58,6 @@ paths, focus management, open/close, value changes, formatting and any logic. No
 
 ## Kit pages
 
-Each area has a page in `apps/web/src/routes/kit/<section>.tsx` showing every component with all variants and
-states, mirroring the artifact. Check it with the dev server (`pnpm --filter @bluechip/web dev`) and a headless
+Each area has a page in `apps/uikit/src/routes/<section>.tsx` showing every component with all variants and
+states, mirroring the artifact. Check it with the kit's dev server (`pnpm --filter @bluechip/uikit dev`) and a headless
 screenshot.

@@ -53,7 +53,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useId, useState } from "react"
 
-export const Route = createFileRoute("/kit/forms")({ component: KitForms })
+export const Route = createFileRoute("/forms")({ component: KitForms })
 
 /* ---------- Example data from bluechip's world ---------- */
 

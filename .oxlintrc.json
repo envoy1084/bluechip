@@ -73,7 +73,8 @@
     {
       "files": [
         "packages/ui/**/*.tsx",
-        "apps/web/**/*.tsx"
+        "apps/web/**/*.tsx",
+        "apps/uikit/**/*.tsx"
       ],
       "plugins": [
         "react",

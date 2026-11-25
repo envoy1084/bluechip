@@ -22,7 +22,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useEffect, useId, useRef, useState } from "react"
 
-export const Route = createFileRoute("/kit/agents")({ component: KitAgents })
+export const Route = createFileRoute("/agents")({ component: KitAgents })
 
 /* ---------- Example data ---------- */
 

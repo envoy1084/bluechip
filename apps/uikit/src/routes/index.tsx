@@ -2,7 +2,7 @@ import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/kit/")({ component: KitOverview })
+export const Route = createFileRoute("/")({ component: KitOverview })
 
 function KitOverview() {
   return (

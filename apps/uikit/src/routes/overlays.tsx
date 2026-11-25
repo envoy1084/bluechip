@@ -110,7 +110,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useEffect, useState } from "react"
 
 // `?open=<id>` opens one overlay on load, so a headless screenshot can show it.
-export const Route = createFileRoute("/kit/overlays")({
+export const Route = createFileRoute("/overlays")({
   component: KitOverlays,
   validateSearch: (search: Record<string, unknown>): { readonly open?: string } =>
     typeof search.open === "string" ? { open: search.open } : {}

@@ -4,7 +4,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useId } from "react"
 
-export const Route = createFileRoute("/kit/foundations")({ component: KitFoundations })
+export const Route = createFileRoute("/foundations")({ component: KitFoundations })
 
 /* ---------- Tokens, as they are named in theme.css ---------- */
 

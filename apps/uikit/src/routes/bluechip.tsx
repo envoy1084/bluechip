@@ -38,7 +38,7 @@ import { formatDate, formatMoney } from "@bluechip/ui/lib/format"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useId, useRef, useState } from "react"
 
-export const Route = createFileRoute("/kit/bluechip")({ component: KitBluechip })
+export const Route = createFileRoute("/bluechip")({ component: KitBluechip })
 
 /* ---------- The example market every demo on this page shares. All numbers are examples. ---------- */
 

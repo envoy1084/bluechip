@@ -69,7 +69,7 @@ import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useState } from "react"
 
-export const Route = createFileRoute("/kit/navigation")({ component: KitNavigation })
+export const Route = createFileRoute("/navigation")({ component: KitNavigation })
 
 const AGENTS: ReadonlyArray<
   { readonly id: string; readonly name: string; readonly icon: IconName; readonly say: string }

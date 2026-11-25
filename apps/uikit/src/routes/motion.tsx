@@ -18,7 +18,7 @@ import { MomentScope, useMoment } from "@bluechip/ui/motion/sweep"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react"
 
-export const Route = createFileRoute("/kit/motion")({ component: KitMotion })
+export const Route = createFileRoute("/motion")({ component: KitMotion })
 
 interface Entry {
   readonly n: number

@@ -43,7 +43,7 @@ import { Halftone } from "@bluechip/ui/motion/halftone"
 import { createFileRoute } from "@tanstack/react-router"
 import { type ReactNode, useId, useMemo, useState } from "react"
 
-export const Route = createFileRoute("/kit/display")({ component: KitDisplay })
+export const Route = createFileRoute("/display")({ component: KitDisplay })
 
 /* ---------- Example data from bluechip's world ---------- */
 

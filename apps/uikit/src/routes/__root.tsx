@@ -1,23 +1,23 @@
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { SweepProvider } from "@bluechip/ui/motion/sweep"
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router"
+import { createRootRoute, Link, Outlet } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/kit")({ component: KitLayout })
+export const Route = createRootRoute({ component: KitLayout })
 
 const SECTIONS: ReadonlyArray<{ readonly to: string; readonly label: string; readonly icon: IconName }> = [
-  { to: "/kit", label: "Overview", icon: "home" },
-  { to: "/kit/foundations", label: "Foundations", icon: "palette" },
-  { to: "/kit/forms", label: "Inputs & forms", icon: "edit" },
-  { to: "/kit/display", label: "Data display", icon: "grid" },
-  { to: "/kit/overlays", label: "Overlays", icon: "layers" },
-  { to: "/kit/navigation", label: "Navigation", icon: "menu" },
-  { to: "/kit/bluechip", label: "Money & activity", icon: "wallet" },
-  { to: "/kit/agents", label: "Agents & chat", icon: "agent" },
-  { to: "/kit/motion", label: "Motion", icon: "play" },
-  { to: "/kit/illustrations", label: "Illustrations", icon: "image" }
+  { to: "/", label: "Overview", icon: "home" },
+  { to: "/foundations", label: "Foundations", icon: "palette" },
+  { to: "/forms", label: "Inputs & forms", icon: "edit" },
+  { to: "/display", label: "Data display", icon: "grid" },
+  { to: "/overlays", label: "Overlays", icon: "layers" },
+  { to: "/navigation", label: "Navigation", icon: "menu" },
+  { to: "/bluechip", label: "Money & activity", icon: "wallet" },
+  { to: "/agents", label: "Agents & chat", icon: "agent" },
+  { to: "/motion", label: "Motion", icon: "play" },
+  { to: "/illustrations", label: "Illustrations", icon: "image" }
 ]
 
-// Dev-only showcase of @bluechip/ui, mirroring the brand kit artifact section by section.
+// A private showcase of @bluechip/ui, mirroring the brand kit artifact section by section.
 function KitLayout() {
   return (
     <div className="grid min-h-dvh md:grid-cols-[232px_minmax(0,1fr)]">
