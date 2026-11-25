@@ -50,8 +50,10 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
           ? Effect.andThen(setConnection("live"), Reactivity.invalidate([liveReactivityKey]))
           : setConnection("live"),
         Effect.suspend(() => {
+          // `get.once` reads without depending: a dependency would rebuild this atom (and reconnect the stream) on
+          // every write below, dropping the events that follow.
           if (event._tag === "TradeUpdated") {
-            get.set(liveTradesAtom, new Map(get(liveTradesAtom)).set(event.trade.id, event.trade))
+            get.set(liveTradesAtom, new Map(get.once(liveTradesAtom)).set(event.trade.id, event.trade))
             return Reactivity.invalidate([portfolioReactivityKey])
           }
           if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
@@ -59,7 +61,7 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
           }
           if (event._tag !== "PriceTick") return Effect.void
 
-          const prices = new Map(get(livePricesAtom))
+          const prices = new Map(get.once(livePricesAtom))
           for (const price of event.prices) prices.set(price.symbol, price)
           get.set(livePricesAtom, prices)
           return Effect.void
