@@ -15,22 +15,21 @@ import { OnboardingFrame, OnboardingTitle } from "../../shell/OnboardingFrame.ts
 export const Route = createFileRoute("/welcome/")({ ssr: false, component: Welcome })
 
 type Phase =
-  | { readonly _tag: "Start"; readonly failed: boolean }
-  | { readonly _tag: "Creating" }
+  | { readonly _tag: "Start"; readonly creating: boolean; readonly failed: boolean }
   | { readonly _tag: "Created"; readonly me: Me; readonly revealed: boolean }
 
 function Welcome() {
   const signUp = useAtomSet(signUpAtom, { mode: "promise" })
   const signIn = useAtomSet(signInAtom, { mode: "promise" })
   const navigate = useNavigate()
-  const [phase, setPhase] = useState<Phase>({ _tag: "Start", failed: false })
+  const [phase, setPhase] = useState<Phase>({ _tag: "Start", creating: false, failed: false })
   const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
-    setPhase({ _tag: "Creating" })
+    setPhase({ _tag: "Start", creating: true, failed: false })
     signUp(undefined).then(
       (me) => setPhase({ _tag: "Created", me, revealed: false }),
-      () => setPhase({ _tag: "Start", failed: true })
+      () => setPhase({ _tag: "Start", creating: false, failed: true })
     )
   }
   const existing = () => {
@@ -48,8 +47,7 @@ function Welcome() {
           <Halftone scene="logo" className="size-full" />
         </div>
         <OnboardingTitle title="Let agents invest for you, inside your limits">
-          bluechip agents trade tokenized US stocks for you. They can only do what you allow, and only your Face ID can
-          change that.
+          Agents trade tokenized US stocks for you, only within limits you set.
         </OnboardingTitle>
         {phase.failed ?
           (
@@ -60,10 +58,17 @@ function Welcome() {
           ) :
           null}
         <div className="mt-2.5 grid w-full gap-2.5">
-          <Button size="lg" className="w-full" onClick={create}>
+          <Button size="lg" className="w-full" loading={phase.creating} disabled={signingIn} onClick={create}>
             <Icon name="face-id" size={18} />Create account with Face ID
           </Button>
-          <Button size="lg" variant="secondary" className="w-full" loading={signingIn} onClick={existing}>
+          <Button
+            size="lg"
+            variant="secondary"
+            className="w-full"
+            loading={signingIn}
+            disabled={phase.creating}
+            onClick={existing}
+          >
             Sign in with Face ID
           </Button>
         </div>
@@ -77,39 +82,34 @@ function Welcome() {
     )
   }
 
-  const created = phase._tag === "Created"
   return (
     <OnboardingFrame step="Account">
-      <output className="my-2 grid w-[min(300px,100%)] justify-items-center gap-1.5 rounded-[30px] bg-white/90 px-[22px] pt-[26px] pb-6 shadow-e4">
+      <section className="grid w-full justify-items-center gap-1.5 rounded-[30px] bg-white/90 px-6 pt-7 pb-6 shadow-e4">
         <Seal
-          playing={created}
+          playing
           className="mb-1 size-[136px]"
-          label={created ? "Passkey saved" : "Waiting for Face ID"}
-          onDone={() => created && setPhase({ ...phase, revealed: true })}
+          label="Passkey saved"
+          onDone={() => setPhase({ ...phase, revealed: true })}
         />
-        <b className={cn("text-base font-semibold tracking-[-0.015em]", created && "text-gain")}>
-          {created ? "Passkey saved" : "Creating your account"}
-        </b>
-        <span className="text-label-sm text-g-500">
-          {created ? "Signed in with Face ID" : "Use Face ID to create a passkey for bluechip."}
-        </span>
-      </output>
-      {created && phase.revealed ?
-        (
-          <div className="grid w-full animate-fade-in justify-items-center gap-3">
-            <OnboardingTitle title="Your account is ready">
-              No password and no seed phrase. Only your Face ID can move money out or change an agent's limits.
-            </OnboardingTitle>
-            <div className="my-1 grid w-full justify-items-center gap-2 rounded-lg bg-white p-4 shadow-e1">
-              <span className="text-label-sm font-medium text-g-500">Your account on Base</span>
-              <AddressChip address={phase.me.account.address} />
-            </div>
-            <Button size="lg" className="w-full" onClick={() => navigate({ to: "/welcome/eligibility" })}>
-              Continue<Icon name="arrow-right" size={16} />
-            </Button>
-          </div>
-        ) :
-        null}
+        <h1 className="text-[28px] leading-[1.12] font-semibold tracking-[-0.035em] max-sm:text-2xl">
+          Your account is ready
+        </h1>
+        <p className="text-label-sm text-gain">Passkey saved with Face ID</p>
+        {/* Laid out from the start, so the card keeps its height when this fades in after the seal. */}
+        <div
+          inert={!phase.revealed}
+          className={cn(
+            "mt-4 grid w-full justify-items-center gap-2 border-t border-g-100 pt-5 transition-opacity duration-slow ease-brand",
+            !phase.revealed && "opacity-0"
+          )}
+        >
+          <span className="text-label-sm font-medium text-g-500">Your account on Base</span>
+          <AddressChip address={phase.me.account.address} />
+          <Button size="lg" className="mt-4 w-full" onClick={() => navigate({ to: "/welcome/eligibility" })}>
+            Continue<Icon name="arrow-right" size={16} />
+          </Button>
+        </div>
+      </section>
     </OnboardingFrame>
   )
 }
