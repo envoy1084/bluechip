@@ -20,3 +20,6 @@ export const liveReactivityKey = "live"
 
 /** The user's portfolio and withdrawals refetch when this key is invalidated (live `PortfolioChanged` events). */
 export const portfolioReactivityKey = "portfolio"
+
+/** The user's agents refetch when this key is invalidated (live `AgentChanged` events). */
+export const agentsReactivityKey = "agents"

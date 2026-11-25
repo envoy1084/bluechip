@@ -11,7 +11,7 @@ import * as Atom from "effect/reactivity/Atom"
 import * as Reactivity from "effect/reactivity/Reactivity"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
-import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "./client.ts"
+import { agentsReactivityKey, BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "./client.ts"
 
 /**
  * The state of the live stream, for the connection banner. `outdated` means this build must reload; `signedOut` means
@@ -56,6 +56,7 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
             get.set(liveTradesAtom, new Map(get.once(liveTradesAtom)).set(event.trade.id, event.trade))
             return Reactivity.invalidate([portfolioReactivityKey])
           }
+          if (event._tag === "AgentChanged") return Reactivity.invalidate([agentsReactivityKey])
           if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
             return Reactivity.invalidate([portfolioReactivityKey])
           }
