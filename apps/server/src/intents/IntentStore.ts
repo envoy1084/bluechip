@@ -1,7 +1,7 @@
 import { Conflict } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, IntentId, TradeId, UserId } from "@bluechip/domain/Ids"
-import { Decision, Intent, type IntentEvent, type IntentStatus, Leg, transition } from "@bluechip/domain/intents/Intent"
+import { Decision, Intent, type IntentEvent, type IntentStatus, transition } from "@bluechip/domain/intents/Intent"
 import { and, eq, inArray, lt } from "drizzle-orm"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -14,14 +14,6 @@ import { LiveEvents } from "../live/LiveEvents.ts"
 
 export type IntentRow = typeof intents.$inferSelect
 
-const LegJson = Schema.toCodecJson(Leg)
-const DecisionJson = Schema.toCodecJson(Decision)
-
-export const encodeLeg = (leg: Leg): unknown => Schema.encodeSync(LegJson)(leg)
-export const decodeLeg = (stored: unknown): Leg => Schema.decodeUnknownSync(LegJson)(stored)
-export const encodeDecision = (decision: Decision): unknown => Schema.encodeSync(DecisionJson)(decision)
-export const decodeDecision = (stored: unknown): Decision => Schema.decodeUnknownSync(DecisionJson)(stored)
-
 /** An intent as the API returns it. */
 export const toIntent = (row: IntentRow): Intent =>
   new Intent({
@@ -29,10 +21,10 @@ export const toIntent = (row: IntentRow): Intent =>
     agentId: row.agentId as AgentId | null,
     source: row.source,
     executor: row.executor,
-    leg: decodeLeg(row.leg),
+    leg: row.leg,
     reason: row.reason,
     status: row.status,
-    decision: row.decision === null ? null : decodeDecision(row.decision),
+    decision: row.decision,
     tradeId: row.tradeId as TradeId | null,
     expiresAt: row.expiresAt,
     createdAt: row.createdAt,
@@ -61,7 +53,7 @@ export const advance = Effect.fnUntraced(function*(
   const next = transition(row.status, event)
   if (Result.isFailure(next)) return yield* new Conflict({ reason: "intentClosed" })
 
-  const decision = event._tag === "Decided" ? { decision: encodeDecision(event.decision) } : {}
+  const decision = event._tag === "Decided" ? { decision: event.decision } : {}
   const [updated] = yield* db.update(intents)
     .set({ ...changes, ...decision, status: next.success, updatedAt: yield* DateTime.now })
     .where(eq(intents.id, row.id)).returning().pipe(Effect.orDie)
@@ -75,7 +67,7 @@ export const advance = Effect.fnUntraced(function*(
     action: `intent.${next.success}`,
     subjectType: "intent",
     subjectId: row.id,
-    data: event._tag === "Decided" ? { decision: encodeDecision(event.decision) } : {}
+    data: event._tag === "Decided" ? { decision: Schema.encodeSync(Schema.toCodecJson(Decision))(event.decision) } : {}
   })
   return updated!
 })

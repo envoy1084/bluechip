@@ -1,0 +1,35 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "77b3a50d-93c6-4124-8009-09cc07d7ab8e",
+  "prevIds": [
+    "d180a066-5878-413f-81c2-c6cc3e39dc13"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "session_policies",
+        "config"
+      ],
+      "writes": [
+        "s|col|public.session_policies.config",
+        "n|col|public.session_policies.config",
+        "e|col|public.session_policies.config"
+      ],
+      "reads": [
+        "n|tbl|public.session_policies",
+        "n|sch|public"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"session_policies\",\"config\"]"
+    }
+  ]
+}

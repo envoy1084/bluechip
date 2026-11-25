@@ -1,0 +1,1 @@
+ALTER TABLE "session_policies" DROP COLUMN "config";

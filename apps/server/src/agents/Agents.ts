@@ -51,7 +51,7 @@ import {
   type SigningRequestRow,
   webAuthnOptions
 } from "../signing/SigningRequests.ts"
-import { type AgentRow, decodeSpec, type SessionRow, toAgent, toSession } from "./AgentRecords.ts"
+import { type AgentRow, type SessionRow, toAgent, toSession } from "./AgentRecords.ts"
 import { newAgentKey } from "./Keys.ts"
 import { SavedTemplates } from "./SavedTemplates.ts"
 import { insertSession, saveSession, sessionRow, sessionsOf } from "./SessionRecords.ts"
@@ -71,7 +71,7 @@ const seconds = (time: DateTime.Utc) => Math.floor(DateTime.toEpochMillis(time) 
 // the row, so building it again (to read its grant once locked) gives the same permission id.
 const sessionOf = (row: SessionRow): Session.Session =>
   agentSession({
-    spec: decodeSpec(row.spec),
+    spec: row.spec,
     signer: row.sessionKey as Address,
     validUntil: seconds(row.validUntil!),
     salt: keccak256(stringToHex(row.id))
@@ -262,7 +262,7 @@ export class Agents extends Context.Service<Agents, {
         const grant = current !== undefined && current.sessionKey === sending.sessionKey ?
           changedGrant(
             Grant.parse(current.grant!),
-            changeCalls(Grant.parse(current.grant!), decodeSpec(current.spec), decodeSpec(sending.spec)).session
+            changeCalls(Grant.parse(current.grant!), current.spec, sending.spec).session
           ) :
           yield* lockedGrant(yield* ownerAccount(passkey), sessionOf(sending))
         yield* saveSession(sending.id, {
@@ -315,7 +315,7 @@ export class Agents extends Context.Service<Agents, {
 
         const current = yield* sessionRow(row.currentSessionId)
         const policies = yield* readUsage({
-          spec: decodeSpec(current.spec),
+          spec: current.spec,
           account: owner.account as Address,
           grant: Grant.parse(current.grant!),
           now: seconds(yield* DateTime.now)
@@ -397,7 +397,7 @@ export class Agents extends Context.Service<Agents, {
             now
           })
         ).pipe(Effect.orDie)
-        const { calls } = changeCalls(Grant.parse(current.grant!), decodeSpec(current.spec), spec)
+        const { calls } = changeCalls(Grant.parse(current.grant!), current.spec, spec)
         return yield* prepare(owner, row, {
           requestId: input.requestId,
           action: "update",
@@ -418,7 +418,7 @@ export class Agents extends Context.Service<Agents, {
           Effect.gen(function*() {
             return yield* insertSession(tx, {
               agentId: row.id,
-              spec: decodeSpec(current.spec),
+              spec: current.spec,
               sessionKey: yield* newKey(tx, row.id, now),
               permissionId: null,
               validUntil: DateTime.add(now, { days: SESSION_DAYS }),

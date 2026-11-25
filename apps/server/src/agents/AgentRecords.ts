@@ -1,26 +1,16 @@
 import { Agent, AgentSession } from "@bluechip/domain/agents/Agent"
 import type { AgentId, AgentSessionId } from "@bluechip/domain/Ids"
-import { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
-import * as Schema from "effect/Schema"
 import type { agents, agentSessions } from "../db/schema/agents.ts"
 
 export type AgentRow = typeof agents.$inferSelect
 export type SessionRow = typeof agentSessions.$inferSelect
-
-const SpecJson = Schema.toCodecJson(AgentSpec)
-
-/** A spec as stored (JSON, amounts as strings). */
-export const encodeSpec = (spec: AgentSpec): unknown => Schema.encodeSync(SpecJson)(spec)
-
-/** A spec as stored, back to `AgentSpec`. */
-export const decodeSpec = (stored: unknown): AgentSpec => Schema.decodeUnknownSync(SpecJson)(stored)
 
 /** A session as the API returns it: its key, grant and operation stay on the server. */
 export const toSession = (row: SessionRow): AgentSession =>
   new AgentSession({
     id: row.id as AgentSessionId,
     status: row.status,
-    spec: decodeSpec(row.spec),
+    spec: row.spec,
     createdBy: row.createdBy,
     validUntil: row.validUntil,
     createdAt: row.createdAt,
@@ -42,8 +32,8 @@ export const toAgent = (row: AgentRow, sessions: ReadonlyArray<SessionRow>): Age
     template: row.templateId,
     status: row.status,
     paused: row.paused,
-    spec: decodeSpec(inForce.spec),
-    pendingSpec: current !== undefined && pending !== undefined ? decodeSpec(pending.spec) : null,
+    spec: inForce.spec,
+    pendingSpec: current !== undefined && pending !== undefined ? pending.spec : null,
     lockedUntil: current?.validUntil ?? null,
     createdAt: row.createdAt
   })

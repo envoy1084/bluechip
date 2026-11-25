@@ -27,7 +27,7 @@ import type { Namera } from "../Namera.ts"
 import type { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { settleTrade } from "../trading/Settlement.ts"
 import { decide, signForAgent, waitForAgentOperation } from "./AgentExecutor.ts"
-import { advance, decodeLeg, encodeDecision, type IntentRow, intentRow } from "./IntentStore.ts"
+import { advance, type IntentRow, intentRow } from "./IntentStore.ts"
 
 /** What one step of an intent left to do: nothing, or decide it again at `until`. */
 export const StepResult = Schema.TaggedUnion({
@@ -92,7 +92,7 @@ export const stepIntent = Effect.fnUntraced(function*(intentId: string) {
   }
 
   if (row.status !== "deciding") row = yield* advance(row, { _tag: "Decide" }, { sessionId: session!.id })
-  const decided = yield* decide({ agentId: agent!.id, account: address, session: session!, leg: decodeLeg(row.leg) })
+  const decided = yield* decide({ agentId: agent!.id, account: address, session: session!, leg: row.leg })
   const decision = decided.decision
 
   if (decision._tag === "Wait") {
@@ -137,7 +137,7 @@ export const stepIntent = Effect.fnUntraced(function*(intentId: string) {
       row,
       { _tag: "Failed" },
       refusal === undefined ? {} : {
-        decision: encodeDecision({ _tag: "Refused", ...refusal })
+        decision: { _tag: "Refused", ...refusal }
       }
     )
     return done

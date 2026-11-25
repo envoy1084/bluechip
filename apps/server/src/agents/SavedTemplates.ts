@@ -12,7 +12,6 @@ import { fromString, toUUID, typeid } from "typeid-js"
 import { Database } from "../db/Database.ts"
 import { agentTemplates } from "../db/schema/agents.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
-import { decodeSpec, encodeSpec } from "./AgentRecords.ts"
 
 type TemplateRow = typeof agentTemplates.$inferSelect
 
@@ -21,7 +20,7 @@ const toTemplate = (row: TemplateRow) =>
     id: row.id as SavedTemplateId,
     name: row.name,
     basedOn: row.basedOn,
-    spec: decodeSpec(row.spec),
+    spec: row.spec,
     createdAt: row.createdAt
   })
 
@@ -78,7 +77,7 @@ export class SavedTemplates extends Context.Service<SavedTemplates, {
           userId: owner.id as `user_${string}`,
           name: input.name,
           basedOn: input.basedOn,
-          spec: encodeSpec(spec),
+          spec,
           createdAt: yield* DateTime.now
         }).returning().pipe(Effect.orDie)
         return toTemplate(row!)

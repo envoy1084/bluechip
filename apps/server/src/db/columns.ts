@@ -1,5 +1,6 @@
 import { customType } from "drizzle-orm/pg-core"
 import * as DateTime from "effect/DateTime"
+import * as Schema from "effect/Schema"
 import { fromString, fromUUID, toUUID } from "typeid-js"
 
 /**
@@ -26,3 +27,16 @@ export const units = customType<{ data: bigint; driverData: string }>({
   toDriver: (value) => value.toString(),
   fromDriver: (value) => BigInt(value)
 })
+
+/**
+ * `jsonb` holding a value of `schema`, written in its canonical JSON form and decoded back on read, so rows carry
+ * domain values (an `AgentSpec`, a `Leg`) and no code encodes or decodes them by hand.
+ */
+export const jsonbSchema = <S extends Schema.Codec<any, any, never, never>>(schema: S) => {
+  const json = Schema.toCodecJson(schema)
+  return customType<{ data: S["Type"]; driverData: unknown }>({
+    dataType: () => "jsonb",
+    toDriver: (value) => JSON.stringify(Schema.encodeSync(json)(value)),
+    fromDriver: (value) => Schema.decodeUnknownSync(json)(typeof value === "string" ? JSON.parse(value) : value)
+  })
+}

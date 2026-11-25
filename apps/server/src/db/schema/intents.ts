@@ -1,5 +1,6 @@
+import { Decision, Leg } from "@bluechip/domain/intents/Intent"
 import { index, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
-import { dateTimeUtc, typeId } from "../columns.ts"
+import { dateTimeUtc, jsonbSchema, typeId } from "../columns.ts"
 import { users } from "./accounts.ts"
 import { agents } from "./agents.ts"
 
@@ -33,10 +34,10 @@ export const intents = pgTable("intents", {
   sourceId: text("source_id"),
   executor: text("executor", { enum: ["agent", "owner"] }).notNull(),
   dedupeKey: text("dedupe_key").notNull(),
-  leg: jsonb("leg").$type<unknown>().notNull(),
+  leg: jsonbSchema(Leg)("leg").notNull(),
   reason: text("reason").notNull(),
   status: text("status", { enum: INTENT_STATUSES }).notNull(),
-  decision: jsonb("decision").$type<unknown>(),
+  decision: jsonbSchema(Decision)("decision"),
   signingRequestId: typeId("signing")("signing_request_id"),
   userOpHash: text("user_op_hash"),
   tradeId: typeId("trade")("trade_id"),

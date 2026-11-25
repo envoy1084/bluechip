@@ -7,7 +7,7 @@ import * as Effect from "effect/Effect"
 import { typeid } from "typeid-js"
 import { Database } from "../db/Database.ts"
 import { agentSessions, sessionPolicies } from "../db/schema/agents.ts"
-import { encodeSpec, type SessionRow } from "./AgentRecords.ts"
+import type { SessionRow } from "./AgentRecords.ts"
 
 type Transaction = Parameters<Parameters<Database["Service"]["transaction"]>[0]>[0]
 
@@ -28,7 +28,7 @@ export const insertSession = Effect.fnUntraced(function*(
   const [row] = yield* tx.insert(agentSessions).values({
     id,
     agentId: session.agentId,
-    spec: encodeSpec(session.spec),
+    spec: session.spec,
     sessionKey: session.sessionKey,
     permissionId: session.permissionId,
     validUntil: session.validUntil,
@@ -37,14 +37,11 @@ export const insertSession = Effect.fnUntraced(function*(
     createdAt: session.now
   }).returning()
 
-  const stored = (encodeSpec(session.spec) as { readonly policies: ReadonlyArray<{ readonly config: unknown }> })
-    .policies
   yield* tx.insert(sessionPolicies).values(
     placements(session.spec).map((placement, position) => ({
       sessionId: id,
       position,
       policy: placement.policy,
-      config: stored[position]!.config,
       kind: placement.kind,
       contract: placement.contract
     }))

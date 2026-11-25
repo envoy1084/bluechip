@@ -39,7 +39,7 @@ import type { Owner } from "../signing/SigningRequests.ts"
 import { type TradeLink, Trades } from "../trading/Trades.ts"
 import { decide } from "./AgentExecutor.ts"
 import { startIntent } from "./Desk.ts"
-import { advance, encodeLeg, type IntentRow, toIntent } from "./IntentStore.ts"
+import { advance, type IntentRow, toIntent } from "./IntentStore.ts"
 
 type TradeError =
   | InsufficientCash
@@ -146,7 +146,7 @@ export class Intents extends Context.Service<Intents, {
           sourceId: input.sourceId ?? null,
           executor: input.agentId === null ? "owner" : "agent",
           dedupeKey,
-          leg: encodeLeg(input.leg),
+          leg: input.leg,
           reason: reasonOf(input),
           status: "proposed",
           expiresAt: input.agentId === null ? null : DateTime.add(now, { hours: OPEN_HOURS }),

@@ -16,7 +16,7 @@ import * as Effect from "effect/Effect"
 import type { Address, Hex } from "viem"
 import { getUserOperationHash } from "viem/account-abstraction"
 import { privateKeyToAccount } from "viem/accounts"
-import { decodeSpec, type SessionRow } from "../agents/AgentRecords.ts"
+import type { SessionRow } from "../agents/AgentRecords.ts"
 import { decryptKey } from "../agents/Keys.ts"
 import { AppConfig } from "../Config.ts"
 import { Database } from "../db/Database.ts"
@@ -95,7 +95,7 @@ export const decide = Effect.fnUntraced(function*(options: {
 }) {
   const chain = yield* ChainClient
   const now = yield* DateTime.now
-  const spec: AgentSpec = decodeSpec(options.session.spec)
+  const spec: AgentSpec = options.session.spec
   const { leg } = options
 
   const seconds = Math.floor(DateTime.toEpochMillis(now) / 1000)

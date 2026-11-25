@@ -1,5 +1,6 @@
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text } from "drizzle-orm/pg-core"
-import { dateTimeUtc, typeId } from "../columns.ts"
+import { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
+import { boolean, index, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core"
+import { dateTimeUtc, jsonbSchema, typeId } from "../columns.ts"
 import { users } from "./accounts.ts"
 
 const AGENT_STATUSES = ["draft", "locking", "active", "updating", "removing", "removed"] as const
@@ -30,7 +31,7 @@ export const agents = pgTable("agents", {
 export const agentSessions = pgTable("agent_sessions", {
   id: typeId("agentsession")("id").primaryKey(),
   agentId: typeId("agent")("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
-  spec: jsonb("spec").$type<unknown>().notNull(),
+  spec: jsonbSchema(AgentSpec)("spec").notNull(),
   sessionKey: text("session_key").notNull(),
   permissionId: text("permission_id"),
   grant: text("grant"),
@@ -43,14 +44,16 @@ export const agentSessions = pgTable("agent_sessions", {
   endedAt: dateTimeUtc("ended_at")
 }, (table) => [index("agent_sessions_agent_created_at_idx").on(table.agentId, table.createdAt)])
 
-/** Each session's policies, one row each, with where each is enforced: to find the agents carrying a policy. */
+/**
+ * Each session's policies, one row each, with where each is enforced: to find the sessions carrying a policy or a
+ * contract. Their configurations are in the session's spec.
+ */
 export const sessionPolicies = pgTable("session_policies", {
   sessionId: typeId("agentsession")("session_id").notNull().references(() => agentSessions.id, {
     onDelete: "cascade"
   }),
   position: integer("position").notNull(),
   policy: text("policy").notNull(),
-  config: jsonb("config").$type<unknown>().notNull(),
   kind: text("kind", { enum: ["userOp", "action", "execution", "rule"] }).notNull(),
   contract: text("contract").notNull()
 }, (table) => [
@@ -75,6 +78,6 @@ export const agentTemplates = pgTable("agent_templates", {
   userId: typeId("user")("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   basedOn: text("based_on"),
-  spec: jsonb("spec").$type<unknown>().notNull(),
+  spec: jsonbSchema(AgentSpec)("spec").notNull(),
   createdAt: dateTimeUtc("created_at").notNull()
 }, (table) => [index("agent_templates_user_created_at_idx").on(table.userId, table.createdAt)])
