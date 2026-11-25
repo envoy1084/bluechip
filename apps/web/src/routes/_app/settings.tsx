@@ -7,6 +7,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
+import { usePauseAll } from "../../agents/usePauseAll.ts"
 import { accountReactivityKey, meAtom, passkeysAtom, setDisplayNameAtom, signOutAtom } from "../../atoms/account.ts"
 import { AppPage } from "../../shell/AppPage.tsx"
 
@@ -122,7 +123,32 @@ function Settings() {
           )) :
           null}
       </Section>
+      <AgentsSection />
     </AppPage>
+  )
+}
+
+/** The kill switch over every agent, once there is one to pause. */
+function AgentsSection() {
+  const { shown, allPaused, busy, failed, toggle } = usePauseAll()
+  if (!shown) return null
+
+  return (
+    <Section title="Danger zone" description="These act on every agent at once.">
+      <Row
+        title="Pause all agents"
+        description={failed ?
+          "We couldn't reach bluechip just now. Try again." :
+          allPaused ?
+          "Every agent is paused. None of them can trade until you resume them." :
+          "They stop right away. Nothing is sold. Resume them any time."}
+      >
+        <Button variant={allPaused ? "secondary" : "danger"} size="sm" loading={busy} onClick={() => void toggle()}>
+          <Icon name={allPaused ? "play" : "pause"} size={14} />
+          {allPaused ? "Resume all" : "Pause all"}
+        </Button>
+      </Row>
+    </Section>
   )
 }
 

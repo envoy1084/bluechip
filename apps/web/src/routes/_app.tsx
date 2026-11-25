@@ -15,6 +15,7 @@ import {
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomMount } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
+import { SidebarAgents, SidebarPauseAll } from "../agents/SidebarAgents.tsx"
 import { liveEventAtom } from "../api/events.ts"
 import { SignedIn } from "../auth/SignedIn.tsx"
 import { CashDialogs } from "../funding/CashDialogs.tsx"
@@ -22,10 +23,10 @@ import { CashDialogs } from "../funding/CashDialogs.tsx"
 // Signed-in pages render in the browser: they need the session cookie and the live stream.
 export const Route = createFileRoute("/_app")({ ssr: false, component: AppLayout })
 
-// Agents and Approvals join as their phases land.
+// Approvals joins as its phase lands.
 const NAV: ReadonlyArray<
   {
-    readonly to: "/home" | "/portfolio" | "/stocks" | "/activity" | "/settings"
+    readonly to: "/home" | "/portfolio" | "/stocks" | "/agents" | "/activity" | "/settings"
     readonly label: string
     readonly icon: IconName
   }
@@ -33,6 +34,7 @@ const NAV: ReadonlyArray<
   { to: "/home", label: "Home", icon: "home" },
   { to: "/portfolio", label: "Portfolio", icon: "portfolio" },
   { to: "/stocks", label: "Stocks", icon: "stocks" },
+  { to: "/agents", label: "Agents", icon: "agents" },
   { to: "/activity", label: "Activity", icon: "activity" },
   { to: "/settings", label: "Settings", icon: "settings" }
 ]
@@ -68,8 +70,10 @@ function AppLayout() {
                       ))}
                     </SidebarMenu>
                   </SidebarGroup>
+                  <SidebarAgents />
                 </SidebarContent>
                 <SidebarFooter>
+                  <SidebarPauseAll />
                   <div className="flex items-center gap-2.5 border-t border-ink/6 px-1.5 pt-3">
                     <span className="grid size-[30px] shrink-0 place-items-center rounded-full bg-[linear-gradient(180deg,#eef1ff,#dfe5ff)] text-[13px] font-semibold text-blue shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42,91,255,.14)]">
                       {(me.user.displayName ?? "Y").charAt(0).toUpperCase()}
