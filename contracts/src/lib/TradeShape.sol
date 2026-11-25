@@ -51,7 +51,7 @@ library TradeShape {
     ) internal pure returns (bool ok, uint256 buys) {
         if (calls.length == 0 || calls.length % 2 != 0) return (false, 0);
 
-        for (uint256 i; i < calls.length; i += 2) {
+        for (uint256 i = 0; i < calls.length; i += 2) {
             (bool pairOk, uint256 bought) = _checkPair(settings, calls[i], calls[i + 1], account, usdc, router);
             if (!pairOk) return (false, 0);
             buys += bought;

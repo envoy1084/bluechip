@@ -68,8 +68,12 @@ contract AerodromeTradePolicyTest is Test {
         returns (UserOpCalls.Call[] memory calls)
     {
         calls = new UserOpCalls.Call[](a.length + b.length);
-        for (uint256 i; i < a.length; ++i) calls[i] = a[i];
-        for (uint256 i; i < b.length; ++i) calls[a.length + i] = b[i];
+        for (uint256 i; i < a.length; ++i) {
+            calls[i] = a[i];
+        }
+        for (uint256 i; i < b.length; ++i) {
+            calls[a.length + i] = b[i];
+        }
     }
 
     /// @dev A Kernel batch `execute` with the agent's stated time appended, as Namera's SDK sends it.
@@ -80,9 +84,8 @@ contract AerodromeTradePolicyTest is Test {
     {
         bytes32 batch = bytes32(uint256(1) << 248);
         op.sender = ACCOUNT;
-        op.callData = abi.encodePacked(
-            abi.encodeWithSelector(UserOpCalls.EXECUTE, batch, abi.encode(calls)), bytes32(time)
-        );
+        op.callData =
+            abi.encodePacked(abi.encodeWithSelector(UserOpCalls.EXECUTE, batch, abi.encode(calls)), bytes32(time));
     }
 
     function check(UserOpCalls.Call[] memory calls) internal returns (uint256) {
@@ -225,13 +228,17 @@ contract AerodromeTradePolicyTest is Test {
         check(buy(AAPL, 100e6));
         uint256 tomorrow = (NOW / 1 days + 1) * 1 days;
 
-        assertEq(policy.checkUserOpPolicy(OPERATION_ID, operation(buy(NVDA, 100e6), tomorrow)), Period.bounds(1 days, tomorrow));
+        assertEq(
+            policy.checkUserOpPolicy(OPERATION_ID, operation(buy(NVDA, 100e6), tomorrow)),
+            Period.bounds(1 days, tomorrow)
+        );
         assertEq(policy.spent(OPERATION_ID, address(this), ACCOUNT, tomorrow), 100e6);
     }
 
     function test_aBuyWithoutAStatedTime() public {
         ERC4337.PackedUserOperation memory op = operation(buy(NVDA, 50e6), NOW);
-        op.callData = abi.encodeWithSelector(UserOpCalls.EXECUTE, bytes32(uint256(1) << 248), abi.encode(buy(NVDA, 50e6)));
+        op.callData =
+            abi.encodeWithSelector(UserOpCalls.EXECUTE, bytes32(uint256(1) << 248), abi.encode(buy(NVDA, 50e6)));
 
         assertEq(policy.checkUserOpPolicy(OPERATION_ID, op), FAILED);
     }
@@ -251,7 +258,9 @@ contract AerodromeTradePolicyTest is Test {
     }
 
     function test_aCheckForAnAccountWithoutAConfiguration() public {
-        vm.expectRevert(abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ACTION_ID, address(this), address(0xBEEF)));
+        vm.expectRevert(
+            abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ACTION_ID, address(this), address(0xBEEF))
+        );
         policy.checkAction(ACTION_ID, address(0xBEEF), ROUTER, 0, "");
     }
 

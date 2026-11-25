@@ -52,6 +52,8 @@ contract TradeGuard is ExecutionPolicyBase {
     /// @dev Each session's slippage ledger per account: the loss (low 128 bits) and when it was written.
     mapping(bytes32 key => mapping(address account => uint256 ledger)) internal $ledgers;
 
+    // Deployed only by `contracts deploy`, with Base's addresses: the CREATE2 address fixes them.
+    // forge-lint: disable-next-line(missing-zero-check)
     constructor(address usdc, address sequencerFeed, uint256 sequencerGrace) {
         USDC = usdc;
         SEQUENCER_FEED = sequencerFeed;
@@ -65,6 +67,8 @@ contract TradeGuard is ExecutionPolicyBase {
         returns (uint256 used, uint256 updatedAt)
     {
         uint256 word = $ledgers[PolicyStorage.configKey(id, multiplexer)][account];
+        // The low 128 bits are the loss.
+        // forge-lint: disable-next-line(unsafe-typecast)
         return (uint128(word), word >> 128);
     }
 
@@ -99,6 +103,7 @@ contract TradeGuard is ExecutionPolicyBase {
             cashBefore: before[0],
             cashAfter: afterward[0],
             stocks: new GuardRules.Stock[](config.markets.length),
+            // forge-lint: disable-next-line(unsafe-typecast)
             slippageUsed: uint128(word),
             slippageUpdatedAt: word >> 128,
             time: block.timestamp
@@ -114,6 +119,7 @@ contract TradeGuard is ExecutionPolicyBase {
             stock.balanceAfter = afterward[i + 1];
             // Only what the portfolio holds is valued, so a portfolio of two stocks reads two feeds.
             if (stock.balanceBefore != 0 || stock.balanceAfter != 0) {
+                // forge-lint: disable-next-line(unused-return)
                 (, stock.price,, stock.updatedAt,) = IAggregator(market.feed).latestRoundData();
             }
         }
@@ -131,7 +137,10 @@ contract TradeGuard is ExecutionPolicyBase {
     }
 
     function _checkSequencer() private view {
+        // forge-lint: disable-next-line(unused-return)
         (, int256 answer, uint256 startedAt,,) = IAggregator(SEQUENCER_FEED).latestRoundData();
+        // The grace is an hour: a sequencer's few seconds of timestamp leeway don't matter.
+        // forge-lint: disable-next-line(block-timestamp)
         if (answer != 0 || block.timestamp - startedAt <= SEQUENCER_GRACE) revert SequencerDown();
     }
 }

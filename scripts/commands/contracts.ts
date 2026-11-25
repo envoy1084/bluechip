@@ -1,9 +1,12 @@
+import { type Rpc, rpc } from "@bluechip/devnet/Controls"
 import { Console, Effect, FileSystem, Path, Schema } from "effect"
-import { Command } from "effect/cli"
+import { Command, Flag } from "effect/cli"
 import type { Abi, Hex } from "viem"
 
 import { addressOf, CONTRACTS, type ContractSpec, deployedModule, initCodeOf } from "../contracts/artifacts.ts"
+import { contractStatus, deployContracts, type Deployment } from "../contracts/deploy.ts"
 import { contractVectors } from "../contracts/vectors.ts"
+import { ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
 
 /** Where the generated addresses and ABIs go. */
@@ -67,13 +70,21 @@ const installDependencies = Effect.gen(function*() {
 }).pipe(Effect.orDie)
 
 const test = Command.make("test").pipe(
-  Command.withDescription("Run the contracts' Foundry tests (unit, fuzz and the shared vectors)"),
-  Command.withHandler(() => installDependencies.pipe(Effect.andThen(forge(["test"]))))
+  Command.withDescription("Check the contracts' formatting and lints, then run their tests (unit, fuzz, vectors)"),
+  Command.withHandler(() =>
+    Effect.gen(function*() {
+      yield* installDependencies
+      yield* forge(["fmt", "--check"])
+      yield* forge(["lint", "--deny", "warnings"])
+      yield* forge(["test"])
+    })
+  )
 )
 
 const snapshot = Command.make("snapshot").pipe(
-  Command.withDescription("Write the contracts' gas snapshot (contracts/.gas-snapshot)"),
-  Command.withHandler(() => forge(["snapshot"]))
+  Command.withDescription("Write the contracts' gas snapshot (contracts/.gas-snapshot), without the fuzz runs"),
+  // Fuzz runs' gas changes with their random inputs, so only the fixed tests are snapshotted.
+  Command.withHandler(() => forge(["snapshot", "--no-match-path", "test/Fuzz.t.sol"]))
 )
 
 const vectors = Command.make("vectors").pipe(
@@ -92,7 +103,44 @@ const vectors = Command.make("vectors").pipe(
   )
 )
 
+const rpcUrl = Flag.String("rpc-url").pipe(
+  Flag.withDefault("http://localhost:8545"),
+  Flag.withDescription("The chain's JSON-RPC URL (default: the local chain `pnpm dev` runs)")
+)
+
+const onChain = <A>(name: string, run: (node: Rpc) => Promise<A>) => (url: string) =>
+  Effect.tryPromise({
+    try: () => run(rpc(url)),
+    catch: (cause) => ToolFailed.make({ tool: `contracts ${name}`, output: String(cause) })
+  })
+
+const report = (deployments: ReadonlyArray<Deployment>) =>
+  Effect.forEach(deployments, ({ address, name, status }) => Console.log(`contracts: ${name} ${address} ${status}`), {
+    discard: true
+  })
+
+const deploy = Command.make("deploy", { rpcUrl }).pipe(
+  Command.withDescription("Deploy the built contracts to a local Anvil chain, at their CREATE2 addresses"),
+  Command.withHandler(({ rpcUrl }) =>
+    Effect.gen(function*() {
+      yield* forge(["build", "--quiet"])
+      const built = yield* builtContracts(process.cwd())
+      yield* report(yield* onChain("deploy", (node) => deployContracts(node, built))(rpcUrl))
+    })
+  )
+)
+
+const status = Command.make("status", { rpcUrl }).pipe(
+  Command.withDescription("Show whether each built contract is at its address on a chain"),
+  Command.withHandler(({ rpcUrl }) =>
+    Effect.gen(function*() {
+      const built = yield* builtContracts(process.cwd())
+      yield* report(yield* onChain("status", (node) => contractStatus(node, built))(rpcUrl))
+    })
+  )
+)
+
 export const contracts = Command.make("contracts").pipe(
   Command.withDescription("bluechip's onchain policies (Foundry, in contracts/)"),
-  Command.withSubcommands([build, test, snapshot, vectors])
+  Command.withSubcommands([build, test, snapshot, vectors, deploy, status])
 )

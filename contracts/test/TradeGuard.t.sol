@@ -117,7 +117,9 @@ contract TradeGuardTest is Test {
     }
 
     function test_anAccountWithoutAConfiguration() public {
-        vm.expectRevert(abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ID, address(this), address(0xBEEF)));
+        vm.expectRevert(
+            abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ID, address(this), address(0xBEEF))
+        );
         guard.preCheck(ID, address(0xBEEF), "");
     }
 }

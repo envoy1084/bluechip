@@ -39,6 +39,8 @@ contract AerodromeTradePolicy is PolicyBase, IActionPolicy, IUserOpPolicy {
 
     error InvalidRole(uint8 role);
 
+    // Deployed only by `contracts deploy`, with Base's addresses: the CREATE2 address fixes them.
+    // forge-lint: disable-next-line(missing-zero-check)
     constructor(address usdc, address router) {
         USDC = usdc;
         ROUTER = router;
@@ -55,11 +57,10 @@ contract AerodromeTradePolicy is PolicyBase, IActionPolicy, IUserOpPolicy {
     }
 
     /// @inheritdoc IUserOpPolicy
-    function checkUserOpPolicy(bytes32 id, ERC4337.PackedUserOperation calldata userOp)
-        external
-        returns (uint256)
-    {
+    function checkUserOpPolicy(bytes32 id, ERC4337.PackedUserOperation calldata userOp) external returns (uint256) {
         bytes memory packed = _config(id, userOp.sender);
+        // The first word holds the role, a `uint8` (`_pack` decodes it as one).
+        // forge-lint: disable-next-line(unsafe-typecast)
         if (uint8(_wordAt(packed, 0)) != OPERATION) return VALIDATION_FAILED;
         (, TradeShape.Settings memory settings) = abi.decode(packed, (uint8, TradeShape.Settings));
 

@@ -15,10 +15,25 @@ bytecode_hash = "none"
 cbor_metadata = false
 auto_detect_remappings = false
 ignored_warnings_from = ["dependencies"]
-fs_permissions = [
-  { access = "read", path = "./test/vectors.json" },
-  { access = "read-write", path = "../deployments" }
-]
+fs_permissions = [{ access = "read", path = "./test/vectors.json" }]
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+multiline_func_header = "attributes_first"
+quote_style = "double"
+number_underscore = "thousands"
+sort_imports = true
+ignore = ["dependencies/**"]
+
+[lint]
+severity = ["high", "medium", "low"]
+# Both policies check each configured stock in a loop and must revert on the first rule it breaks, as Namera's do.
+exclude_lints = ["calls-loop", "require-revert-in-loop"]
+ignore = ["dependencies/**"]
+lint_on_build = false
 
 [fuzz]
 runs = 1000

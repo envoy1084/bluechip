@@ -26,7 +26,7 @@ library TradeMath {
     function drift(uint256[] memory values, uint256 total, uint256[] memory targets) internal pure returns (uint256) {
         if (total == 0) return 0;
 
-        uint256 distance;
+        uint256 distance = 0;
         for (uint256 i; i < values.length; ++i) {
             uint256 have = values[i] * BPS;
             uint256 want = targets[i] * total;

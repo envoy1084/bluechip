@@ -117,9 +117,8 @@ library GuardRules {
         _checkPortfolio(input, valuation.afterward);
         if (settings.mode == REBALANCE) _checkRebalance(input, valuation, collar);
 
-        uint256 used = TradeMath.decayed(
-            input.slippageUsed, input.slippageUpdatedAt, input.time, settings.slippageWindow
-        );
+        uint256 used =
+            TradeMath.decayed(input.slippageUsed, input.slippageUpdatedAt, input.time, settings.slippageWindow);
         uint256 budget = settings.weeklySlippageBps * valuation.before / TradeMath.BPS;
         if (used + valuation.lost > budget) revert OverSlippageBudget();
         return (true, used + valuation.lost);
@@ -128,7 +127,7 @@ library GuardRules {
     /// @dev Which stocks moved, that each is allowed and goes the agent's way, and that USDC paid for a single one.
     function _checkMoves(Input memory input) private pure returns (uint256 moved) {
         uint8 mode = input.settings.mode;
-        bool grewAlone;
+        bool grewAlone = false;
 
         for (uint256 i; i < input.stocks.length; ++i) {
             Stock memory stock = input.stocks[i];
@@ -153,7 +152,7 @@ library GuardRules {
         Settings memory settings = input.settings;
         valuation.before = input.cashBefore;
         valuation.afterward = input.cashAfter;
-        uint256 stocksTraded;
+        uint256 stocksTraded = 0;
 
         for (uint256 i; i < input.stocks.length; ++i) {
             Stock memory stock = input.stocks[i];
@@ -163,6 +162,7 @@ library GuardRules {
             uint256 age = input.time > stock.updatedAt ? input.time - stock.updatedAt : 0;
             if (age > settings.pausedAge) revert PricesStale(stock.token);
 
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 price = uint256(stock.price);
             valuation.before += stock.balanceBefore.valueOf(price);
             valuation.afterward += stock.balanceAfter.valueOf(price);
@@ -188,6 +188,8 @@ library GuardRules {
             Stock memory stock = input.stocks[i];
             if (stock.balanceAfter == stock.balanceBefore) continue;
 
+            // `_value` checked every traded price is positive.
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 value = _moved(stock).valueOf(uint256(stock.price));
             if (value < input.settings.minTradeUsd) revert TooSmall(stock.token);
             if (value > input.settings.maxTradeUsd) revert OverTradeSize(stock.token);
@@ -200,12 +202,16 @@ library GuardRules {
             Stock memory stock = input.stocks[i];
             if (stock.balanceAfter <= stock.balanceBefore) continue;
 
+            // `_value` checked every held price is positive.
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 value = stock.balanceAfter.valueOf(uint256(stock.price));
             if (!value.isAtMostBps(total, input.settings.maxInOneStockBps)) revert OverStockCap(stock.token);
         }
 
-        if (input.cashAfter < input.cashBefore && input.cashAfter * TradeMath.BPS < input.settings.cashReserveBps * total)
-        {
+        if (
+            input.cashAfter < input.cashBefore
+                && input.cashAfter * TradeMath.BPS < input.settings.cashReserveBps * total
+        ) {
             revert UnderCashReserve();
         }
     }
@@ -223,6 +229,7 @@ library GuardRules {
         targets[0] = settings.cashTargetBps;
         for (uint256 i; i < input.stocks.length; ++i) {
             Stock memory stock = input.stocks[i];
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 price = stock.price > 0 ? uint256(stock.price) : 0;
             before[i + 1] = stock.balanceBefore.valueOf(price);
             afterward[i + 1] = stock.balanceAfter.valueOf(price);
