@@ -1,4 +1,4 @@
-import { ClientOutdated } from "@bluechip/domain/Errors"
+import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import { heartbeatInterval, type LiveEvent } from "@bluechip/domain/Events"
 import * as Data from "effect/Data"
 import * as Duration from "effect/Duration"
@@ -11,8 +11,11 @@ import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 import { BluechipApiClient, liveReactivityKey } from "./client.ts"
 
-/** The state of the live stream, for the connection banner. `outdated` means this build must reload. */
-export type Connection = "connecting" | "live" | "reconnecting" | "outdated"
+/**
+ * The state of the live stream, for the connection banner. `outdated` means this build must reload; `signedOut` means
+ * the session ended (the stream needs one).
+ */
+export type Connection = "connecting" | "live" | "reconnecting" | "outdated" | "signedOut"
 
 export const connectionAtom = Atom.make<Connection>("connecting")
 
@@ -44,8 +47,9 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
     }),
     Stream.concat(Stream.fail(new StreamClosed())),
     Stream.catch((error) =>
-      error instanceof ClientOutdated
-        ? Stream.drain(Stream.fromEffect(setConnection("outdated"))).pipe(Stream.concat(Stream.never))
+      error instanceof ClientOutdated || error instanceof Unauthenticated
+        ? Stream.drain(Stream.fromEffect(setConnection(error instanceof ClientOutdated ? "outdated" : "signedOut")))
+          .pipe(Stream.concat(Stream.never))
         : Stream.fromEffect(setConnection("reconnecting")).pipe(Stream.drain, Stream.concat(Stream.fail(error)))
     ),
     Stream.retry(reconnectSchedule)

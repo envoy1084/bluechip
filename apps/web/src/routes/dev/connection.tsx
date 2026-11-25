@@ -20,7 +20,8 @@ const connectionBadge: Record<
   connecting: { label: "Connecting", variant: "secondary" },
   live: { label: "Live", variant: "success" },
   reconnecting: { label: "Reconnecting", variant: "warning" },
-  outdated: { label: "Outdated", variant: "destructive" }
+  outdated: { label: "Outdated", variant: "destructive" },
+  signedOut: { label: "Signed out", variant: "secondary" }
 }
 
 function DevConnection() {

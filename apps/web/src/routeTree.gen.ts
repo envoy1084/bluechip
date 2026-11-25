@@ -10,13 +10,39 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as SigninRouteImport } from './routes/signin'
+import { Route as AppHomeRouteImport } from './routes/_app/home'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
+import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
+import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
+import { Route as WelcomeReadyRouteImport } from './routes/welcome/ready'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppHomeRoute = AppHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
 } as any)
 const DevChainRoute = DevChainRouteImport.update({
   id: '/dev/chain',
@@ -28,35 +54,103 @@ const DevConnectionRoute = DevConnectionRouteImport.update({
   path: '/dev/connection',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
+  id: '/welcome/',
+  path: '/welcome/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeEligibilityRoute = WelcomeEligibilityRouteImport.update({
+  id: '/welcome/eligibility',
+  path: '/welcome/eligibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeReadyRoute = WelcomeReadyRouteImport.update({
+  id: '/welcome/ready',
+  path: '/welcome/ready',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/signin': typeof SigninRoute
+  '/home': typeof AppHomeRoute
+  '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/welcome/eligibility': typeof WelcomeEligibilityRoute
+  '/welcome/ready': typeof WelcomeReadyRoute
+  '/welcome/': typeof WelcomeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/signin': typeof SigninRoute
+  '/home': typeof AppHomeRoute
+  '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/welcome/eligibility': typeof WelcomeEligibilityRoute
+  '/welcome/ready': typeof WelcomeReadyRoute
+  '/welcome': typeof WelcomeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/signin': typeof SigninRoute
+  '/_app/home': typeof AppHomeRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/welcome/eligibility': typeof WelcomeEligibilityRoute
+  '/welcome/ready': typeof WelcomeReadyRoute
+  '/welcome/': typeof WelcomeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dev/chain' | '/dev/connection'
+  fullPaths:
+    | '/'
+    | '/signin'
+    | '/home'
+    | '/settings'
+    | '/dev/chain'
+    | '/dev/connection'
+    | '/welcome/eligibility'
+    | '/welcome/ready'
+    | '/welcome/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/chain' | '/dev/connection'
-  id: '__root__' | '/' | '/dev/chain' | '/dev/connection'
+  to:
+    | '/'
+    | '/signin'
+    | '/home'
+    | '/settings'
+    | '/dev/chain'
+    | '/dev/connection'
+    | '/welcome/eligibility'
+    | '/welcome/ready'
+    | '/welcome'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/signin'
+    | '/_app/home'
+    | '/_app/settings'
+    | '/dev/chain'
+    | '/dev/connection'
+    | '/welcome/eligibility'
+    | '/welcome/ready'
+    | '/welcome/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  SigninRoute: typeof SigninRoute
   DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
+  WelcomeEligibilityRoute: typeof WelcomeEligibilityRoute
+  WelcomeReadyRoute: typeof WelcomeReadyRoute
+  WelcomeIndexRoute: typeof WelcomeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -67,6 +161,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/home': {
+      id: '/_app/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AppHomeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/dev/chain': {
       id: '/dev/chain'
@@ -82,13 +204,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevConnectionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/welcome/': {
+      id: '/welcome/'
+      path: '/welcome'
+      fullPath: '/welcome/'
+      preLoaderRoute: typeof WelcomeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome/eligibility': {
+      id: '/welcome/eligibility'
+      path: '/welcome/eligibility'
+      fullPath: '/welcome/eligibility'
+      preLoaderRoute: typeof WelcomeEligibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome/ready': {
+      id: '/welcome/ready'
+      path: '/welcome/ready'
+      fullPath: '/welcome/ready'
+      preLoaderRoute: typeof WelcomeReadyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppHomeRoute: typeof AppHomeRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppHomeRoute: AppHomeRoute,
+  AppSettingsRoute: AppSettingsRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  SigninRoute: SigninRoute,
   DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,
+  WelcomeEligibilityRoute: WelcomeEligibilityRoute,
+  WelcomeReadyRoute: WelcomeReadyRoute,
+  WelcomeIndexRoute: WelcomeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
