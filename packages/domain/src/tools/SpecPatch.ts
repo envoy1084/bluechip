@@ -5,7 +5,6 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
-import { SavedTemplateId } from "../Ids.ts"
 import { StockSymbol } from "../market/Market.ts"
 import { type AgentSpec, PolicyId, PolicyProblem } from "../policies/AgentSpec.ts"
 import { checkSpec, complete, policyOf } from "../policies/Catalog.ts"
@@ -23,6 +22,7 @@ import {
 } from "../policies/SpecEdits.ts"
 import { Preset, TemplateId } from "../policies/Templates.ts"
 import { Direction } from "../policies/Trade.ts"
+import { SavedTemplateIdParam } from "./Params.ts"
 
 /**
  * One policy setting, in the unit its field shows: dollars for `usd` fields, percent for `bps` fields, a whole number
@@ -85,7 +85,7 @@ export type SpecPatch = typeof SpecPatch.Type
  * @since 0.0.0
  */
 export const SpecDraft = Schema.Struct({
-  template: Schema.Union([TemplateId, SavedTemplateId]).annotate({
+  template: Schema.Union([TemplateId, SavedTemplateIdParam]).annotate({
     description: "The template it starts from (see listTemplates): a built-in one's id, or a saved one's (template_…)."
   }),
   preset: Preset.annotate({
