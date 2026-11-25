@@ -10,7 +10,10 @@ export const STOCKS = [
   { symbol: "AMZN", name: "Amazon", price: 214.36, change: -0.77 },
   { symbol: "MSTR", name: "Strategy", price: 318.2, change: 2.83 },
   { symbol: "SNDK", name: "Sandisk", price: 64.85, change: 2.74 },
-  { symbol: "SPCX", name: "SpaceX", price: 98.4, change: 1.29 }
+  { symbol: "SPCX", name: "SpaceX", price: 98.4, change: 1.29 },
+  { symbol: "ANT", name: "Anthropic", price: 79.46, change: -0.42 },
+  { symbol: "CRCL", name: "Circle", price: 47.12, change: 1.08 },
+  { symbol: "INTC", name: "Intel", price: 53.62, change: -1.2 }
 ] as const
 
 export const stock = (symbol: string) => STOCKS.find((s) => s.symbol === symbol) ?? STOCKS[0]

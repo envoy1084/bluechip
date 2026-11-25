@@ -1,7 +1,8 @@
 import { Input as BaseInput } from "@base-ui/react/input"
 import { cva, type VariantProps } from "class-variance-authority"
-import type { ComponentProps } from "react"
+import type { ComponentProps, ReactNode } from "react"
 import { cn } from "../lib/cn.ts"
+import { UsdcLogo } from "../logos/usdc.tsx"
 import { fieldSurface } from "./input.tsx"
 
 export const inputGroupVariants = cva(
@@ -82,12 +83,12 @@ export function InputGroupButton({ className, type = "button", ...props }: Compo
 }
 
 export interface InputGroupTokenProps extends ComponentProps<"span"> {
-  /** The glyph in the coin. */
-  readonly symbol?: string
+  /** The coin before the name. Defaults to the USDC mark. */
+  readonly icon?: ReactNode
 }
 
 /** The currency an amount is in, as a chip with its coin: `USDC`. */
-export function InputGroupToken({ symbol = "$", className, children, ...props }: InputGroupTokenProps) {
+export function InputGroupToken({ icon, className, children, ...props }: InputGroupTokenProps) {
   return (
     <span
       data-slot="input-group-token"
@@ -97,12 +98,7 @@ export function InputGroupToken({ symbol = "$", className, children, ...props }:
       )}
       {...props}
     >
-      <i
-        aria-hidden
-        className="grid size-5 place-items-center rounded-full bg-[linear-gradient(180deg,#4c8dff,#2775ca)] text-[11px] font-bold text-white not-italic shadow-[inset_0_1px_0_rgba(255,255,255,.35)]"
-      >
-        {symbol}
-      </i>
+      {icon ?? <UsdcLogo size={20} />}
       {children}
     </span>
   )

@@ -18,7 +18,8 @@
     "./motion/use-*": "./src/motion/use-*.ts",
     "./motion/halftone/*": "./src/motion/halftone/*.ts",
     "./motion/*": "./src/motion/*.tsx",
-    "./illustrations/*": "./src/illustrations/*.tsx"
+    "./illustrations/*": "./src/illustrations/*.tsx",
+    "./logos/*": "./src/logos/*.tsx"
   },
   "peerDependencies": {
     "react": "catalog:",

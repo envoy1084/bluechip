@@ -137,9 +137,9 @@ export function ComboboxSection() {
         <Field className="w-full max-w-[380px]">
           <Combobox items={STOCKS} onValueChange={(stock: Stock | null) => setAdded(stock)}>
             <FieldLabel>Add a stock to this agent</FieldLabel>
-            <ComboboxInput placeholder="Search 10 stocks" />
+            <ComboboxInput placeholder="Search 13 stocks" />
             <ComboboxContent>
-              <ComboboxEmpty>No stock matches that. bluechip has 10 stocks for now.</ComboboxEmpty>
+              <ComboboxEmpty>No stock matches that. bluechip has 13 stocks for now.</ComboboxEmpty>
               <ComboboxList>
                 {(stock: Stock) => (
                   <ComboboxItem key={stock.value} value={stock}>

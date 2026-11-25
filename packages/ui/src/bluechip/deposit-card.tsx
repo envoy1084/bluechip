@@ -4,6 +4,7 @@ import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney } from "../lib/format.ts"
 import { haptic } from "../lib/haptics.ts"
+import { UsdcLogo } from "../logos/usdc.tsx"
 import { Confetti } from "../motion/confetti.tsx"
 import { NumberRoll } from "../motion/number-roll.tsx"
 import { MomentScope, useMoment } from "../motion/sweep.tsx"
@@ -118,7 +119,7 @@ export function DepositCard(
             aria-hidden
             className="absolute top-1/2 left-1/2 grid size-8 -translate-1/2 place-items-center rounded-[9px] bg-white shadow-[0_0_0_1px_rgba(10,11,13,.06)]"
           >
-            <i className="size-[22px] rounded-full bg-[linear-gradient(180deg,#4c76ff,#2a5bff)]" />
+            <UsdcLogo size={22} />
           </span>
         </figure>
         <div className="grid w-full min-w-0 gap-3">

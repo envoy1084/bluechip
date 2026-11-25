@@ -1,6 +1,6 @@
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatPercent } from "@bluechip/ui/lib/format"
-import { type TickerTone, tickerTone } from "@bluechip/ui/lib/tickers"
+import { tickerColors } from "@bluechip/ui/lib/tickers"
 import { type ReactNode, useId } from "react"
 
 const LIMITS: ReadonlyArray<readonly [string, ReactNode]> = [
@@ -16,26 +16,16 @@ const LIMITS: ReadonlyArray<readonly [string, ReactNode]> = [
   ["Max per trade", "$100"]
 ]
 
-const TONE: Readonly<Record<TickerTone, string>> = {
-  blue: "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white",
-  yellow: "bg-[linear-gradient(180deg,#ffdc5c,#ffd12f)] text-[#3a2c00]",
-  green: "bg-[linear-gradient(180deg,#7ad61a,#66c800)] text-[#0c2a00]",
-  pink: "bg-[linear-gradient(180deg,#ffbdd9,#fea8cd)] text-[#4a0f2a]",
-  ink: "bg-[linear-gradient(180deg,#2b2e35,#0a0b0d)] text-white",
-  cerulean: "bg-[linear-gradient(180deg,#62a2ff,#3c8aff)] text-[#00163d]",
-  lilac: "bg-[linear-gradient(180deg,#dcaefe,#cd99fd)] text-[#2c0a4d]",
-  tan: "bg-[linear-gradient(180deg,#cbb995,#b8a581)] text-[#2a2111]"
-}
-
 export function Ticker({ symbol, large = false }: { readonly symbol: string; readonly large?: boolean }) {
+  const colors = tickerColors(symbol)
   return (
     <span
+      style={{ background: `linear-gradient(180deg, ${colors.top}, ${colors.bottom})`, color: colors.text }}
       className={cn(
         "inline-flex items-center justify-center font-pixel font-extrabold tracking-[.05em] whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
         large
           ? "rounded-[7px] px-[9px] pt-[5px] pb-1 text-label"
-          : "rounded-[5px] px-1.5 pt-[3px] pb-0.5 text-caption-sm",
-        TONE[tickerTone(symbol)]
+          : "rounded-[5px] px-1.5 pt-[3px] pb-0.5 text-caption-sm"
       )}
     >
       {symbol}

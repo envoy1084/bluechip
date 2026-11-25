@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from "react"
 import { Button } from "../components/button.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
-import { type TickerTone, tickerTone } from "../lib/tickers.ts"
+import { tickerColors } from "../lib/tickers.ts"
 import { CitationChip, type CitationSource } from "./citation-chip.tsx"
 import { CASH_SYMBOL, TickerChip } from "./ticker-chip.tsx"
 
@@ -35,17 +35,6 @@ export interface ProposalCardProps extends Omit<ComponentProps<"div">, "children
   readonly flag?: ReactNode
   readonly onApprove?: () => void
   readonly onAdjust?: () => void
-}
-
-const SEGMENT: Readonly<Record<TickerTone, string>> = {
-  blue: "bg-blue",
-  yellow: "bg-yellow",
-  green: "bg-green",
-  pink: "bg-pink",
-  ink: "bg-ink",
-  cerulean: "bg-cerulean",
-  lilac: "bg-lilac",
-  tan: "bg-tan"
 }
 
 const NONE: ReadonlyArray<never> = []
@@ -121,11 +110,11 @@ export function ProposalCard({
           {basket.map((holding) => (
             <i
               key={holding.symbol}
-              className={cn(
-                "block min-w-0 shadow-[inset_0_1px_0_rgba(255,255,255,.3)]",
-                holding.symbol === CASH_SYMBOL ? "bg-[#c3c8d2]" : SEGMENT[tickerTone(holding.symbol)]
-              )}
-              style={{ flex: holding.weight }}
+              className="block min-w-0 shadow-[inset_0_1px_0_rgba(255,255,255,.3)]"
+              style={{
+                flex: holding.weight,
+                background: holding.symbol === CASH_SYMBOL ? "#c3c8d2" : tickerColors(holding.symbol).bottom
+              }}
             />
           ))}
         </div>

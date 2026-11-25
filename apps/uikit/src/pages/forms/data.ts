@@ -19,7 +19,10 @@ export const STOCKS: ReadonlyArray<Stock> = [
   ["AMZN", "Amazon", 214.36],
   ["MSTR", "Strategy", 318.2],
   ["SNDK", "Sandisk", 64.85],
-  ["SPCX", "SpaceX", 98.4]
+  ["SPCX", "SpaceX", 98.4],
+  ["ANT", "Anthropic", 79.46],
+  ["CRCL", "Circle", 47.12],
+  ["INTC", "Intel", 53.62]
 ].map(([value, name, price]) => ({
   value: String(value),
   name: String(name),

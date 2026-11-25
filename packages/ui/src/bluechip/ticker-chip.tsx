@@ -5,7 +5,8 @@ import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatMoney } from "../lib/format.ts"
 import { haptic } from "../lib/haptics.ts"
-import { tickerTone } from "../lib/tickers.ts"
+import { tickerColors } from "../lib/tickers.ts"
+import { UsdcLogo } from "../logos/usdc.tsx"
 import { PriceChange } from "./price-change.tsx"
 
 /** The symbol cash is shown with. Its chip is the one neutral chip. */
@@ -15,25 +16,11 @@ export const tickerChipVariants = cva(
   "inline-flex shrink-0 items-center justify-center font-pixel font-extrabold tracking-[.05em] whitespace-nowrap",
   {
     variants: {
+      // `brand` chips take their gradient and text color from the stock's own colors (see `tickerColors`).
       tone: {
-        blue:
-          "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_1px_2px_rgba(20,50,160,.15)]",
-        yellow:
-          "bg-[linear-gradient(180deg,#ffdc5c,#ffd12f)] text-[#3a2c00] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,90,0,.15)]",
-        green:
-          "bg-[linear-gradient(180deg,#7ad61a,#66c800)] text-[#0c2a00] shadow-[inset_0_1px_0_rgba(255,255,255,.4),0_1px_2px_rgba(40,90,0,.15)]",
-        pink:
-          "bg-[linear-gradient(180deg,#ffbdd9,#fea8cd)] text-[#4a0f2a] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(120,30,70,.12)]",
-        ink:
-          "bg-[linear-gradient(180deg,#2b2e35,#0a0b0d)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.18),0_1px_2px_rgba(0,0,0,.18)]",
-        cerulean:
-          "bg-[linear-gradient(180deg,#62a2ff,#3c8aff)] text-[#00163d] shadow-[inset_0_1px_0_rgba(255,255,255,.35),0_1px_2px_rgba(0,60,160,.15)]",
-        lilac:
-          "bg-[linear-gradient(180deg,#dcaefe,#cd99fd)] text-[#2c0a4d] shadow-[inset_0_1px_0_rgba(255,255,255,.5),0_1px_2px_rgba(80,30,120,.12)]",
-        tan:
-          "bg-[linear-gradient(180deg,#cbb995,#b8a581)] text-[#2a2111] shadow-[inset_0_1px_0_rgba(255,255,255,.4),0_1px_2px_rgba(80,60,20,.12)]",
+        brand: "shadow-[inset_0_1px_0_rgba(255,255,255,.28),0_1px_2px_rgba(10,11,13,.18)]",
         cash:
-          "bg-[linear-gradient(180deg,#fff,#eef0f3)] text-g-700 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.05)]",
+          "gap-[.35em] bg-[linear-gradient(180deg,#fff,#eef0f3)] text-g-700 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.1),0_1px_2px_rgba(10,11,13,.05)]",
         unavailable:
           "bg-[repeating-linear-gradient(135deg,#f4f5f7_0_4px,#eceef2_4px_8px)] text-g-500 line-through decoration-ink/35 shadow-[inset_0_0_0_1px_var(--color-g-200)]"
       },
@@ -43,9 +30,17 @@ export const tickerChipVariants = cva(
         lg: "rounded-[9px] px-[11px] pt-[7px] pb-1.5 text-body-lg"
       }
     },
-    defaultVariants: { tone: "blue", size: "md" }
+    compoundVariants: [
+      // The coin replaces some of the left padding, so the cash chip stays as wide as its neighbours.
+      { tone: "cash", size: "sm", className: "pl-1" },
+      { tone: "cash", size: "md", className: "pl-1.5" },
+      { tone: "cash", size: "lg", className: "pl-2" }
+    ],
+    defaultVariants: { tone: "brand", size: "md" }
   }
 )
+
+const COIN_SIZE = { sm: 11, md: 14, lg: 17 } as const
 
 export interface TickerChipProps
   extends Omit<ComponentProps<"span">, "children">, Pick<VariantProps<typeof tickerChipVariants>, "size">
@@ -61,26 +56,30 @@ export interface TickerChipProps
 }
 
 const toneOf = (symbol: string, unavailable: boolean) =>
-  unavailable ? "unavailable" : symbol === CASH_SYMBOL ? "cash" : tickerTone(symbol)
+  unavailable ? "unavailable" : symbol === CASH_SYMBOL ? "cash" : "brand"
 
 /**
- * A stock's symbol in Doto on its own color. The color is fixed per stock everywhere, so people learn it; cash is
- * the one neutral chip. Sizes are 11, 13 and 16 px.
+ * A stock's symbol in Doto on its company's colors. The colors are fixed per stock everywhere, so people learn them;
+ * cash is the one neutral chip, with the USDC coin. Sizes are 11, 13 and 16 px.
  */
 export function TickerChip(
-  { symbol, size, unavailable = false, price, change, className, ...props }: TickerChipProps
+  { symbol, size, unavailable = false, price, change, className, style, ...props }: TickerChipProps
 ) {
+  const tone = toneOf(symbol, unavailable)
+  const colors = tickerColors(symbol)
+  const chipStyle = price === undefined ? style : undefined
   const chip = (
     <span
       data-slot="ticker-chip"
       data-symbol={symbol}
-      className={cn(
-        tickerChipVariants({ tone: toneOf(symbol, unavailable), size }),
-        price === undefined && className
-      )}
+      className={cn(tickerChipVariants({ tone, size }), price === undefined && className)}
+      style={tone === "brand" ?
+        { background: `linear-gradient(180deg, ${colors.top}, ${colors.bottom})`, color: colors.text, ...chipStyle } :
+        chipStyle}
       {...(unavailable ? { title: "Not available on bluechip" } : {})}
       {...(price === undefined ? props : {})}
     >
+      {tone === "cash" && <UsdcLogo size={COIN_SIZE[size ?? "md"]} />}
       {symbol}
     </span>
   )
@@ -89,6 +88,7 @@ export function TickerChip(
     <span
       data-slot="ticker-chip-price"
       className={cn("inline-flex items-center gap-2.5 whitespace-nowrap", className)}
+      style={style}
       {...props}
     >
       {chip}

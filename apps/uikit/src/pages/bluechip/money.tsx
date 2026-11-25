@@ -10,6 +10,7 @@ import { ToggleGroup, ToggleGroupItem } from "@bluechip/ui/components/toggle-gro
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney } from "@bluechip/ui/lib/format"
+import { TICKERS } from "@bluechip/ui/lib/tickers"
 import { type ReactNode, useState } from "react"
 import { card, Section } from "./layout.tsx"
 import { CAP, changeOf, CLOSES, FRIDAY_CLOSE, history, OPENS, type Quote, RESERVE, START, walk } from "./market.ts"
@@ -23,7 +24,7 @@ export function TickerSection({ prices }: { readonly prices: Readonly<Record<str
     <Section
       id="ticker-chip"
       title="Ticker chip"
-      purpose="The stock's symbol in Doto, on its own color. The color is fixed per stock everywhere in the app, so people learn it. Cash is the one neutral chip."
+      purpose="The stock's symbol in Doto, on its company's brand colors. The colors are fixed per stock everywhere in the app, so people learn them. Cash is the one neutral chip, with the USDC coin."
       notes={["Doto 800, 13 px, +5% tracking", "Sizes: 11 / 13 / 16 px", "Selectable chips are toggle buttons"]}
       states={[
         [
@@ -41,10 +42,10 @@ export function TickerSection({ prices }: { readonly prices: Readonly<Record<str
     >
       <div className="grid w-full gap-[22px]">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2.5">
-          {[...Object.entries(START), [CASH_SYMBOL, { name: "Cash" }] as const].map(([symbol, q]) => (
+          {[...TICKERS, { symbol: CASH_SYMBOL, name: "Cash" }].map(({ symbol, name }) => (
             <div key={symbol} className="grid justify-items-start gap-1.5 rounded-md bg-white p-3 shadow-e1">
               <TickerChip symbol={symbol} size="lg" />
-              <span className="text-label-sm text-g-600">{q.name}</span>
+              <span className="text-label-sm text-g-600">{name}</span>
             </div>
           ))}
         </div>
