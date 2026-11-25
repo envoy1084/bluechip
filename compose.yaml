@@ -1,0 +1,20 @@
+# Local development services. Run with `docker compose up -d`.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: bluechip
+      POSTGRES_PASSWORD: bluechip
+      POSTGRES_DB: bluechip
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bluechip -d bluechip"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+volumes:
+  postgres: {}
