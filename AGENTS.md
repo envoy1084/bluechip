@@ -105,7 +105,10 @@ Load the `effect-conventions` skill before writing or reviewing code.
 - Inline one-off logic; extract only substantial or reused logic into a specifically named module.
 - Every export of a published package has TSDoc with `@since`, `@category` and `@stability`, and
   examples as `**Example** (Title)` sections with a `ts import.meta.vitest` fence.
-- Comments explain why, not what.
+- Comments explain why, not what, and only where strictly needed (non-obvious reasons, invariants, external
+  constraints); never restate the code.
+- Separate logical blocks with blank lines: steps inside a function (read, check, write, return), groups of related
+  declarations, so code reads in paragraphs.
 
 ### Files and folders
 
