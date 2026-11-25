@@ -1,6 +1,7 @@
 # @bluechip/server
 
-bluechip's API server: Effect v4 on Node, Postgres through Drizzle ORM's Effect driver.
+bluechip's API server: Effect v4 on Node, Postgres through Drizzle ORM's Effect driver. It implements
+`BluechipApi` from `@bluechip/domain` (Effect `HttpApi`) under `/api`.
 
 ## Run locally
 
@@ -10,7 +11,22 @@ docker compose up -d              # Postgres 18 on localhost:5432
 pnpm --filter @bluechip/server db:migrate
 pnpm --filter @bluechip/server dev
 curl localhost:4000/health
+curl localhost:4000/api/version
+curl -N localhost:4000/api/events   # live events (Server-Sent Events)
+open http://localhost:4000/api/docs  # API docs; the OpenAPI document is /api/openapi.json
 ```
+
+The web app (`pnpm --filter @bluechip/web dev`) proxies `/api` and `/auth` to this server (`SERVER_ORIGIN`,
+default `http://localhost:4000`); `localhost:3000/dev/connection` shows the connection live.
+
+## API
+
+1. Define endpoints in `packages/domain/src/api/<Feature>Api.ts` and add the group in `packages/domain/src/Api.ts`
+   (before the middleware, so it applies).
+2. Implement them with `HttpApiBuilder.group` in `src/api/<Feature>.ts` and add the layer to `ApiHandlers` in
+   `src/api/Api.ts`.
+3. Errors are the domain's `Schema.TaggedError`s with an `httpApiStatus`; unexpected failures become
+   `Internal { requestId }`. Clients send `x-contract-version`; a mismatch is `ClientOutdated` (426).
 
 ## Database changes
 

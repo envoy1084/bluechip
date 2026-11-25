@@ -32,6 +32,7 @@ export default defineConfig({
     passWithNoTests: true,
     projects: [
       project("scripts", "scripts"),
+      project("server", "apps/server"),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
       project("ui", "packages/ui", {
         // Pre-bundle the UI libraries up front; discovering them mid-run reloads Vite and breaks React hooks.
