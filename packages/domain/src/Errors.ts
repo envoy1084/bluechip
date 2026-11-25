@@ -74,7 +74,7 @@ export class InvalidRequest extends Schema.TaggedError<InvalidRequest>("@bluechi
  */
 export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Errors/Conflict")(
   "Conflict",
-  { reason: Schema.Literals(["requestIdReused", "staleUpdate", "agentBusy"]) },
+  { reason: Schema.Literals(["requestIdReused", "staleUpdate", "agentBusy", "intentClosed"]) },
   { httpApiStatus: 409 }
 ) {}
 

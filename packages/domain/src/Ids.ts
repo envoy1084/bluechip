@@ -212,3 +212,37 @@ export const SavedTemplateId = typeId("template").pipe(
  * @since 0.0.0
  */
 export type SavedTemplateId = typeof SavedTemplateId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const IntentId = typeId("intent").pipe(
+  Schema.brand("IntentId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/IntentId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type IntentId = typeof IntentId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const AuditEventId = typeId("audit").pipe(
+  Schema.brand("AuditEventId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/AuditEventId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type AuditEventId = typeof AuditEventId.Type

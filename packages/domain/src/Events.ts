@@ -7,6 +7,7 @@
 import * as Duration from "effect/Duration"
 import * as Schema from "effect/Schema"
 import { Agent } from "./agents/Agent.ts"
+import { Intent } from "./intents/Intent.ts"
 import { MarketPrice } from "./market/Market.ts"
 import { Transfer } from "./portfolio/Transfer.ts"
 import { Trade } from "./trading/Trade.ts"
@@ -39,6 +40,8 @@ export const LiveEvent = Schema.TaggedUnion({
   TradeUpdated: { trade: Trade },
   /** One of the user's agents changed: its status, limits or pause (only sent to its owner). */
   AgentChanged: { agent: Agent },
+  /** One of the user's intents changed: decided, waiting, sent, filled, approved, blocked… (only sent to its owner). */
+  IntentChanged: { intent: Intent },
   /** The user's balances changed: refetch the portfolio (only sent to its owner). */
   PortfolioChanged: {}
 }).annotate({ identifier: "@bluechip/domain/Events/LiveEvent" })
