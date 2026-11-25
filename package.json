@@ -23,6 +23,7 @@
     "typecheck": "effect-tsgo tsrs -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "typecheck:tsc": "tsc -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "devnet:capture": "node --env-file=.env.local scripts/bin.ts devnet capture",
+    "test:e2e": "pnpm --filter @bluechip/e2e test",
     "test:fork": "node scripts/bin.ts contracts deploy && BLUECHIP_FORK_TESTS=1 vitest run --project fork",
     "contracts:test": "node scripts/bin.ts contracts test",
     "contracts:build": "node scripts/bin.ts contracts build"

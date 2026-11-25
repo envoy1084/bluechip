@@ -1,0 +1,24 @@
+{
+  "name": "@bluechip/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "bluechip's browser end-to-end suite: the web app in Chromium against the server and its own devnet.",
+  "scripts": {
+    "stack": "node stack/serve.ts",
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@bluechip/chain": "workspace:*",
+    "@bluechip/devnet": "workspace:*",
+    "@bluechip/domain": "workspace:*",
+    "@playwright/test": "1.65.1",
+    "@types/node": "catalog:",
+    "scripts": "workspace:*",
+    "typescript": "catalog:",
+    "viem": "catalog:",
+    "vite": "8.3.8"
+  }
+}
