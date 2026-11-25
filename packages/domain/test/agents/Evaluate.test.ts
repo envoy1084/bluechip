@@ -295,7 +295,7 @@ describe("evaluate", () => {
       expected: blocked(
         ["overStockCap", "NVDA", "NVDA would be over 30% of your money."],
         ["wrongWay", "NVDA", "NVDA would move away from its target."],
-        ["wrongWay", null, "USDC would move away from its target."],
+        ["wrongWay", null, "Your cash would move away from its target."],
         ["noProgress", null, "This wouldn't bring your portfolio closer to its target mix."]
       )
     },

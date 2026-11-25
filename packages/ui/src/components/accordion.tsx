@@ -2,7 +2,7 @@ import { Accordion as BaseAccordion } from "@base-ui/react/accordion"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 
-/** Stacked questions that open one at a time (`multiple` opens several). Arrow keys move between them. */
+/** Stacked questions that open one at a time (`multiple` opens several). Tab moves between them. */
 export function Accordion({ className, ...props }: BaseAccordion.Root.Props) {
   return (
     <BaseAccordion.Root

@@ -392,7 +392,11 @@ export const evaluate = (proposal: Proposal): Decision => {
     const moved = [...new Set(legs.map((leg) => leg.symbol))]
     for (const breach of rebalanceBreaches({ limits, before, after: valued, moved })) {
       const symbol = breach.asset === null || breach.asset === "USDC" ? null : breach.asset
-      violate(breach.rule, symbol, REBALANCE_MESSAGES[breach.rule](breach.asset ?? "your portfolio"))
+      violate(
+        breach.rule,
+        symbol,
+        REBALANCE_MESSAGES[breach.rule](breach.asset === "USDC" ? "Your cash" : breach.asset ?? "your portfolio")
+      )
     }
   }
 
