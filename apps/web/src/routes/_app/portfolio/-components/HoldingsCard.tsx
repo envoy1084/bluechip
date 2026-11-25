@@ -2,8 +2,10 @@ import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { Portfolio } from "@bluechip/domain/portfolio/Portfolio"
 import { CashHoldingRow, HoldingRow } from "@bluechip/ui/bluechip/holding-row"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
+import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
+import { cashDialogAtom } from "../../../../funding/cashDialog.ts"
 import { bpsPercent, shareCount, usdcDollars } from "../../../../market/amounts.ts"
 
 type Sort = "value" | "today" | "name"
@@ -13,6 +15,7 @@ export function HoldingsCard(
   { portfolio, names }: Readonly<{ portfolio: Portfolio; names: ReadonlyMap<StockSymbol, string> }>
 ) {
   const navigate = useNavigate()
+  const openCash = useAtomSet(cashDialogAtom)
   const [sort, setSort] = useState<Sort>("value")
 
   const nameOf = (symbol: StockSymbol) => names.get(symbol) ?? symbol
@@ -56,7 +59,7 @@ export function HoldingsCard(
         <CashHoldingRow
           value={usdcDollars(portfolio.cash)}
           weight={portfolio.value === BigInt(0) ? 0 : Number((portfolio.cash * BigInt(10_000)) / portfolio.value) / 100}
-          onClick={() => navigate({ to: "/add-cash" })}
+          onClick={() => openCash("add")}
         />
       </div>
     </section>

@@ -17,6 +17,7 @@ import { useAtomMount } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
 import { liveEventAtom } from "../api/events.ts"
 import { SignedIn } from "../auth/SignedIn.tsx"
+import { CashDialogs } from "../funding/CashDialogs.tsx"
 
 // Signed-in pages render in the browser: they need the session cookie and the live stream.
 export const Route = createFileRoute("/_app")({ ssr: false, component: AppLayout })
@@ -46,6 +47,7 @@ function AppLayout() {
           (
             <SidebarProvider className="bg-canvas">
               <LiveUpdates />
+              <CashDialogs />
               <Sidebar collapsible="none" className="bg-g-50">
                 <SidebarHeader className="px-2 pt-0.5 pb-1">
                   <Logo />

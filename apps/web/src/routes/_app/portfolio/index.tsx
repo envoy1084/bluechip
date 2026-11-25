@@ -5,13 +5,13 @@ import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
-import { WithdrawSheet } from "../../../funding/WithdrawSheet.tsx"
+import { cashDialogAtom } from "../../../funding/cashDialog.ts"
 import { AppPage } from "../../../shell/AppPage.tsx"
 import { CashCard } from "./-components/CashCard.tsx"
 import { HoldingsCard } from "./-components/HoldingsCard.tsx"
@@ -25,7 +25,7 @@ function PortfolioPage() {
   const portfolio = useAtomValue(portfolioAtom)
   const refresh = useAtomRefresh(portfolioAtom)
   const stocks = useAtomValue(stocksAtom)
-  const [withdrawing, setWithdrawing] = useState(false)
+  const openCash = useAtomSet(cashDialogAtom)
 
   const names = useMemo(
     () =>
@@ -47,11 +47,11 @@ function PortfolioPage() {
             size="sm"
             className="hidden sm:inline-flex"
             disabled={cash === BigInt(0)}
-            onClick={() => setWithdrawing(true)}
+            onClick={() => openCash("withdraw")}
           >
             <Icon name="upload" size={14} />Withdraw
           </Button>
-          <Button size="sm" nativeButton={false} render={<Link to="/add-cash" />}>
+          <Button size="sm" onClick={() => openCash("add")}>
             <Icon name="plus" size={14} />Add cash
           </Button>
         </>
@@ -86,7 +86,7 @@ function PortfolioPage() {
             Add cash, then buy a stock you like. Your chart starts with your first deposit.
           </EmptyDescription>
           <EmptyContent className="flex-row">
-            <Button nativeButton={false} render={<Link to="/add-cash" />}>
+            <Button onClick={() => openCash("add")}>
               <Icon name="plus" size={16} />Add cash
             </Button>
             <Button variant="ghost" nativeButton={false} render={<Link to="/stocks" />}>See stocks</Button>
@@ -101,7 +101,7 @@ function PortfolioPage() {
             <HoldingsCard portfolio={portfolio.value} names={names} />
             <div className="grid min-w-0 content-start gap-4">
               <MixCard portfolio={portfolio.value} names={names} />
-              <CashCard cash={portfolio.value.cash} onWithdraw={() => setWithdrawing(true)} />
+              <CashCard cash={portfolio.value.cash} />
               <WithdrawalsCard />
               <Alert variant="info">
                 <AlertTitle>Dividends and splits</AlertTitle>
@@ -114,8 +114,6 @@ function PortfolioPage() {
           </div>
         </div>
       )}
-
-      <WithdrawSheet cash={cash} open={withdrawing} onOpenChange={setWithdrawing} />
     </AppPage>
   )
 }

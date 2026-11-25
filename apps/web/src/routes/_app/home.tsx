@@ -1,11 +1,12 @@
 import { DepositCard } from "@bluechip/ui/bluechip/deposit-card"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { useAtomValue } from "@effect/atom-react/Hooks"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
+import { createFileRoute } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { meAtom } from "../../atoms/account.ts"
 import { portfolioAtom } from "../../atoms/portfolio.ts"
+import { cashDialogAtom } from "../../funding/cashDialog.ts"
 import { MarketPill } from "../../market/MarketPill.tsx"
 import { AppPage } from "../../shell/AppPage.tsx"
 import { BalanceCard } from "./-components/BalanceCard.tsx"
@@ -24,6 +25,7 @@ const greeting = () => {
 function Home() {
   const me = useAtomValue(meAtom)
   const portfolio = useAtomValue(portfolioAtom)
+  const openCash = useAtomSet(cashDialogAtom)
   if (!AsyncResult.isSuccess(me)) return null
 
   const { account, user } = me.value
@@ -47,7 +49,7 @@ function Home() {
           address={account.address}
           status="waiting"
           footer={
-            <Button size="sm" nativeButton={false} render={<Link to="/add-cash" />}>
+            <Button size="sm" onClick={() => openCash("add")}>
               <Icon name="plus" size={14} />Add cash
             </Button>
           }

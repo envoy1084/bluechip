@@ -8,15 +8,15 @@ import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { TransactionStatus } from "@bluechip/ui/bluechip/transaction-status"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
-import { Input } from "@bluechip/ui/components/input"
 import {
-  Sheet,
-  SheetBody,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle
-} from "@bluechip/ui/components/sheet"
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@bluechip/ui/components/dialog"
+import { Input } from "@bluechip/ui/components/input"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -43,7 +43,7 @@ const prepareProblem = (error: unknown): string => {
  * Takes USDC out to any address on Base: amount and address, a review of exactly what Face ID approves (and that the
  * first withdrawal also sets up the account), then where it stands until Base confirms it.
  */
-export function WithdrawSheet(
+export function WithdrawDialog(
   { cash, open, onOpenChange }: Readonly<{ cash: bigint; open: boolean; onOpenChange: (open: boolean) => void }>
 ) {
   const [step, setStep] = useState<Step>({ _tag: "Form" })
@@ -53,13 +53,13 @@ export function WithdrawSheet(
   }
 
   return (
-    <Sheet open={open} onOpenChange={close}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Withdraw cash</SheetTitle>
-          <SheetDescription>Send USDC from your account to an address on Base.</SheetDescription>
-        </SheetHeader>
-        <SheetBody className="grid content-start gap-4">
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Withdraw cash</DialogTitle>
+          <DialogDescription>Send USDC from your account to an address on Base.</DialogDescription>
+        </DialogHeader>
+        <DialogBody className="grid content-start gap-4">
           {step._tag === "Form" && (
             <WithdrawForm
               cash={cash}
@@ -74,9 +74,9 @@ export function WithdrawSheet(
             />
           )}
           {step._tag === "Sent" && <WithdrawProgress transfer={step.transfer} onDone={() => close(false)} />}
-        </SheetBody>
-      </SheetContent>
-    </Sheet>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   )
 }
 
