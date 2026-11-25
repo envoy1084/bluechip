@@ -1,6 +1,6 @@
 import { refusalFrom } from "@bluechip/chain/policies/Refusals"
+import type { UserId } from "@bluechip/domain/Ids"
 import { isEnded } from "@bluechip/domain/intents/Intent"
-import { and, eq } from "drizzle-orm"
 import * as ClusterSchema from "effect/cluster/ClusterSchema"
 import * as Entity from "effect/cluster/Entity"
 import * as DateTime from "effect/DateTime"
@@ -13,10 +13,9 @@ import * as DurableClock from "effect/workflow/DurableClock"
 import * as Workflow from "effect/workflow/Workflow"
 import { typeid } from "typeid-js"
 import type { Hex } from "viem"
-import { Database } from "../../platform/db/Database.ts"
-import { accounts } from "../accounts/tables.ts"
+import { Accounts } from "../accounts/Accounts.ts"
 import type { SessionRow } from "../agents/AgentSessions.ts"
-import { agents, agentSessions } from "../agents/tables.ts"
+import { AgentStore } from "../agents/AgentStore.ts"
 import { TradeLedger } from "../trading/TradeLedger.ts"
 import { AgentExecutor } from "./AgentExecutor.ts"
 import { type IntentRow, IntentStore } from "./IntentStore.ts"
@@ -45,8 +44,9 @@ export const AccountDesk = Entity.make("AccountDesk", [
  * so running it again after a restart picks up where it stopped.
  */
 export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
-  const db = yield* Database
   const intents = yield* IntentStore
+  const agentStore = yield* AgentStore
+  const accounts = yield* Accounts
   const executor = yield* AgentExecutor
   const ledger = yield* TradeLedger
   const done: StepResult = StepResult.cases.Done.make({})
@@ -65,17 +65,13 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     let row = yield* intents.find(intentId)
     if (row === undefined || isEnded(row.status) || row.executor !== "agent") return done
 
-    const [agent] = yield* db.select().from(agents).where(eq(agents.id, row.agentId!)).pipe(Effect.orDie)
-    const [account] = yield* db.select().from(accounts).where(eq(accounts.userId, row.userId)).pipe(Effect.orDie)
-    const [session] = agent?.currentSessionId == null ? [] : yield* db.select().from(agentSessions)
-      .where(and(eq(agentSessions.id, agent.currentSessionId), eq(agentSessions.status, "active"))).pipe(Effect.orDie)
-    const address = account!.address as Hex
+    const { agent, canTrade, session } = yield* agentStore.tradingState(row.agentId!)
+    const address = (yield* accounts.me(row.userId as UserId)).account.address as Hex
 
     // A sent operation is only ever followed, never sent again.
     if (row.userOpHash !== null && session !== undefined) return yield* finish(row, address, session)
 
-    const trading = agent !== undefined && !agent.paused && agent.status === "active" && session !== undefined
-    if (!trading && ["proposed", "waiting", "deciding"].includes(row.status)) {
+    if (!canTrade && ["proposed", "waiting", "deciding"].includes(row.status)) {
       yield* intents.advance(row, { _tag: "Cancelled" }).pipe(Effect.ignore)
       return done
     }

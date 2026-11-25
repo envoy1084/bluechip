@@ -12,14 +12,12 @@ import {
 import type { AgentId, IntentId, SigningRequestId, UserId } from "@bluechip/domain/Ids"
 import { type Decision, type Intent, IntentRequest, type Leg } from "@bluechip/domain/intents/Intent"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
-import { and, eq } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as WorkflowEngine from "effect/workflow/WorkflowEngine"
 import type { Hex } from "viem"
-import { Database } from "../../platform/db/Database.ts"
-import { agents, agentSessions } from "../agents/tables.ts"
+import { AgentStore } from "../agents/AgentStore.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { type TradeLink, Trades } from "../trading/Trades.ts"
 import { AgentExecutor } from "./AgentExecutor.ts"
@@ -63,25 +61,19 @@ export class Intents extends Context.Service<Intents, {
   static readonly layer = Layer.effect(
     Intents,
     Effect.gen(function*() {
-      const db = yield* Database
+      const agentStore = yield* AgentStore
       const store = yield* IntentStore
       const trades = yield* Trades
       const executor = yield* AgentExecutor
       const engine = yield* WorkflowEngine.WorkflowEngine
 
       // The agent, and its session in force, while it can trade.
-      const tradingAgent = Effect.fnUntraced(function*(owner: Owner, agentId: string) {
-        const [agent] = yield* db.select().from(agents).where(and(
-          eq(agents.id, agentId as `agent_${string}`),
-          eq(agents.userId, owner.id as `user_${string}`)
-        )).pipe(Effect.orDie)
-        if (agent === undefined) return yield* new NotFound({ resource: "agent", id: agentId })
-        const [session] = agent.currentSessionId === null ? [] : yield* db.select().from(agentSessions)
-          .where(eq(agentSessions.id, agent.currentSessionId)).pipe(Effect.orDie)
-        if (agent.paused || agent.status !== "active" || session?.status !== "active") {
-          return yield* new Conflict({ reason: "agentBusy" })
-        }
-        return { agent, session }
+      // The agent, and its session in force, while it can trade.
+      const tradingAgent = Effect.fnUntraced(function*(owner: Owner, agentId: AgentId) {
+        yield* agentStore.owned(owner, agentId)
+        const { agent, canTrade, session } = yield* agentStore.tradingState(agentId)
+        if (!canTrade) return yield* new Conflict({ reason: "agentBusy" })
+        return { agent: agent!, session: session! }
       })
 
       // Prepares an intent for your passkey: your own trade, or an agent's you approve.
@@ -151,7 +143,7 @@ export class Intents extends Context.Service<Intents, {
         if (row.status !== "needsApproval" && row.status !== "awaitingSignature") {
           return yield* new Conflict({ reason: "intentClosed" })
         }
-        yield* tradingAgent(owner, row.agentId!)
+        yield* tradingAgent(owner, row.agentId! as AgentId)
         return yield* prepareForOwner(owner, row, requestId, {
           intentId: row.id,
           agentId: row.agentId,

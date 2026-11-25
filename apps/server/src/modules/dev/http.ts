@@ -15,6 +15,7 @@ export const DevHandlers = HttpApiBuilder.group(
   "dev",
   Effect.fn(function*(handlers) {
     const chain = yield* ChainClient
+    const dev = yield* DevChain
     const balances = yield* AccountBalances
     const live = yield* LiveEvents
 
@@ -24,14 +25,11 @@ export const DevHandlers = HttpApiBuilder.group(
         const user = yield* CurrentUser
         const account = user.account as `0x${string}`
 
+        // ETH for gas (production sponsors it), then USDC as a real transfer, so it arrives like any deposit.
         yield* Effect.gen(function*() {
-          const dev = yield* DevChain
-          // ETH for gas (production sponsors it), then USDC as a real transfer, so it arrives like any deposit.
           yield* dev.setEthBalance(account, parseEther("0.05"))
           yield* dev.sendUsdc(account, parseUnits("1000", 6))
         }).pipe(
-          Effect.provide(DevChain.layer),
-          Effect.provideService(ChainClient, chain),
           Effect.catchTag(
             "ChainError",
             () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: null }))

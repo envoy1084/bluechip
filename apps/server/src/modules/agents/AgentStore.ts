@@ -49,6 +49,12 @@ export class AgentStore extends Context.Service<AgentStore, {
   /** The owner's agent with this id. */
   readonly owned: (owner: Owner, id: AgentId) => Effect.Effect<AgentRow, NotFound>
   readonly get: (id: AgentRow["id"]) => Effect.Effect<AgentRow | undefined>
+  /** The agent, its session in force when it has one, and whether it may trade now (active, not paused). */
+  readonly tradingState: (id: string) => Effect.Effect<{
+    readonly agent: AgentRow | undefined
+    readonly session: SessionRow | undefined
+    readonly canTrade: boolean
+  }>
   /** The owner's agents not removed, oldest first. */
   readonly list: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
   /** The owner's agents that can trade (or are on their way to), paused or not. */
@@ -113,6 +119,13 @@ export class AgentStore extends Context.Service<AgentStore, {
         return row
       })
 
+      const tradingState = Effect.fn("AgentStore.tradingState")(function*(id: string) {
+        const agent = yield* get(id as AgentRow["id"])
+        const current = agent?.currentSessionId == null ? undefined : yield* sessions.get(agent.currentSessionId)
+        const session = current?.status === "active" ? current : undefined
+        return { agent, session, canTrade: agent?.status === "active" && !agent.paused && session !== undefined }
+      })
+
       const list = Effect.fn("AgentStore.list")(function*(owner: Owner) {
         const rows = yield* db.select().from(agents)
           .where(and(eq(agents.userId, owner.id as `user_${string}`), ne(agents.status, "removed")))
@@ -145,7 +158,7 @@ export class AgentStore extends Context.Service<AgentStore, {
         return agent
       })
 
-      return AgentStore.of({ create, owned, get, list, running, inFlight, toAgent: agentOf, save })
+      return AgentStore.of({ create, owned, get, tradingState, list, running, inFlight, toAgent: agentOf, save })
     })
   )
 }

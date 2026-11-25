@@ -1,3 +1,4 @@
+import { DevChain } from "@bluechip/chain/DevChain"
 import * as Layer from "effect/Layer"
 import { Accounts } from "./modules/accounts/Accounts.ts"
 import { Activity } from "./modules/activity/Activity.ts"
@@ -32,7 +33,8 @@ import { LiveEvents } from "./platform/live/LiveEvents.ts"
 import { Namera } from "./platform/namera/Namera.ts"
 
 /**
- * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on. Each line
+ * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (`DevChain`
+ * only answers on a local chain; the dev endpoints check the network first). Each line
  * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, `Alpaca`
  * and the durable engine.
  */
@@ -63,5 +65,7 @@ export const ServicesLive = Layer.mergeAll(DeskLive, ExpireIntentsCron, Portfoli
       Activity.layer
     )
   ),
-  Layer.provideMerge(Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, ReferencePrices.layer))
+  Layer.provideMerge(
+    Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, ReferencePrices.layer, DevChain.layer)
+  )
 )
