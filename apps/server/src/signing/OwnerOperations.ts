@@ -76,7 +76,7 @@ export const prepareOperation = Effect.fn("OwnerOperations.prepare")(
     )
     const userOperation = {
       ...prepared,
-      // Some calls are estimated short (Anvil undercounts swaps through B20 stock tokens): a floor keeps them whole.
+      // Some calls are estimated short (a swap, see `swapCallGas`): a floor keeps them whole.
       callGasLimit: minCallGas !== undefined && prepared.callGasLimit < minCallGas ? minCallGas : prepared.callGasLimit,
       signature: "0x"
     } as UserOperation<"0.7">

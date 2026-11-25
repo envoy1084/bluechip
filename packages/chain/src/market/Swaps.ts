@@ -10,8 +10,9 @@ import type { Stock } from "../Contracts.ts"
 import { swapRouter, swapRouterAbi } from "./Aerodrome.ts"
 
 /**
- * Anvil underestimates swaps through B20 stock tokens (~376k gas used against a ~186k estimate); bundlers estimate
- * with the same node, so swap operations get at least this much call gas.
+ * Gas estimates come in short for a swap: Aerodrome's swap hook on Base records each swap only when enough gas is left,
+ * and reverts (`IG`) otherwise, so the estimate finds the cheaper path that then fails (~186k against ~372k used).
+ * Swap operations get at least this much call gas.
  *
  * @stability unstable
  * @category constants
