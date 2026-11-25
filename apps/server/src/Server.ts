@@ -15,6 +15,8 @@ import { Withdrawals } from "./funding/Withdrawals.ts"
 import { HealthRoutes } from "./http/Health.ts"
 import { OriginCheckMiddleware } from "./http/OriginCheck.ts"
 import { RequestIdMiddleware } from "./http/RequestId.ts"
+import { DeskLive } from "./intents/Desk.ts"
+import { Intents } from "./intents/Intents.ts"
 import { LiveEvents } from "./live/LiveEvents.ts"
 import { LoggingLive } from "./Logging.ts"
 import { Alpaca } from "./market/alpaca/Alpaca.ts"
@@ -36,7 +38,8 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
     gracefulShutdownTimeout: Config.succeed("2 seconds")
   })),
   // Namera checks at startup that the bundler and paymaster work together, and refuses to boot otherwise.
-  Layer.merge(CronsLive),
+  Layer.merge(Layer.mergeAll(CronsLive, DeskLive)),
+  Layer.provide(Intents.layer),
   Layer.provide(Layer.mergeAll(Withdrawals.layer, Trades.layer, Agents.layer, Charts.layer)),
   Layer.provide(
     Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer, SavedTemplates.layer)

@@ -10,6 +10,7 @@ import { AuthHandlers } from "./Auth.ts"
 import { ContractCheckLive, DefectReportingLive } from "./Contract.ts"
 import { DevHandlers } from "./Dev.ts"
 import { EventsHandlers } from "./Events.ts"
+import { IntentsHandlers } from "./Intents.ts"
 import { MarketHandlers } from "./Market.ts"
 import { PoliciesHandlers } from "./Policies.ts"
 import { PortfolioHandlers } from "./Portfolio.ts"
@@ -29,6 +30,7 @@ export const ApiHandlers = Layer.mergeAll(
   TradesHandlers,
   PoliciesHandlers,
   AgentsHandlers,
+  IntentsHandlers,
   ActivityHandlers,
   DevHandlers
 )

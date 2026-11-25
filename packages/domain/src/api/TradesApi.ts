@@ -56,7 +56,7 @@ export class TradesApi extends HttpApiGroup.make("trades").add(
     params: { id: SigningRequestId },
     payload: Schema.Struct({ credential: AuthenticationCredential }),
     success: Trade,
-    error: [NotFound, SignatureRejected, Unavailable]
+    error: [NotFound, Conflict, SignatureRejected, Unavailable]
   }),
   HttpApiEndpoint.get("trade", "/trades/:id", {
     params: { id: TradeId },

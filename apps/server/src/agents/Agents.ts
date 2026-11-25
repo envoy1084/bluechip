@@ -38,6 +38,7 @@ import type { Address, Hex } from "viem"
 import { AppConfig } from "../Config.ts"
 import { Database } from "../db/Database.ts"
 import { agents, sessionKeys } from "../db/schema/agents.ts"
+import { cancelAgentIntents } from "../intents/IntentStore.ts"
 import { LiveEvents } from "../live/LiveEvents.ts"
 import type { Namera } from "../Namera.ts"
 import { ownerAccount, type OwnerPasskey, sendOperation, waitForOperation } from "../signing/OwnerOperations.ts"
@@ -125,6 +126,9 @@ export class Agents extends Context.Service<Agents, {
       const templates = yield* SavedTemplates
       const context = yield* Effect.context<Namera | Database | AppConfig | ChainClient>()
       const scope = yield* Effect.scope
+
+      const cancelIntents = (agentId: string) =>
+        cancelAgentIntents(agentId).pipe(Effect.provideService(Database, db), Effect.provideService(LiveEvents, live))
 
       const rowOf = Effect.fnUntraced(function*(owner: Owner, id: AgentId) {
         const [row] = yield* db.select().from(agents)
@@ -456,6 +460,8 @@ export class Agents extends Context.Service<Agents, {
         if (Result.isFailure(next)) return yield* new Conflict({ reason: "agentBusy" })
 
         const userOpHash = yield* sendOperation(passkey, request.userOperation, credential)
+        // Its trades not sent yet were decided against the policies on their way out.
+        if (action !== "lock") yield* cancelIntents(row.id)
         const sessionId = action === "remove" ? row.currentSessionId! : request.payload["sessionId"]!
         yield* saveSession(sessionId, action === "remove" ? { userOpHash } : { status: "locking", userOpHash })
         const agent = yield* save(row, {
@@ -472,7 +478,9 @@ export class Agents extends Context.Service<Agents, {
         Effect.fnUntraced(function*(owner: Owner, id: AgentId) {
           const row = yield* rowOf(owner, id)
           if (row.status === "draft" || row.status === "removed") return yield* new Conflict({ reason: "agentBusy" })
-          return row.paused === paused ? yield* agentOf(row) : yield* save(row, { paused })
+          if (row.paused === paused) return yield* agentOf(row)
+          if (paused) yield* cancelIntents(row.id)
+          return yield* save(row, { paused })
         })
 
       const setAllPaused = (paused: boolean) =>
@@ -482,7 +490,10 @@ export class Agents extends Context.Service<Agents, {
             inArray(agents.status, ["locking", "active", "updating", "removing"]),
             eq(agents.paused, !paused)
           )).pipe(Effect.orDie)
-          for (const row of rows) yield* save(row, { paused })
+          for (const row of rows) {
+            if (paused) yield* cancelIntents(row.id)
+            yield* save(row, { paused })
+          }
           return yield* list(owner)
         })
 

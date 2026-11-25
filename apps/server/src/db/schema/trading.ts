@@ -1,14 +1,19 @@
 import { index, integer, pgTable, text } from "drizzle-orm/pg-core"
 import { dateTimeUtc, typeId, units } from "../columns.ts"
 import { users } from "./accounts.ts"
+import { agents } from "./agents.ts"
+import { intents } from "./intents.ts"
 
 /**
- * Trades the user signed: quoted amounts until filled, then exactly what moved (from the transaction's logs), with
- * the Chainlink price it was checked against.
+ * Trades sent from the account, by you or by an agent's key: quoted amounts until filled, then exactly what moved
+ * (from the transaction's logs), with the Chainlink price it was checked against, and the intent it carried out.
  */
 export const trades = pgTable("trades", {
   id: typeId("trade")("id").primaryKey(),
   userId: typeId("user")("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  intentId: typeId("intent")("intent_id").references(() => intents.id, { onDelete: "set null" }),
+  agentId: typeId("agent")("agent_id").references(() => agents.id, { onDelete: "set null" }),
+  source: text("source", { enum: ["owner", "agent", "approval"] }).notNull().default("owner"),
   symbol: text("symbol").notNull(),
   side: text("side", { enum: ["buy", "sell"] }).notNull(),
   status: text("status", { enum: ["sending", "confirming", "filled", "failed"] }).notNull(),

@@ -1,6 +1,6 @@
 import type { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks } from "@bluechip/chain/Contracts"
-import { fillOf, swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
+import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
 import {
   type Conflict,
   InsufficientCash,
@@ -12,10 +12,9 @@ import {
   type SignatureRejected,
   Unavailable
 } from "@bluechip/domain/Errors"
-import { LiveEvent } from "@bluechip/domain/Events"
 import type { Address, SigningRequestId, TradeId, UserId } from "@bluechip/domain/Ids"
 import { Quote, type StockSymbol } from "@bluechip/domain/market/Market"
-import { bpsBetween, priceOf, type Shares, type Usdc } from "@bluechip/domain/market/Units"
+import { bpsBetween, type Shares, type Usdc } from "@bluechip/domain/market/Units"
 import { type Trade, TradeRequest, type TradeWarning, transition } from "@bluechip/domain/trading/Trade"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import { and, eq, inArray, isNotNull } from "drizzle-orm"
@@ -33,7 +32,8 @@ import type { AppConfig } from "../Config.ts"
 import { Database } from "../db/Database.ts"
 import { accounts } from "../db/schema/accounts.ts"
 import { trades } from "../db/schema/trading.ts"
-import { LiveEvents } from "../live/LiveEvents.ts"
+import { advance, intentRow } from "../intents/IntentStore.ts"
+import type { LiveEvents } from "../live/LiveEvents.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { quote as quoteTrade } from "../market/Quoter.ts"
 import type { ReferencePrices } from "../market/ReferencePrices.ts"
@@ -49,6 +49,7 @@ import {
   type SigningRequestRow,
   webAuthnOptions
 } from "../signing/SigningRequests.ts"
+import { settleTrade } from "./Settlement.ts"
 import { toTrade } from "./TradeRecords.ts"
 
 // The fair-price check: how much worse than Chainlink a trade may be. Tighter while prices are paused (weekends,
@@ -69,25 +70,14 @@ export type TradeInput = {
   readonly amount: { readonly usdc: Usdc } | { readonly shares: Shares }
 }
 
-const QuoteJson = Schema.fromJsonString(Schema.toCodecJson(Quote))
-
-/** What a fill moved, as the trade records it: exact USDC and shares, the price they make and its gap to Chainlink. */
-const filled = (
-  row: typeof trades.$inferSelect,
-  fill: { readonly amountIn: bigint; readonly amountOut: bigint }
-) => {
-  const usdc = (row.side === "buy" ? fill.amountIn : fill.amountOut) as Usdc
-  const shares = (row.side === "buy" ? fill.amountOut : fill.amountIn) as Shares
-  const price = priceOf(usdc, shares)
-
-  return {
-    usdc,
-    shares,
-    price,
-    // Paying above the reference is worse for a buyer; receiving below it is worse for a seller.
-    gapBps: row.side === "buy" ? bpsBetween(price, row.reference) : bpsBetween(row.reference, price)
-  }
+/** The intent a trade carries out, and whether it is yours or an agent's trade you approved. */
+export type TradeLink = {
+  readonly intentId: string
+  readonly agentId: string | null
+  readonly source: "owner" | "approval"
 }
+
+const QuoteJson = Schema.fromJsonString(Schema.toCodecJson(Quote))
 
 const toTradeRequest = Effect.fnUntraced(function*(row: SigningRequestRow) {
   const payload = row.payload
@@ -109,7 +99,8 @@ const toTradeRequest = Effect.fnUntraced(function*(row: SigningRequestRow) {
 export class Trades extends Context.Service<Trades, {
   readonly prepare: (
     owner: Owner,
-    input: TradeInput
+    input: TradeInput,
+    link: TradeLink
   ) => Effect.Effect<
     TradeRequest,
     | InsufficientCash
@@ -132,38 +123,34 @@ export class Trades extends Context.Service<Trades, {
     Trades,
     Effect.gen(function*() {
       const db = yield* Database
-      const live = yield* LiveEvents
       const balances = yield* AccountBalances
       const market = yield* MarketPrices
-      const context = yield* Effect.context<Namera | Database | AppConfig | ReferencePrices | ChainClient>()
+      const context = yield* Effect.context<
+        Namera | Database | AppConfig | ReferencePrices | ChainClient | LiveEvents | AccountBalances
+      >()
       const scope = yield* Effect.scope
 
+      // How a sent trade ended, and its intent with it.
       const settle = Effect.fnUntraced(function*(row: typeof trades.$inferSelect, owner: Owner, passkey: OwnerPasskey) {
-        const stock = stocks.find((candidate) => candidate.symbol === row.symbol)!
         const outcome = yield* waitForOperation(passkey, row.userOpHash as Hex).pipe(Effect.result)
-        const fill = outcome._tag === "Success" && outcome.success.success
-          ? fillOf(outcome.success.logs, { stock, side: row.side }, owner.account as Hex)
-          : undefined
-        const next = transition(row.status, { _tag: fill === undefined ? "Failed" : "Filled" })
-        if (Result.isFailure(next)) return yield* Effect.logWarning(`Trade ${row.id}: ${next.failure}`)
+        const settled = yield* settleTrade(
+          row,
+          owner.account as Hex,
+          outcome._tag === "Success" ? outcome.success : undefined
+        )
+        if (settled === undefined || settled.intentId === null) return
 
-        const settledAt = yield* DateTime.now
-        const txHash = outcome._tag === "Success" ? outcome.success.txHash : null
-        const changes = { status: next.success, txHash, settledAt, ...(fill === undefined ? {} : filled(row, fill)) }
-
-        const [updated] = yield* db.update(trades).set(changes).where(eq(trades.id, row.id)).returning()
-          .pipe(Effect.orDie)
-
-        // Fresh balances before the events, so a client that refetches on them sees the new holdings.
-        yield* balances.invalidate(owner.account as Hex)
-        if (updated !== undefined) {
-          yield* live.publish(LiveEvent.cases.TradeUpdated.make({ trade: toTrade(updated) }), owner.id)
-        }
-        yield* live.publish(LiveEvent.cases.PortfolioChanged.make({}), owner.id)
+        const intent = yield* intentRow(settled.intentId)
+        if (intent === undefined) return
+        yield* advance(intent, { _tag: settled.status === "filled" ? "Filled" : "Failed" }).pipe(Effect.ignore)
       })
 
       const track = (row: typeof trades.$inferSelect, owner: Owner, passkey: OwnerPasskey) =>
-        settle(row, owner, passkey).pipe(Effect.provideContext(context), Effect.forkIn(scope), Effect.asVoid)
+        settle(row, owner, passkey).pipe(
+          Effect.provideContext(context),
+          Effect.forkIn(scope),
+          Effect.asVoid
+        )
 
       const pending = yield* db.select().from(trades)
         .innerJoin(accounts, eq(accounts.userId, trades.userId))
@@ -188,7 +175,7 @@ export class Trades extends Context.Service<Trades, {
         return warnings
       })
 
-      const prepare = Effect.fn("Trades.prepare")(function*(owner: Owner, input: TradeInput) {
+      const prepare = Effect.fn("Trades.prepare")(function*(owner: Owner, input: TradeInput, link: TradeLink) {
         const stock = stocks.find((candidate) => candidate.symbol === input.symbol)
         if (stock?.pool == null) return yield* new NotTradable({ symbol: input.symbol })
         const amountIn = "usdc" in input.amount ? input.amount.usdc : input.amount.shares
@@ -198,7 +185,7 @@ export class Trades extends Context.Service<Trades, {
           input.requestId,
           (payload) =>
             payload["symbol"] === input.symbol && payload["side"] === input.side &&
-            payload["amountIn"] === amountIn.toString()
+            payload["amountIn"] === amountIn.toString() && payload["intentId"] === link.intentId
         )
         if (Option.isSome(existing)) return yield* toTradeRequest(existing.value)
 
@@ -241,7 +228,10 @@ export class Trades extends Context.Service<Trades, {
             side: input.side,
             amountIn: amountIn.toString(),
             quote: Schema.encodeSync(QuoteJson)(quote),
-            warnings: warnings.join(",")
+            warnings: warnings.join(","),
+            intentId: link.intentId,
+            agentId: link.agentId ?? "",
+            source: link.source
           },
           calls: swapCalls({
             stock,
@@ -265,9 +255,13 @@ export class Trades extends Context.Service<Trades, {
         const quote = Schema.decodeSync(QuoteJson)(request.payload["quote"]!)
         const userOpHash = yield* sendOperation(passkey, request.userOperation, credential)
 
+        const payload = request.payload
         const [row] = yield* db.insert(trades).values({
           id: typeid("trade").toString() as `trade_${string}`,
           userId: owner.id as `user_${string}`,
+          intentId: payload["intentId"] as `intent_${string}`,
+          agentId: payload["agentId"] === "" ? null : payload["agentId"] as `agent_${string}`,
+          source: payload["source"] as "owner" | "approval",
           symbol: quote.symbol,
           side: quote.side,
           status: Result.getOrThrow(transition("sending", { _tag: "Accepted" })),
@@ -280,6 +274,14 @@ export class Trades extends Context.Service<Trades, {
           userOpHash,
           createdAt: yield* DateTime.now
         }).returning().pipe(Effect.orDie)
+
+        const intent = yield* intentRow(payload["intentId"]!)
+        if (intent !== undefined) {
+          yield* advance(intent, { _tag: "Signed" }, { userOpHash, tradeId: row!.id }).pipe(
+            Effect.flatMap((sent) => advance(sent, { _tag: "Accepted" })),
+            Effect.catchTag("Conflict", () => Effect.logWarning(`Intent ${intent.id} had moved on before it was sent`))
+          )
+        }
 
         yield* track(row!, owner, passkey)
         return toTrade(row!)
