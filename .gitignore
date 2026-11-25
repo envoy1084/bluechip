@@ -314,3 +314,8 @@ $RECYCLE.BIN/
 # The devnet helper contracts build output (the capture embeds their bytecode).
 packages/devnet/contracts/out/
 packages/devnet/contracts/cache/
+
+# Foundry build output and Soldeer dependencies (soldeer.lock pins them).
+contracts/out/
+contracts/cache/
+contracts/dependencies/

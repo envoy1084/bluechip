@@ -1,0 +1,3 @@
+forge-std/=dependencies/forge-std-1.17.0/src/
+solady/=dependencies/solady-0.1.26/src/
+namera/=dependencies/namera-2.0.0-rc.0/contracts/src/

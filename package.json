@@ -8,7 +8,7 @@
   "packageManager": "pnpm@12.21.0",
   "scripts": {
     "build": "tsc -b tsconfig.packages.json && pnpm --recursive --parallel --filter \"./packages/*\" --filter \"./apps/*\" run build",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm circular && pnpm test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm circular && pnpm test && pnpm contracts:test",
     "circular": "node scripts/bin.ts circular",
     "clean": "node scripts/bin.ts clean",
     "dev": "node scripts/bin.ts dev up",
@@ -23,7 +23,9 @@
     "typecheck": "effect-tsgo tsrs -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "typecheck:tsc": "tsc -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "devnet:capture": "node --env-file=.env.local scripts/bin.ts devnet capture",
-    "test:fork": "BLUECHIP_FORK_TESTS=1 vitest run --project fork"
+    "test:fork": "BLUECHIP_FORK_TESTS=1 vitest run --project fork",
+    "contracts:test": "node scripts/bin.ts contracts test",
+    "contracts:build": "node scripts/bin.ts contracts build"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
