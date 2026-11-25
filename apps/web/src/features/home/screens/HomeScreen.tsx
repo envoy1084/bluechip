@@ -10,7 +10,6 @@ import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
 import { BalanceCard } from "../components/BalanceCard.tsx"
-import { LatestActivity } from "../components/LatestActivity.tsx"
 
 // The visitor's own day and time of day.
 const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
@@ -21,10 +20,17 @@ const greeting = () => {
 }
 
 /**
- * The day's greeting, the balance, the latest activity, and the way to add cash when there is none. `approvals` is
- * the approvals bell, from the intents feature.
+ * The day's greeting, the balance, the way to add cash when there is none, and the conversation with the assistant.
+ * `approvals` is the approvals bell, from the intents feature; `conversations` and `conversation` come from the
+ * assistant feature.
  */
-export function HomeScreen({ approvals }: Readonly<{ approvals: ReactNode }>) {
+export function HomeScreen(
+  { approvals, conversations, conversation }: Readonly<{
+    approvals: ReactNode
+    conversations: ReactNode
+    conversation: ReactNode
+  }>
+) {
   const me = useAtomValue(meAtom)
   const portfolio = useAtomValue(portfolioAtom)
   const openCash = useAtomSet(cashDialogAtom)
@@ -39,6 +45,7 @@ export function HomeScreen({ approvals }: Readonly<{ approvals: ReactNode }>) {
       actions={
         <>
           <MarketPill className="hidden sm:inline-flex" />
+          {conversations}
           {approvals}
         </>
       }
@@ -54,8 +61,6 @@ export function HomeScreen({ approvals }: Readonly<{ approvals: ReactNode }>) {
 
       {AsyncResult.isSuccess(portfolio) && !empty && <BalanceCard portfolio={portfolio.value} />}
 
-      <LatestActivity />
-
       {empty && (
         <DepositCard
           address={account.address}
@@ -67,6 +72,8 @@ export function HomeScreen({ approvals }: Readonly<{ approvals: ReactNode }>) {
           }
         />
       )}
+
+      {conversation}
     </AppPage>
   )
 }

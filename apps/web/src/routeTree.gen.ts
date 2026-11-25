@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as AppApprovalsRouteImport } from './routes/_app/approvals'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
+import { Route as AppMemoryRouteImport } from './routes/_app/memory'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
@@ -53,6 +54,11 @@ const AppApprovalsRoute = AppApprovalsRouteImport.update({
 const AppHomeRoute = AppHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMemoryRoute = AppMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/approvals': typeof AppApprovalsRoute
   '/home': typeof AppHomeRoute
+  '/memory': typeof AppMemoryRoute
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/approvals': typeof AppApprovalsRoute
   '/home': typeof AppHomeRoute
+  '/memory': typeof AppMemoryRoute
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/_app/approvals': typeof AppApprovalsRoute
   '/_app/home': typeof AppHomeRoute
+  '/_app/memory': typeof AppMemoryRoute
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
@@ -211,6 +220,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/approvals'
     | '/home'
+    | '/memory'
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/approvals'
     | '/home'
+    | '/memory'
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
@@ -256,6 +267,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/_app/approvals'
     | '/_app/home'
+    | '/_app/memory'
     | '/_app/settings'
     | '/dev/chain'
     | '/dev/connection'
@@ -322,6 +334,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof AppHomeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/memory': {
+      id: '/_app/memory'
+      path: '/memory'
+      fullPath: '/memory'
+      preLoaderRoute: typeof AppMemoryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/settings': {
@@ -442,6 +461,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppApprovalsRoute: typeof AppApprovalsRoute
   AppHomeRoute: typeof AppHomeRoute
+  AppMemoryRoute: typeof AppMemoryRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
   AppAgentsNewRoute: typeof AppAgentsNewRoute
@@ -456,6 +476,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppApprovalsRoute: AppApprovalsRoute,
   AppHomeRoute: AppHomeRoute,
+  AppMemoryRoute: AppMemoryRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
   AppAgentsNewRoute: AppAgentsNewRoute,

@@ -3,7 +3,7 @@ import { Button } from "@bluechip/ui/components/button"
 import { Input } from "@bluechip/ui/components/input"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
@@ -122,6 +122,13 @@ export function SettingsScreen() {
             />
           )) :
           null}
+      </Section>
+      <Section title="Assistant" description="What the assistant knows about you is yours to see and delete.">
+        <Row title="Memory" description="Preferences, rules, goals and facts it uses to answer you." icon="book">
+          <Button variant="secondary" size="sm" nativeButton={false} render={<Link to="/memory" />}>
+            See memories
+          </Button>
+        </Row>
       </Section>
       <AgentsSection />
     </AppPage>

@@ -30,17 +30,21 @@ type Section = ComponentType<{ agent: Agent; nameOf: (symbol: StockSymbol) => st
 interface Sections {
   readonly Trade: Section
   readonly Activity: Section
+  /** Opens a conversation with the assistant about the agent. */
+  readonly Ask: ComponentType<{ agent: Agent }>
 }
 
 /**
  * An agent's page: its alerts, header, policies, usage and sessions. The trade and activity sections come from the
- * intents feature, so the route passes them in.
+ * intents feature and the way to ask about it from the assistant feature, so the route passes them in.
  */
-export function AgentScreen({ id, Trade, Activity }: Readonly<{ id: AgentId } & Sections>) {
+export function AgentScreen({ id, Trade, Activity, Ask }: Readonly<{ id: AgentId } & Sections>) {
   const agent = useAtomValue(agentAtom(id))
   const refresh = useAtomRefresh(agentAtom(id))
 
-  if (AsyncResult.isSuccess(agent)) return <AgentContent agent={agent.value} Trade={Trade} Activity={Activity} />
+  if (AsyncResult.isSuccess(agent)) {
+    return <AgentContent agent={agent.value} Trade={Trade} Activity={Activity} Ask={Ask} />
+  }
   if (Option.getOrUndefined(AsyncResult.error(agent)) instanceof NotFoundError) return <AgentNotFound />
 
   return (
@@ -66,7 +70,7 @@ export function AgentScreen({ id, Trade, Activity }: Readonly<{ id: AgentId } & 
 // its state (a removal in progress) as the agent moves between them.
 const noUsageAtom = Atom.make(AsyncResult.initial<AgentUsage, unknown>())
 
-function AgentContent({ agent, Trade, Activity }: Readonly<{ agent: Agent } & Sections>) {
+function AgentContent({ agent, Trade, Activity, Ask }: Readonly<{ agent: Agent } & Sections>) {
   const usageAtom: Atom.Atom<AsyncResult.AsyncResult<AgentUsage, unknown>> = hasSession(agent) ?
     agentUsageAtom(agent.id) :
     noUsageAtom
@@ -96,6 +100,7 @@ function AgentContent({ agent, Trade, Activity }: Readonly<{ agent: Agent } & Se
           <Link to="/agents" className="hover:text-ink">Agents</Link> / {agent.name}
         </>
       }
+      actions={agent.status === "removed" ? undefined : <Ask agent={agent} />}
       width="wide"
     >
       <div className="grid gap-4">
