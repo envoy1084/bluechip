@@ -1,0 +1,1442 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "a088d943-eb35-4604-9e46-8a7f4fcea5a9",
+  "prevIds": [
+    "77b3a50d-93c6-4124-8009-09cc07d7ab8e"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "assistant_cards"
+      ],
+      "writes": [
+        "s|tbl|public.assistant_cards",
+        "n|tbl|public.assistant_cards",
+        "e|tbl|public.assistant_cards",
+        "n|rel|public.assistant_cards",
+        "n|type|public.assistant_cards",
+        "n|rel|public.assistant_cards_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversations"
+      ],
+      "writes": [
+        "s|tbl|public.conversations",
+        "n|tbl|public.conversations",
+        "e|tbl|public.conversations",
+        "n|rel|public.conversations",
+        "n|type|public.conversations",
+        "n|rel|public.conversations_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "memories"
+      ],
+      "writes": [
+        "s|tbl|public.memories",
+        "n|tbl|public.memories",
+        "e|tbl|public.memories",
+        "n|rel|public.memories",
+        "n|type|public.memories",
+        "n|rel|public.memories_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "messages"
+      ],
+      "writes": [
+        "s|tbl|public.messages",
+        "n|tbl|public.messages",
+        "e|tbl|public.messages",
+        "n|rel|public.messages",
+        "n|type|public.messages",
+        "n|rel|public.messages_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "usage_budgets"
+      ],
+      "writes": [
+        "s|tbl|public.usage_budgets",
+        "n|tbl|public.usage_budgets",
+        "e|tbl|public.usage_budgets",
+        "n|rel|public.usage_budgets",
+        "n|type|public.usage_budgets",
+        "n|rel|public.usage_budgets_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "assistant_cards",
+        "assistant_cards_user_idx"
+      ],
+      "writes": [
+        "s|idx|public.assistant_cards_user_idx",
+        "n|idx|public.assistant_cards_user_idx",
+        "e|idx|public.assistant_cards_user_idx",
+        "n|rel|public.assistant_cards_user_idx"
+      ],
+      "reads": [
+        "n|tbl|public.assistant_cards",
+        "n|sch|public",
+        "n|col|public.assistant_cards.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "conversations",
+        "conversations_user_updated_at_idx"
+      ],
+      "writes": [
+        "s|idx|public.conversations_user_updated_at_idx",
+        "n|idx|public.conversations_user_updated_at_idx",
+        "e|idx|public.conversations_user_updated_at_idx",
+        "n|rel|public.conversations_user_updated_at_idx"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.conversations.user_id",
+        "n|col|public.conversations.updated_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "memories",
+        "memories_user_created_at_idx"
+      ],
+      "writes": [
+        "s|idx|public.memories_user_created_at_idx",
+        "n|idx|public.memories_user_created_at_idx",
+        "e|idx|public.memories_user_created_at_idx",
+        "n|rel|public.memories_user_created_at_idx"
+      ],
+      "reads": [
+        "n|tbl|public.memories",
+        "n|sch|public",
+        "n|col|public.memories.user_id",
+        "n|col|public.memories.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "messages",
+        "messages_conversation_created_at_idx"
+      ],
+      "writes": [
+        "s|idx|public.messages_conversation_created_at_idx",
+        "n|idx|public.messages_conversation_created_at_idx",
+        "e|idx|public.messages_conversation_created_at_idx",
+        "n|rel|public.messages_conversation_created_at_idx"
+      ],
+      "reads": [
+        "n|tbl|public.messages",
+        "n|sch|public",
+        "n|col|public.messages.conversation_id",
+        "n|col|public.messages.created_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "assistant_cards"
+      ],
+      "writes": [
+        "s|fk|public.assistant_cards.assistant_cards_user_id_users_id_fkey",
+        "n|fk|public.assistant_cards.assistant_cards_user_id_users_id_fkey",
+        "e|fk|public.assistant_cards.assistant_cards_user_id_users_id_fkey",
+        "n|con|public.assistant_cards.assistant_cards_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.assistant_cards",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.assistant_cards.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "assistant_cards"
+      ],
+      "writes": [
+        "s|fk|public.assistant_cards.assistant_cards_conversation_id_conversations_id_fkey",
+        "n|fk|public.assistant_cards.assistant_cards_conversation_id_conversations_id_fkey",
+        "e|fk|public.assistant_cards.assistant_cards_conversation_id_conversations_id_fkey",
+        "n|con|public.assistant_cards.assistant_cards_conversation_id_conversations_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.assistant_cards",
+        "n|sch|public",
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.assistant_cards.conversation_id",
+        "n|col|public.conversations.id",
+        "e|uniqueness|public.conversations.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversations"
+      ],
+      "writes": [
+        "s|fk|public.conversations.conversations_user_id_users_id_fkey",
+        "n|fk|public.conversations.conversations_user_id_users_id_fkey",
+        "e|fk|public.conversations.conversations_user_id_users_id_fkey",
+        "n|con|public.conversations.conversations_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.conversations.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversations"
+      ],
+      "writes": [
+        "s|fk|public.conversations.conversations_agent_id_agents_id_fkey",
+        "n|fk|public.conversations.conversations_agent_id_agents_id_fkey",
+        "e|fk|public.conversations.conversations_agent_id_agents_id_fkey",
+        "n|con|public.conversations.conversations_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.conversations.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "memories"
+      ],
+      "writes": [
+        "s|fk|public.memories.memories_user_id_users_id_fkey",
+        "n|fk|public.memories.memories_user_id_users_id_fkey",
+        "e|fk|public.memories.memories_user_id_users_id_fkey",
+        "n|con|public.memories.memories_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.memories",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.memories.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "memories"
+      ],
+      "writes": [
+        "s|fk|public.memories.memories_agent_id_agents_id_fkey",
+        "n|fk|public.memories.memories_agent_id_agents_id_fkey",
+        "e|fk|public.memories.memories_agent_id_agents_id_fkey",
+        "n|con|public.memories.memories_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.memories",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.memories.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "memories"
+      ],
+      "writes": [
+        "s|fk|public.memories.memories_message_id_messages_id_fkey",
+        "n|fk|public.memories.memories_message_id_messages_id_fkey",
+        "e|fk|public.memories.memories_message_id_messages_id_fkey",
+        "n|con|public.memories.memories_message_id_messages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.memories",
+        "n|sch|public",
+        "n|tbl|public.messages",
+        "n|sch|public",
+        "n|col|public.memories.message_id",
+        "n|col|public.messages.id",
+        "e|uniqueness|public.messages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "messages"
+      ],
+      "writes": [
+        "s|fk|public.messages.messages_conversation_id_conversations_id_fkey",
+        "n|fk|public.messages.messages_conversation_id_conversations_id_fkey",
+        "e|fk|public.messages.messages_conversation_id_conversations_id_fkey",
+        "n|con|public.messages.messages_conversation_id_conversations_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.messages",
+        "n|sch|public",
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.messages.conversation_id",
+        "n|col|public.conversations.id",
+        "e|uniqueness|public.conversations.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "usage_budgets"
+      ],
+      "writes": [
+        "s|fk|public.usage_budgets.usage_budgets_user_id_users_id_fkey",
+        "n|fk|public.usage_budgets.usage_budgets_user_id_users_id_fkey",
+        "e|fk|public.usage_budgets.usage_budgets_user_id_users_id_fkey",
+        "n|con|public.usage_budgets.usage_budgets_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.usage_budgets",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.usage_budgets.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "assistant_cards",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "conversations",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "memories",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "messages",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "usage_budgets",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "conversation_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "card",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "surface",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "title",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "archived_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "source",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "confidence",
+        "type": "double precision",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "note",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "message_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "confirmed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "last_used_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "conversation_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "role",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "parts",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "model",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "input_tokens",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "output_tokens",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "cache_read_tokens",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "input_tokens",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "output_tokens",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "cost_micros",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "assistant_cards_user_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "conversations_user_updated_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "updated_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "memories_user_created_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "messages_conversation_created_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "conversation_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "assistant_cards_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "assistant_cards_conversation_id_conversations_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "conversation_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "conversations",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "conversations_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "conversations_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "memories_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "memories_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "memories_message_id_messages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "message_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "messages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "messages_conversation_id_conversations_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "conversation_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "conversations",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "usage_budgets_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "usage_budgets",
+        "name": "usage_budgets_pkey",
+        "columns": [
+          "user_id",
+          "day"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "assistant_cards",
+        "name": "assistant_cards_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "conversations_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memories",
+        "name": "memories_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "messages",
+        "name": "messages_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

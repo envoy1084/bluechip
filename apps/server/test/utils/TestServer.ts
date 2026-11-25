@@ -10,11 +10,12 @@ import { OriginCheckMiddleware } from "../../src/platform/http/OriginCheck.ts"
 import { ServicesLive } from "../../src/Services.ts"
 import { AlpacaTest } from "./AlpacaTest.ts"
 import { EngineTest } from "./EngineTest.ts"
+import { RecordedModel } from "./RecordedModel.ts"
 import { TestConfig } from "./TestConfig.ts"
 
 /**
  * The API on a test server (`NodeHttpServer.layerTest`, a random port), with every service of the app, Alpaca's test
- * layer, the in-memory engine, the test database and the devnet. Provides an `HttpClient` that sends to the server, and
+ * layer, the assistant on recorded models (`RecordedModel`), the in-memory engine, the test database and the devnet. Provides an `HttpClient` that sends to the server, and
  * the devnet's controls (`Devnet`, `DevChain`, `ChainClient`) for arranging the chain.
  *
  * The server runs on the real clock: its engine, crons and the chain advance with time, so files using it build their
@@ -26,6 +27,7 @@ export const TestServer = HttpRouter.serve(Layer.mergeAll(ApiRoutes, OriginCheck
 }).pipe(
   Layer.provideMerge(NodeHttpServer.layerTest),
   Layer.provideMerge(ServicesLive),
+  Layer.provideMerge(RecordedModel.layer),
   Layer.provide(Layer.mergeAll(AlpacaTest, Database.layer, AppConfig.layer)),
   Layer.provideMerge(EngineTest),
   Layer.provide(TestConfig),

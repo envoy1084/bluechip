@@ -5,6 +5,7 @@ import * as Layer from "effect/Layer"
 import { AccountHandlers } from "./modules/accounts/http.ts"
 import { ActivityHandlers } from "./modules/activity/http.ts"
 import { AgentsHandlers } from "./modules/agents/http.ts"
+import { AssistantHandlers } from "./modules/assistant/http.ts"
 import { AuthenticationLive } from "./modules/auth/Authentication.ts"
 import { AuthHandlers } from "./modules/auth/http.ts"
 import { DevHandlers } from "./modules/dev/http.ts"
@@ -32,6 +33,7 @@ export const ApiHandlers = Layer.mergeAll(
   AgentsHandlers,
   IntentsHandlers,
   ActivityHandlers,
+  AssistantHandlers,
   DevHandlers
 )
   .pipe(

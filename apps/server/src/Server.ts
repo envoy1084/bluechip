@@ -7,6 +7,7 @@ import { createServer } from "node:http"
 import { ApiRoutes } from "./Api.ts"
 import { AppConfig } from "./config/AppConfig.ts"
 import { LoggingLive } from "./config/Logging.ts"
+import { AssistantModels } from "./modules/assistant/AssistantModels.ts"
 import { Alpaca } from "./modules/market/alpaca/Alpaca.ts"
 import { Database } from "./platform/db/Database.ts"
 import { EngineLive } from "./platform/engine/Engine.ts"
@@ -20,7 +21,7 @@ export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddlewar
 
 /**
  * The server: routes, Node HTTP on `PORT`, the app's services (the desk and crons among them) on the durable engine,
- * the database, the chain, Alpaca, config and logging. Namera checks at startup that the bundler and paymaster work
+ * the database, the chain, Alpaca, the assistant's models, config and logging. Namera checks at startup that the bundler and paymaster work
  * together, and refuses to boot otherwise.
  */
 export const ServerLive = HttpRouter.serve(Routes).pipe(
@@ -31,6 +32,7 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
   })),
   Layer.provideMerge(ServicesLive),
   Layer.provide(Alpaca.layer),
+  Layer.provide(AssistantModels.layer),
   Layer.provide(EngineLive),
   Layer.provide(Database.layer),
   Layer.provide(ChainClient.layer),
