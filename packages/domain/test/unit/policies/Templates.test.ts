@@ -17,7 +17,7 @@ describe("draftSpec", () => {
       { id: "cashReserve", config: { minBps: 1000 } },
       { id: "slippageBudget", config: { weeklyBps: 100 } },
       { id: "tradesPerDay", config: { count: 12 } },
-      { id: "gasBudget", config: { weiPerDay: 1_000_000_000_000_000n } },
+      { id: "gasBudget", config: { weiPerDay: 50_000_000_000_000_000n } },
       { id: "anyCall", config: {} }
     ])
   })

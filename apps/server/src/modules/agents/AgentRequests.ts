@@ -276,7 +276,8 @@ export class AgentRequests extends Context.Service<AgentRequests, {
           Effect.gen(function*() {
             return yield* sessions.insert(tx, {
               agentId: row.id,
-              spec: current.spec,
+              // Its policies, with bluechip's hidden ones as they are today (a raised gas budget, say).
+              spec: complete(current.spec),
               sessionKey: yield* sessions.newKey(tx, row.id, now),
               permissionId: null,
               validUntil: DateTime.add(now, { days: SESSION_DAYS }),

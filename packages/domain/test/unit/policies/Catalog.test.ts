@@ -200,7 +200,7 @@ describe("complete", () => {
     const spec = complete(without(PICKER, "gasBudget", "anyCall"))
 
     assert.deepStrictEqual(spec.policies.slice(-2), [
-      { id: "gasBudget", config: { weiPerDay: 1_000_000_000_000_000n } },
+      { id: "gasBudget", config: { weiPerDay: 50_000_000_000_000_000n } },
       { id: "anyCall", config: {} }
     ])
   })
@@ -208,7 +208,7 @@ describe("complete", () => {
   it("replaces a hidden policy's configuration with bluechip's", () => {
     const spec = complete(changed(PICKER, { id: "gasBudget", config: { weiPerDay: 1n } }))
 
-    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 1_000_000_000_000_000n })
+    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 50_000_000_000_000_000n })
   })
 
   it("lists policies in the catalog's order", () => {

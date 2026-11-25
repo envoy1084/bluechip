@@ -133,7 +133,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked
         const chain = yield* ChainClient
-        // 2 gwei: about 1.9M gas then costs ~4e15 wei, over the agent's 1e15 a day. Base's fee comes back afterwards.
+        // 20 gwei: about 1.9M gas then costs ~7.6e16 wei, over the agent's 5e16 a day. Base's fee comes back afterwards.
         const baseFee = (wei: bigint) =>
           chain.use("set base fee", async (client) => {
             await client.request({
@@ -142,7 +142,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
             })
             await client.request({ method: "anvil_mine" as never, params: ["0x1"] as never })
           })
-        yield* baseFee(BigInt(2_000_000_000))
+        yield* baseFee(BigInt(20_000_000_000))
 
         const waiting = yield* Effect.gen(function*() {
           const created = yield* user.api.intents.create({
