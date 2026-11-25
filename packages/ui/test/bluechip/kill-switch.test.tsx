@@ -48,14 +48,7 @@ describe("KillSwitch", () => {
       await expect.element(page.getByText("All agents are paused")).not.toBeInTheDocument()
     })
 
-    it("says agent, not agents, for one", async () => {
-      await render(<Running agentCount={1} />)
-      await userEvent.click(page.getByRole("button", { name: "Pause all" }))
-      await expect.element(page.getByRole("alertdialog", { name: "Pause all 1 agent?" })).toBeVisible()
-      await expect.element(page.getByRole("button", { name: "Pause all agent" })).toBeVisible()
-    })
-
-    it.skip("names one agent in plain words (bug: the dialog reads \"Pause all 1 agent?\" and \"Pause all agent\")", async () => {
+    it("names one agent in plain words", async () => {
       await render(<Running agentCount={1} />)
       await userEvent.click(page.getByRole("button", { name: "Pause all" }))
       await expect.element(page.getByRole("alertdialog", { name: "Pause your agent?" })).toBeVisible()

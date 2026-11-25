@@ -77,7 +77,6 @@ export function KillSwitch({ paused, agentCount, onPause, onResume, className }:
     )
   }
 
-  const plural = agentCount === 1 ? "agent" : "agents"
   return (
     <div
       data-slot="kill-switch"
@@ -98,15 +97,19 @@ export function KillSwitch({ paused, agentCount, onPause, onResume, className }:
         <AlertDialogContent>
           <AlertDialogIcon name="pause" />
           <AlertDialogHeader>
-            <AlertDialogTitle>Pause all {agentCount} {plural}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {agentCount === 1 ? "Pause your agent?" : `Pause all ${agentCount} agents?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              They stop right away, even mid-plan. Nothing is sold. You can resume with Face ID.
+              {agentCount === 1 ? "It stops" : "They stop"}{" "}
+              right away, even mid-plan. Nothing is sold. You can resume with Face ID.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="danger" haptic="nudge" onClick={onPause}>
-              <Icon name="pause" size={16} />Pause all {plural}
+              <Icon name="pause" size={16} />
+              {agentCount === 1 ? "Pause agent" : "Pause all agents"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
