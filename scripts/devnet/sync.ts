@@ -3,10 +3,6 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import { movePool, rpc, setFeed } from "@bluechip/devnet/Controls"
 
-// While prices are paused (weekends, holidays) Chainlink's feeds hold their last price: report it as 30 hours old,
-// which the server reads as paused, not stale.
-const PAUSED_AGE_SECONDS = 30 * 60 * 60
-
 /** A stock as `GET /api/market/stocks` answers it: its symbol and the market's token price, if there is one. */
 export interface ListedStock {
   readonly symbol: string
@@ -30,7 +26,9 @@ export const feedUpdates = (
     stock.price === null ? [] : [{
       symbol: stock.symbol,
       price: BigInt(stock.price.price),
-      updatedAt: session === "paused" ? now - PAUSED_AGE_SECONDS : now
+      // While prices are paused (weekends, holidays) Chainlink's feeds hold their last price: report it as 30 hours
+      // old, which the server reads as paused, not stale.
+      updatedAt: session === "paused" ? now - 30 * 60 * 60 : now
     }]
   )
 

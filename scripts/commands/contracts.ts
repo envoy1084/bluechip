@@ -11,11 +11,6 @@ import { Tools } from "../services/Tools.ts"
 /** Where the generated addresses and ABIs go. */
 export const DEPLOYED_MODULE = "packages/chain/src/policies/Deployed.ts"
 
-const Artifact = Schema.Struct({
-  abi: Schema.Array(Schema.Unknown),
-  bytecode: Schema.Struct({ object: Schema.String })
-})
-
 const forge = Effect.fnUntraced(function*(args: ReadonlyArray<string>) {
   const path = yield* Path.Path
   yield* (yield* Tools).run("forge", args, { cwd: path.join(process.cwd(), "contracts"), inherit: true })
@@ -26,7 +21,11 @@ export const readArtifact = Effect.fn("contracts.readArtifact")(function*(root: 
   const fs = yield* FileSystem.FileSystem
   const path = yield* Path.Path
   const text = yield* fs.readFileString(path.join(root, "contracts", "out", `${name}.sol`, `${name}.json`))
-  const artifact = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Artifact))(text)
+  const artifact = yield* Schema.decodeUnknownEffect(
+    Schema.fromJsonString(
+      Schema.Struct({ abi: Schema.Array(Schema.Unknown), bytecode: Schema.Struct({ object: Schema.String }) })
+    )
+  )(text)
   return { abi: artifact.abi as Abi, bytecode: artifact.bytecode.object as Hex }
 }, Effect.orDie)
 

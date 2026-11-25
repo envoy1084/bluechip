@@ -32,9 +32,6 @@ export interface ContractSpec {
   readonly constructorArgs: ReadonlyArray<unknown>
 }
 
-// `TradeSizeRule` → `trade-size-rule`.
-const kebab = (name: string) => name.replace(/[A-Z]/g, (letter, at) => `${at === 0 ? "" : "-"}${letter.toLowerCase()}`)
-
 export const CONTRACTS: ReadonlyArray<ContractSpec> = [
   {
     name: "AerodromeTradePolicy",
@@ -48,7 +45,13 @@ export const CONTRACTS: ReadonlyArray<ContractSpec> = [
     constructorTypes: [{ type: "address" }, { type: "address" }, { type: "uint256" }],
     constructorArgs: [usdc, SEQUENCER_FEED, BigInt(SEQUENCER_GRACE_SECONDS)]
   },
-  ...RULES.map((name) => ({ name, label: `bluechip.${kebab(name)}`, constructorTypes: [], constructorArgs: [] }))
+  // `TradeSizeRule` → `bluechip.trade-size-rule`.
+  ...RULES.map((name) => ({
+    name,
+    label: `bluechip.${name.replace(/[A-Z]/g, (letter, at) => `${at === 0 ? "" : "-"}${letter.toLowerCase()}`)}`,
+    constructorTypes: [],
+    constructorArgs: []
+  }))
 ]
 
 /** A contract's salt: its label, hashed. */

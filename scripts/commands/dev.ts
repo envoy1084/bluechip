@@ -18,8 +18,6 @@ export const CHAIN_PORTS = { anvil: 8545, alto: 4337 } as const
 /** Where `pnpm dev`'s local chain keeps its state between runs (`--reset-chain` starts it again from the capture). */
 export const LOCAL_CHAIN_STATE = ".data/devnet/state.json"
 
-const entryPoint07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
-
 /** A long-running development process, shown under `name`. */
 export interface DevProcess {
   readonly name: string
@@ -73,7 +71,8 @@ export const localChainProcesses = (options: { readonly stateFile: string; reado
       "--rpc-url",
       `http://localhost:${CHAIN_PORTS.anvil}`,
       "--entrypoints",
-      entryPoint07,
+      // EntryPoint v0.7.
+      "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
       "--executor-private-keys",
       BUNDLER_KEYS.executor,
       "--utility-private-key",
@@ -149,11 +148,6 @@ const prepareLocalChain = Effect.fnUntraced(function*(root: string, reset: boole
   return localChainProcesses({ stateFile, alto: path.join(root, "packages/devnet/node_modules/.bin/alto") })
 }, Effect.orDie)
 
-// Keeps the local chain's feeds and pools at the server's market prices; quiet until the server answers.
-const syncLocalPrices = Effect.tryPromise(() =>
-  syncPrices({ apiUrl: `http://localhost:${DEV_PORTS.server}`, rpcUrl: `http://localhost:${CHAIN_PORTS.anvil}` })
-).pipe(Effect.ignore, Effect.repeat(Schedule.spaced("15 seconds")))
-
 type ChainMode = "local" | "fork" | "none"
 
 const up = Effect.fn("dev.up")(
@@ -197,7 +191,17 @@ const up = Effect.fn("dev.up")(
       ...(chain ? ["  chain   the devnet; prices follow the market every 15 s (--fork for a fork of Base)"] : [])
     ].join("\n"))
 
-    if (chain !== undefined) yield* Effect.forkScoped(syncLocalPrices)
+    // Keeps the local chain's feeds and pools at the server's market prices; quiet until the server answers.
+    if (chain !== undefined) {
+      yield* Effect.forkScoped(
+        Effect.tryPromise(() =>
+          syncPrices({
+            apiUrl: `http://localhost:${DEV_PORTS.server}`,
+            rpcUrl: `http://localhost:${CHAIN_PORTS.anvil}`
+          })
+        ).pipe(Effect.ignore, Effect.repeat(Schedule.spaced("15 seconds")))
+      )
+    }
 
     // Every process runs until one stops or Ctrl+C interrupts them all; the finalizers then stop the chain.
     yield* Effect.forEach(processes, (process) => runProcess(process, width), {

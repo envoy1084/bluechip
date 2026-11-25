@@ -22,12 +22,6 @@ export interface Deployment {
 
 const hasCode = async (node: Rpc, address: Address) => (await node("eth_getCode", [address, "latest"])) !== "0x"
 
-// Anvil answers `anvil_nodeInfo`; a public node doesn't.
-const requireAnvil = async (node: Rpc) => {
-  const anvil = await node("anvil_nodeInfo").then(() => true, () => false)
-  if (!anvil) throw new Error("contracts: only a local Anvil chain (the devnet or a fork) can be deployed to")
-}
-
 /** Where each contract stands on the chain at `node`. */
 export const contractStatus = async (node: Rpc, contracts: ReadonlyArray<Deployable>) => {
   const statuses: Array<Deployment> = []
@@ -39,7 +33,9 @@ export const contractStatus = async (node: Rpc, contracts: ReadonlyArray<Deploya
 
 /** Deploys each contract not yet at its address, from Anvil's first unlocked account, and checks it landed there. */
 export const deployContracts = async (node: Rpc, contracts: ReadonlyArray<Deployable>) => {
-  await requireAnvil(node)
+  // Anvil answers `anvil_nodeInfo`; a public node doesn't.
+  const anvil = await node("anvil_nodeInfo").then(() => true, () => false)
+  if (!anvil) throw new Error("contracts: only a local Anvil chain (the devnet or a fork) can be deployed to")
 
   const deployments: Array<Deployment> = []
   for (const { address, initCode, spec } of contracts) {

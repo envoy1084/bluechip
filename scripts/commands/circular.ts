@@ -18,13 +18,13 @@ export const findCycles = Effect.fn("circular.findCycles")(function*(files: Read
   return Arr.map(result.circular(), (cycle) => Arr.join(cycle, " -> "))
 })
 
-const run = Effect.fn("circular")(function*() {
-  const cycles = yield* findCycles(globSync("packages/*/src/**/*.{ts,tsx}"))
-  if (cycles.length > 0) return yield* CheckFailed.make({ check: "circular", problems: cycles })
-  yield* Console.log("circular: ok")
-})
-
 export const circular = Command.make("circular").pipe(
   Command.withDescription("Fail on import cycles between the modules of the workspace packages"),
-  Command.withHandler(() => run())
+  Command.withHandler(
+    Effect.fn("circular")(function*() {
+      const cycles = yield* findCycles(globSync("packages/*/src/**/*.{ts,tsx}"))
+      if (cycles.length > 0) return yield* CheckFailed.make({ check: "circular", problems: cycles })
+      yield* Console.log("circular: ok")
+    })
+  )
 )
