@@ -28,19 +28,30 @@ export function useAgentSigning() {
   const confirm = useAtomSet(confirmAgentAtom, { mode: "promise" })
   const [signing, setSigning] = useState<AgentSigning>({ status: "idle" })
 
-  const run = async (prepare: () => Promise<AgentRequest | Agent>) => {
+  const run = async (prepare: () => Promise<AgentRequest | Agent>): Promise<AgentSigning> => {
+    const settle = (next: AgentSigning) => {
+      setSigning(next)
+      return next
+    }
+
     setSigning({ status: "preparing" })
     try {
       const prepared = await prepare()
-      if (!(prepared instanceof AgentRequest)) return setSigning({ status: "sent", agent: prepared })
+      if (!(prepared instanceof AgentRequest)) return settle({ status: "sent", agent: prepared })
 
       setSigning({ status: "signing" })
-      const agent = await confirm({ id: prepared.id, options: prepared.options })
-      setSigning({ status: "sent", agent })
+      return settle({ status: "sent", agent: await confirm({ id: prepared.id, options: prepared.options }) })
     } catch (error) {
-      setSigning({ status: "failed", message: problemOf(error) })
+      return settle({ status: "failed", message: problemOf(error) })
     }
   }
 
-  return { signing, run, reset: () => setSigning({ status: "idle" }) }
+  // For a `PasskeyButton`, which shows done or "try again" from a promise: the agent once sent, or the reason.
+  const sign = async (prepare: () => Promise<AgentRequest | Agent>): Promise<Agent> => {
+    const done = await run(prepare)
+    if (done.status === "sent") return done.agent
+    throw new Error(done.status === "failed" ? done.message : "The request didn't finish.")
+  }
+
+  return { signing, run, sign, reset: () => setSigning({ status: "idle" }) }
 }
