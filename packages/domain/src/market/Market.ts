@@ -8,7 +8,7 @@ import { Address } from "../Ids.ts"
 import { Bps, Price, Shares, Usdc } from "./Units.ts"
 
 /**
- * The stocks bluechip supports: every Coinbase tokenized stock on Base with a Chainlink price feed.
+ * The stocks bluechip supports: every Coinbase tokenized stock on Base with a Chainlink price feed and a pool.
  *
  * @stability unstable
  * @category models
@@ -18,7 +18,6 @@ export const StockSymbol = Schema.Literals([
   "AAPL",
   "AMZN",
   "ANT",
-  "COIN",
   "CRCL",
   "GOOGL",
   "INTC",

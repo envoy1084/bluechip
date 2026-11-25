@@ -50,8 +50,8 @@ export interface Stock {
  * Every Coinbase tokenized stock on Base with a Chainlink NAV feed: Coinbase's NAV feed list
  * (`GET https://api.coinbase.com/v1/tokenized-stocks/nav-feeds`) joined with its token list
  * (`GET https://api.coinbase.com/v1/tokenized-stocks`), checked against Chainlink's Base feed directory on
- * 2026-11-25. Of 415 listed tokens, these 14 have a feed. COINc has a feed but no supply yet and is not in Coinbase's
- * token list.
+ * 2026-11-25. Of 415 listed tokens, these 13 have a feed and a pool to trade in. (COINc also has a feed, but no
+ * supply and no pool, so bluechip leaves it out.)
  *
  * @stability unstable
  * @category addresses
@@ -84,14 +84,6 @@ export const stocks: ReadonlyArray<Stock> = [
     pool: { address: "0x599C4225FE90214795a0be228D20d7680f8CED15", tickSpacing: 10 },
     logoUrl:
       "https://metadata.coinbase.com/equity_icons/8ab0b05f5367f9125e4c94b1c792d6c31c784dddeb42a3fcbf93b242e8f8645d.png"
-  },
-  {
-    symbol: "COIN",
-    name: "Coinbase",
-    token: "0xb200000000000000000000c85a31389D71F3ecfb",
-    feed: "0x408e44f504A7371a345F03a73dDC96A4b48e8aa7",
-    pool: null,
-    logoUrl: null
   },
   {
     symbol: "CRCL",

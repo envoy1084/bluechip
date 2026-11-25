@@ -24,7 +24,7 @@ describe.skipIf(!chainAvailable)("prices.snapshot job", () => {
       Effect.gen(function*() {
         const run = yield* snapshotPrices
         assert.strictEqual(run.status, "succeeded")
-        assert.strictEqual(run.detail["stocks"], 14)
+        assert.strictEqual(run.detail["stocks"], 13)
         const db = yield* Database
         yield* db.delete(jobRuns).where(eq(jobRuns.id, run.id))
       }))

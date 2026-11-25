@@ -190,19 +190,14 @@ describe.skipIf(!chainAvailable)("BluechipApi", () => {
       const status = yield* call("GET", "/api/market/status")
       assert.include(["open", "closed"], status.json.state)
       const stocks = yield* call("GET", "/api/market/stocks")
-      assert.strictEqual(stocks.json.length, 14)
-      assert.isFalse(stocks.json.find((stock: { symbol: string }) => stock.symbol === "COIN").tradable)
+      assert.strictEqual(stocks.json.length, 13)
+      assert.isTrue(stocks.json.every((stock: { tradable: boolean }) => stock.tradable))
       const quote = yield* call("POST", "/api/market/quotes", {
         body: { symbol: "NVDA", side: "buy", amount: { usdc: "100000000" } }
       })
       assert.strictEqual(quote.status, 200)
       assert.isAbove(Number(quote.json.shares), 0)
       assert.isBelow(Math.abs(quote.json.gapBps), 200)
-      const coin = yield* call("POST", "/api/market/quotes", {
-        body: { symbol: "COIN", side: "buy", amount: { usdc: "100000000" } }
-      })
-      assert.strictEqual(coin.status, 422)
-      assert.strictEqual(coin.json._tag, "NotTradable")
       const history = yield* call("GET", "/api/market/stocks/NVDA/history?range=1W")
       const times = history.json.map((point: { at: string }) => Date.parse(point.at))
       assert.deepStrictEqual(times, [...times].sort((a: number, b: number) => a - b))
