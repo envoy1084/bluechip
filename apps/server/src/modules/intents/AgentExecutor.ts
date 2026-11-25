@@ -39,11 +39,19 @@ const SWAP_DEADLINE = { minutes: 3 }
 // The tip an agent's operation offers: 0.001 gwei, Base's usual.
 const AGENT_TIP = BigInt(1_000_000)
 
-/** A trade decided for an agent: what the pipeline decided, and, when it passes, the quote and calls to send. */
+/** The gas an agent's operation is sent with, from its simulation. */
+export interface AgentGas {
+  readonly callGasLimit: bigint
+  readonly verificationGasLimit: bigint
+  readonly preVerificationGas: bigint
+}
+
+/** A trade decided for an agent: what the pipeline decided, and, when it passes, the quote, calls and gas to send. */
 export interface Decided {
   readonly decision: Decision
   readonly quote?: Quote | undefined
   readonly calls?: ReadonlyArray<{ readonly to: Address; readonly data: Hex }> | undefined
+  readonly gas?: AgentGas | undefined
 }
 
 /** An agent's operation, signed and hashed: `send` hands it to the bundler, `wait` follows it to its receipt. */
@@ -75,7 +83,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
     agentId: string,
     session: SessionRow,
     calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>,
-    callGasLimit: bigint
+    gas: AgentGas
   ) => Effect.Effect<SignedOperation, ChainError>
   /** Waits for an agent operation already sent, after a restart. */
   readonly wait: (agentId: string, session: SessionRow, hash: Hex) => Effect.Effect<Receipt | undefined, ChainError>
@@ -183,7 +191,13 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
             return {
               decision: { _tag: "Passes", callGasLimit: simulated.callGasLimit },
               quote,
-              calls
+              calls,
+              gas: {
+                callGasLimit: simulated.callGasLimit,
+                verificationGasLimit: simulated.verificationGasLimit,
+                // Base's share of the L1 data fee moves with fees between the simulation and the send: a tenth more.
+                preVerificationGas: simulated.preVerificationGas + simulated.preVerificationGas / BigInt(10)
+              }
             } satisfies Decided
           case "Refused":
             return { decision: { _tag: "Refused", ...simulated.refusal } } satisfies Decided
@@ -197,14 +211,15 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         agentId: string,
         session: SessionRow,
         calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>,
-        callGasLimit: bigint
+        gas: AgentGas
       ) {
         const client = yield* agentClient(agentId, session)
         const account = client.account!
 
         const prepared = yield* chain.use(
           "prepare agent operation",
-          () => client.prepareUserOperation({ account, calls: [...calls], callGasLimit })
+          // With every gas limit given, viem doesn't ask the bundler to estimate again.
+          () => client.prepareUserOperation({ account, calls: [...calls], ...gas })
         )
         const signature = yield* chain.use("sign agent operation", () => account.signUserOperation(prepared as never))
         const hash = getUserOperationHash({

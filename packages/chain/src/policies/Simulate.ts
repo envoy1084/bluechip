@@ -20,13 +20,19 @@ import { guardedTradeCallGas } from "./Session.ts"
  * @since 0.0.0
  */
 export type Decision =
-  | { readonly _tag: "Passes"; readonly callGasLimit: bigint }
+  | {
+    readonly _tag: "Passes"
+    readonly callGasLimit: bigint
+    readonly verificationGasLimit: bigint
+    readonly preVerificationGas: bigint
+  }
   | { readonly _tag: "Refused"; readonly refusal: Refusal }
   | { readonly _tag: "Retry"; readonly reason: string }
 
 /**
  * Whether the agent's session lets it send `calls`, by estimating them as the agent. A trade asks for at least
- * `guardedTradeCallGas`, as it will when sent.
+ * `guardedTradeCallGas`, as it will when sent. The gas it passes with is what to send it with, so sending needs no
+ * second estimate.
  *
  * @stability unstable
  * @category simulation
@@ -40,7 +46,9 @@ export const simulateAsAgent = (
     .pipe(
       Effect.map((estimate): Decision => ({
         _tag: "Passes",
-        callGasLimit: estimate.callGasLimit > guardedTradeCallGas ? estimate.callGasLimit : guardedTradeCallGas
+        callGasLimit: estimate.callGasLimit > guardedTradeCallGas ? estimate.callGasLimit : guardedTradeCallGas,
+        verificationGasLimit: estimate.verificationGasLimit,
+        preVerificationGas: estimate.preVerificationGas
       })),
       Effect.catch((failure) => {
         const refusal = refusalFrom(failure.cause)

@@ -33,10 +33,19 @@ export default defineConfig({
     projects: [
       project("scripts", "scripts"),
       project("domain", "packages/domain"),
-      // Chain tests run on the devnet: one Anvil and Alto per worker, from the captured state.
-      project("devnet", "packages/devnet", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
-      project("chain", "packages/chain", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
-      project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts", "test/setup/database.ts"] } }),
+      // Chain tests run on the devnet: one Anvil and Alto per worker, from the captured state. Each worker is three busy
+      // processes (Anvil, Alto and the tests), so these projects run as their own group, after the browser and pure
+      // tests, with a few workers each: sharing the machine with Chromium, bundler round trips slowed past the timeout.
+      ...[
+        project("devnet", "packages/devnet", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
+        project("chain", "packages/chain", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
+        project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts", "test/setup/database.ts"] } })
+      ].map((config) =>
+        // A cold worker's first test starts a bundler and deploys an account: 15 s, not Vitest's default 5 (agreed with
+        // the maintainer for the devnet-backed projects only).
+        // oxlint-disable-next-line landmines-testing/no-flake-masking
+        mergeConfig(config, { test: { maxWorkers: 4, testTimeout: 15_000, sequence: { groupOrder: 1 } } })
+      ),
       // Real-chain facts on a fork of Base: only with `pnpm test:fork`.
       ...(process.env["BLUECHIP_FORK_TESTS"] === "1"
         ? [{

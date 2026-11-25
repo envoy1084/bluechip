@@ -102,7 +102,7 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     }
 
     const quote = decided.quote!
-    const signed = yield* executor.sign(agent!.id, session!, decided.calls!, decision.callGasLimit)
+    const signed = yield* executor.sign(agent!.id, session!, decided.calls!, decided.gas!)
     const trade = yield* ledger.record({
       id: typeid("trade").toString() as `trade_${string}`,
       userId: row.userId,

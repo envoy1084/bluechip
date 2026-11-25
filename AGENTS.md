@@ -253,7 +253,8 @@ Tests live in each package's `test/` folder and use `@effect/vitest` (`it.effect
 import the package by name (`@bluechip/ui/components/button`). Write the tests a behaviour needs: the documented contract, its failure cases and
 regressions; leave what the type checker proves to `typetest/`. The landmines testing rules are
 enforced: no test doubles (use real implementations, test layers, MSW for the network), no fixed
-sleeps (`TestClock`, or await a signal), no polling races, and no retries or raised timeouts.
+sleeps (`TestClock`, or await a signal), no polling races, and no retries. Timeouts stay at Vitest's default except
+the devnet-backed projects (devnet, chain, server), which run as their own group with 15 s per test.
 
 Chain tests run on the devnet (`packages/devnet`): a local Base with every contract bluechip uses at its real
 address, one Anvil and Alto per Vitest worker, started from a captured state file, so they need no fork, no RPC and
