@@ -5,7 +5,8 @@
 // - `POST /e2e/expire` runs the agents' expiry cron for one user (`{ userId, at }`) as if the server's clock read `at`
 //   (ISO 8601), the way `AgentExpiry.test.ts` does: a session lasts 90 days.
 //
-// Configured by the environment like `src/main.ts`.
+// With `BLUECHIP_E2E_LIVE=1` the assistant runs on Anthropic's models instead (`ANTHROPIC_API_KEY`), for the suite's
+// opt-in live smoke test, and replies can't be recorded. Configured by the environment like `src/main.ts`.
 import type { UserId } from "@bluechip/domain/Ids"
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
 import * as Effect from "effect/Effect"
@@ -14,6 +15,7 @@ import * as HttpServerResponse from "effect/http/HttpServerResponse"
 import * as Layer from "effect/Layer"
 import * as TestClock from "effect/testing/TestClock"
 import { Agents } from "../../src/modules/agents/Agents.ts"
+import { AssistantModels } from "../../src/modules/assistant/AssistantModels.ts"
 import { makeServer } from "../../src/Server.ts"
 import { AlpacaTest } from "../utils/AlpacaTest.ts"
 import { RecordedModel, type Reply } from "../utils/RecordedModel.ts"
@@ -44,6 +46,8 @@ const ExpireRoute = Layer.unwrap(Effect.gen(function*() {
     }))
 }))
 
-const adapters = Layer.merge(AlpacaTest, RecordedModel.layer)
+const server = process.env["BLUECHIP_E2E_LIVE"] === "1" ?
+  makeServer(Layer.merge(AlpacaTest, AssistantModels.layer), ExpireRoute) :
+  makeServer(Layer.merge(AlpacaTest, RecordedModel.layer), Layer.merge(RepliesRoute, ExpireRoute))
 
-NodeRuntime.runMain(Layer.launch(makeServer(adapters, Layer.merge(RepliesRoute, ExpireRoute))))
+NodeRuntime.runMain(Layer.launch(server))
