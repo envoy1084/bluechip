@@ -10,7 +10,9 @@ import { Database } from "./db/Database.ts"
 import { HealthRoutes } from "./http/Health.ts"
 import { OriginCheckMiddleware } from "./http/OriginCheck.ts"
 import { RequestIdMiddleware } from "./http/RequestId.ts"
+import { LiveEvents } from "./live/LiveEvents.ts"
 import { LoggingLive } from "./Logging.ts"
+import { PriceFeed } from "./market/PriceFeed.ts"
 import { Namera } from "./Namera.ts"
 
 /** Every HTTP route the server answers: health and the API under `/api` (passkey auth included). */
@@ -25,6 +27,8 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
   })),
   // Namera checks at startup that the bundler and paymaster work together, and refuses to boot otherwise.
   Layer.provide(Namera.layer),
+  Layer.provide(PriceFeed.layer),
+  Layer.provide(LiveEvents.layer),
   Layer.provide(Database.layer),
   Layer.provide(ChainClient.layer),
   Layer.provide(AppConfig.layer),

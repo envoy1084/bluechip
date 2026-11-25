@@ -6,28 +6,26 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Database } from "../../src/db/Database.ts"
 import { jobRuns } from "../../src/db/schema/jobRuns.ts"
-import { recordHeartbeat } from "../../src/jobs/Heartbeat.ts"
+import { snapshotPrices } from "../../src/jobs/PriceSnapshot.ts"
 import { chainAvailable } from "../support/fork.ts"
-
-const databaseUrl = "postgres://bluechip:bluechip@localhost:5432/bluechip"
 
 const TestLayer = Layer.mergeAll(
   Database.layerMigrated.pipe(
-    Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({ DATABASE_URL: databaseUrl })))
+    Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnvRecord({
+      DATABASE_URL: "postgres://bluechip:bluechip@localhost:5432/bluechip"
+    })))
   ),
   Layer.succeed(ChainClient, ChainClient.make("local", "http://localhost:8545"))
 )
 
-describe.skipIf(!chainAvailable)("heartbeat job", () => {
+describe.skipIf(!chainAvailable)("prices.snapshot job", () => {
   layer(TestLayer)((it) => {
-    it.effect("records a run with the fork's block number", () =>
+    it.effect("stores every stock's latest answer and records the run", () =>
       Effect.gen(function*() {
-        const run = yield* recordHeartbeat
+        const run = yield* snapshotPrices
+        assert.strictEqual(run.status, "succeeded")
+        assert.strictEqual(run.detail["stocks"], 14)
         const db = yield* Database
-        const [stored] = yield* db.select().from(jobRuns).where(eq(jobRuns.id, run.id))
-        assert.strictEqual(stored?.task, "heartbeat")
-        assert.strictEqual(stored?.status, "succeeded")
-        assert.isTrue(BigInt(String(stored?.detail["blockNumber"])) > 0n)
         yield* db.delete(jobRuns).where(eq(jobRuns.id, run.id))
       }))
   })

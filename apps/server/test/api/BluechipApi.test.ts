@@ -10,6 +10,8 @@ import { ApiRoutes } from "../../src/api/Api.ts"
 import { AppConfig } from "../../src/Config.ts"
 import { Database } from "../../src/db/Database.ts"
 import { OriginCheckMiddleware } from "../../src/http/OriginCheck.ts"
+import { LiveEvents } from "../../src/live/LiveEvents.ts"
+import { PriceFeed } from "../../src/market/PriceFeed.ts"
 import { Namera } from "../../src/Namera.ts"
 import { softwareAuthenticator } from "../support/authenticator.ts"
 import { chainAvailable } from "../support/fork.ts"
@@ -23,7 +25,8 @@ const config = ConfigProvider.layer(ConfigProvider.fromEnvRecord({
 }))
 
 // Sign-up reads the chain (Namera checks for Base's P-256 precompile), so these tests run on the local fork.
-const Services = Layer.mergeAll(Namera.layer, Database.layerMigrated, AppConfig.layer).pipe(
+const Services = Layer.mergeAll(Namera.layer, Database.layerMigrated, AppConfig.layer, PriceFeed.layer).pipe(
+  Layer.provideMerge(LiveEvents.layer),
   Layer.provideMerge(Layer.succeed(ChainClient, ChainClient.make("local", "http://localhost:8545"))),
   Layer.provide(config)
 )
@@ -180,6 +183,29 @@ describe.skipIf(!chainAvailable)("BluechipApi", () => {
       cloned.rewindCounter()
       const { result } = yield* signIn(cloned)
       assert.strictEqual(result.status, 403)
+    }))
+
+  it.effect("serves the market without a session", () =>
+    Effect.gen(function*() {
+      const status = yield* call("GET", "/api/market/status")
+      assert.include(["open", "closed"], status.json.state)
+      const stocks = yield* call("GET", "/api/market/stocks")
+      assert.strictEqual(stocks.json.length, 14)
+      assert.isFalse(stocks.json.find((stock: { symbol: string }) => stock.symbol === "COIN").tradable)
+      const quote = yield* call("POST", "/api/market/quotes", {
+        body: { symbol: "NVDA", side: "buy", amount: { usdc: "100000000" } }
+      })
+      assert.strictEqual(quote.status, 200)
+      assert.isAbove(Number(quote.json.shares), 0)
+      assert.isBelow(Math.abs(quote.json.gapBps), 200)
+      const coin = yield* call("POST", "/api/market/quotes", {
+        body: { symbol: "COIN", side: "buy", amount: { usdc: "100000000" } }
+      })
+      assert.strictEqual(coin.status, 422)
+      assert.strictEqual(coin.json._tag, "NotTradable")
+      const history = yield* call("GET", "/api/market/stocks/NVDA/history?range=1W")
+      const times = history.json.map((point: { at: string }) => Date.parse(point.at))
+      assert.deepStrictEqual(times, [...times].sort((a: number, b: number) => a - b))
     }))
 
   it.effect("cross-site requests are refused", () =>

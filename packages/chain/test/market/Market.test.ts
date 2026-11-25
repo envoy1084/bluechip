@@ -4,7 +4,7 @@ import { DevChain } from "@bluechip/chain/DevChain"
 import { factory, factoryAbi, swapRouter, swapRouterAbi } from "@bluechip/chain/market/Aerodrome"
 import { readPrices } from "@bluechip/chain/market/Prices"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
-import { readRoundsBefore } from "@bluechip/chain/market/Rounds"
+import { readPhases, readRounds } from "@bluechip/chain/market/Rounds"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
@@ -45,9 +45,12 @@ describe.skipIf(!forkAvailable)("market on the local fork", () => {
     it.effect("walks a feed's past answers, newest first", () =>
       Effect.gen(function*() {
         const chain = yield* ChainClient
-        const { prices } = yield* readPrices(chain)
-        const latest = prices.find((price) => price.stock.symbol === "NVDA")!
-        const rounds = yield* readRoundsBefore(chain, nvda.feed, latest.roundId, 5)
+        const [current] = yield* readPhases(chain, nvda.feed)
+        const rounds = yield* readRounds(chain, nvda.feed, {
+          phase: current!.phase,
+          fromRound: current!.lastRound,
+          count: 5
+        })
         assert.isAbove(rounds.length, 0)
         for (let index = 1; index < rounds.length; index++) {
           assert.isTrue(rounds[index]!.updatedAt <= rounds[index - 1]!.updatedAt)

@@ -7,12 +7,14 @@ import { AccountHandlers } from "./Account.ts"
 import { AuthHandlers } from "./Auth.ts"
 import { ContractCheckLive, DefectReportingLive } from "./Contract.ts"
 import { EventsHandlers } from "./Events.ts"
+import { MarketHandlers } from "./Market.ts"
 import { SystemHandlers } from "./System.ts"
 
 /** Every group's handlers with the contract middleware; tests serve these in memory. */
-export const ApiHandlers = Layer.mergeAll(SystemHandlers, EventsHandlers, AuthHandlers, AccountHandlers).pipe(
-  Layer.provideMerge(Layer.mergeAll(ContractCheckLive, DefectReportingLive, AuthenticationLive))
-)
+export const ApiHandlers = Layer.mergeAll(SystemHandlers, EventsHandlers, AuthHandlers, AccountHandlers, MarketHandlers)
+  .pipe(
+    Layer.provideMerge(Layer.mergeAll(ContractCheckLive, DefectReportingLive, AuthenticationLive))
+  )
 
 /** `/api/*`, the OpenAPI document at `/api/openapi.json` and its docs page at `/api/docs`. */
 export const ApiRoutes = Layer.mergeAll(

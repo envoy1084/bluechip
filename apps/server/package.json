@@ -15,7 +15,8 @@
     "dev:fund": "node --env-file-if-exists=.env.local src/bin/dev-fund.ts",
     "jobs:dev": "trigger dev",
     "jobs:deploy": "trigger deploy",
-    "jobs:login": "trigger login"
+    "jobs:login": "trigger login",
+    "prices:backfill": "node --env-file-if-exists=.env.local src/bin/backfill-prices.ts"
   },
   "dependencies": {
     "@bluechip/chain": "workspace:^",
