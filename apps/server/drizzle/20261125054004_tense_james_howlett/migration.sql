@@ -1,1 +1,0 @@
-ALTER TABLE "accounts" ADD COLUMN "deployed_at" timestamp with time zone;

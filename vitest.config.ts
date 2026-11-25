@@ -33,8 +33,9 @@ export default defineConfig({
     projects: [
       project("scripts", "scripts"),
       project("domain", "packages/domain"),
-      project("chain", "packages/chain"),
-      project("server", "apps/server"),
+      // Both share one local fork (and its bundler), which answers one test file at a time far faster than several.
+      project("chain", "packages/chain", { test: { fileParallelism: false } }),
+      project("server", "apps/server", { test: { fileParallelism: false } }),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
       project("ui", "packages/ui", {
         // Pre-bundle the UI libraries up front; discovering them mid-run reloads Vite and breaks React hooks.

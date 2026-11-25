@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres:/var/lib/postgresql
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bluechip -d bluechip"]
       interval: 2s
@@ -23,10 +24,12 @@ services:
     image: ghcr.io/foundry-rs/foundry:v1.9.0@sha256:3a392c18f9b16e665e932de159fb6fa9ed972c4b4352f2f76a1a8c7ca9b57d39
     entrypoint: ["sh", "-c"]
     # Chain id stays 8453, so addresses, signatures and Namera's compatibility checks match mainnet. A pinned
-    # BASE_FORK_BLOCK is cached in the volume, so restarts at that block cost no RPC.
+    # BASE_FORK_BLOCK is cached in the volume, so restarts at that block cost no RPC. Blocks are mined per
+    # transaction (no --block-time): nothing waits for the next block, and the chain's clock only moves when
+    # something happens, so a fork pinned inside market hours stays there longer.
     command:
       - >-
-        exec anvil --host 0.0.0.0 --port 8545 --chain-id 8453 --block-time 1
+        exec anvil --host 0.0.0.0 --port 8545 --chain-id 8453
         --fork-url "$${BASE_FORK_RPC_URL:-https://mainnet.base.org}"
         $${BASE_FORK_BLOCK:+--fork-block-number $$BASE_FORK_BLOCK}
     # BASE_FORK_RPC_URL and BASE_FORK_BLOCK, read inside the container so the RPC URL never lands in compose output.
@@ -59,6 +62,10 @@ services:
       - --safe-mode=false
       - --port=4337
       - --block-polling-interval=250
+      - --max-bundle-interval=100
+      # Receipt lookups search EntryPoint logs this many blocks back; on a fresh fork those blocks come from the
+      # fork's RPC, and Alchemy's free tier rejects ranges over 10 blocks.
+      - --max-block-range=10
       - --log-level=warn
     ports:
       - "4337:4337"
