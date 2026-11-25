@@ -1,4 +1,4 @@
-import { integer, pgTable, text } from "drizzle-orm/pg-core"
+import { boolean, integer, pgTable, text } from "drizzle-orm/pg-core"
 import { dateTimeUtc, typeId } from "../columns.ts"
 
 export const users = pgTable("users", {
@@ -20,7 +20,10 @@ export const passkeys = pgTable("passkeys", {
   publicKey: text("public_key").notNull(),
   counter: integer("counter").notNull(),
   transports: text("transports").array().notNull(),
+  /** "iCloud Keychain · Mac": the provider (from the authenticator's AAGUID) and the device it was created on. */
   label: text("label"),
+  /** Backed up by the provider, so it works on the user's other devices too. */
+  synced: boolean("synced").notNull().default(false),
   createdAt: dateTimeUtc("created_at").notNull(),
   lastUsedAt: dateTimeUtc("last_used_at")
 })

@@ -7,7 +7,7 @@ import * as Context from "effect/Context"
 import * as HttpApiMiddleware from "effect/http-api/HttpApiMiddleware"
 import * as HttpApiSecurity from "effect/http-api/HttpApiSecurity"
 import { Unauthenticated } from "./Errors.ts"
-import type { Address, UserId } from "./Ids.ts"
+import type { Address, PasskeyId, UserId } from "./Ids.ts"
 
 /**
  * The session cookie: an opaque random token, httpOnly, so page scripts never see it.
@@ -28,6 +28,8 @@ export const sessionCookie = HttpApiSecurity.apiKey({ key: "bluechip_session", i
 export class CurrentUser extends Context.Service<CurrentUser, {
   readonly id: UserId
   readonly account: Address
+  /** The passkey that signed in this session. */
+  readonly passkey: PasskeyId
 }>()("@bluechip/domain/Auth/CurrentUser") {}
 
 /**

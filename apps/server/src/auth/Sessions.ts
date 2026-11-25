@@ -1,5 +1,5 @@
-import type { Address, UserId } from "@bluechip/domain/Ids"
-import { and, eq, gt, isNull } from "drizzle-orm"
+import type { Address, PasskeyId, UserId } from "@bluechip/domain/Ids"
+import { and, eq, gt, isNotNull, isNull } from "drizzle-orm"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
@@ -14,8 +14,8 @@ export const sessionDays = 30
 
 const hash = (token: string) => createHash("sha256").update(token).digest("hex")
 
-/** Starts a session and returns its token for the cookie; only the token's hash is stored. */
-export const createSession = Effect.fn("Sessions.create")(function*(userId: UserId) {
+/** Starts a session for the passkey that signed in; returns its token for the cookie (only its hash is stored). */
+export const createSession = Effect.fn("Sessions.create")(function*(userId: UserId, passkeyId: PasskeyId) {
   const db = yield* Database
   const token = randomBytes(32).toString("base64url")
   const createdAt = yield* DateTime.now
@@ -23,6 +23,7 @@ export const createSession = Effect.fn("Sessions.create")(function*(userId: User
   yield* db.insert(sessions).values({
     id: typeid("session").toString() as `session_${string}`,
     userId: userId as `user_${string}`,
+    passkeyId: passkeyId as `passkey_${string}`,
     tokenHash: hash(token),
     createdAt,
     expiresAt
@@ -34,13 +35,22 @@ export const createSession = Effect.fn("Sessions.create")(function*(userId: User
 export const findSessionUser = Effect.fn("Sessions.find")(function*(token: string) {
   const db = yield* Database
   const now = yield* DateTime.now
-  const [row] = yield* db.select({ userId: sessions.userId, address: accounts.address })
+  const [row] = yield* db.select({ userId: sessions.userId, address: accounts.address, passkeyId: sessions.passkeyId })
     .from(sessions)
     .innerJoin(accounts, eq(accounts.userId, sessions.userId))
-    .where(and(eq(sessions.tokenHash, hash(token)), isNull(sessions.revokedAt), gt(sessions.expiresAt, now)))
+    .where(and(
+      eq(sessions.tokenHash, hash(token)),
+      isNull(sessions.revokedAt),
+      gt(sessions.expiresAt, now),
+      isNotNull(sessions.passkeyId)
+    ))
     .pipe(Effect.orDie)
   return Option.fromNullishOr(row).pipe(
-    Option.map(({ address, userId }) => ({ id: userId as UserId, account: address as Address }))
+    Option.map(({ address, passkeyId, userId }) => ({
+      id: userId as UserId,
+      account: address as Address,
+      passkey: passkeyId as PasskeyId
+    }))
   )
 })
 

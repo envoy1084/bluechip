@@ -16,6 +16,10 @@ import { Authentication } from "../Auth.ts"
  */
 export class AccountApi extends HttpApiGroup.make("account").add(
   HttpApiEndpoint.get("me", "/account", { success: Me }),
+  HttpApiEndpoint.post("setDisplayName", "/account/display-name", {
+    payload: Schema.Struct({ displayName: Schema.NullOr(Schema.String.check(Schema.isMaxLength(64))) }),
+    success: User
+  }),
   HttpApiEndpoint.post("setEligibility", "/account/eligibility", {
     payload: Schema.Struct({ answer: Schema.Literals(["outsideUs", "us"]) }),
     success: User

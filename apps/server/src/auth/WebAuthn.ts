@@ -23,6 +23,10 @@ export interface NewPasskey {
   readonly publicKey: Hex
   readonly counter: number
   readonly transports: ReadonlyArray<string>
+  /** The authenticator model's id; names the provider (all zeros when it doesn't say). */
+  readonly aaguid: string
+  /** Backed up by its provider (iCloud Keychain, Google Password Manager, …) rather than bound to one device. */
+  readonly synced: boolean
 }
 
 const rejected = (reason: SignatureRejected["reason"]) => () => new SignatureRejected({ reason })
@@ -70,14 +74,16 @@ export const verifyRegistration = Effect.fn("WebAuthn.verifyRegistration")(
       catch: rejected("invalid")
     })
     if (!result.verified) return yield* new SignatureRejected({ reason: "invalid" })
-    const { credential: verified } = result.registrationInfo
+    const { aaguid, credential: verified, credentialBackedUp } = result.registrationInfo
     const publicKey = yield* Effect.try({ try: () => toP256Hex(verified.publicKey), catch: rejected("invalid") })
     return {
       credentialId: verified.id,
       coseKey: isoBase64URL.fromBuffer(verified.publicKey),
       publicKey,
       counter: verified.counter,
-      transports: credential.response.transports ?? []
+      transports: credential.response.transports ?? [],
+      aaguid,
+      synced: credentialBackedUp
     } satisfies NewPasskey
   }
 )

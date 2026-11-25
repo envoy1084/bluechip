@@ -1,0 +1,124 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "b71f3e64-2813-445d-8638-0ba5ca32ef43",
+  "prevIds": [
+    "d1de4cfc-669b-49a3-ab60-7ceee2e71ae3"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "passkeys",
+        "synced"
+      ],
+      "writes": [
+        "s|col|public.passkeys.synced",
+        "n|col|public.passkeys.synced",
+        "e|col|public.passkeys.synced"
+      ],
+      "reads": [
+        "n|tbl|public.passkeys",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "sessions",
+        "passkey_id"
+      ],
+      "writes": [
+        "s|col|public.sessions.passkey_id",
+        "n|col|public.sessions.passkey_id",
+        "e|col|public.sessions.passkey_id"
+      ],
+      "reads": [
+        "n|tbl|public.sessions",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "sessions"
+      ],
+      "writes": [
+        "s|fk|public.sessions.sessions_passkey_id_passkeys_id_fkey",
+        "n|fk|public.sessions.sessions_passkey_id_passkeys_id_fkey",
+        "e|fk|public.sessions.sessions_passkey_id_passkeys_id_fkey",
+        "n|con|public.sessions.sessions_passkey_id_passkeys_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.sessions",
+        "n|sch|public",
+        "n|tbl|public.passkeys",
+        "n|sch|public",
+        "n|col|public.sessions.passkey_id",
+        "n|col|public.passkeys.id",
+        "e|uniqueness|public.passkeys.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "passkeys",
+        "name": "synced",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "sessions",
+        "name": "passkey_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "sessions",
+        "name": "sessions_passkey_id_passkeys_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "passkey_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "passkeys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    }
+  ]
+}

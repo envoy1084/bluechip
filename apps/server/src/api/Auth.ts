@@ -11,6 +11,7 @@ import * as HttpServerResponse from "effect/http/HttpServerResponse"
 import * as Option from "effect/Option"
 import { findMe, findPasskey, recordPasskeyUse, registerUser } from "../accounts/Accounts.ts"
 import { consumeChallenge, issueChallenge } from "../auth/Challenges.ts"
+import { passkeyLabel } from "../auth/PasskeyLabel.ts"
 import { createSession, revokeSession } from "../auth/Sessions.ts"
 import {
   authenticationOptions,
@@ -24,9 +25,9 @@ import { AppConfig } from "../Config.ts"
 const toJson = (options: object): Record<string, unknown> => JSON.parse(JSON.stringify(options))
 
 /** Starts a session for the user and sets its cookie on the response. */
-const signIn = Effect.fn("Auth.signIn")(function*(userId: Parameters<typeof createSession>[0]) {
+const signIn = Effect.fn("Auth.signIn")(function*(...owner: Parameters<typeof createSession>) {
   const config = yield* AppConfig
-  const session = yield* createSession(userId)
+  const session = yield* createSession(...owner)
   yield* HttpApiBuilder.securitySetCookie(sessionCookie, session.token, {
     path: "/",
     sameSite: "lax",
@@ -47,8 +48,10 @@ export const AuthHandlers = HttpApiBuilder.group(BluechipApi, "auth", (handlers)
       Effect.gen(function*() {
         const challenge = yield* consumeChallenge("register", payload.challengeId)
         const passkey = yield* verifyRegistration(payload.credential, challenge)
-        const me = yield* registerUser({ displayName: payload.displayName, passkey })
-        yield* signIn(me.user.id)
+        const request = yield* HttpServerRequest.HttpServerRequest
+        const label = passkeyLabel({ aaguid: passkey.aaguid, userAgent: request.headers["user-agent"] })
+        const { me, passkeyId } = yield* registerUser({ displayName: payload.displayName, passkey, label })
+        yield* signIn(me.user.id, passkeyId)
         return me
       }))
     .handle("loginOptions", () =>
@@ -64,7 +67,7 @@ export const AuthHandlers = HttpApiBuilder.group(BluechipApi, "auth", (handlers)
         if (Option.isNone(passkey)) return yield* new SignatureRejected({ reason: "unknownPasskey" })
         const counter = yield* verifyAuthentication(payload.credential, challenge, passkey.value)
         yield* recordPasskeyUse(passkey.value.id, counter)
-        yield* signIn(passkey.value.userId as never)
+        yield* signIn(passkey.value.userId as never, passkey.value.id as never)
         return yield* findMe(passkey.value.userId as never)
       }))
     .handle("logout", () =>

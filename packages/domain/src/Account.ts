@@ -44,7 +44,12 @@ export class User extends Schema.Class<User>("@bluechip/domain/Account/User")({
  */
 export class Passkey extends Schema.Class<Passkey>("@bluechip/domain/Account/Passkey")({
   id: PasskeyId,
+  /** Where it lives and what it was made on, such as "iCloud Keychain · Mac". */
   label: Schema.NullOr(Schema.String),
+  /** Backed up by a passkey provider and available on the user's other devices. */
+  synced: Schema.Boolean,
+  /** The passkey that signed in the current session. */
+  current: Schema.Boolean,
   createdAt: Schema.DateTimeUtc,
   lastUsedAt: Schema.NullOr(Schema.DateTimeUtc)
 }) {}

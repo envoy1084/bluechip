@@ -24,8 +24,15 @@ const toUser = (row: UserRow) =>
     createdAt: row.createdAt
   })
 
-const toPasskey = (row: PasskeyRow) =>
-  new Passkey({ id: row.id as PasskeyId, label: row.label, createdAt: row.createdAt, lastUsedAt: row.lastUsedAt })
+const toPasskey = (row: PasskeyRow, current: PasskeyId) =>
+  new Passkey({
+    id: row.id as PasskeyId,
+    label: row.label,
+    synced: row.synced,
+    current: row.id === current,
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt
+  })
 
 /**
  * Whether the Kernel account has code on chain; `null` when the chain can't be read (the local fork may be off), so
@@ -46,7 +53,7 @@ const isDeployed = Effect.fnUntraced(
  * transaction.
  */
 export const registerUser = Effect.fn("Accounts.register")(
-  function*(input: { readonly displayName: string | undefined; readonly passkey: NewPasskey }) {
+  function*(input: { readonly displayName: string | undefined; readonly passkey: NewPasskey; readonly label: string }) {
     const db = yield* Database
     const namera = yield* Namera
     const owner = toWebAuthnAccount({
@@ -55,6 +62,7 @@ export const registerUser = Effect.fn("Accounts.register")(
     const kernel = yield* namera.kernelAccount(owner).pipe(Effect.orDie)
     const now = yield* DateTime.now
     const userId = typeid("user").toString() as `user_${string}`
+    const passkeyId = typeid("passkey").toString() as `passkey_${string}`
     const user = yield* db.transaction((tx) =>
       Effect.gen(function*() {
         const [user] = yield* tx.insert(users).values({
@@ -64,13 +72,15 @@ export const registerUser = Effect.fn("Accounts.register")(
         })
           .returning()
         yield* tx.insert(passkeys).values({
-          id: typeid("passkey").toString() as `passkey_${string}`,
+          id: passkeyId,
           userId,
           credentialId: input.passkey.credentialId,
           coseKey: input.passkey.coseKey,
           publicKey: input.passkey.publicKey,
           counter: input.passkey.counter,
           transports: [...input.passkey.transports],
+          label: input.label,
+          synced: input.passkey.synced,
           createdAt: now,
           lastUsedAt: now
         })
@@ -78,7 +88,11 @@ export const registerUser = Effect.fn("Accounts.register")(
         return user!
       })
     ).pipe(Effect.orDie)
-    return new Me({ user: toUser(user), account: new Account({ address: kernel.address as Address, deployed: false }) })
+    const me = new Me({
+      user: toUser(user),
+      account: new Account({ address: kernel.address as Address, deployed: false })
+    })
+    return { me, passkeyId: passkeyId as PasskeyId }
   }
 )
 
@@ -100,12 +114,24 @@ export const setEligibility = Effect.fn("Accounts.setEligibility")(function*(use
   return toUser(row!)
 })
 
-export const listPasskeys = Effect.fn("Accounts.passkeys")(function*(userId: UserId) {
+export const setDisplayName = Effect.fn("Accounts.setDisplayName")(
+  function*(userId: UserId, displayName: string | null) {
+    const db = yield* Database
+    const name = displayName?.trim() || null
+    const [row] = yield* db.update(users).set({ displayName: name }).where(eq(users.id, userId as `user_${string}`))
+      .returning()
+      .pipe(Effect.orDie)
+    return toUser(row!)
+  }
+)
+
+/** The user's passkeys, marking the one that signed in the current session. */
+export const listPasskeys = Effect.fn("Accounts.passkeys")(function*(userId: UserId, current: PasskeyId) {
   const db = yield* Database
   const rows = yield* db.select().from(passkeys).where(eq(passkeys.userId, userId as `user_${string}`))
     .orderBy(passkeys.createdAt)
     .pipe(Effect.orDie)
-  return rows.map(toPasskey)
+  return rows.map((row) => toPasskey(row, current))
 })
 
 /** The stored passkey a sign-in names, if this site knows it. */

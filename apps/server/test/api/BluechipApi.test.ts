@@ -127,6 +127,21 @@ describe.skipIf(!chainAvailable)("BluechipApi", () => {
       assert.strictEqual(result.json.account.address, created.json.account.address)
       const again = yield* call("GET", "/api/account", { cookie: `bluechip_session=${result.session}` })
       assert.strictEqual(again.json.user.eligibility, "outsideUs")
+
+      const passkeys = yield* call("GET", "/api/account/passkeys", { cookie: `bluechip_session=${result.session}` })
+      assert.strictEqual(passkeys.json.length, 1)
+      assert.strictEqual(passkeys.json[0].label, "Passkey")
+      assert.isTrue(passkeys.json[0].current)
+    }))
+
+  it.effect("the name can be set and cleared", () =>
+    Effect.gen(function*() {
+      const created = yield* signUp(softwareAuthenticator({ rpId: "localhost", origin }))
+      const cookie = `bluechip_session=${created.session}`
+      const named = yield* call("POST", "/api/account/display-name", { cookie, body: { displayName: "  Grace " } })
+      assert.strictEqual(named.json.displayName, "Grace")
+      const cleared = yield* call("POST", "/api/account/display-name", { cookie, body: { displayName: "" } })
+      assert.isNull(cleared.json.displayName)
     }))
 
   it.effect("signed-in endpoints refuse requests without a session", () =>
