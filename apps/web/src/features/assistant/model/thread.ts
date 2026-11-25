@@ -7,11 +7,14 @@ import type * as AgUiSchema from "effect/ai/AgUiSchema"
 import * as Option from "effect/Option"
 import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
+import { toolSummary } from "./toolSummary.ts"
 
 export interface ToolRow {
   readonly id: string
   readonly name: string
   readonly state: "running" | "done" | "failed"
+  /** What the tool answered, in a few words, once it's done. */
+  readonly summary: string | null
 }
 
 export interface ShownCard {
@@ -49,9 +52,25 @@ export const emptyTurn = (id: string): BluechipTurn => ({
   error: null
 })
 
-const setTool = (turn: BluechipTurn, id: string, state: ToolRow["state"]): BluechipTurn => ({
+const isFailure = (event: AgUiSchema.ToolCallResultEvent): boolean => {
+  const marker = event.metadata?.["effect/ai"]
+  return Predicate.hasProperty(marker, "isFailure") && marker.isFailure === true
+}
+
+// The result of a call as it arrived: the tool's encoded result as a JSON string.
+const resultOf = (content: AgUiSchema.ToolCallResultEvent["content"]): unknown =>
+  typeof content === "string"
+    ? Option.getOrNull(Schema.decodeOption(Schema.fromJsonString(Schema.Unknown))(content))
+    : null
+
+const finishTool = (turn: BluechipTurn, event: AgUiSchema.ToolCallResultEvent): BluechipTurn => ({
   ...turn,
-  tools: turn.tools.map((row) => row.id === id ? { ...row, state } : row)
+  tools: turn.tools.map((row) => {
+    if (row.id !== event.toolCallId) return row
+    return isFailure(event) ?
+      { ...row, state: "failed" } :
+      { ...row, state: "done", summary: toolSummary(row.name, resultOf(event.content)) }
+  })
 })
 
 const addCard = (turn: BluechipTurn, shown: ShownCard): BluechipTurn => ({
@@ -80,10 +99,17 @@ export const entriesOf = (messages: ReadonlyArray<Message>): Array<Entry> => {
     let error = turn.error
     for (const part of message.parts) {
       if (part.type === "text") texts.push(part.text)
-      else if (part.type === "toolCall") tools.set(part.id, { id: part.id, name: part.name, state: "running" })
-      else if (part.type === "toolResult") {
+      else if (part.type === "toolCall") {
+        tools.set(part.id, { id: part.id, name: part.name, state: "running", summary: null })
+      } else if (part.type === "toolResult") {
         const row = tools.get(part.id)
-        if (row !== undefined) tools.set(part.id, { ...row, state: part.isFailure ? "failed" : "done" })
+        if (row === undefined) continue
+        tools.set(
+          part.id,
+          part.isFailure ?
+            { ...row, state: "failed" } :
+            { ...row, state: "done", summary: toolSummary(part.name, part.result) }
+        )
       } else if (part.type === "card") cards.set(part.card.id, { toolCallId: part.toolCallId, card: part.card })
       else if (part.type === "error") error = part.message
     }
@@ -103,11 +129,6 @@ export const entriesOf = (messages: ReadonlyArray<Message>): Array<Entry> => {
   return entries
 }
 
-const isFailure = (event: AgUiSchema.ToolCallResultEvent): boolean => {
-  const marker = event.metadata?.["effect/ai"]
-  return Predicate.hasProperty(marker, "isFailure") && marker.isFailure === true
-}
-
 /** A turn after one more event of its run. */
 export const applyEvent = (turn: BluechipTurn, event: AgUiSchema.Event): BluechipTurn => {
   switch (event.type) {
@@ -116,9 +137,12 @@ export const applyEvent = (turn: BluechipTurn, event: AgUiSchema.Event): Bluechi
     case "TEXT_MESSAGE_CONTENT":
       return { ...turn, text: turn.text + event.delta }
     case "TOOL_CALL_START":
-      return { ...turn, tools: [...turn.tools, { id: event.toolCallId, name: event.toolCallName, state: "running" }] }
+      return {
+        ...turn,
+        tools: [...turn.tools, { id: event.toolCallId, name: event.toolCallName, state: "running", summary: null }]
+      }
     case "TOOL_CALL_RESULT":
-      return setTool(turn, event.toolCallId, isFailure(event) ? "failed" : "done")
+      return finishTool(turn, event)
     case "CUSTOM": {
       if (event.name !== CARD_EVENT) return turn
       // Cards arrive JSON-encoded (amounts as strings, times as ISO dates).

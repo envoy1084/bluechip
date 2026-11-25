@@ -47,7 +47,14 @@ export function Thread(
               {...(entry === last && entry.status === "error" ? { onRetry } : {})}
               toolCalls={entry.tools.length === 0 ? undefined : (
                 <div className="flex flex-wrap gap-1.5">
-                  {entry.tools.map((row) => <ToolCallRow key={row.id} state={row.state} label={toolLabel(row)} />)}
+                  {entry.tools.map((row) => (
+                    <ToolCallRow
+                      key={row.id}
+                      state={row.state}
+                      label={toolLabel(row)}
+                      {...(row.summary === null ? {} : { result: row.summary })}
+                    />
+                  ))}
                 </div>
               )}
               attachments={entry.cards.length === 0 ? undefined : (
