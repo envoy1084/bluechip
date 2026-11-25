@@ -4,6 +4,8 @@
 // worker's Anvil loads in one call.
 import { entryPoint07, stocks, usdc } from "@bluechip/chain/Contracts"
 import { factory, metaquoter, swapRouter } from "@bluechip/chain/market/Aerodrome"
+import { DEVNET_ADMIN } from "@bluechip/devnet/Controls"
+import { liquidityFor, rangeAround, sqrtPriceX96Of, tickOf } from "@bluechip/devnet/Pools"
 import * as Namera from "@namera-ai/contracts"
 import { gunzipSync } from "node:zlib"
 import { Instance } from "prool"
@@ -19,10 +21,6 @@ import {
   parseAbi,
   toHex
 } from "viem"
-import { liquidityFor, rangeAround, sqrtPriceX96Of, tickOf } from "./pools.ts"
-
-/** Anvil's first development account: it administers the devnet's tokens and pays for its setup. */
-export const DEVNET_ADMIN: Address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
 /** Where the devnet keeps the contract that seeds its pools. */
 export const POOL_SEEDER: Address = "0x00000000000000000000000000000000005eed00"

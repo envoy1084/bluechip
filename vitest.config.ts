@@ -39,7 +39,10 @@ export default defineConfig({
       project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts", "test/setup/database.ts"] } }),
       // Real-chain facts on a fork of Base: only with `pnpm test:fork`.
       ...(process.env["BLUECHIP_FORK_TESTS"] === "1"
-        ? [project("fork", "packages/chain", { test: { include: ["test-fork/**/*.test.ts"] } })]
+        ? [{
+          ...project("fork", "packages/chain"),
+          test: { ...project("fork", "packages/chain").test, include: ["test-fork/**/*.test.ts"] }
+        }]
         : []),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
       project("ui", "packages/ui", {

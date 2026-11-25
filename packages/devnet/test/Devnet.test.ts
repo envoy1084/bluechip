@@ -78,4 +78,33 @@ layer(DevnetTest.layer)("Devnet", (it) => {
         assert.strictEqual(balance, BigInt(250_000_000))
       }))
   })
+
+  describe("movePool", () => {
+    // What $100 buys at the pool's price, in 8-decimal NVDA units, against what $100 buys at `price`.
+    const quoteNear = Effect.fnUntraced(function*(price: bigint) {
+      const { result } = yield* (yield* ChainClient).use("quote", (client) =>
+        client.simulateContract({
+          address: metaquoter,
+          abi: metaquoterAbi,
+          functionName: "quoteExactInputSingleV3",
+          args: [nvda.pool!.address, usdc, BigInt(100_000_000), BigInt(0)]
+        }))
+      const fair = (BigInt(100) * BigInt(10) ** BigInt(16)) / price
+      return result[0] <= fair && result[0] * BigInt(1000) >= fair * BigInt(995)
+    })
+
+    it.effect("a pool moved up prices the stock higher", () =>
+      Effect.gen(function*() {
+        yield* (yield* Devnet).movePool("NVDA", BigInt(18_000_000_000))
+
+        assert.isTrue(yield* quoteNear(BigInt(18_000_000_000)))
+      }))
+
+    it.effect("a pool moved down prices the stock lower", () =>
+      Effect.gen(function*() {
+        yield* (yield* Devnet).movePool("NVDA", BigInt(13_000_000_000))
+
+        assert.isTrue(yield* quoteNear(BigInt(13_000_000_000)))
+      }))
+  })
 })

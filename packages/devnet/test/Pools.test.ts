@@ -1,5 +1,5 @@
+import { liquidityFor, rangeAround, sqrt, sqrtPriceX96Of, tickOf } from "@bluechip/devnet/Pools"
 import { assert, describe, it } from "@effect/vitest"
-import { liquidityFor, rangeAround, sqrt, sqrtPriceX96Of, tickOf } from "../devnet/pools.ts"
 
 const Q96 = BigInt(2) ** BigInt(96)
 

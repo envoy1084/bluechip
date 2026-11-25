@@ -5,6 +5,7 @@
   "version": "0.0.0",
   "dependencies": {
     "@bluechip/chain": "workspace:*",
+    "@bluechip/devnet": "workspace:*",
     "@effect/platform-node": "catalog:",
     "@namera-ai/contracts": "2.0.0-rc.0",
     "effect": "catalog:",

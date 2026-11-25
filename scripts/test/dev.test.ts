@@ -1,17 +1,72 @@
 import { assert, describe, it } from "@effect/vitest"
 
-import { devProcesses, prefixLine } from "../commands/dev.ts"
+import { devProcesses, localChainProcesses, prefixLine } from "../commands/dev.ts"
 
-describe("dev", () => {
-  it("runs the server, the web app, the kit and the jobs, minus the ones switched off", () => {
-    const names = (options: { uikit: boolean; jobs: boolean }) => devProcesses(options).map((process) => process.name)
+describe("devProcesses", () => {
+  const names = (options: { uikit: boolean; jobs: boolean }) => devProcesses(options).map((process) => process.name)
 
+  it("the server, the web app, the kit and the jobs", () => {
     assert.deepStrictEqual(names({ uikit: true, jobs: true }), ["server", "web", "uikit", "jobs"])
+  })
+
+  it("without the kit and the jobs", () => {
     assert.deepStrictEqual(names({ uikit: false, jobs: false }), ["server", "web"])
   })
 
-  it("prefixes each line with its process, aligned", () => {
+  it("each app is its package's script", () => {
+    assert.deepStrictEqual(devProcesses({ uikit: false, jobs: false })[0], {
+      name: "server",
+      color: 34,
+      command: "pnpm",
+      args: ["--silent", "--filter", "@bluechip/server", "dev"]
+    })
+  })
+})
+
+describe("localChainProcesses", () => {
+  const chain = localChainProcesses({ stateFile: "/repo/.data/devnet/state.json", alto: "/repo/alto" })
+
+  it("Anvil on Base's hardfork and chain id, keeping its state in the file", () => {
+    assert.deepStrictEqual(chain.anvil.args, [
+      "--hardfork",
+      "base:Denim",
+      "--chain-id",
+      "8453",
+      "--port",
+      "8545",
+      "--state",
+      "/repo/.data/devnet/state.json",
+      "--silent"
+    ])
+  })
+
+  it("Alto on that chain, in safe mode, bundling as operations arrive", () => {
+    assert.deepStrictEqual(chain.alto.args.slice(0, 4), [
+      "--rpc-url",
+      "http://localhost:8545",
+      "--entrypoints",
+      "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+    ])
+    assert.deepStrictEqual(chain.alto.args.slice(8), [
+      "--port",
+      "4337",
+      "--safe-mode",
+      "true",
+      "--bundle-mode",
+      "auto",
+      "--max-bundle-wait",
+      "100",
+      "--polling-interval",
+      "100",
+      "--log-level",
+      "warn"
+    ])
+  })
+})
+
+describe("prefixLine", () => {
+  it("a line under its process's name, padded to the widest name", () => {
     const [server] = devProcesses({ uikit: false, jobs: false })
-    assert.strictEqual(prefixLine(server!, 6, "ready"), "\u001b[34mserver │\u001b[0m ready")
+    assert.strictEqual(prefixLine(server!, 7, "ready"), "\u001b[34mserver  │\u001b[0m ready")
   })
 })

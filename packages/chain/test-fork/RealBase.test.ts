@@ -4,12 +4,22 @@ import { aggregatorAbi, b20Abi } from "@bluechip/chain/Abis"
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks, usdc } from "@bluechip/chain/Contracts"
 import { factory, factoryAbi } from "@bluechip/chain/market/Aerodrome"
-import { assert, layer } from "@effect/vitest"
+import { assert, beforeAll, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { erc20Abi } from "viem"
 
 const ForkChainClient = Layer.succeed(ChainClient, ChainClient.make("local", "http://localhost:8545"))
+
+// The fork fetches each contract from Base on its first read; fetching them all once here keeps each check below to
+// local reads.
+beforeAll(async () => {
+  const { client } = ChainClient.make("local", "http://localhost:8545")
+  await Promise.all(stocks.flatMap((stock) => [
+    client.readContract({ address: stock.token, abi: erc20Abi, functionName: "symbol" }),
+    client.readContract({ address: stock.feed, abi: aggregatorAbi, functionName: "description" })
+  ]))
+}, 60_000)
 
 layer(ForkChainClient)("Base", (it) => {
   it.effect("every stock token is the Coinbase stock its feed prices, with 8 decimals", () =>

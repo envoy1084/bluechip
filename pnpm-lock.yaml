@@ -543,6 +543,9 @@ importers:
       '@bluechip/chain':
         specifier: workspace:*
         version: link:../packages/chain
+      '@bluechip/devnet':
+        specifier: workspace:*
+        version: link:../packages/devnet
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.1.5(effect@4.1.5)(redis@6.3.1(@opentelemetry/api@1.9.1))

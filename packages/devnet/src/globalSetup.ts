@@ -10,7 +10,8 @@ import * as path from "node:path"
 import { gunzipSync } from "node:zlib"
 import { Instance } from "prool"
 import { Server } from "prool/vitest"
-import { BUNDLER_KEYS, contextKey, type DevnetContext } from "./Devnet.ts"
+import { BUNDLER_KEYS } from "./Controls.ts"
+import { contextKey, type DevnetContext } from "./Devnet.ts"
 
 const entryPoint07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
 

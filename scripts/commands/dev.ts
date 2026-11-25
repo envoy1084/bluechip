@@ -1,28 +1,97 @@
-import { Array as Arr, Console, Effect, Schedule, Stream } from "effect"
+import { BUNDLER_KEYS } from "@bluechip/devnet/Controls"
+import { Array as Arr, Console, Effect, FileSystem, Path, Schedule, Stream } from "effect"
 import { Command, Flag } from "effect/cli"
 import { ChildProcess, ChildProcessSpawner } from "effect/process"
+import { gunzipSync } from "node:zlib"
 
+import { syncPrices } from "../devnet/sync.ts"
 import { ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
+import { DEVNET_STATE } from "./devnet.ts"
 
 /** Where each app listens in development. The apps' own defaults match these. */
 export const DEV_PORTS = { web: 3000, uikit: 4000, server: 8080 } as const
 
-/** A long-running development process: a workspace package's script, shown under `name`. */
+/** Where the local chain listens: the server's defaults (`BASE_RPC_URL`, `BUNDLER_URL`) point here. */
+export const CHAIN_PORTS = { anvil: 8545, alto: 4337 } as const
+
+/** Where `pnpm dev`'s local chain keeps its state between runs (`--reset-chain` starts it again from the capture). */
+export const LOCAL_CHAIN_STATE = ".data/devnet/state.json"
+
+const entryPoint07 = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+
+/** A long-running development process, shown under `name`. */
 export interface DevProcess {
   readonly name: string
   readonly color: number
-  readonly filter: string
-  readonly script: string
+  readonly command: string
+  readonly args: ReadonlyArray<string>
 }
 
-/** The processes `pnpm dev` runs, without the ones switched off. */
+const script = (name: string, color: number, filter: string, run: string): DevProcess => ({
+  name,
+  color,
+  command: "pnpm",
+  args: ["--silent", "--filter", filter, run]
+})
+
+/** The apps `pnpm dev` runs, without the ones switched off. */
 export const devProcesses = (options: { readonly uikit: boolean; readonly jobs: boolean }): Array<DevProcess> => [
-  { name: "server", color: 34, filter: "@bluechip/server", script: "dev" },
-  { name: "web", color: 32, filter: "@bluechip/web", script: "dev" },
-  ...(options.uikit ? [{ name: "uikit", color: 35, filter: "@bluechip/uikit", script: "dev" }] : []),
-  ...(options.jobs ? [{ name: "jobs", color: 33, filter: "@bluechip/server", script: "jobs:dev" }] : [])
+  script("server", 34, "@bluechip/server", "dev"),
+  script("web", 32, "@bluechip/web", "dev"),
+  ...(options.uikit ? [script("uikit", 35, "@bluechip/uikit", "dev")] : []),
+  ...(options.jobs ? [script("jobs", 33, "@bluechip/server", "jobs:dev")] : [])
 ]
+
+/**
+ * The local chain: Anvil on Base's latest hardfork, keeping its state in `stateFile` across runs, and Alto in safe
+ * mode bundling as soon as an operation arrives.
+ */
+export const localChainProcesses = (options: { readonly stateFile: string; readonly alto: string }) => ({
+  anvil: {
+    name: "chain",
+    color: 36,
+    command: "anvil",
+    args: [
+      "--hardfork",
+      "base:Denim",
+      "--chain-id",
+      "8453",
+      "--port",
+      String(CHAIN_PORTS.anvil),
+      "--state",
+      options.stateFile,
+      "--silent"
+    ]
+  } satisfies DevProcess,
+  alto: {
+    name: "bundler",
+    color: 90,
+    command: options.alto,
+    args: [
+      "--rpc-url",
+      `http://localhost:${CHAIN_PORTS.anvil}`,
+      "--entrypoints",
+      entryPoint07,
+      "--executor-private-keys",
+      BUNDLER_KEYS.executor,
+      "--utility-private-key",
+      BUNDLER_KEYS.utility,
+      "--port",
+      String(CHAIN_PORTS.alto),
+      "--safe-mode",
+      "true",
+      "--bundle-mode",
+      "auto",
+      "--max-bundle-wait",
+      "100",
+      "--polling-interval",
+      "100",
+      "--log-level",
+      "warn"
+    ]
+  } satisfies DevProcess
+})
 
 /** One output line under its process's name, padded so the lines of every process align. */
 export const prefixLine = (process: DevProcess, width: number, line: string): string =>
@@ -46,7 +115,7 @@ const waitForRpc = (name: string, url: string, method: string) =>
 const runProcess = Effect.fnUntraced(function*(process: DevProcess, width: number) {
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner
   const handle = yield* spawner.spawn(
-    ChildProcess.make("pnpm", ["--silent", "--filter", process.filter, process.script], {
+    ChildProcess.make(process.command, [...process.args], {
       env: { FORCE_COLOR: "1" },
       extendEnv: true
     })
@@ -63,38 +132,74 @@ const runProcess = Effect.fnUntraced(function*(process: DevProcess, width: numbe
 
 const stopFork = Effect.gen(function*() {
   const tools = yield* Tools
-  yield* Console.log("dev: stopping the fork and the bundler (they read through your RPC)")
+  yield* Console.log("dev: stopping the Base fork and its bundler, if they run (they read through your RPC)")
   yield* tools.run("docker", ["compose", "--profile", "chain", "stop", "anvil", "alto"]).pipe(Effect.ignore)
 })
 
-const up = Effect.fn("dev.up")(
-  function*(options: { readonly chain: boolean; readonly uikit: boolean; readonly jobs: boolean }) {
-    const tools = yield* Tools
+/** Unpacks the captured devnet state for the local chain, unless a previous run's state is kept. */
+const prepareLocalChain = Effect.fnUntraced(function*(root: string, reset: boolean) {
+  const fs = yield* FileSystem.FileSystem
+  const path = yield* Path.Path
+  const stateFile = path.join(root, LOCAL_CHAIN_STATE)
+  if (reset || !(yield* fs.exists(stateFile))) {
+    yield* fs.makeDirectory(path.dirname(stateFile), { recursive: true })
+    yield* fs.writeFile(stateFile, gunzipSync(yield* fs.readFile(path.join(root, DEVNET_STATE))))
+  }
+  return localChainProcesses({ stateFile, alto: path.join(root, "packages/devnet/node_modules/.bin/alto") })
+}, Effect.orDie)
 
-    yield* Console.log(
-      options.chain ? "dev: starting Postgres, the Base fork and the bundler" : "dev: starting Postgres"
-    )
-    yield* tools.run("docker", ["compose", ...(options.chain ? ["--profile", "chain"] : []), "up", "-d", "--wait"], {
+// Keeps the local chain's feeds and pools at the server's market prices; quiet until the server answers.
+const syncLocalPrices = Effect.tryPromise(() =>
+  syncPrices({ apiUrl: `http://localhost:${DEV_PORTS.server}`, rpcUrl: `http://localhost:${CHAIN_PORTS.anvil}` })
+).pipe(Effect.ignore, Effect.repeat(Schedule.spaced("15 seconds")))
+
+type ChainMode = "local" | "fork" | "none"
+
+const up = Effect.fn("dev.up")(
+  function*(options: {
+    readonly chain: ChainMode
+    readonly resetChain: boolean
+    readonly uikit: boolean
+    readonly jobs: boolean
+  }) {
+    const tools = yield* Tools
+    const fork = options.chain === "fork"
+
+    yield* Console.log(fork ? "dev: starting Postgres, the Base fork and the bundler" : "dev: starting Postgres")
+    yield* tools.run("docker", ["compose", ...(fork ? ["--profile", "chain"] : []), "up", "-d", "--wait"], {
       inherit: true
     })
-    if (options.chain) {
-      yield* Effect.addFinalizer(() => stopFork)
-      yield* waitForRpc("anvil", "http://localhost:8545", "eth_chainId")
-      yield* waitForRpc("alto", "http://localhost:4337", "eth_supportedEntryPoints")
+
+    const processes = devProcesses(options)
+    const chain = options.chain === "local" ? yield* prepareLocalChain(process.cwd(), options.resetChain) : undefined
+    const width = Math.max(
+      ...Arr.map([...processes, ...(chain ? [chain.anvil, chain.alto] : [])], (p) => p.name.length)
+    )
+
+    if (fork) yield* Effect.addFinalizer(() => stopFork)
+    if (chain !== undefined) {
+      yield* Console.log("dev: starting the local chain (the devnet, no RPC) and the bundler")
+      yield* Effect.forkScoped(runProcess(chain.anvil, width))
+    }
+    if (options.chain !== "none") yield* waitForRpc("anvil", `http://localhost:${CHAIN_PORTS.anvil}`, "eth_chainId")
+    if (chain !== undefined) yield* Effect.forkScoped(runProcess(chain.alto, width))
+    if (options.chain !== "none") {
+      yield* waitForRpc("alto", `http://localhost:${CHAIN_PORTS.alto}`, "eth_supportedEntryPoints")
     }
 
     yield* tools.run("pnpm", ["--silent", "--filter", "@bluechip/server", "db:migrate"], { inherit: true })
 
-    const processes = devProcesses(options)
-    const width = Math.max(...Arr.map(processes, (process) => process.name.length))
     yield* Console.log([
       "dev: running, Ctrl+C stops everything",
       `  web     http://localhost:${DEV_PORTS.web}`,
       ...(options.uikit ? [`  uikit   http://localhost:${DEV_PORTS.uikit}`] : []),
-      `  server  http://localhost:${DEV_PORTS.server} (API docs at /api/docs)`
+      `  server  http://localhost:${DEV_PORTS.server} (API docs at /api/docs)`,
+      ...(chain ? ["  chain   the devnet; prices follow the market every 15 s (--fork for a fork of Base)"] : [])
     ].join("\n"))
 
-    // Every process runs until one stops or Ctrl+C interrupts them all; the finalizer then stops the fork.
+    if (chain !== undefined) yield* Effect.forkScoped(syncLocalPrices)
+
+    // Every process runs until one stops or Ctrl+C interrupts them all; the finalizers then stop the chain.
     yield* Effect.forEach(processes, (process) => runProcess(process, width), {
       concurrency: "unbounded",
       discard: true
@@ -117,7 +222,7 @@ const down = Effect.fn("dev.down")(function*(options: { readonly all: boolean })
     yield* Effect.sleep("5 seconds")
   }
 
-  for (const port of Object.values(DEV_PORTS)) {
+  for (const port of [...Object.values(DEV_PORTS), ...Object.values(CHAIN_PORTS)]) {
     const pids = yield* tools.run("lsof", ["-ti", `tcp:${port}`, "-sTCP:LISTEN"]).pipe(Effect.orElseSucceed(() => ""))
     for (const pid of pids.split("\n").filter((line) => line !== "")) {
       yield* Effect.sync(() => process.kill(Number(pid), "SIGTERM"))
@@ -138,13 +243,28 @@ const down = Effect.fn("dev.down")(function*(options: { readonly all: boolean })
 const upCommand = Command.make("up", {
   chain: Flag.Boolean("no-chain").pipe(
     Flag.withDefault(false),
-    Flag.withDescription("Skip the Base fork and the bundler")
+    Flag.withDescription("Skip the chain and the bundler")
+  ),
+  fork: Flag.Boolean("fork").pipe(
+    Flag.withDefault(false),
+    Flag.withDescription("Use a fork of Base (reads through BASE_FORK_RPC_URL) instead of the local devnet")
+  ),
+  resetChain: Flag.Boolean("reset-chain").pipe(
+    Flag.withDefault(false),
+    Flag.withDescription("Start the local chain again from the captured devnet state")
   ),
   uikit: Flag.Boolean("no-uikit").pipe(Flag.withDefault(false), Flag.withDescription("Skip the component kit")),
   jobs: Flag.Boolean("no-jobs").pipe(Flag.withDefault(false), Flag.withDescription("Skip the Trigger.dev job runner"))
 }).pipe(
-  Command.withDescription("Start Postgres, the Base fork, the bundler, the server, the web app, the kit and the jobs"),
-  Command.withHandler((flags) => up({ chain: !flags.chain, uikit: !flags.uikit, jobs: !flags.jobs }))
+  Command.withDescription("Start Postgres, the chain, the bundler, the server, the web app, the kit and the jobs"),
+  Command.withHandler((flags) =>
+    up({
+      chain: flags.chain ? "none" : flags.fork ? "fork" : "local",
+      resetChain: flags.resetChain,
+      uikit: !flags.uikit,
+      jobs: !flags.jobs
+    })
+  )
 )
 
 const downCommand = Command.make("down", {
