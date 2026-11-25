@@ -71,13 +71,14 @@ function ApproveHere(
 
 /**
  * A trade you asked the agent for, followed live: checked against its policies, then sent by the agent, waiting for
- * your Face ID (approve it right here), blocked by a policy, or waiting to be tried again.
+ * your Face ID (approve it right here), blocked by a policy, or waiting to be tried again. With `onDone`, an ended
+ * trade offers to start another.
  */
 export function AgentTradeProgress(
   { intent: asked, nameOf, onDone }: Readonly<{
     intent: Intent
     nameOf: (symbol: StockSymbol) => string
-    onDone: () => void
+    onDone?: () => void
   }>
 ) {
   const { approve, decline, flow, intent } = useApproveIntent(asked)
@@ -122,7 +123,7 @@ export function AgentTradeProgress(
 
       <div className="flex flex-wrap justify-end gap-2">
         {intent.status === "waiting" || intent.status === "proposed" ? <CancelIntentButton intent={intent} /> : null}
-        {isEnded(intent.status) ?
+        {isEnded(intent.status) && onDone !== undefined ?
           (
             <Button variant="secondary" onClick={onDone}>
               {intent.status === "filled" ? "Trade again" : "Done"}
