@@ -4,10 +4,12 @@ import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
 import { ConnectionBanner } from "./ConnectionBanner.tsx"
 
-/** A signed-in page: the top bar with its title and actions, then the page body with the connection banner. */
+/** A signed-in page: the top bar with its icon, title and actions, then the page body with the connection banner. */
 export function AppPage(
-  { title, sub, actions, children, width = "default" }: Readonly<{
+  { title, sub, icon, actions, children, width = "default" }: Readonly<{
     title: string
+    /** Beside the title, like a company's logo. */
+    icon?: ReactNode
     sub?: ReactNode
     actions?: ReactNode
     children: ReactNode
@@ -22,6 +24,7 @@ export function AppPage(
             <SidebarTrigger />
           </span>
           <LogoMark className="md:hidden" />
+          {icon}
           <div className="grid min-w-0">
             <h1 className="text-[17px] leading-tight font-semibold tracking-[-0.02em]">{title}</h1>
             {sub === undefined ? null : <span className="text-label-sm text-g-500">{sub}</span>}

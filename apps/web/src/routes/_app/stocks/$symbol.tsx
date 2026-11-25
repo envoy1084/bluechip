@@ -2,6 +2,7 @@ import { type Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import { Button } from "@bluechip/ui/components/button"
 import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
+import { companyLogos } from "@bluechip/ui/logos/company"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -61,9 +62,18 @@ function KnownStock({ symbol }: Readonly<{ symbol: StockSymbol }>) {
 }
 
 function StockContent({ stock }: Readonly<{ stock: Stock }>) {
+  const CompanyLogo = companyLogos[stock.symbol]
+
   return (
     <AppPage
       title={stock.name}
+      icon={CompanyLogo === undefined ?
+        undefined :
+        (
+          <span className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-white shadow-e1 [&_svg]:h-auto [&_svg]:max-h-5 [&_svg]:max-w-6">
+            <CompanyLogo />
+          </span>
+        )}
       sub={
         <>
           <Link to="/stocks" className="hover:text-ink">Stocks</Link> / {stock.name}
