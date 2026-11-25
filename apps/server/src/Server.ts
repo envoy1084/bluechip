@@ -21,23 +21,30 @@ import { ServicesLive } from "./Services.ts"
 export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware, OriginCheckMiddleware)
 
 /**
- * The server: routes, Node HTTP on `PORT`, the app's services (the desk and crons among them) on the durable engine,
- * the database, the chain, Alpaca, the assistant's models, config and logging. Namera checks at startup that the bundler and paymaster work
- * together, and refuses to boot otherwise.
+ * The server with its market data and the assistant's models given: routes, Node HTTP on `PORT`, the app's services
+ * (the desk and crons among them) on the durable engine, the database, the chain, config and logging. Namera checks at
+ * startup that the bundler and paymaster work together, and refuses to boot otherwise. The browser suite runs it with
+ * fixed market data, recorded models and a route of its own (`test/stack/`).
  */
-export const ServerLive = HttpRouter.serve(Routes).pipe(
-  Layer.provide(NodeHttpServer.layerConfig(createServer, {
-    port: Config.Port("PORT").pipe(Config.withDefault(8080)),
-    // Live streams never finish on their own; cut them quickly on shutdown so clients reconnect to the next process.
-    gracefulShutdownTimeout: Config.succeed("2 seconds")
-  })),
-  Layer.provideMerge(ServicesLive),
-  Layer.provide(ReferencePrices.layer),
-  Layer.provide(Alpaca.layer),
-  Layer.provide(AssistantModels.layer),
-  Layer.provide(EngineLive),
-  Layer.provide(Database.layer),
-  Layer.provide(ChainClient.layer),
-  Layer.provide(AppConfig.layer),
-  Layer.provide(LoggingLive)
-)
+export const makeServer = <Out, E, R = never>(
+  adapters: Layer.Layer<Alpaca | AssistantModels | Out, E>,
+  routes: Layer.Layer<never, never, R> = Layer.empty as Layer.Layer<never, never, R>
+) =>
+  HttpRouter.serve(Layer.merge(Routes, routes)).pipe(
+    Layer.provide(NodeHttpServer.layerConfig(createServer, {
+      port: Config.Port("PORT").pipe(Config.withDefault(8080)),
+      // Live streams never finish on their own; cut them quickly on shutdown so clients reconnect to the next process.
+      gracefulShutdownTimeout: Config.succeed("2 seconds")
+    })),
+    Layer.provideMerge(ServicesLive),
+    Layer.provide(ReferencePrices.layer),
+    Layer.provide(adapters),
+    Layer.provide(EngineLive),
+    Layer.provide(Database.layer),
+    Layer.provide(ChainClient.layer),
+    Layer.provide(AppConfig.layer),
+    Layer.provide(LoggingLive)
+  )
+
+/** The server on Alpaca's market data and Anthropic's models. */
+export const ServerLive = makeServer(Layer.merge(Alpaca.layer, AssistantModels.layer))
