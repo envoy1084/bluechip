@@ -7,12 +7,12 @@
 import * as Tool from "effect/ai/Tool"
 import * as Schema from "effect/Schema"
 import { Card, describeCard } from "../assistant/Card.ts"
-import { AgentId } from "../Ids.ts"
 import { PolicyInfo, SpecCheck } from "../policies/Catalog.ts"
 import { formatDollars, formatPercent } from "../policies/Format.ts"
 import type { Field } from "../policies/Policy.ts"
 import { SavedTemplate, TemplateInfo, TemplateName } from "../policies/Templates.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
+import { AgentIdParam } from "./Params.ts"
 import { Risk } from "./Risk.ts"
 import { SpecDraft, SpecPatch } from "./SpecPatch.ts"
 import { say } from "./Words.ts"
@@ -83,7 +83,7 @@ export const CheckAgentSpec = Tool.make("checkAgentSpec", {
   description: "Checks a new agent's draft, or changes to an existing agent, against the catalog: the problems to " +
     "fix, what it can and never does, and for changes whether they loosen or tighten its policies. Changes nothing.",
   parameters: Schema.Struct({
-    agentId: Schema.NullOr(AgentId).annotate({ description: "The agent to change; null for a new agent." }),
+    agentId: Schema.NullOr(AgentIdParam).annotate({ description: "The agent to change; null for a new agent." }),
     draft: Schema.NullOr(SpecDraft).annotate({ description: "A new agent's draft; null when changing an agent." }),
     changes: Schema.NullOr(SpecPatch).annotate({ description: "Changes to the agent; null for a new agent." })
   }),
@@ -112,7 +112,7 @@ export const SaveTemplate = Tool.make("saveTemplate", {
     "the user confirms.",
   parameters: Schema.Struct({
     name: TemplateName,
-    agentId: Schema.NullOr(AgentId).annotate({ description: "Save this agent's policies; null to save a draft." }),
+    agentId: Schema.NullOr(AgentIdParam).annotate({ description: "Save this agent's policies; null to save a draft." }),
     draft: Schema.NullOr(SpecDraft).annotate({ description: "The draft to save; null when saving an agent's." })
   }),
   success: Card,

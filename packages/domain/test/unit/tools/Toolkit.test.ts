@@ -3,6 +3,7 @@ import { Card } from "@bluechip/domain/assistant/Card"
 import { type RiskLevel, riskOf } from "@bluechip/domain/tools/Risk"
 import { BluechipToolkit } from "@bluechip/domain/tools/Toolkit"
 import { assert, describe, it } from "@effect/vitest"
+import { toCodecAnthropic } from "effect/ai/AnthropicStructuredOutput"
 import * as Tool from "effect/ai/Tool"
 import * as SchemaAST from "effect/SchemaAST"
 
@@ -52,6 +53,15 @@ describe("the toolkit", () => {
   it.each(tools)("$name: its parameters have a JSON Schema the model can read", (tool) => {
     assert.strictEqual(Tool.getJsonSchema(tool).type, "object")
   })
+
+  it.each(tools)(
+    "$name: its parameters' JSON Schema has no definitions, which Anthropic rejects when named with slashes",
+    (tool) => {
+      const schema = JSON.stringify(Tool.getJsonSchema(tool, { transformer: toCodecAnthropic }))
+
+      assert.notInclude(schema, "$defs")
+    }
+  )
 
   it.each(tools)("$name: returns its refusals to the model instead of failing the run", (tool) => {
     assert.strictEqual(tool.failureMode, "return")

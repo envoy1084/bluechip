@@ -7,8 +7,8 @@ import * as Tool from "effect/ai/Tool"
 import * as Schema from "effect/Schema"
 import { Card, describeCard } from "../assistant/Card.ts"
 import { Memory, MemoryKind, MemoryText } from "../assistant/Memory.ts"
-import { AgentId, MemoryId } from "../Ids.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
+import { AgentIdParam, MemoryIdParam } from "./Params.ts"
 import { Risk } from "./Risk.ts"
 import { say } from "./Words.ts"
 
@@ -23,7 +23,9 @@ export const Remember = Tool.make("remember", {
   parameters: Schema.Struct({
     kind: MemoryKind,
     text: MemoryText,
-    agentId: Schema.NullOr(AgentId).annotate({ description: "The agent it is about; null when it is about the user." })
+    agentId: Schema.NullOr(AgentIdParam).annotate({
+      description: "The agent it is about; null when it is about the user."
+    })
   }),
   success: Card,
   failure: ToolProblem,
@@ -39,7 +41,7 @@ export const Remember = Tool.make("remember", {
  */
 export const Forget = Tool.make("forget", {
   description: "Forgets a memory the user no longer wants kept (its id from listMemories or the system prompt).",
-  parameters: Schema.Struct({ memoryId: MemoryId }),
+  parameters: Schema.Struct({ memoryId: MemoryIdParam }),
   success: Card,
   failure: ToolProblem,
   failureMode: "return",

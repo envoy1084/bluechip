@@ -8,17 +8,17 @@ import * as Tool from "effect/ai/Tool"
 import * as Schema from "effect/Schema"
 import { Agent, AgentName, AgentSession, AgentUsage } from "../agents/Agent.ts"
 import { Card, describeCard } from "../assistant/Card.ts"
-import { AgentId, IntentId } from "../Ids.ts"
 import { Intent } from "../intents/Intent.ts"
 import { SpecDescription } from "../policies/Catalog.ts"
 import { listNames } from "../policies/Format.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
+import { AgentIdParam, IntentIdParam } from "./Params.ts"
 import { Risk } from "./Risk.ts"
 import { SpecDraft, SpecPatch } from "./SpecPatch.ts"
 import { say, usd } from "./Words.ts"
 
 const AgentParameters = Schema.Struct({
-  agentId: AgentId.annotate({ description: "The agent's id (agent_…), from listAgents." })
+  agentId: AgentIdParam
 })
 
 const stocksOf = (agent: Agent): ReadonlyArray<string> => {
@@ -119,7 +119,7 @@ export const GetAgentHistory = Tool.make("getAgentHistory", {
  */
 export const ExplainDecision = Tool.make("explainDecision", {
   description: "Why a trade was blocked, is waiting or needs approval, in words, with the policy that decided it.",
-  parameters: Schema.Struct({ intentId: IntentId }),
+  parameters: Schema.Struct({ intentId: IntentIdParam }),
   success: Schema.Struct({ intent: Intent, explanation: Schema.String }),
   failure: ToolProblem,
   failureMode: "return",
@@ -197,7 +197,7 @@ export const DraftAgent = Tool.make("draftAgent", {
 export const ChangeAgentPolicies = Tool.make("changeAgentPolicies", {
   description: "Prepares a change to an active agent's policies and shows what changes as a card; the user signs it " +
     "with Face ID.",
-  parameters: Schema.Struct({ agentId: AgentId, changes: SpecPatch }),
+  parameters: Schema.Struct({ agentId: AgentIdParam, changes: SpecPatch }),
   success: Card,
   failure: ToolProblem,
   failureMode: "return",

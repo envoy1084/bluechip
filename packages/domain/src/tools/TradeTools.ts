@@ -7,9 +7,9 @@
 import * as Tool from "effect/ai/Tool"
 import * as Schema from "effect/Schema"
 import { Card, describeCard } from "../assistant/Card.ts"
-import { AgentId } from "../Ids.ts"
 import { StockSymbol } from "../market/Market.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
+import { AgentIdParam } from "./Params.ts"
 import { Risk } from "./Risk.ts"
 import { say } from "./Words.ts"
 
@@ -36,7 +36,9 @@ export const ProposeTrade = Tool.make("proposeTrade", {
     "or as the user (prepared for their Face ID). Give dollars for a buy and shares for a sell. The result is a card; " +
     "never claim a trade happened unless the card says so.",
   parameters: Schema.Struct({
-    agentId: Schema.NullOr(AgentId).annotate({ description: "The agent to trade through; null to trade as the user." }),
+    agentId: Schema.NullOr(AgentIdParam).annotate({
+      description: "The agent to trade through; null to trade as the user."
+    }),
     symbol: StockSymbol,
     side: Schema.Literals(["buy", "sell"]),
     dollars: Schema.NullOr(Schema.Finite).annotate({ description: "Dollars to spend on a buy; null for a sell." }),
@@ -58,7 +60,7 @@ export const ProposeTrade = Tool.make("proposeTrade", {
 export const ProposeRebalance = Tool.make("proposeRebalance", {
   description: "Proposes the trades that bring the portfolio back to a rebalancer agent's target mix, one intent per " +
     "stock that drifted past its trigger, each decided by the agent's policies.",
-  parameters: Schema.Struct({ agentId: AgentId, reason: Reason }),
+  parameters: Schema.Struct({ agentId: AgentIdParam, reason: Reason }),
   success: Schema.Array(Card),
   failure: ToolProblem,
   failureMode: "return",
