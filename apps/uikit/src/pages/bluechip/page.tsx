@@ -402,10 +402,10 @@ export function KitBluechip() {
         <Section
           id="deposit"
           title="Deposit card"
-          purpose="How to add cash. Send USDC on Base to your address; we watch for it and tell you the moment it lands. The warning is loud because other coins or networks can be lost."
+          purpose="How to add cash. Send USDC on Base to your address; while it's open, it shows the moment the cash lands. The warning is loud because other coins or networks can be lost."
           notes={[
             "The QR here is a pixel pattern, not a real code",
-            "Waiting pulses; arrival sweeps and rolls in",
+            "Arrival sweeps and rolls in",
             "Warning always visible, never in a tooltip"
           ]}
         >

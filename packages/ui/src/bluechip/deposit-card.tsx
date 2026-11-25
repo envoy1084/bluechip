@@ -95,14 +95,9 @@ export function DepositCard(
       aria-labelledby={titleId}
       className={cn("grid w-full max-w-[560px] gap-[18px] rounded-lg bg-white p-5 shadow-e2", className)}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-px">
-          <h3 id={titleId} className="text-title-3 font-semibold">Add cash</h3>
-          <span className="text-label-sm text-g-500">Send USDC to your bluechip account</span>
-        </div>
-        <output className="inline-flex items-center gap-2 rounded-full bg-blue-50 py-1 pr-[11px] pl-[9px] text-label-sm font-[550] text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]">
-          <i aria-hidden className="size-[7px] animate-pulse rounded-full bg-blue" />Waiting for your deposit
-        </output>
+      <div className="grid gap-px">
+        <h3 id={titleId} className="text-title-3 font-semibold">Add cash</h3>
+        <span className="text-label-sm text-g-500">Send USDC to your bluechip account</span>
       </div>
       <div className="grid justify-items-center gap-5 sm:grid-cols-[168px_minmax(0,1fr)] sm:items-start sm:justify-items-stretch">
         <figure className="relative m-0 size-[168px] rounded-[16px] bg-white p-3 shadow-e2">

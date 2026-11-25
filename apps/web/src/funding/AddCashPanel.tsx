@@ -7,15 +7,13 @@ import { useEffect, useState } from "react"
 import { devFundAtom, fetchedPortfolioAtom } from "../atoms/portfolio.ts"
 import { usdcDollars } from "../market/amounts.ts"
 import { network } from "../wallet/config.ts"
-import { SendFromWallet } from "./SendFromWallet.tsx"
 
 // While this screen is open, balances are read this often: deposits aren't watched in the background, so the
 // "cash arrived" moment only plays for someone who is looking.
 const CHECK_EVERY_MS = 5000
 
 /**
- * Add cash: the account's address and QR, sending from a wallet the user already has, and (on the local fork) test
- * money. While it's open, cash is checked every few seconds and an arrival plays the "cash arrived" moment.
+ * Add cash: the account's address and QR, and (on the local fork) test money. While it's open, cash is checked every few seconds and an arrival plays the "cash arrived" moment.
  */
 export function AddCashPanel({ address }: Readonly<{ address: `0x${string}` }>) {
   const portfolio = useAtomValue(fetchedPortfolioAtom)
@@ -46,8 +44,6 @@ export function AddCashPanel({ address }: Readonly<{ address: `0x${string}` }>) 
         amount={arrived === undefined ? 0 : usdcDollars(arrived)}
         celebrate={arrived !== undefined}
       />
-
-      {arrived === undefined && <SendFromWallet to={address} />}
 
       {network === "local" && arrived === undefined && (
         <Button
