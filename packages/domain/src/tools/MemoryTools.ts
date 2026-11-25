@@ -47,7 +47,7 @@ export const Forget = Tool.make("forget", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: (card) => say(describeCard(card))
-}).annotate(Risk, "configure")
+}).annotate(Risk, "configure").annotate(Tool.Strict, true)
 
 /**
  * @stability unstable

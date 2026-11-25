@@ -63,6 +63,24 @@ describe("the toolkit", () => {
     }
   )
 
+  it("stays within Anthropic's strict limits: 20 strict tools, 16 nullable or union parameters across them", () => {
+    const strict = tools.filter((tool) => Tool.getStrictMode(tool) === true)
+    const unions = strict.flatMap((tool) =>
+      JSON.stringify(Tool.getJsonSchema(tool, { transformer: toCodecAnthropic })).match(/"anyOf"/g) ?? []
+    )
+
+    assert.deepStrictEqual([strict.length <= 20, unions.length <= 16], [true, true])
+  })
+
+  it.each(tools.filter((tool) => Tool.getStrictMode(tool) === true))(
+    "$name: strict, with no string pattern, which held constrained decoding in a loop",
+    (tool) => {
+      const schema = JSON.stringify(Tool.getJsonSchema(tool, { transformer: toCodecAnthropic }))
+
+      assert.notInclude(schema, "\"pattern\"")
+    }
+  )
+
   it.each(tools)("$name: returns its refusals to the model instead of failing the run", (tool) => {
     assert.strictEqual(tool.failureMode, "return")
   })

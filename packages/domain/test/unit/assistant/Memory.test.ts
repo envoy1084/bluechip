@@ -15,6 +15,21 @@ const existing = [
 describe("planMemoryWrite", () => {
   it.each<{ name: string; candidate: MemoryCandidate; expected: MemoryWrite }>([
     {
+      name: "blank text is dropped",
+      candidate: { kind: "fact", text: "  ", source: "said", confidence: 1, replaces: null },
+      expected: { _tag: "Skip", reason: "invalid" }
+    },
+    {
+      name: "text of 300 characters is kept",
+      candidate: { kind: "fact", text: "a".repeat(300), source: "said", confidence: 1, replaces: null },
+      expected: { _tag: "Add", confirmed: true }
+    },
+    {
+      name: "text over 300 characters is dropped",
+      candidate: { kind: "fact", text: "a".repeat(301), source: "said", confidence: 1, replaces: null },
+      expected: { _tag: "Skip", reason: "invalid" }
+    },
+    {
       name: "a guess under 0.5 is dropped",
       candidate: { kind: "fact", text: "You live in Berlin.", source: "inferred", confidence: 0.49, replaces: null },
       expected: { _tag: "Skip", reason: "unsure" }

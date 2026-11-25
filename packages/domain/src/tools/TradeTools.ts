@@ -22,7 +22,8 @@ import { say } from "./Words.ts"
  */
 export const MAX_REASON_LENGTH = 200
 
-const Reason = Schema.Trimmed.check(Schema.isMinLength(1), Schema.isMaxLength(MAX_REASON_LENGTH)).annotate({
+// A plain string: a trimmed string's pattern held Anthropic's constrained decoding in a loop. Handlers trim it.
+const Reason = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(MAX_REASON_LENGTH)).annotate({
   description: "Why, in a short sentence the user will read on the card."
 })
 
@@ -50,7 +51,7 @@ export const ProposeTrade = Tool.make("proposeTrade", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: (card) => say(describeCard(card))
-}).annotate(Risk, "propose")
+}).annotate(Risk, "propose").annotate(Tool.Strict, true)
 
 /**
  * @stability unstable
@@ -67,4 +68,4 @@ export const ProposeRebalance = Tool.make("proposeRebalance", {
   dependencies: [Caller],
   toModelOutput: (cards) =>
     say(cards.length === 0 ? "Nothing has drifted past the trigger: no trades." : cards.map(describeCard))
-}).annotate(Risk, "propose")
+}).annotate(Risk, "propose").annotate(Tool.Strict, true)

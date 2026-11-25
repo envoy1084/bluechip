@@ -141,7 +141,7 @@ export const PauseAgent = Tool.make("pauseAgent", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: cardOutput
-}).annotate(Risk, "configure")
+}).annotate(Risk, "configure").annotate(Tool.Strict, true)
 
 /**
  * @stability unstable
@@ -156,7 +156,7 @@ export const ResumeAgent = Tool.make("resumeAgent", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: cardOutput
-}).annotate(Risk, "configure")
+}).annotate(Risk, "configure").annotate(Tool.Strict, true)
 
 /**
  * @stability unstable
@@ -170,7 +170,7 @@ export const PauseAll = Tool.make("pauseAll", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: cardOutput
-}).annotate(Risk, "configure")
+}).annotate(Risk, "configure").annotate(Tool.Strict, true)
 
 /**
  * @stability unstable
@@ -219,7 +219,7 @@ export const RenewAgent = Tool.make("renewAgent", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: cardOutput
-}).annotate(Risk, "sign")
+}).annotate(Risk, "sign").annotate(Tool.Strict, true)
 
 /**
  * @stability unstable
@@ -235,4 +235,4 @@ export const RemoveAgent = Tool.make("removeAgent", {
   failureMode: "return",
   dependencies: [Caller],
   toModelOutput: cardOutput
-}).annotate(Risk, "sign")
+}).annotate(Risk, "sign").annotate(Tool.Strict, true)

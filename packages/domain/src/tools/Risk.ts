@@ -17,6 +17,10 @@ import * as Schema from "effect/Schema"
  *   assistant to remember or forget is your own instruction, applied at once and undoable from the memory page.
  * - `sign`: prepares a signing request; only your Face ID in the app completes it.
  *
+ * The tools that move money or agents and take simple parameters are strict (`Tool.Strict`): Anthropic's constrained
+ * decoding guarantees their parameters. The rest aren't, because a request allows 20 strict tools and 16 nullable or
+ * union parameters across them, and spec patches alone have more.
+ *
  * @stability unstable
  * @category schemas
  * @since 0.0.0

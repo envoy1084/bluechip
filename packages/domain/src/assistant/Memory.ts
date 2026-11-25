@@ -84,7 +84,9 @@ export class Memory extends Schema.Class<Memory>("@bluechip/domain/assistant/Mem
 }) {}
 
 /**
- * A memory the small model proposes after a turn: `replaces` names a memory it contradicts.
+ * A memory the model proposes after a turn: `replaces` names a memory it contradicts. Its text is a plain string, not
+ * {@link MemoryText}: a trimmed, length-bounded string held Anthropic's constrained decoding in a loop, so the bounds
+ * are checked by {@link planMemoryWrite} instead.
  *
  * @stability unstable
  * @category models
@@ -92,7 +94,7 @@ export class Memory extends Schema.Class<Memory>("@bluechip/domain/assistant/Mem
  */
 export const MemoryCandidate = Schema.Struct({
   kind: MemoryKind,
-  text: MemoryText.annotate({ description: "One short sentence in the second person, e.g. 'You avoid Tesla.'" }),
+  text: Schema.String.annotate({ description: "One short sentence in the second person, e.g. 'You avoid Tesla.'" }),
   source: MemorySource.annotate({
     description: "`said` when the user stated it outright, `inferred` when you concluded it from what they said."
   }),
@@ -138,7 +140,7 @@ export const CONFIRM_CONFIDENCE = 0.8
  * @since 0.0.0
  */
 export type MemoryWrite =
-  | { readonly _tag: "Skip"; readonly reason: "unsure" | "duplicate" }
+  | { readonly _tag: "Skip"; readonly reason: "unsure" | "duplicate" | "invalid" }
   | { readonly _tag: "Add"; readonly confirmed: boolean }
   | { readonly _tag: "Refresh"; readonly memoryId: MemoryId; readonly confirm: boolean }
   | { readonly _tag: "Replace"; readonly memoryId: MemoryId; readonly confirmed: boolean; readonly note: string }
@@ -146,7 +148,7 @@ export type MemoryWrite =
 const normalize = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()
 
 /**
- * Decides a candidate against the memories you have: unsure ones are dropped; a repeat of a memory (same kind, same
+ * Decides a candidate against the memories you have: blank or overlong text and unsure ones are dropped; a repeat of a memory (same kind, same
  * words) refreshes it, and confirms it when the repeat is confident; a contradiction replaces the memory it names;
  * anything else is added, confirmed unless it is a guess the assistant isn't sure of.
  *
@@ -168,12 +170,12 @@ export const planMemoryWrite = (
   existing: ReadonlyArray<Pick<Memory, "id" | "kind" | "text" | "confirmedAt">>,
   candidate: MemoryCandidate
 ): MemoryWrite => {
+  const text = candidate.text.trim()
+  if (text.length === 0 || text.length > MAX_MEMORY_LENGTH) return { _tag: "Skip", reason: "invalid" }
   if (candidate.confidence < MIN_CONFIDENCE) return { _tag: "Skip", reason: "unsure" }
   const confirmed = candidate.source === "said" || candidate.confidence >= CONFIRM_CONFIDENCE
 
-  const repeat = existing.find((memory) =>
-    memory.kind === candidate.kind && normalize(memory.text) === normalize(candidate.text)
-  )
+  const repeat = existing.find((memory) => memory.kind === candidate.kind && normalize(memory.text) === normalize(text))
   if (repeat !== undefined) {
     if (repeat.confirmedAt !== null || !confirmed) return { _tag: "Skip", reason: "duplicate" }
     return { _tag: "Refresh", memoryId: repeat.id, confirm: true }
