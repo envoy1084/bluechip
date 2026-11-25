@@ -24,6 +24,14 @@ describe("AllocationDonut", () => {
     await expect.element(legend.getByRole("button", { name: /Apple/ })).toHaveTextContent("Apple30.0%target 35%−5.0")
   })
 
+  it("shows the mix alone when there are no targets", async () => {
+    const mix = SLICES.map(({ current, id, label }) => ({ id, label, current }))
+    const screen = await render(<AllocationDonut slices={mix} />)
+    await expect.element(screen.getByText("Biggest")).toBeVisible()
+    const legend = screen.getByRole("list", { name: "Your mix" })
+    await expect.element(legend.getByRole("button", { name: /Nvidia/ })).toHaveTextContent("Nvidia42.0%")
+  })
+
   it("keeps a slice isolated when its legend row is pressed", async () => {
     const screen = await render(<AllocationDonut slices={SLICES} />)
     const apple = screen.getByRole("button", { name: /Apple/ })

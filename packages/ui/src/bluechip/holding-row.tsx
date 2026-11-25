@@ -21,8 +21,8 @@ export interface HoldingRowProps extends Omit<ComponentProps<"button">, "childre
   readonly value: number
   /** Share of your money, 0 to 100. */
   readonly weight: number
-  /** Your max in one stock, in percent. */
-  readonly cap: number
+  /** Your max in one stock, in percent; leave it out while no limit applies. */
+  readonly cap?: number
   /** Today's change in percent. */
   readonly change: number
 }
@@ -31,7 +31,7 @@ export interface HoldingRowProps extends Omit<ComponentProps<"button">, "childre
 export function HoldingRow(
   { symbol, name, shares, value, weight, cap, change, className, ...props }: HoldingRowProps
 ) {
-  const state = capState(weight, cap)
+  const state = cap === undefined ? "under" : capState(weight, cap)
   return (
     <button
       type="button"
@@ -48,9 +48,9 @@ export function HoldingRow(
           {state === "at" && <MiniBadge tone="warn">At max</MiniBadge>}
         </span>
         <span className="text-label-sm text-g-500 tabular-nums">
-          {formatShares(shares)} shares · {weight.toFixed(1)}% of {cap}% max
+          {formatShares(shares)} shares · {weight.toFixed(1)}%{cap === undefined ? " of your money" : ` of ${cap}% max`}
         </span>
-        <AllocationBar weight={weight} cap={cap} label={name} className="mt-1.5 max-w-[220px]" />
+        {cap !== undefined && <AllocationBar weight={weight} cap={cap} label={name} className="mt-1.5 max-w-[220px]" />}
       </span>
       <span className="grid justify-items-end gap-px">
         <NumberRoll value={value} format={formatMoney} className="text-body-sm font-semibold" />
@@ -64,8 +64,8 @@ export function HoldingRow(
 export interface CashHoldingRowProps extends Omit<ComponentProps<"button">, "children"> {
   readonly value: number
   readonly weight: number
-  /** The share you always keep as cash, in percent. */
-  readonly reserve: number
+  /** The share you always keep as cash, in percent; leave it out while no agent keeps a reserve. */
+  readonly reserve?: number
 }
 
 /** Your cash, always the last holding. Its bar marks the reserve your agents keep. */
@@ -75,8 +75,12 @@ export function CashHoldingRow({ value, weight, reserve, className, ...props }: 
       <TickerChip symbol={CASH_SYMBOL} />
       <span className="grid min-w-0 gap-px leading-[1.35]">
         <span className="text-body-sm font-[550]">Cash</span>
-        <span className="text-label-sm text-g-500">Ready to invest · keep at least {reserve}%</span>
-        <AllocationBar weight={weight} cap={reserve} cash label="Cash" className="mt-1.5 max-w-[220px]" />
+        <span className="text-label-sm text-g-500">
+          {reserve === undefined ? "Ready to invest" : `Ready to invest · keep at least ${reserve}%`}
+        </span>
+        {reserve !== undefined && (
+          <AllocationBar weight={weight} cap={reserve} cash label="Cash" className="mt-1.5 max-w-[220px]" />
+        )}
       </span>
       <span className="grid justify-items-end gap-px">
         <NumberRoll value={value} format={formatMoney} className="text-body-sm font-semibold" />
