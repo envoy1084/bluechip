@@ -12,7 +12,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useMemo, useState } from "react"
-import { activityAt, ActivityLine } from "../../../activity/ActivityLine.tsx"
+import { activityAt, ActivityLine, localTimeZone } from "../../../activity/ActivityLine.tsx"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { activityAtom } from "../../../atoms/trading.ts"
 import { AppPage } from "../../../shell/AppPage.tsx"
@@ -33,7 +33,7 @@ const PERIODS: ReadonlyArray<{ readonly value: Period; readonly label: string }>
 const dayOf = (item: ActivityItem) => {
   const at = DateTime.toDateUtc(activityAt(item))
   const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(at).setHours(0, 0, 0, 0)) / 86_400_000)
-  return days === 0 ? "Today" : days === 1 ? "Yesterday" : formatDate(at, { time: false })
+  return days === 0 ? "Today" : days === 1 ? "Yesterday" : formatDate(at, { time: false, timeZone: localTimeZone() })
 }
 
 function ActivityPage() {

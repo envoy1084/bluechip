@@ -12,7 +12,7 @@ import {
 } from "@bluechip/ui/components/sheet"
 import { formatDate, formatMoney, formatShares } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
-import { activityAt, describeActivity } from "../../../../activity/ActivityLine.tsx"
+import { activityAt, describeActivity, localTimeZone } from "../../../../activity/ActivityLine.tsx"
 import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../../market/amounts.ts"
 
 const STATUS = {
@@ -53,7 +53,9 @@ export function ActivityDetails(
           <>
             <SheetHeader>
               <SheetTitle>{describeActivity(item, names).title}</SheetTitle>
-              <SheetDescription>{formatDate(DateTime.toDateUtc(activityAt(item)))}</SheetDescription>
+              <SheetDescription>
+                {formatDate(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() })}
+              </SheetDescription>
             </SheetHeader>
             <SheetBody className="grid content-start gap-4">
               {item._tag === "Trade" ? <TradeRows item={item} names={names} /> : (

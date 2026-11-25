@@ -6,12 +6,15 @@ import { formatMoney, formatShares, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { priceDollars, shareCount, usdcDollars } from "../market/amounts.ts"
 
-/** When an item happened, for its row: the time today, the day otherwise (the list groups by day). */
-export const activityTime = (item: Activity) =>
-  formatTime(DateTime.toDateUtc(item._tag === "Trade" ? item.trade.createdAt : item.transfer.createdAt))
+/** The viewer's own time zone: activity is read as "when did I do this", not in market time. */
+export const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 
 /** When an item happened. */
 export const activityAt = (item: Activity) => item._tag === "Trade" ? item.trade.createdAt : item.transfer.createdAt
+
+/** When an item happened, for its row: the time (the list groups rows by day). */
+export const activityTime = (item: Activity) =>
+  formatTime(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() })
 
 /** What an item says: a trade's result in words, a withdrawal's amount and address. */
 export const describeActivity = (item: Activity, names: ReadonlyMap<StockSymbol, string>) => {

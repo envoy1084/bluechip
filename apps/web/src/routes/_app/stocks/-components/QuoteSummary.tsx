@@ -14,23 +14,27 @@ const usdc = (units: bigint) => (
 )
 const shares = (units: bigint) => `${formatShares(shareCount(units))} shares`
 
-// More than 1% off the Chainlink reference is what the fair price check flags.
-const FAIR_GAP_BPS = 100
+// The server's fair-price limits: 1% off Chainlink, 0.5% while prices are paused.
+const LIVE_LIMIT_BPS = 100
+const PAUSED_LIMIT_BPS = 50
 
 /**
- * How far the pool's price is from Chainlink's, from the trader's side: buying above or selling below is worse. While
- * prices are paused, Chainlink's is the last one before the pause, and the check says so.
+ * How far the pool's price is from Chainlink's, from the trader's side (the quote's gap is positive when worse for
+ * them). While prices are paused, Chainlink's is the last one before the pause, and the check says so.
  */
 function FairPrice({ quote }: Readonly<{ quote: Quote }>) {
-  const worse = (quote.gapBps > 0) === (quote.side === "buy")
   const paused = quote.reference.status === "paused"
 
-  if (Math.abs(quote.gapBps) <= FAIR_GAP_BPS || !worse) {
-    return paused ? <FairPriceCheck>Against the last price before the pause</FairPriceCheck> : <FairPriceCheck />
+  if (quote.gapBps <= (paused ? PAUSED_LIMIT_BPS : LIVE_LIMIT_BPS)) {
+    return (
+      <FairPriceCheck>
+        {paused ? "Within 0.5% of Chainlink's last price before the pause" : "Within 1% of Chainlink's price"}
+      </FairPriceCheck>
+    )
   }
   return (
     <FairPriceCheck passed={false}>
-      {Math.abs(bpsPercent(quote.gapBps)).toFixed(2)}% {quote.side === "buy" ? "above" : "below"} Chainlink's price
+      {bpsPercent(quote.gapBps).toFixed(2)}% worse than Chainlink's price
       {paused ? " (paused)" : ""}
     </FairPriceCheck>
   )
