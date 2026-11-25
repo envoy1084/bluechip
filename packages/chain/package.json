@@ -18,5 +18,9 @@
     "@bluechip/devnet": "workspace:*",
     "effect": "catalog:",
     "viem": "catalog:"
+  },
+  "dependencies": {
+    "@bluechip/domain": "workspace:*",
+    "@namera-ai/sdk": "catalog:"
   }
 }
