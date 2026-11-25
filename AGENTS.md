@@ -39,18 +39,18 @@ Dependencies point inward: apps depend on packages, packages never depend on app
 
 ## Commands
 
-| Command                | What it does                                                        |
-| ---------------------- | ------------------------------------------------------------------- |
-| `pnpm check`           | Everything CI runs, in order. Run it before every push.             |
-| `pnpm typecheck`       | Type-check everything with tsrs (TypeScript 7 + Effect diagnostics) |
-| `pnpm lint`            | oxlint with Effect's rules (`lint:fix` applies fixes)               |
-| `pnpm format`          | Format with dprint (`format:check` only checks)                     |
-| `pnpm test`            | Run every Vitest project once (`test:watch` for watch mode)         |
-| `pnpm test:fork`       | Deploy the policies to a running fork, then check real-Base facts   |
-| `pnpm contracts:test`  | Format check, lints and Foundry tests of `contracts/`               |
-| `pnpm contracts:build` | Build `contracts/` and regenerate `Deployed.ts`                     |
-| `pnpm build`           | `tsc -b`, then each package's build                                 |
-| `pnpm circular`        | Fail on import cycles between modules                               |
+| Command                | What it does                                                         |
+| ---------------------- | -------------------------------------------------------------------- |
+| `pnpm check`           | Everything CI runs, in order. Run it before every push.              |
+| `pnpm typecheck`       | Type-check everything with tsrs (TypeScript 7 + Effect diagnostics)  |
+| `pnpm lint`            | oxlint with Effect's rules, and which way imports point (`lint:fix`) |
+| `pnpm format`          | Format with dprint (`format:check` only checks)                      |
+| `pnpm test`            | Run every Vitest project once (`test:watch` for watch mode)          |
+| `pnpm test:fork`       | Deploy the policies to a running fork, then check real-Base facts    |
+| `pnpm contracts:test`  | Format check, lints and Foundry tests of `contracts/`                |
+| `pnpm contracts:build` | Build `contracts/` and regenerate `Deployed.ts`                      |
+| `pnpm build`           | `tsc -b`, then each package's build                                  |
+| `pnpm circular`        | Fail on import cycles between modules                                |
 
 Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's fork RPC; `apps/server`, with
 `AGENT_KEY_ENCRYPTION_KEY` from `openssl rand -base64 32`; `apps/web`; never committed), then `pnpm dev`: Postgres, the local chain (the devnet on Anvil, 8545, no RPC; its
@@ -99,7 +99,8 @@ are `tsc -b` plus Babel's pure-call annotations, so bundlers tree-shake them lik
 
 Every repository script is a command of the Effect CLI in `scripts/`: `scripts/commands/<name>.ts`,
 registered in `scripts/cli.ts` and run as `node scripts/bin.ts <name>` (root `package.json` scripts
-call it). No JavaScript under `scripts/`: `pnpm lint` fails on `.js`/`.mjs`/`.cjs` files there.
+call it). No JavaScript under `scripts/`: `pnpm lint` fails on `.js`/`.mjs`/`.cjs` files there, and on imports that
+point the wrong way in `apps/web/src` and `apps/server/src` (`scripts/lint/ImportDirections.ts`).
 
 - Keep commands thin: flags and wiring in the command, logic in exported functions that
   `scripts/test/<name>.test.ts` tests with real temporary folders (`FileSystem.makeTempDirectoryScoped`).
