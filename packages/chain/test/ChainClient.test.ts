@@ -26,6 +26,23 @@ describe.skipIf(!forkAvailable)("on the local fork", () => {
         assert.isTrue(round[1] > 0n)
       }))
 
+    it.effect("every stock's token and feed belong together", () =>
+      Effect.gen(function*() {
+        const chain = yield* ChainClient
+        const reads = yield* chain.use("read stocks", (client) =>
+          Promise.all(stocks.map((stock) =>
+            Promise.all([
+              client.readContract({ address: stock.token, abi: erc20Abi, functionName: "symbol" }),
+              client.readContract({ address: stock.token, abi: erc20Abi, functionName: "decimals" }),
+              client.readContract({ address: stock.feed, abi: aggregatorAbi, functionName: "description" })
+            ])
+          )))
+        assert.deepStrictEqual(
+          reads.map(([symbol, decimals, description]) => [symbol, decimals, description.split(" ")[1]]),
+          stocks.map((stock) => [`${stock.symbol}c`, 8, stock.symbol])
+        )
+      }))
+
     it.effect("gives an account USDC", () =>
       Effect.gen(function*() {
         const chain = yield* ChainClient
