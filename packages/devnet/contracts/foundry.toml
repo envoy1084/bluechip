@@ -1,0 +1,11 @@
+# The devnet's helper contracts, compiled by `node scripts/bin.ts devnet capture` into the captured state.
+[profile.default]
+src = "src"
+out = "out"
+cache_path = "cache"
+solc_version = "0.8.30"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+bytecode_hash = "none"
+cbor_metadata = false

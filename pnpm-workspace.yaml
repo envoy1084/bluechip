@@ -41,3 +41,10 @@ allowBuilds:
   dprint: false
   esbuild: false
   lefthook: true
+  # Alto's optional native accelerators; both fall back to JavaScript.
+  msgpackr-extract: false
+  protobufjs: false
+
+# Alto's ERC-7562 tracer, fixed to run on Anvil and to allow the P-256 precompile (as Namera's devnet does).
+patchedDependencies:
+  "@pimlico/alto@0.0.21": patches/@pimlico__alto@0.0.21.patch

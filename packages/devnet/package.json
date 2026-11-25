@@ -1,0 +1,27 @@
+{
+  "name": "@bluechip/devnet",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "A local Base for tests: Anvil and Alto per Vitest worker, started from a captured state with every contract bluechip uses at its real address.",
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": "./src/*.ts",
+    "./internal/*": null
+  },
+  "peerDependencies": {
+    "effect": "catalog:",
+    "viem": "catalog:"
+  },
+  "dependencies": {
+    "@bluechip/chain": "workspace:*",
+    "@pimlico/alto": "0.0.21",
+    "prool": "0.3.0"
+  },
+  "devDependencies": {
+    "effect": "catalog:",
+    "viem": "catalog:"
+  }
+}

@@ -33,9 +33,10 @@ export default defineConfig({
     projects: [
       project("scripts", "scripts"),
       project("domain", "packages/domain"),
-      // Both share one local fork (and its bundler), which answers one test file at a time far faster than several.
-      project("chain", "packages/chain", { test: { fileParallelism: false } }),
-      project("server", "apps/server", { test: { fileParallelism: false } }),
+      // Chain tests run on the devnet: one Anvil and Alto per worker, from the captured state.
+      project("devnet", "packages/devnet", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
+      project("chain", "packages/chain", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
+      project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
       project("ui", "packages/ui", {
         // Pre-bundle the UI libraries up front; discovering them mid-run reloads Vite and breaks React hooks.

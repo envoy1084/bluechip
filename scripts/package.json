@@ -4,10 +4,14 @@
   "type": "module",
   "version": "0.0.0",
   "dependencies": {
+    "@bluechip/chain": "workspace:*",
     "@effect/platform-node": "catalog:",
+    "@namera-ai/contracts": "2.0.0-rc.0",
     "effect": "catalog:",
     "glob": "14.0.6",
-    "madge": "8.0.0"
+    "madge": "8.0.0",
+    "prool": "0.3.0",
+    "viem": "catalog:"
   },
   "devDependencies": {
     "@types/madge": "5.0.3"

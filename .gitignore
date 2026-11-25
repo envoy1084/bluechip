@@ -310,3 +310,7 @@ $RECYCLE.BIN/
 
 # Vitest browser-mode failure screenshots
 .vitest/
+
+# The devnet helper contracts build output (the capture embeds their bytecode).
+packages/devnet/contracts/out/
+packages/devnet/contracts/cache/
