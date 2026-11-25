@@ -157,6 +157,61 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
         assert.strictEqual(thread.conversation.title, "About Nvidia")
       }))
 
+    it.effect("a run the client leaves mid-answer keeps its round, marked interrupted, and the next run goes on", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        const recorded = yield* RecordedModel
+        yield* recorded.record(
+          {
+            to: "How is my portfolio doing?",
+            rounds: [
+              [{ call: "getPortfolio", params: {} }],
+              [{ text: "You have no money in", partial: true }, { hang: true }]
+            ]
+          },
+          { to: "Go on", rounds: [[{ text: "You have no money in bluechip yet." }]] }
+        )
+        const conversation = yield* assistant.start(user)
+
+        yield* assistant.leave(
+          user,
+          conversation.id,
+          "How is my portfolio doing?",
+          (event) => event.type === "TEXT_MESSAGE_CONTENT"
+        )
+        yield* recorded.cutOff("How is my portfolio doing?")
+        const next = yield* assistant.ask(user, conversation.id, "Go on")
+        const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
+        const [prompt] = yield* recorded.prompts("Go on")
+
+        assert.deepStrictEqual(
+          [
+            next.events.at(-1)?.type,
+            thread.messages.map((message) => [
+              message.role,
+              message.parts.map((part) =>
+                part.type === "text" ? part.text : part.type === "card" && part.card._tag === "Error" ?
+                  part.card.reason :
+                  part.type
+              )
+            ]),
+            prompt!.content.map((message) => message.role)
+          ],
+          [
+            "RUN_FINISHED",
+            [
+              ["user", ["How is my portfolio doing?"]],
+              ["assistant", ["toolCall", "toolResult"]],
+              ["assistant", ["You have no money in", "interrupted"]],
+              ["user", ["Go on"]],
+              ["assistant", ["You have no money in bluechip yet."]]
+            ],
+            ["system", "user", "assistant", "tool", "assistant", "user"]
+          ]
+        )
+      }))
+
     it.effect("400: a conversation of another user", () =>
       Effect.gen(function*() {
         const users = yield* TestUsers

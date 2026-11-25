@@ -6,14 +6,20 @@ import * as LanguageModel from "effect/ai/LanguageModel"
 import type * as Prompt from "effect/ai/Prompt"
 import type * as Response from "effect/ai/Response"
 import * as Context from "effect/Context"
+import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Stream from "effect/Stream"
 import { AssistantModels } from "../../src/modules/assistant/AssistantModels.ts"
 
-/** One thing the model does in a round: write text, call a tool, or search the web (run by Anthropic). */
+/**
+ * One thing the model does in a round: write text (`partial`: a text block it is still writing), call a tool, search
+ * the web (run by Anthropic), or go quiet as a model still answering (`hang`, the round's last step: it streams nothing
+ * more until the run stops it, see `RecordedModel.cutOff`).
+ */
 export type Step =
-  | { readonly text: string }
+  | { readonly text: string; readonly partial?: boolean }
+  | { readonly hang: true }
   | { readonly call: string; readonly params: object }
   | {
     readonly search: string
@@ -54,12 +60,22 @@ export class RecordedModel extends Context.Service<RecordedModel, {
   readonly record: (...replies: ReadonlyArray<Reply>) => Effect.Effect<void>
   /** The prompts the conversation model was sent for a user message, one per round. */
   readonly prompts: (to: string) => Effect.Effect<ReadonlyArray<Prompt.Prompt>>
+  /** Waits until the run answering `to` stopped the model in a `hang` step. */
+  readonly cutOff: (to: string) => Effect.Effect<void>
 }>()("@bluechip/server/test/RecordedModel") {
   /** The recordings and the `AssistantModels` that replay them. */
   static readonly layer = Layer.unwrap(Effect.sync(() => {
     const replies = new Map<string, Reply>()
     const sent = new Map<string, Array<Prompt.Prompt>>()
     const limits = new Map<string, number>()
+    const hangs = new Map<string, Deferred.Deferred<void>>()
+    const hangOf = (to: string) => {
+      const known = hangs.get(to)
+      if (known !== undefined) return known
+      const made = Deferred.makeUnsafe<void>()
+      hangs.set(to, made)
+      return made
+    }
     let ids = 0
     const nextId = (prefix: string) => `${prefix}_${++ids}`
 
@@ -82,9 +98,12 @@ export class RecordedModel extends Context.Service<RecordedModel, {
       const parts: Array<Response.StreamPartEncoded> = [{ type: "response-metadata", id: nextId("msg"), modelId }]
       let calls = 0
       for (const step of steps) {
-        if ("text" in step) {
+        if ("hang" in step) {
+          return parts
+        } else if ("text" in step) {
           const id = nextId("text")
-          parts.push({ type: "text-start", id }, { type: "text-delta", id, delta: step.text }, { type: "text-end", id })
+          parts.push({ type: "text-start", id }, { type: "text-delta", id, delta: step.text })
+          if (step.partial !== true) parts.push({ type: "text-end", id })
         } else if ("call" in step) {
           calls++
           parts.push({ type: "tool-call", id: nextId("toolu"), name: step.call, params: step.params })
@@ -169,7 +188,12 @@ export class RecordedModel extends Context.Service<RecordedModel, {
             sent.set(user, [...(sent.get(user) ?? []), options.prompt])
             const steps = reply.rounds[round]
             if (steps === undefined) return Stream.fail(failure(`No round ${round + 1} for "${user}"`))
-            return Stream.fromIterable(encode(steps, modelId, reply.usage))
+            const streamed = Stream.fromIterable(encode(steps, modelId, reply.usage))
+            if (!steps.some((step) => "hang" in step)) return streamed
+            return streamed.pipe(
+              Stream.concat(Stream.never),
+              Stream.ensuring(Deferred.succeed(hangOf(user), undefined))
+            )
           }))
       })
 
@@ -179,7 +203,8 @@ export class RecordedModel extends Context.Service<RecordedModel, {
     return Layer.mergeAll(
       Layer.succeed(RecordedModel, {
         record: (...recorded) => Effect.sync(() => recorded.forEach((reply) => replies.set(reply.to, reply))),
-        prompts: (to) => Effect.sync(() => sent.get(to) ?? [])
+        prompts: (to) => Effect.sync(() => sent.get(to) ?? []),
+        cutOff: (to) => Effect.suspend(() => Deferred.await(hangOf(to)))
       }),
       Layer.succeed(
         AssistantModels,

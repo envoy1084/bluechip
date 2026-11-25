@@ -49,6 +49,24 @@ describe("storedParts", () => {
 
     assert.deepStrictEqual(parts, [])
   })
+
+  it("keeps the text a round was cut off in, as far as it got", () => {
+    const parts = storedParts([
+      Response.makePart("text-start", { id: "t1" }),
+      Response.makePart("text-delta", { id: "t1", delta: "Nvidia is up " })
+    ])
+
+    assert.deepStrictEqual(parts, [{ type: "text", text: "Nvidia is up " }])
+  })
+
+  it("drops thinking a round was cut off in", () => {
+    const parts = storedParts([
+      Response.makePart("reasoning-start", { id: "r1" }),
+      Response.makePart("reasoning-delta", { id: "r1", delta: "The user wants" })
+    ])
+
+    assert.deepStrictEqual(parts, [])
+  })
 })
 
 describe("promptOf", () => {

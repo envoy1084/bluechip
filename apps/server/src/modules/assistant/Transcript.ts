@@ -5,7 +5,7 @@ import { Card, type Citation, describeCard } from "@bluechip/domain/assistant/Ca
 import type { Message, MessagePart } from "@bluechip/domain/assistant/Conversation"
 import { RESEARCH_TOOL } from "@bluechip/domain/tools/Toolkit"
 import * as Prompt from "effect/ai/Prompt"
-import type * as Response from "effect/ai/Response"
+import * as Response from "effect/ai/Response"
 import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
 
@@ -13,12 +13,20 @@ const isCard = Schema.is(Card)
 
 /**
  * A model round's parts as stored: its text, thinking (with the provider options that let it be sent back), tool
- * calls and their results. A tool call without a result (the round was cancelled mid-call) is dropped, since the model
- * can't be shown a call that never answered.
+ * calls and their results. A round cut off (cancelled, the client gone, the model failing) keeps the text it was
+ * writing as far as it got, but not unfinished thinking, which the provider only takes back with the signature sent
+ * at its end. A tool call without a result is dropped too, since the model can't be shown a call that never answered.
  */
 export const storedParts = (parts: ReadonlyArray<Response.AnyPart>): ReadonlyArray<MessagePart> => {
+  const open = new Set<string>()
+  for (const part of parts) {
+    if (part.type === "text-start") open.add(part.id)
+    if (part.type === "text-end") open.delete(part.id)
+  }
+  const closed = [...parts, ...[...open].map((id) => Response.makePart("text-end", { id }))]
+
   const stored: Array<MessagePart> = []
-  for (const message of Prompt.fromResponseParts(parts).content) {
+  for (const message of Prompt.fromResponseParts(closed).content) {
     if (message.role !== "assistant" && message.role !== "tool") continue
     for (const part of message.content) {
       switch (part.type) {

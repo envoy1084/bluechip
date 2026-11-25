@@ -27,6 +27,13 @@ export class TestAssistant extends Context.Service<TestAssistant, {
   readonly ask: (user: Browser, conversationId: ConversationId, text: string, options?: {
     readonly resume?: ReadonlyArray<AgUiSchema.ResumeEntry>
   }) => Effect.Effect<RunEvents>
+  /** `POST /api/assistant/run` read only up to the first event `leaveAt` matches: then the client goes away. */
+  readonly leave: (
+    user: Browser,
+    conversationId: ConversationId,
+    text: string,
+    leaveAt: (event: AgUiSchema.Event) => boolean
+  ) => Effect.Effect<RunEvents>
   /** The cards in a list of events. */
   readonly cardsOf: (events: ReadonlyArray<AgUiSchema.Event>) => ReadonlyArray<Card>
 }>()("@bluechip/server/test/TestAssistant") {
@@ -38,11 +45,14 @@ export class TestAssistant extends Context.Service<TestAssistant, {
           []
       )
 
-    const ask = Effect.fnUntraced(function*(
+    const read = Effect.fnUntraced(function*(
       user: Browser,
       conversationId: ConversationId,
       text: string,
-      options: { readonly resume?: ReadonlyArray<AgUiSchema.ResumeEntry> } = {}
+      options: {
+        readonly resume?: ReadonlyArray<AgUiSchema.ResumeEntry> | undefined
+        readonly leaveAt?: ((event: AgUiSchema.Event) => boolean) | undefined
+      }
     ) {
       const runId = randomUUID()
       const response = yield* user.api.assistant.run({
@@ -55,14 +65,16 @@ export class TestAssistant extends Context.Service<TestAssistant, {
           ...(options.resume === undefined ? {} : { resume: options.resume })
         }
       })
-      const events = Array.from(yield* Stream.runCollect(response.body))
+      const body = options.leaveAt === undefined ? response.body : response.body.pipe(Stream.takeUntil(options.leaveAt))
+      const events = Array.from(yield* Stream.runCollect(body))
       return { runId, events, cards: cardsOf(events) }
     }, Effect.orDie)
 
     return {
       start: (user, agentId) =>
         Effect.orDie(user.api.assistant.startConversation({ payload: { agentId: agentId ?? null } })),
-      ask,
+      ask: (user, conversationId, text, options = {}) => read(user, conversationId, text, options),
+      leave: (user, conversationId, text, leaveAt) => read(user, conversationId, text, { leaveAt }),
       cardsOf
     }
   })

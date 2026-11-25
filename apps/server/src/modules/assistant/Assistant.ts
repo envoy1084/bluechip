@@ -13,12 +13,14 @@ import * as LanguageModel from "effect/ai/LanguageModel"
 import * as Prompt from "effect/ai/Prompt"
 import type * as Response from "effect/ai/Response"
 import * as Arr from "effect/Array"
+import type * as Cause from "effect/Cause"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Deferred from "effect/Deferred"
 import * as Effect from "effect/Effect"
 import * as HttpApiError from "effect/http-api/HttpApiError"
 import * as Layer from "effect/Layer"
+import * as Queue from "effect/Queue"
 import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { Agents } from "../agents/Agents.ts"
@@ -40,25 +42,36 @@ const BUDGET_SPENT = "You've used today's assistant budget, so I'll stop here. I
   "everything else in bluechip still works."
 const TOO_MANY_STEPS = "That took more steps than I'm allowed in one go. Tell me what to do next and I'll carry on."
 const CANCELLED = "Stopped."
+const INTERRUPTED = "The connection dropped, so I stopped here. Ask again and I'll carry on."
 const UNAVAILABLE = "The assistant can't answer right now. Nothing was changed. Try again in a moment."
 const UNAVAILABLE_LATER = "The assistant can't answer right now. What it already did is on the cards above. " +
   "Try again in a moment."
 
+// Why a run stopped before its end: you pressed Stop, or the client went away mid-stream.
+type Stopped = "cancelled" | "disconnected"
+
 interface Run {
   readonly userId: string
   readonly conversationId: ConversationId
-  readonly cancelled: Deferred.Deferred<void>
+  readonly stopped: Deferred.Deferred<Stopped>
+  /** Done once the run has stored everything it got to. */
+  readonly done: Deferred.Deferred<void>
 }
 
 /**
  * The assistant's runs: one turn of a conversation, streamed as AG-UI events. The history comes from bluechip's
  * records (never from the client), the model rounds run with the toolkit for the user, every round is stored as it
  * ends, budgets stop the model, and a turn ends with what it learned (memories) and the cards waiting for the user.
+ *
+ * A turn runs apart from the response streaming it: when the client goes away mid-stream, the turn stops as if
+ * cancelled and stores the round as far as it got, marked `interrupted`, so reloading the conversation shows it and the
+ * next run continues from it.
  */
 export class Assistant extends Context.Service<Assistant, {
   /**
    * Starts a turn: checks the thread is the user's and not busy, applies `resume` answers to cards, stores the user's
-   * message and returns the run's events. `BadRequest` before anything is stored when the input can't run.
+   * message and returns the run's events. `BadRequest` before anything is stored when the input can't run. A run
+   * still storing a turn that was stopped (cancelled, or its client gone) is waited for, not refused.
    */
   readonly run: (
     owner: Owner,
@@ -80,6 +93,7 @@ export class Assistant extends Context.Service<Assistant, {
       const titles = yield* Titles
       const toolkit = yield* AssistantToolkit
       const runs = new Map<string, Run>()
+      const scope = yield* Effect.scope
 
       const cardEvent = (toolCallId: string | null, card: Card): AgUiSchema.Event => ({
         type: "CUSTOM",
@@ -93,7 +107,7 @@ export class Assistant extends Context.Service<Assistant, {
         readonly userMessage: Message
         readonly userText: string
         readonly wantsTitle: boolean
-        readonly cancelled: Deferred.Deferred<void>
+        readonly stopped: Deferred.Deferred<Stopped>
       }): Stream.Stream<AgUiSchema.Event> => {
         const { conversationId, input } = context
         const caller = { id: owner.id, account: owner.account, conversationId, source: "assistant" as const }
@@ -173,7 +187,7 @@ export class Assistant extends Context.Service<Assistant, {
                   }
                 })
               ),
-              Stream.interruptWhen(Deferred.await(context.cancelled)),
+              Stream.interruptWhen(Deferred.await(context.stopped)),
               Stream.catch((error) => {
                 failure = error
                 return Stream.empty
@@ -198,7 +212,7 @@ export class Assistant extends Context.Service<Assistant, {
             )
 
             return events.pipe(Stream.concat(Stream.unwrap(Effect.gen(function*() {
-              const cancelled = yield* Deferred.isDone(context.cancelled)
+              const stopped = (yield* Deferred.isDone(context.stopped)) ? yield* Deferred.await(context.stopped) : null
               const metadata = parts.find((part) => part.type === "response-metadata")
               const model = metadata?.type === "response-metadata" && metadata.modelId !== undefined ?
                 metadata.modelId :
@@ -214,7 +228,12 @@ export class Assistant extends Context.Service<Assistant, {
               const extras = yield* Effect.forEach(
                 [
                   ...(searched === undefined ? [] : [{ _tag: "Research", ...searched } as const]),
-                  ...(cancelled ? [{ _tag: "Error", reason: "cancelled", message: CANCELLED } as const] : []),
+                  ...(stopped === "cancelled"
+                    ? [{ _tag: "Error", reason: "cancelled", message: CANCELLED } as const]
+                    : []),
+                  ...(stopped === "disconnected" ?
+                    [{ _tag: "Error", reason: "interrupted", message: INTERRUPTED } as const] :
+                    []),
                   ...(failure === undefined ? [] : [
                     {
                       _tag: "Error",
@@ -253,7 +272,7 @@ export class Assistant extends Context.Service<Assistant, {
                   { type: "RUN_ERROR", message: unavailable, code: "model" }
                 ])
               }
-              if (cancelled) return Stream.fromIterable([...extraEvents, finished({ type: "cancelled" })])
+              if (stopped !== null) return Stream.fromIterable([...extraEvents, finished({ type: "cancelled" })])
 
               const finish = parts.find((part) => part.type === "finish")
               const usedTools = parts.some((part) => part.type === "tool-result" && part.providerExecuted !== true)
@@ -307,9 +326,16 @@ export class Assistant extends Context.Service<Assistant, {
         const conversation = yield* conversations.owned(owner, input.threadId).pipe(
           Effect.mapError(() => new HttpApiError.BadRequest({}))
         )
-        const busy = runs.has(input.runId) ||
-          [...runs.values()].some((active) => active.conversationId === conversation.id)
-        if (busy) return yield* new HttpApiError.BadRequest({})
+        if (runs.has(input.runId)) return yield* new HttpApiError.BadRequest({})
+        const active = [...runs.values()].find((other) => other.conversationId === conversation.id)
+        if (active !== undefined) {
+          // A reconnect right after the client dropped finds the cut-off turn still storing: wait for it.
+          if (!(yield* Deferred.isDone(active.stopped))) return yield* new HttpApiError.BadRequest({})
+          yield* Deferred.await(active.done)
+          if ([...runs.values()].some((other) => other.conversationId === conversation.id)) {
+            return yield* new HttpApiError.BadRequest({})
+          }
+        }
 
         const last = input.messages.at(-1)
         const userText = last?.role !== "user" ?
@@ -333,17 +359,28 @@ export class Assistant extends Context.Service<Assistant, {
           role: "user",
           parts: [{ type: "text", text: userText }]
         })
-        const cancelled = yield* Deferred.make<void>()
-        runs.set(input.runId, { userId: owner.id, conversationId: conversation.id, cancelled })
+        const stopped = yield* Deferred.make<Stopped>()
+        const done = yield* Deferred.make<void>()
+        runs.set(input.runId, { userId: owner.id, conversationId: conversation.id, stopped, done })
 
-        return turn(owner, {
+        // The turn feeds a queue the response reads, so a client that goes away stops the turn instead of
+        // interrupting it halfway through storing a round.
+        const events = yield* Queue.unbounded<AgUiSchema.Event, Cause.Done>()
+        yield* turn(owner, {
           input,
           conversationId: conversation.id,
           userMessage,
           userText,
           wantsTitle: conversation.title === null,
-          cancelled
-        }).pipe(Stream.ensuring(Effect.sync(() => runs.delete(input.runId))))
+          stopped
+        }).pipe(
+          Stream.runIntoQueue(events),
+          Effect.ensuring(
+            Effect.andThen(Effect.sync(() => runs.delete(input.runId)), Deferred.succeed(done, undefined))
+          ),
+          Effect.forkIn(scope)
+        )
+        return Stream.fromQueue(events).pipe(Stream.ensuring(Deferred.succeed(stopped, "disconnected")))
       })
 
       const cancel = Effect.fn("Assistant.cancel")(function*(owner: Owner, runId: string) {
@@ -351,7 +388,7 @@ export class Assistant extends Context.Service<Assistant, {
         if (active === undefined || active.userId !== owner.id) {
           return yield* new NotFound({ resource: "run", id: runId })
         }
-        yield* Deferred.succeed(active.cancelled, undefined)
+        yield* Deferred.succeed(active.stopped, "cancelled")
       })
 
       return Assistant.of({ run, cancel })
