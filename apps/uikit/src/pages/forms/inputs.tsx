@@ -25,6 +25,7 @@ import {
   SelectValue
 } from "@bluechip/ui/components/select"
 import { Textarea } from "@bluechip/ui/components/textarea"
+import { CopyIcon } from "@bluechip/ui/icons/copy-icon"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useState } from "react"
@@ -155,8 +156,8 @@ export function InputGroupSection() {
                   setCopied(true)
                 }}
               >
-                <Icon name={copied ? "check" : "copy"} size={14} />
-                {copied ? "Copied" : "Copy"}
+                <CopyIcon copied={copied} />
+                Copy
               </Button>
             </InputGroup>
           </Field>

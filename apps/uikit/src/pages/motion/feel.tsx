@@ -4,6 +4,7 @@ import { Checkbox } from "@bluechip/ui/components/checkbox"
 import { Skeleton } from "@bluechip/ui/components/skeleton"
 import { Switch } from "@bluechip/ui/components/switch"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
+import { CopyIcon } from "@bluechip/ui/icons/copy-icon"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { type Haptic, haptic, HAPTIC_EVENT } from "@bluechip/ui/lib/haptics"
 import { MomentScope, useMoment } from "@bluechip/ui/motion/sweep"
@@ -42,7 +43,7 @@ export function MorphCard() {
             <TextMorph>{APPROVAL_STEPS[step] ?? ""}</TextMorph>
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setCopied(true)}>
-            <Icon name={copied ? "check" : "copy"} size={14} />
+            <CopyIcon copied={copied} />
             <TextMorph>{copied ? "Copied" : "Copy address"}</TextMorph>
           </Button>
           <span className="text-caption text-g-500">Press either button</span>

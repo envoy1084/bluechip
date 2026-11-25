@@ -158,7 +158,7 @@ export const FEEL: Readonly<Record<"morph" | "skeleton" | "haptics" | "moment", 
   morph: {
     n: 15,
     name: "Text morph",
-    used: "Labels that change in place: Approve → Filled, Copy → Copied (torph)",
+    used: "Labels that change in place: Approve → Filled (torph)",
     duration: "320 ms",
     easing: "--ease-brand",
     reduced: "The new label at once"

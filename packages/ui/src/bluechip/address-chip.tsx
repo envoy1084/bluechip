@@ -1,7 +1,6 @@
 import { type ComponentProps, useEffect, useState } from "react"
-import { TextMorph } from "../components/text-morph.tsx"
 import { toast } from "../components/toast.tsx"
-import { Icon } from "../icons/icon.tsx"
+import { CopyIcon } from "../icons/copy-icon.tsx"
 import { cn } from "../lib/cn.ts"
 
 /** The first six and last four characters: "0x7a3F…B9d4". */
@@ -14,7 +13,7 @@ export interface AddressChipProps extends Omit<ComponentProps<"span">, "children
   readonly address: string
   /** The blue dot that says the address is on Base. Defaults to true. */
   readonly network?: boolean
-  /** `inline` turns the copy button into a check for a moment; `toast` also shows a toast. */
+  /** `inline` turns the copy icon into a check for a moment; `toast` also shows a toast. */
   readonly feedback?: "inline" | "toast"
 }
 
@@ -51,10 +50,7 @@ export function AddressChip({ address, network = true, feedback = "inline", clas
       data-slot="address-chip"
       data-state={copied}
       className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-full bg-white py-1 pr-1 pl-3 text-[13.5px] font-[550] transition-shadow duration-fast ease-brand",
-        copied === "copied" ?
-          "shadow-[0_0_0_1px_var(--color-gain-line),0_1px_1px_rgba(15,138,74,.06)]" :
-          "surface-field",
+        "inline-flex max-w-full items-center gap-2 rounded-full bg-white py-1 pr-1 pl-3 text-[13.5px] font-[550] surface-field",
         className
       )}
       {...props}
@@ -72,22 +68,17 @@ export function AddressChip({ address, network = true, feedback = "inline", clas
         aria-label="Copy address"
         onClick={copy}
         className={cn(
-          "grid size-7 shrink-0 cursor-pointer place-items-center rounded-full transition-colors duration-fast ease-brand",
-          "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue",
-          copied === "copied" ? "bg-gain text-white" : "bg-g-50 text-g-500 hover:bg-g-100 hover:text-ink"
+          "grid size-7 shrink-0 cursor-pointer place-items-center rounded-full bg-g-50 text-g-500 transition-colors duration-fast ease-brand",
+          "hover:bg-g-100 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue"
         )}
       >
-        <Icon name={copied === "copied" ? "check" : "copy"} size={14} />
+        <CopyIcon copied={copied === "copied"} />
       </button>
       <span
         aria-live="polite"
-        className={cn(
-          "text-caption pr-2",
-          // With toast feedback the toast says it; the text stays for screen readers only.
-          copied === "idle" || feedback === "toast" ? "sr-only" : copied === "copied" ? "text-gain" : "text-loss"
-        )}
+        className={cn("text-caption pr-2 text-loss", (copied !== "failed" || feedback === "toast") && "sr-only")}
       >
-        <TextMorph>{copied === "copied" ? "Copied" : copied === "failed" ? "Couldn't copy" : ""}</TextMorph>
+        {copied === "copied" ? "Copied" : copied === "failed" ? "Couldn't copy" : ""}
       </span>
     </span>
   )
