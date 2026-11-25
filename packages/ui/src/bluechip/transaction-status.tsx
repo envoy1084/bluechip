@@ -59,6 +59,11 @@ export interface TransactionStatusProps extends Omit<ComponentProps<"ol">, "chil
   readonly kind?: "trade" | "withdrawal"
 }
 
+const FAILURE_REASON: Readonly<Record<"trade" | "withdrawal", string>> = {
+  trade: "The price moved more than 1%. Nothing was bought.",
+  withdrawal: "The withdrawal didn't go through. Your cash is still in your account."
+}
+
 /**
  * Sending → Confirming → Filled, a couple of seconds each on Base. The current step spins and done steps check; a
  * failure names the reason and that the money is safe.
@@ -66,13 +71,14 @@ export interface TransactionStatusProps extends Omit<ComponentProps<"ol">, "chil
 export function TransactionStatus({
   state,
   failedAt = "confirming",
-  failureReason = "The price moved more than 1%. Nothing was bought.",
+  failureReason,
   orientation = "auto",
   kind = "trade",
   className,
   ...props
 }: TransactionStatusProps) {
   const states = stepStates(state, failedAt)
+  const reason = failureReason ?? FAILURE_REASON[kind]
   const steps = kind === "withdrawal" ? WITHDRAWAL_STEPS : STEPS
   const row = orientation === "auto"
   return (
@@ -129,7 +135,7 @@ export function TransactionStatus({
                   <TextMorph>{failed ? "Didn't go through" : step.title}</TextMorph>
                   {!failed && <span className="sr-only">, {SPOKEN[s]}</span>}
                 </b>
-                <span className="text-caption text-g-500">{failed ? failureReason : step.text}</span>
+                <span className="text-caption text-g-500">{failed ? reason : step.text}</span>
               </span>
             </li>
           )

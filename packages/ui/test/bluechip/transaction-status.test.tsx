@@ -72,13 +72,8 @@ describe("TransactionStatus", () => {
     expect(stepTexts(screen)[1]).toBe("The price moved more than 1%. Nothing was bought.")
   })
 
-  it("blames the price by default when a withdrawal fails, today", async () => {
+  it("says the cash stayed put by default when a withdrawal fails", async () => {
     const screen = await render(<TransactionStatus kind="withdrawal" state="failed" />)
-    expect(stepTexts(screen)[1]).toBe("The price moved more than 1%. Nothing was bought.")
-  })
-
-  it.skip("explains a failed withdrawal by default (bug: the default reason talks about a price and buying)", async () => {
-    const screen = await render(<TransactionStatus kind="withdrawal" state="failed" />)
-    expect(stepTexts(screen)[1]).not.toContain("Nothing was bought")
+    expect(stepTexts(screen)[1]).toBe("The withdrawal didn't go through. Your cash is still in your account.")
   })
 })
