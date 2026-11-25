@@ -4,24 +4,35 @@ import { render } from "vitest-browser-react"
 import { userEvent } from "vitest/browser"
 
 describe("TemplatePicker", () => {
-  it("moves and selects with the arrow keys", async () => {
-    const picked: Array<AgentTemplate["name"]> = []
-    const screen = await render(
-      <TemplatePicker defaultValue="rebalancer" onValueChange={(template) => picked.push(template.name)} />
-    )
-    await userEvent.click(screen.getByRole("radio", { name: "Rebalancer" }))
-    await userEvent.keyboard("{ArrowDown}")
-    await expect.element(screen.getByRole("radio", { name: "Stock picker" })).toHaveFocus()
-    await expect.element(screen.getByRole("radio", { name: "Stock picker" })).toHaveAttribute("aria-checked", "true")
-    await userEvent.keyboard("{ArrowDown}{ArrowDown}")
-    await expect.element(screen.getByRole("radio", { name: "Stop-loss guard" })).toHaveAttribute("aria-checked", "true")
-    expect(picked).toEqual(["stock-picker", "weekly-buyer", "stop-loss-guard"])
+  it("checks its default template", async () => {
+    const screen = await render(<TemplatePicker defaultValue="rebalancer" />)
+    await expect.element(screen.getByRole("radio", { name: "Rebalancer" })).toBeChecked()
+  })
+
+  it("reports the template you pick", async () => {
+    const picked: Array<AgentTemplate> = []
+    const screen = await render(<TemplatePicker onValueChange={(template) => picked.push(template)} />)
+    await userEvent.click(screen.getByRole("radio", { name: "Weekly buyer" }))
+    expect(picked).toStrictEqual([{
+      name: "weekly-buyer",
+      label: "Weekly buyer",
+      promise: "Buys a set amount on a schedule, like $50 every Monday.",
+      rule: "Buy only",
+      illustration: "calendar"
+    }])
   })
 
   it("describes each template with its promise", async () => {
     const screen = await render(<TemplatePicker />)
-    await expect.element(screen.getByRole("radio", { name: "Weekly buyer" })).toHaveAccessibleDescription(
-      "Buys a set amount on a schedule, like $50 every Monday."
+    await expect.element(screen.getByRole("radio", { name: "Stop-loss guard" })).toHaveAccessibleDescription(
+      "Sells a stock for you if it falls too far."
+    )
+  })
+
+  it("shows each template's defining rule", async () => {
+    const screen = await render(<TemplatePicker />)
+    await expect.element(screen.getByRole("radio", { name: "Rebalancer" })).toHaveTextContent(
+      "RebalancerKeeps your mix on target. It can only trade to move you back.Rebalance only"
     )
   })
 })

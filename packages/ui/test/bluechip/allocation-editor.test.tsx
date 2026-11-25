@@ -9,68 +9,197 @@ import { describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
 import { userEvent } from "vitest/browser"
 
+// 90% in stocks, so 10% cash.
 const MIX: ReadonlyArray<AllocationTarget> = [
   { symbol: "NVDA", target: 30 },
   { symbol: "AAPL", target: 25 },
   { symbol: "MSFT", target: 20 },
   { symbol: "TSLA", target: 15 }
 ]
-const total = (targets: ReadonlyArray<AllocationTarget>) =>
-  targets.reduce((sum, t) => sum + t.target, 0) + cashTarget(targets)
-const targetOf = (targets: ReadonlyArray<AllocationTarget>, symbol: string) =>
-  targets.find((t) => t.symbol === symbol)?.target
+
+const lockAllBut = (symbol: string) => MIX.map((t) => (t.symbol === symbol ? t : { ...t, locked: true }))
+
+describe("cashTarget", () => {
+  it("is what the stocks leave of 100", () => {
+    expect(cashTarget(MIX)).toBe(10)
+  })
+
+  it("is 100 with no stocks", () => {
+    expect(cashTarget([])).toBe(100)
+  })
+})
 
 describe("setAllocationTarget", () => {
-  it("takes from cash first, then the largest unlocked stock", () => {
-    const next = setAllocationTarget(MIX, "TSLA", 30)
-    expect(cashTarget(next)).toBe(0)
-    expect(targetOf(next, "NVDA")).toBe(25)
-    expect(total(next)).toBe(100)
+  it("a raise that fits in cash takes only from cash", () => {
+    expect(setAllocationTarget(MIX, "TSLA", 25)).toStrictEqual([
+      { symbol: "NVDA", target: 30 },
+      { symbol: "AAPL", target: 25 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 25 }
+    ])
   })
 
-  it("never moves a locked stock and stops at what's left", () => {
-    const locked = MIX.map((t) => (t.symbol === "TSLA" ? t : { ...t, locked: true }))
-    const next = setAllocationTarget(locked, "TSLA", 80)
-    expect(targetOf(next, "TSLA")).toBe(25)
-    expect(targetOf(next, "NVDA")).toBe(30)
-    expect(total(next)).toBe(100)
+  it("a raise past cash takes the rest from the largest stock", () => {
+    expect(setAllocationTarget(MIX, "TSLA", 30)).toStrictEqual([
+      { symbol: "NVDA", target: 25 },
+      { symbol: "AAPL", target: 25 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 30 }
+    ])
   })
 
-  it("gives what you lower back to cash", () => {
-    const next = setAllocationTarget(MIX, "NVDA", 10)
-    expect(cashTarget(next)).toBe(30)
+  it("a raise past tied stocks takes from each in turn", () => {
+    expect(setAllocationTarget(MIX, "TSLA", 32)).toStrictEqual([
+      { symbol: "NVDA", target: 24 },
+      { symbol: "AAPL", target: 24 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 32 }
+    ])
   })
 
-  it("adds up to 100 after any sequence of edits", () => {
-    let targets = MIX
-    for (const [symbol, value] of [["NVDA", 90], ["AAPL", 3], ["MSFT", 55], ["TSLA", -4], ["NVDA", 12.6]] as const) {
-      targets = setAllocationTarget(targets, symbol, value)
-      expect(total(targets)).toBe(100)
-      expect(targets.every((t) => t.target >= 0)).toBe(true)
-      expect(cashTarget(targets)).toBeGreaterThanOrEqual(0)
-    }
+  it("a cut gives the difference to cash", () => {
+    expect(setAllocationTarget(MIX, "NVDA", 10)).toStrictEqual([
+      { symbol: "NVDA", target: 10 },
+      { symbol: "AAPL", target: 25 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 15 }
+    ])
+  })
+
+  it("a raise around locked stocks stops at what cash leaves", () => {
+    expect(setAllocationTarget(lockAllBut("TSLA"), "TSLA", 80)).toStrictEqual([
+      { symbol: "NVDA", target: 30, locked: true },
+      { symbol: "AAPL", target: 25, locked: true },
+      { symbol: "MSFT", target: 20, locked: true },
+      { symbol: "TSLA", target: 25 }
+    ])
+  })
+
+  it("a raise to 100 takes everything", () => {
+    expect(setAllocationTarget(MIX, "TSLA", 100)).toStrictEqual([
+      { symbol: "NVDA", target: 0 },
+      { symbol: "AAPL", target: 0 },
+      { symbol: "MSFT", target: 0 },
+      { symbol: "TSLA", target: 100 }
+    ])
+  })
+
+  it("a raise past 100 stops at 100", () => {
+    expect(setAllocationTarget(MIX, "TSLA", 140)).toStrictEqual([
+      { symbol: "NVDA", target: 0 },
+      { symbol: "AAPL", target: 0 },
+      { symbol: "MSFT", target: 0 },
+      { symbol: "TSLA", target: 100 }
+    ])
+  })
+
+  it("a negative target is 0", () => {
+    expect(setAllocationTarget(MIX, "TSLA", -4)).toStrictEqual([
+      { symbol: "NVDA", target: 30 },
+      { symbol: "AAPL", target: 25 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 0 }
+    ])
+  })
+
+  it("a fraction rounds to a whole percent", () => {
+    expect(setAllocationTarget(MIX, "TSLA", 12.6)).toStrictEqual([
+      { symbol: "NVDA", target: 30 },
+      { symbol: "AAPL", target: 25 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 13 }
+    ])
+  })
+
+  it("a locked stock doesn't change", () => {
+    const locked = lockAllBut("TSLA")
+    expect(setAllocationTarget(locked, "NVDA", 10)).toBe(locked)
+  })
+
+  it("a stock not in the mix changes nothing", () => {
+    expect(setAllocationTarget(MIX, "AMZN", 10)).toBe(MIX)
   })
 })
 
 describe("balanceAllocation", () => {
-  it("splits evenly, keeps the cash reserve and skips locked stocks", () => {
-    const next = balanceAllocation(MIX.map((t) => (t.symbol === "NVDA" ? { ...t, locked: true } : t)), 10)
-    expect(targetOf(next, "NVDA")).toBe(30)
-    expect(next.filter((t) => t.symbol !== "NVDA").map((t) => t.target)).toEqual([20, 20, 20])
-    expect(cashTarget(next)).toBe(10)
+  it("splits what the reserve leaves evenly, the remainder going to cash", () => {
+    expect(balanceAllocation(MIX, 10)).toStrictEqual([
+      { symbol: "NVDA", target: 22 },
+      { symbol: "AAPL", target: 22 },
+      { symbol: "MSFT", target: 22 },
+      { symbol: "TSLA", target: 22 }
+    ])
+  })
+
+  it("keeps locked stocks and splits what's left", () => {
+    const locked = MIX.map((t) => (t.symbol === "NVDA" ? { ...t, locked: true } : t))
+    expect(balanceAllocation(locked, 10)).toStrictEqual([
+      { symbol: "NVDA", target: 30, locked: true },
+      { symbol: "AAPL", target: 20 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 20 }
+    ])
+  })
+
+  it("gives nothing when locked stocks and the reserve fill 100", () => {
+    const locked = MIX.map((t) => (t.symbol === "TSLA" ? t : { ...t, locked: true }))
+    expect(balanceAllocation(locked, 30)).toStrictEqual([
+      { symbol: "NVDA", target: 30, locked: true },
+      { symbol: "AAPL", target: 25, locked: true },
+      { symbol: "MSFT", target: 20, locked: true },
+      { symbol: "TSLA", target: 0 }
+    ])
+  })
+
+  it("changes nothing when every stock is locked", () => {
+    const locked = MIX.map((t) => ({ ...t, locked: true }))
+    expect(balanceAllocation(locked, 10)).toBe(locked)
   })
 })
 
 describe("AllocationEditor", () => {
-  it("keeps cash as the rest while you type a target", async () => {
+  it("shows cash as the rest after you type a target", async () => {
+    const screen = await render(<AllocationEditor defaultValue={MIX} />)
+    await userEvent.fill(screen.getByLabelText("Nvidia target, percent"), "35")
+    await expect.element(screen.getByText("Adds up to 100%, 5% cash")).toBeInTheDocument()
+  })
+
+  it("reports the targets you type", async () => {
     const changes: Array<ReadonlyArray<AllocationTarget>> = []
     const screen = await render(<AllocationEditor defaultValue={MIX} onValueChange={(t) => changes.push(t)} />)
+    await userEvent.fill(screen.getByLabelText("Nvidia target, percent"), "35")
+    expect(changes.at(-1)).toStrictEqual([
+      { symbol: "NVDA", target: 35 },
+      { symbol: "AAPL", target: 25 },
+      { symbol: "MSFT", target: 20 },
+      { symbol: "TSLA", target: 15 }
+    ])
+  })
+
+  it("flags a target over your max", async () => {
+    const screen = await render(<AllocationEditor defaultValue={MIX} />)
     const nvidia = screen.getByLabelText("Nvidia target, percent")
-    await userEvent.clear(nvidia)
-    await userEvent.type(nvidia, "35")
+    await userEvent.fill(nvidia, "35")
+    await expect.element(nvidia).toHaveAttribute("aria-invalid", "true")
     await expect.element(screen.getByText("Over your 30% max in one stock. Agents won't buy past 30%.")).toBeVisible()
-    await expect.element(screen.getByText("5%", { exact: true })).toBeVisible()
-    expect(changes.every((t) => total(t) === 100)).toBe(true)
+  })
+
+  it("flags cash under your reserve", async () => {
+    const screen = await render(<AllocationEditor defaultValue={MIX} />)
+    await userEvent.fill(screen.getByLabelText("Tesla target, percent"), "20")
+    await expect.element(screen.getByText("Below your 10% cash reserve. Agents keep 10% anyway.")).toBeVisible()
+  })
+
+  it("takes a custom max and reserve", async () => {
+    const screen = await render(<AllocationEditor defaultValue={MIX} cap={25} reserve={15} />)
+    await expect.element(screen.getByText("Over your 25% max in one stock. Agents won't buy past 25%.")).toBeVisible()
+    await expect.element(screen.getByText("Below your 15% cash reserve. Agents keep 15% anyway.")).toBeVisible()
+  })
+
+  it("won't let you type a locked target", async () => {
+    const screen = await render(<AllocationEditor defaultValue={MIX} />)
+    await userEvent.click(screen.getByRole("button", { name: "Lock Nvidia" }))
+    await expect.element(screen.getByLabelText("Nvidia target, percent")).toBeDisabled()
   })
 
   it("splits evenly around a locked stock", async () => {
@@ -81,9 +210,14 @@ describe("AllocationEditor", () => {
     await expect.element(screen.getByLabelText("Tesla target, percent")).toHaveValue("20")
   })
 
+  it("can't split evenly when every stock is locked", async () => {
+    const screen = await render(<AllocationEditor defaultValue={MIX.map((t) => ({ ...t, locked: true }))} />)
+    await expect.element(screen.getByRole("button", { name: "Split evenly" })).toBeDisabled()
+  })
+
   it("gives a removed stock's share to cash", async () => {
     const screen = await render(<AllocationEditor defaultValue={MIX} />)
     await userEvent.click(screen.getByRole("button", { name: "Remove Tesla" }))
-    await expect.element(screen.getByText("25%", { exact: true })).toBeVisible()
+    await expect.element(screen.getByText("Adds up to 100%, 25% cash")).toBeInTheDocument()
   })
 })

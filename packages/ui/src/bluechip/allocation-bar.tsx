@@ -12,6 +12,27 @@ export const capState = (weight: number, cap: number): CapState =>
 const pct = (value: number) => `${value.toFixed(1)}%`
 const clamp = (value: number) => Math.max(0, Math.min(100, value))
 
+/** What the bar says to screen readers: the weight against the max, the would-be weight of a trade, or the cash kept. */
+export const allocationText = (
+  { weight, cap, projected, cash }: {
+    readonly weight: number
+    readonly cap: number
+    readonly projected: number | undefined
+    readonly cash: boolean
+  }
+): string => {
+  const state = capState(projected ?? weight, cap)
+  return cash ?
+    `${pct(weight)} in cash, keep at least ${cap}%` :
+    projected !== undefined ?
+    `${pct(weight)} of your money now, would be ${pct(projected)}, your max is ${cap}%` :
+    state === "over" ?
+    `${pct(weight)} of your money, ${pct(weight - cap)} over your ${cap}% max` :
+    state === "at" ?
+    `${pct(weight)} of your money, at your ${cap}% max` :
+    `${pct(weight)} of your money, max ${cap}%`
+}
+
 export const allocationBarVariants = cva(
   "relative block w-full rounded-full bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.04)]",
   {
@@ -58,15 +79,7 @@ export function AllocationBar(
   { weight, cap, projected, cash = false, label, size, className, style, ...props }: AllocationBarProps
 ) {
   const state = capState(projected ?? weight, cap)
-  const text = cash ?
-    `${pct(weight)} in cash, keep at least ${cap}%` :
-    projected !== undefined ?
-    `${pct(weight)} of your money now, would be ${pct(projected)}, your max is ${cap}%` :
-    state === "over" ?
-    `${pct(weight)} of your money, ${pct(weight - cap)} over your ${cap}% max` :
-    state === "at" ?
-    `${pct(weight)} of your money, at your ${cap}% max` :
-    `${pct(weight)} of your money, max ${cap}%`
+  const text = allocationText({ weight, cap, projected, cash })
   const fill = clamp(weight)
   return (
     <span

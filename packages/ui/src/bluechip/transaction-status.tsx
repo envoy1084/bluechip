@@ -28,7 +28,8 @@ const WITHDRAWAL_STEPS: ReadonlyArray<Step> = [
   { id: "filled", title: "Sent", text: "Done. The USDC is at the address" }
 ]
 
-type StepState = "done" | "now" | "todo" | "fail"
+/** How a step reads: done, the one in progress, still to come, or the one that failed. */
+export type StepState = "done" | "now" | "todo" | "fail"
 
 const SPOKEN: Readonly<Record<StepState, string>> = {
   done: "done",
@@ -37,7 +38,8 @@ const SPOKEN: Readonly<Record<StepState, string>> = {
   fail: "failed"
 }
 
-const stepStates = (state: TransactionState, failedAt: TransactionStep): ReadonlyArray<StepState> => {
+/** Each step's state, Sending to Filled, for where a trade is and, when it failed, the step it stopped at. */
+export const stepStates = (state: TransactionState, failedAt: TransactionStep): ReadonlyArray<StepState> => {
   const at = state === "failed" ? failedAt : state
   const index = STEPS.findIndex((s) => s.id === at)
   return STEPS.map((_, i) =>

@@ -20,6 +20,16 @@ export interface AllocationSlice {
 export const offTarget = (slices: ReadonlyArray<AllocationSlice>): number =>
   slices.reduce((sum, s) => sum + Math.abs(s.current - (s.target ?? s.current)), 0) / 2
 
+/** What the center says about how far off the mix is: on target under 1%, inside the band under 5%. */
+export const offTargetAdvice = (off: number): string =>
+  off < 1 ? "On target" : off < 5 ? "Inside 5% band" : "Time to rebalance"
+
+/** A legend row's gap from its target, in points: "+7.0", "−5.0", or "on target" within half a point. */
+export const targetGap = (slice: AllocationSlice): string => {
+  const gap = slice.current - (slice.target ?? slice.current)
+  return Math.abs(gap) < 0.5 ? "on target" : `${gap > 0 ? "+" : "−"}${Math.abs(gap).toFixed(1)}`
+}
+
 const CASH = "#c3c8d2"
 const TRACK = "#f1f2f5"
 
@@ -131,7 +141,7 @@ export function AllocationDonut(
                   {off.toFixed(1)}%
                 </b>
                 <span className="max-w-[104px] text-[11.5px] text-g-500">
-                  {off < 1 ? "On target" : off < 5 ? "Inside 5% band" : "Time to rebalance"}
+                  {offTargetAdvice(off)}
                 </span>
               </>
             ) :
@@ -187,7 +197,7 @@ export function AllocationDonut(
                         on ? "text-g-500" : gap > 0 ? "text-loss" : "text-blue"
                       )}
                     >
-                      {on ? "on target" : `${gap > 0 ? "+" : "−"}${Math.abs(gap).toFixed(1)}`}
+                      {targetGap(slice)}
                     </span>
                   </>
                 )}

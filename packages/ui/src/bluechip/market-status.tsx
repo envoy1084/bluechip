@@ -44,9 +44,12 @@ export interface MarketStatusProps extends Omit<ComponentProps<"button">, "child
   readonly resumesAt?: Date | number
 }
 
-type Times = { readonly [K in "closesAt" | "opensAt" | "lastClose" | "resumesAt"]: Date | number | undefined }
+export type MarketTimes = {
+  readonly [K in "closesAt" | "opensAt" | "lastClose" | "resumesAt"]: Date | number | undefined
+}
 
-interface Explainer {
+/** What the chip says and its popover explains for a state. */
+export interface MarketExplainer {
   readonly label: string
   /** What the time is, like "Regular trading opens". */
   readonly moment?: string
@@ -54,12 +57,13 @@ interface Explainer {
   readonly note?: string
 }
 
-const explainer = (
+/** The chip's label for a state, and what its popover explains: when the state changes, and why. */
+export const marketExplainer = (
   state: MarketState,
-  { closesAt, lastClose, opensAt, resumesAt }: Times,
+  { closesAt, lastClose, opensAt, resumesAt }: MarketTimes,
   symbol: string | undefined,
   session: string | undefined
-): Explainer => {
+): MarketExplainer => {
   switch (state) {
     case "open":
       return { label: "US market open", moment: "Regular trading closes", at: closesAt }
@@ -98,7 +102,12 @@ const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
 export function MarketStatus(
   { state, closesAt, opensAt, lastClose, symbol, session, resumesAt, className, ...props }: MarketStatusProps
 ) {
-  const { at, label, moment, note } = explainer(state, { closesAt, lastClose, opensAt, resumesAt }, symbol, session)
+  const { at, label, moment, note } = marketExplainer(
+    state,
+    { closesAt, lastClose, opensAt, resumesAt },
+    symbol,
+    session
+  )
   const timeZone = localTimeZone()
 
   return (
