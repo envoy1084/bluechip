@@ -31,6 +31,7 @@ export const MarketHandlers = HttpApiBuilder.group(BluechipApi, "market", (handl
             name: stock.name,
             token: stock.token as Address,
             tradable: stock.pool !== null,
+            logoUrl: stock.logoUrl,
             price,
             change24h: price === null || before === undefined ? null : bpsBetween(price.price, before)
           })

@@ -102,6 +102,8 @@ export class Stock extends Schema.Class<Stock>("@bluechip/domain/market/Market/S
   token: Address,
   /** Whether it has a pool to trade in. */
   tradable: Schema.Boolean,
+  /** The company's logo (published by Coinbase), when there is one. */
+  logoUrl: Schema.NullOr(Schema.String),
   price: Schema.NullOr(ReferencePrice),
   /** The price change since about 24 hours earlier, when history reaches that far. */
   change24h: Schema.NullOr(Bps)
