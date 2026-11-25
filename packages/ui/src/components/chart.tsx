@@ -61,7 +61,24 @@ const usdCompact = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1
 })
 const defaultFormatValue = (value: number) => usd.format(value)
-const defaultFormatTick = (value: number) => usdCompact.format(value).replace("K", "k")
+
+/** The default y-axis tick: compact dollars with a lowercase thousands suffix (`$8.4k`, `$1.2M`). */
+export const formatChartTick = (value: number): string => usdCompact.format(value).replace("K", "k")
+
+/**
+ * The series hidden after pressing `key`'s legend button: a hidden series shows again, a visible one hides, except
+ * the last one visible, so the chart never goes blank.
+ */
+export const toggleHiddenSeries = (
+  hidden: ReadonlySet<string>,
+  key: string,
+  visibleCount: number
+): ReadonlySet<string> => {
+  const next = new Set(hidden)
+  if (next.has(key)) next.delete(key)
+  else if (visibleCount > 1) next.add(key)
+  return next
+}
 
 interface Palette {
   readonly keys: ReadonlyArray<string>
@@ -190,7 +207,7 @@ function SeriesChart({
   title,
   height = 240,
   formatValue = defaultFormatValue,
-  formatTick = defaultFormatTick,
+  formatTick = formatChartTick,
   showLegend = true,
   className
 }: ChartProps & { readonly kind: ChartKind }) {
@@ -211,14 +228,7 @@ function SeriesChart({
       { kind, chart: seriesDefinition(kind, rows, labels, palette, options) } as const
   }, [kind, labels, series, hidden, formatTick, reduced])
 
-  const toggle = (key: string) =>
-    setHidden((current) => {
-      const next = new Set(current)
-      if (next.has(key)) next.delete(key)
-      // Keep at least one series on the chart.
-      else if (visible.length > 1) next.add(key)
-      return next
-    })
+  const toggle = (key: string) => setHidden((current) => toggleHiddenSeries(current, key, visible.length))
 
   // The same surface for every kind; each kind's definition is typed by its x values (labels or indexes).
   const surface = {

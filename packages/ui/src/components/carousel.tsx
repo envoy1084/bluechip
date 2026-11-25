@@ -40,6 +40,17 @@ const useCarousel = (): CarouselContextValue => {
   return context
 }
 
+/** Which way a key pages a carousel of this orientation: its two arrow keys move it, every other key doesn't. */
+export const carouselKeyDirection = (
+  orientation: "horizontal" | "vertical",
+  key: string
+): "previous" | "next" | undefined => {
+  const [back, forward] = orientation === "horizontal" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"]
+  if (key === forward) return "next"
+  if (key === back) return "previous"
+  return undefined
+}
+
 export interface CarouselProps extends ComponentProps<"section"> {
   /** Embla options: `align` (`"start"` by default), `loop`, `slidesToScroll`, … */
   readonly opts?: CarouselOptions
@@ -94,11 +105,11 @@ export function Carousel(
 
   const onArrowKey = (event: KeyboardEvent<HTMLElement>) => {
     onKeyDown?.(event)
-    const [back, forward] = orientation === "horizontal" ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"]
-    if (event.key !== back && event.key !== forward) return
+    const direction = carouselKeyDirection(orientation, event.key)
+    if (direction === undefined) return
     if ((event.target as HTMLElement).closest("input, textarea, [role=slider]")) return
     event.preventDefault()
-    if (event.key === forward) scrollNext()
+    if (direction === "next") scrollNext()
     else scrollPrev()
   }
 

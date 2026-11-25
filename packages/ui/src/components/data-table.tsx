@@ -84,6 +84,25 @@ const features = tableFeatures({
   columnMeta: metaHelper<DataTableColumnMeta>()
 })
 
+/**
+ * The page a table shows: the requested one, or the last page that exists when the rows have shrunk under it (a
+ * filter). An empty table still has one page.
+ */
+export const dataTablePage = (
+  requestedPage: number,
+  rowCount: number,
+  pageSize: number
+): { readonly pageIndex: number; readonly pageCount: number } => {
+  const pageCount = Math.max(1, Math.ceil(rowCount / pageSize))
+  return { pageIndex: Math.min(requestedPage, pageCount - 1), pageCount }
+}
+
+/** The footer's count: rows selected out of all rows when the table is selectable, otherwise all rows. */
+export const dataTableRowCount = (selectedCount: number | undefined, rowCount: number): string => {
+  const rows = `${rowCount} row${rowCount === 1 ? "" : "s"}`
+  return selectedCount === undefined ? rows : `${selectedCount} of ${rows} selected`
+}
+
 const toRowSelection = (ids: ReadonlySet<string> | undefined): RowSelectionState =>
   Object.fromEntries([...(ids ?? [])].map((id) => [id, true] as const))
 
@@ -124,9 +143,7 @@ export function DataTable<Row extends RowData>({
 
   const [rowSelection, setRowSelection] = useState(() => toRowSelection(defaultSelection))
   const [requestedPage, setPage] = useState(0)
-  // The rows can shrink under the current page (a filter); stay on the last page that exists.
-  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize))
-  const pageIndex = Math.min(requestedPage, pageCount - 1)
+  const { pageIndex, pageCount } = dataTablePage(requestedPage, rows.length, pageSize)
 
   const table = useTable({
     features,
@@ -283,9 +300,7 @@ export function DataTable<Row extends RowData>({
         className="flex flex-wrap items-center justify-between gap-3 text-label-sm text-g-500 tabular-nums"
       >
         <span aria-live="polite">
-          {selectable ?
-            `${selectedCount} of ${rows.length} row${rows.length === 1 ? "" : "s"} selected` :
-            `${rows.length} row${rows.length === 1 ? "" : "s"}`}
+          {dataTableRowCount(selectable ? selectedCount : undefined, rows.length)}
         </span>
         <div className="flex items-center gap-2">
           <span>Page {pageIndex + 1} of {pageCount}</span>

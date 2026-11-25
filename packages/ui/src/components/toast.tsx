@@ -27,7 +27,11 @@ const DEFAULT_DURATION = 4500
 // One manager for the whole app, so `toast()` works from anywhere, even outside React.
 const manager = Toast.createToastManager()
 
-const toManagerOptions = ({ title, type, description, action, duration }: ToastUpdate) => ({
+/**
+ * What Base UI's toast manager gets for a toast: errors jump the queue, loading toasts stay until updated, others
+ * leave after `DEFAULT_DURATION` unless `duration` says otherwise. An update without a `type` keeps the toast's.
+ */
+export const toastManagerOptions = ({ title, type, description, action, duration }: ToastUpdate) => ({
   ...(title !== undefined && { title }),
   ...(description !== undefined && { description }),
   ...(type !== undefined && {
@@ -43,7 +47,7 @@ const toManagerOptions = ({ title, type, description, action, duration }: ToastU
 
 const show = (title: ReactNode, options: ToastOptions & { readonly type?: ToastType } = {}): string =>
   manager.add({
-    ...toManagerOptions({ ...options, title, type: options.type ?? "default" }),
+    ...toastManagerOptions({ ...options, title, type: options.type ?? "default" }),
     ...(options.id !== undefined && { id: options.id })
   })
 
@@ -59,7 +63,7 @@ function promiseToast<A>(
 ): Promise<A> {
   const id = show(messages.loading, { description: messages.description, type: "loading" })
   const settle = (type: "success" | "error", title: ReactNode) =>
-    manager.update(id, toManagerOptions({ type, title, description: null }))
+    manager.update(id, toastManagerOptions({ type, title, description: null }))
   promise.then(
     (value) => settle("success", typeof messages.success === "function" ? messages.success(value) : messages.success),
     (error: unknown) => settle("error", typeof messages.error === "function" ? messages.error(error) : messages.error)
@@ -77,7 +81,7 @@ export const toast = Object.assign(show, {
   warning: (title: ReactNode, options?: ToastOptions) => show(title, { ...options, type: "warning" }),
   info: (title: ReactNode, options?: ToastOptions) => show(title, { ...options, type: "info" }),
   loading: (title: ReactNode, options?: ToastOptions) => show(title, { ...options, type: "loading" }),
-  update: (id: string, update: ToastUpdate) => manager.update(id, toManagerOptions(update)),
+  update: (id: string, update: ToastUpdate) => manager.update(id, toastManagerOptions(update)),
   /** Dismisses one toast, or every toast without an id. */
   dismiss: (id?: string) => manager.close(id),
   promise: promiseToast

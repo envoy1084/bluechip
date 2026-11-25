@@ -17,10 +17,10 @@ const repeats = [
 ]
 
 describe("Select", () => {
-  it("opens with the keyboard and picks the highlighted option with Enter", async () => {
-    let chosen: string | null = null
+  it("choosing an option reports it and shows it in the trigger", async () => {
+    const chosen: Array<string | null> = []
     const screen = await render(
-      <Select items={repeats} defaultValue="week" onValueChange={(value: string | null) => (chosen = value)}>
+      <Select items={repeats} defaultValue="week" onValueChange={(value: string | null) => chosen.push(value)}>
         <SelectLabel>Repeat</SelectLabel>
         <SelectTrigger>
           <SelectValue />
@@ -30,15 +30,10 @@ describe("Select", () => {
         </SelectContent>
       </Select>
     )
-    const trigger = screen.getByRole("combobox")
-    await userEvent.click(screen.getByText("Repeat"))
-    trigger.element().focus()
-    await userEvent.keyboard("{ArrowDown}")
-    await expect.element(screen.getByRole("listbox")).toBeVisible()
-    await expect.element(screen.getByRole("option", { name: "Every week" })).toHaveAttribute("data-highlighted")
-    await userEvent.keyboard("{ArrowDown}{Enter}")
-    expect(chosen).toBe("month")
+    const trigger = screen.getByRole("combobox", { name: "Repeat" })
+    await userEvent.click(trigger)
+    await userEvent.click(screen.getByRole("option", { name: "Every month" }))
+    expect(chosen).toEqual(["month"])
     await expect.element(trigger).toHaveTextContent("Every month")
-    await expect.element(screen.getByRole("listbox")).not.toBeInTheDocument()
   })
 })

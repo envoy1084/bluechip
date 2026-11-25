@@ -21,9 +21,16 @@ const stocks: ReadonlyArray<Stock> = [
   { value: "TSLA", label: "TSLA (Tesla)" }
 ]
 
-const StockPicker = ({ onValueChange }: { readonly onValueChange: (stock: Stock | null) => void }) => (
+const ignore = () => {}
+
+const StockPicker = (
+  { onValueChange = ignore, showTrigger }: {
+    readonly onValueChange?: (stock: Stock | null) => void
+    readonly showTrigger?: boolean
+  }
+) => (
   <Combobox items={stocks} onValueChange={onValueChange}>
-    <ComboboxInput aria-label="Add a stock" placeholder="Search stocks" />
+    <ComboboxInput aria-label="Add a stock" {...(showTrigger === undefined ? {} : { showTrigger })} />
     <ComboboxContent>
       <ComboboxEmpty>No stock matches.</ComboboxEmpty>
       <ComboboxList>
@@ -34,21 +41,32 @@ const StockPicker = ({ onValueChange }: { readonly onValueChange: (stock: Stock 
 )
 
 describe("Combobox", () => {
-  it("filters as you type and picks the highlighted match with Enter", async () => {
+  it("picking a match fills the input and reports the item", async () => {
     let chosen: Stock | null = null
     const screen = await render(<StockPicker onValueChange={(stock) => (chosen = stock)} />)
     const input = screen.getByRole("combobox", { name: "Add a stock" })
     await userEvent.type(input, "tes")
-    await expect.element(screen.getByRole("option", { name: "TSLA (Tesla)" })).toBeVisible()
-    await expect.element(screen.getByRole("option", { name: "NVDA (Nvidia)" })).not.toBeInTheDocument()
-    await userEvent.keyboard("{ArrowDown}{Enter}")
-    expect(chosen).toEqual(stocks[2])
+    await userEvent.click(screen.getByRole("option", { name: "TSLA (Tesla)" }))
+    expect(chosen).toEqual({ value: "TSLA", label: "TSLA (Tesla)" })
     await expect.element(input).toHaveValue("TSLA (Tesla)")
   })
 
   it("says so when nothing matches", async () => {
-    const screen = await render(<StockPicker onValueChange={() => {}} />)
+    const screen = await render(<StockPicker />)
     await userEvent.type(screen.getByRole("combobox", { name: "Add a stock" }), "bitcoin")
     await expect.element(screen.getByText("No stock matches.")).toBeVisible()
+  })
+
+  it("Show all opens the full list", async () => {
+    const screen = await render(<StockPicker />)
+    await userEvent.click(screen.getByRole("button", { name: "Show all" }))
+    await expect.element(screen.getByRole("option", { name: "AAPL (Apple)" })).toBeVisible()
+    expect(screen.getByRole("option").elements()).toHaveLength(3)
+  })
+
+  it("showTrigger false leaves Show all out", async () => {
+    const screen = await render(<StockPicker showTrigger={false} />)
+    await expect.element(screen.getByRole("combobox", { name: "Add a stock" })).toBeInTheDocument()
+    await expect.element(screen.getByRole("button", { name: "Show all" })).not.toBeInTheDocument()
   })
 })

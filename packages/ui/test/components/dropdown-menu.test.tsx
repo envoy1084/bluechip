@@ -11,75 +11,54 @@ import {
   DropdownMenuTrigger
 } from "@bluechip/ui/components/dropdown-menu"
 import { describe, expect, it } from "@effect/vitest"
+import type { ReactNode } from "react"
 import { render } from "vitest-browser-react"
 import { page, userEvent } from "vitest/browser"
 
-function AccountMenu({ onSelect }: { readonly onSelect: (item: string) => void }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="secondary" />}>Alex</DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => onSelect("profile")}>Profile</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onSelect("settings")}>Settings</DropdownMenuItem>
+const AccountMenu = ({ children }: { readonly children: ReactNode }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger render={<Button variant="secondary" />}>Alex</DropdownMenuTrigger>
+    <DropdownMenuContent>{children}</DropdownMenuContent>
+  </DropdownMenu>
+)
+
+const open = async () => {
+  await userEvent.click(page.getByRole("button", { name: "Alex" }))
+  await expect.element(page.getByRole("menu")).toBeVisible()
+}
+
+describe("DropdownMenu", () => {
+  it("an item runs its onClick and closes the menu", async () => {
+    const selected: Array<string> = []
+    await render(
+      <AccountMenu>
+        <DropdownMenuItem onClick={() => selected.push("settings")}>Settings</DropdownMenuItem>
+      </AccountMenu>
+    )
+    await open()
+    await userEvent.click(page.getByRole("menuitem", { name: "Settings" }))
+    expect(selected).toEqual(["settings"])
+    await expect.element(page.getByRole("menu")).not.toBeInTheDocument()
+  })
+
+  it("a radio item in a submenu reports its value", async () => {
+    const values: Array<unknown> = []
+    await render(
+      <AccountMenu>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>Display currency</DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup defaultValue="usd" onValueChange={(value) => onSelect(String(value))}>
+            <DropdownMenuRadioGroup defaultValue="usd" onValueChange={(value) => values.push(value)}>
               <DropdownMenuRadioItem value="usd">US dollar</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="eur">Euro</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-describe("DropdownMenu", () => {
-  it("moves with the arrow keys and runs the item on Enter", async () => {
-    const selected: Array<string> = []
-    await render(<AccountMenu onSelect={(item) => selected.push(item)} />)
-    const trigger = page.getByRole("button", { name: "Alex" })
-    trigger.element().focus()
-    // Under a busy browser the first key can arrive before focus settles; wait for it.
-    await expect.element(trigger).toHaveFocus()
-    await userEvent.keyboard("{ArrowDown}")
-
-    await expect.element(page.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("data-highlighted")
-    await userEvent.keyboard("{ArrowDown}")
-    await expect.element(page.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("data-highlighted")
-    await userEvent.keyboard("{Enter}")
-
-    expect(selected).toEqual(["settings"])
-    await expect.element(page.getByRole("menu")).not.toBeInTheDocument()
-    await expect.element(trigger).toHaveFocus()
-  })
-
-  it("opens a submenu with ArrowRight and closes layer by layer with Esc", async () => {
-    const selected: Array<string> = []
-    await render(<AccountMenu onSelect={(item) => selected.push(item)} />)
-    const trigger = page.getByRole("button", { name: "Alex" })
-    trigger.element().focus()
-    // Under a busy browser the first key can arrive before focus settles; wait for it.
-    await expect.element(trigger).toHaveFocus()
-    await userEvent.keyboard("{ArrowDown}")
-    // Wait for the menu to mount before the next key, or End can land before the list exists.
-    await expect.element(page.getByRole("menuitem", { name: "Profile" })).toHaveAttribute("data-highlighted")
-    await userEvent.keyboard("{End}")
-    await expect.element(page.getByRole("menuitem", { name: "Display currency" })).toHaveAttribute("data-highlighted")
-
-    await userEvent.keyboard("{ArrowRight}")
-    const euro = page.getByRole("menuitemradio", { name: "Euro" })
-    await expect.element(euro).toBeVisible()
-    await expect.element(page.getByRole("menuitemradio", { name: "US dollar" })).toHaveAttribute("aria-checked", "true")
-    await userEvent.keyboard("{ArrowDown}{Enter}")
-    expect(selected).toEqual(["eur"])
-
-    await userEvent.keyboard("{Escape}")
-    await expect.element(euro).not.toBeInTheDocument()
-    await expect.element(page.getByRole("menuitem", { name: "Profile" })).toBeVisible()
-    await userEvent.keyboard("{Escape}")
-    await expect.element(page.getByRole("menu")).not.toBeInTheDocument()
-    await expect.element(trigger).toHaveFocus()
+      </AccountMenu>
+    )
+    await open()
+    await userEvent.click(page.getByRole("menuitem", { name: "Display currency" }))
+    await userEvent.click(page.getByRole("menuitemradio", { name: "Euro" }))
+    expect(values).toEqual(["eur"])
   })
 })

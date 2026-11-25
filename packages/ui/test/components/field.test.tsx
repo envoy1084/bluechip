@@ -2,51 +2,129 @@ import { Button } from "@bluechip/ui/components/button"
 import { Field, FieldError, FieldLabel, Form } from "@bluechip/ui/components/field"
 import { Input } from "@bluechip/ui/components/input"
 import { describe, expect, it } from "@effect/vitest"
+import type { ReactNode } from "react"
 import { render } from "vitest-browser-react"
-import { userEvent } from "vitest/browser"
+import { page, userEvent } from "vitest/browser"
 
-const SetupForm = ({ onSubmit }: { readonly onSubmit: () => void }) => (
+const nameRequired = (value: unknown) => (String(value ?? "").trim() ? null : "Give your agent a name.")
+
+const ignore = () => {}
+
+const SetupForm = (
+  { onSubmit = ignore, children }: { readonly onSubmit?: () => void; readonly children: ReactNode }
+) => (
   <Form onFormSubmit={onSubmit}>
-    <Field name="name" validate={(value) => (String(value ?? "").trim() ? null : "Give your agent a name.")}>
-      <FieldLabel>Agent name</FieldLabel>
-      <Input />
-      <FieldError />
-    </Field>
-    <Field
-      name="amount"
-      validate={(value) => {
-        const amount = Number(value)
-        return amount >= 10 && amount <= 1000 ? null : "Enter an amount from $10 to $1,000."
-      }}
-    >
-      <FieldLabel>Amount each week</FieldLabel>
-      <Input inputMode="decimal" />
-      <FieldError />
-    </Field>
-    <Button type="submit">Create Weekly buyer</Button>
+    {children}
+    <Button type="submit">Create agent</Button>
   </Form>
 )
 
-describe("Field and Form", () => {
-  it("shows each error and focuses the first invalid field on submit", async () => {
+const submit = () => userEvent.click(page.getByRole("button", { name: "Create agent" }))
+
+describe("Form", () => {
+  it("doesn't submit while a field is invalid", async () => {
     let submits = 0
-    const screen = await render(<SetupForm onSubmit={() => submits++} />)
-    await userEvent.click(screen.getByRole("button", { name: "Create Weekly buyer" }))
-    await expect.element(screen.getByText("Give your agent a name.")).toBeVisible()
-    await expect.element(screen.getByText("Enter an amount from $10 to $1,000.")).toBeVisible()
-    await expect.element(screen.getByLabelText("Agent name")).toHaveFocus()
-    await expect.element(screen.getByLabelText("Agent name")).toHaveAttribute("aria-invalid", "true")
+    await render(
+      <SetupForm onSubmit={() => submits++}>
+        <Field name="name" validate={nameRequired}>
+          <FieldLabel>Agent name</FieldLabel>
+          <Input />
+          <FieldError />
+        </Field>
+      </SetupForm>
+    )
+    await submit()
+    await expect.element(page.getByLabelText("Agent name")).toHaveAttribute("aria-invalid", "true")
     expect(submits).toBe(0)
   })
 
-  it("revalidates as the user fixes a field, then submits", async () => {
+  it("submits once every field is valid", async () => {
     let submits = 0
-    const screen = await render(<SetupForm onSubmit={() => submits++} />)
-    await userEvent.click(screen.getByRole("button", { name: "Create Weekly buyer" }))
-    await userEvent.fill(screen.getByLabelText("Agent name"), "Friday buyer")
-    await expect.element(screen.getByText("Give your agent a name.")).not.toBeInTheDocument()
-    await userEvent.fill(screen.getByLabelText("Amount each week"), "50")
-    await userEvent.click(screen.getByRole("button", { name: "Create Weekly buyer" }))
+    await render(
+      <SetupForm onSubmit={() => submits++}>
+        <Field name="name" validate={nameRequired}>
+          <FieldLabel>Agent name</FieldLabel>
+          <Input defaultValue="Friday buyer" />
+          <FieldError />
+        </Field>
+      </SetupForm>
+    )
+    await submit()
     expect(submits).toBe(1)
+  })
+
+  it("focuses the first invalid field on submit", async () => {
+    await render(
+      <SetupForm>
+        <Field name="name">
+          <FieldLabel>Agent name</FieldLabel>
+          <Input defaultValue="Friday buyer" />
+        </Field>
+        <Field name="amount" validate={() => "Enter an amount from $10 to $1,000."}>
+          <FieldLabel>Amount each week</FieldLabel>
+          <Input />
+        </Field>
+      </SetupForm>
+    )
+    await submit()
+    await expect.element(page.getByLabelText("Amount each week")).toHaveFocus()
+  })
+})
+
+describe("FieldError", () => {
+  it("without children, shows the message from validate", async () => {
+    await render(
+      <SetupForm>
+        <Field name="name" validate={nameRequired}>
+          <FieldLabel>Agent name</FieldLabel>
+          <Input />
+          <FieldError />
+        </Field>
+      </SetupForm>
+    )
+    await submit()
+    await expect.element(page.getByText("Give your agent a name.")).toBeVisible()
+  })
+
+  it("without children, shows the browser's message for a native constraint", async () => {
+    await render(
+      <SetupForm>
+        <Field name="name">
+          <FieldLabel>Agent name</FieldLabel>
+          <Input required />
+          <FieldError />
+        </Field>
+      </SetupForm>
+    )
+    await submit()
+    await expect.element(page.getByText("Please fill out this field.")).toBeVisible()
+  })
+
+  it("with children, shows them instead", async () => {
+    await render(
+      <SetupForm>
+        <Field name="name" validate={nameRequired}>
+          <FieldLabel>Agent name</FieldLabel>
+          <Input />
+          <FieldError>Every agent needs a name.</FieldError>
+        </Field>
+      </SetupForm>
+    )
+    await submit()
+    await expect.element(page.getByText("Every agent needs a name.")).toBeVisible()
+  })
+
+  it("stays hidden while the field is valid", async () => {
+    await render(
+      <SetupForm>
+        <Field name="name" validate={nameRequired}>
+          <FieldLabel>Agent name</FieldLabel>
+          <Input defaultValue="Friday buyer" />
+          <FieldError>Every agent needs a name.</FieldError>
+        </Field>
+      </SetupForm>
+    )
+    await submit()
+    await expect.element(page.getByText("Every agent needs a name.")).not.toBeInTheDocument()
   })
 })
