@@ -33,6 +33,8 @@ export const dismissCardAtom = BluechipApiClient.mutation("assistant", "dismissC
 
 export const cancelRunAtom = BluechipApiClient.mutation("assistant", "cancel")
 
+export const confirmMemoryAtom = BluechipApiClient.mutation("assistant", "confirmMemory")
+
 export const deleteMemoryAtom = BluechipApiClient.mutation("assistant", "deleteMemory")
 
 export const deleteMemoriesAtom = BluechipApiClient.mutation("assistant", "deleteMemories")

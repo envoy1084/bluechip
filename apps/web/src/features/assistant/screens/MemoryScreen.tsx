@@ -23,12 +23,20 @@ import { useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { localTimeZone } from "../../../lib/localTime.ts"
-import { assistantReactivityKey, deleteMemoriesAtom, deleteMemoryAtom, memoriesAtom } from "../atoms/assistant.ts"
+import {
+  assistantReactivityKey,
+  confirmMemoryAtom,
+  deleteMemoriesAtom,
+  deleteMemoryAtom,
+  memoriesAtom
+} from "../atoms/assistant.ts"
 import { MEMORY_KIND } from "../model/cardText.ts"
 
 const reactivityKeys = [assistantReactivityKey]
 
 const PROBLEM = "We couldn't reach bluechip just now. Nothing was deleted, so try again."
+
+const CONFIRM_PROBLEM = "We couldn't reach bluechip just now. It isn't confirmed yet, so try again."
 
 /** Where a memory came from, in words: "You said it", "Inferred, 72% sure", and whether it's in use. */
 const provenance = (memory: Memory): string => {
@@ -39,8 +47,22 @@ const provenance = (memory: Memory): string => {
 
 function MemoryRow({ memory, agentName }: Readonly<{ memory: Memory; agentName: string | undefined }>) {
   const remove = useAtomSet(deleteMemoryAtom, { mode: "promise" })
+  const confirm = useAtomSet(confirmMemoryAtom, { mode: "promise" })
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+
+  // Confirming also answers its card in the conversation; the list then shows it confirmed.
+  const keep = async () => {
+    setConfirming(true)
+    setProblem(null)
+    try {
+      await confirm({ params: { id: memory.id }, reactivityKeys })
+    } catch {
+      setProblem(CONFIRM_PROBLEM)
+    }
+    setConfirming(false)
+  }
 
   const forget = async () => {
     setBusy(true)
@@ -72,20 +94,29 @@ function MemoryRow({ memory, agentName }: Readonly<{ memory: Memory; agentName: 
           {memory.confirmedAt === null ?
             (
               <span className="text-label-sm text-g-500">
-                bluechip doesn't use it until you confirm it on its card in the conversation.
+                bluechip doesn't use it until you confirm it.
               </span>
             ) :
             null}
         </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete: ${memory.text}`}
-          loading={busy}
-          onClick={() => void forget()}
-        >
-          <Icon name="trash" size={16} />
-        </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          {memory.confirmedAt === null ?
+            (
+              <Button variant="secondary" size="sm" loading={confirming} onClick={() => void keep()}>
+                <Icon name="check" size={14} />Remember
+              </Button>
+            ) :
+            null}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Delete: ${memory.text}`}
+            loading={busy}
+            onClick={() => void forget()}
+          >
+            <Icon name="trash" size={16} />
+          </Button>
+        </div>
       </div>
       {problem === null ? null : (
         <Alert variant="destructive">
