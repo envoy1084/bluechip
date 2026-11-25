@@ -10,6 +10,7 @@ import * as Schema from "effect/Schema"
 import { StockSymbol } from "../market/Market.ts"
 import { type Price, Shares, sharesFor, Usdc, valueOf } from "../market/Units.ts"
 import { type Limits, LIVE_PRICE_SECONDS, MIN_TRADE, PAUSED_PRICE_SECONDS } from "./Limits.ts"
+import { type RebalanceBreach, rebalanceBreaches } from "./Rebalance.ts"
 import {
   type Holdings,
   isAtMostBps,
@@ -241,6 +242,14 @@ export const legLoss = (leg: Leg, price: Price): Usdc => {
   return Usdc.make(loss > BigInt(0) ? loss : BigInt(0))
 }
 
+const REBALANCE_MESSAGES: Readonly<Record<RebalanceBreach["rule"], (asset: string) => string>> = {
+  notNeeded: () => "Your portfolio is already close to its target mix.",
+  wrongWay: (asset) => `${asset} would move away from its target.`,
+  overshoots: (asset) => `${asset} would go past its target.`,
+  noProgress: () => "This wouldn't bring your portfolio closer to its target mix.",
+  losesValue: () => "This would cost your portfolio more than the price protection allows."
+}
+
 const nextUtcDay = (now: DateTime.Utc): DateTime.Utc => DateTime.add(DateTime.startOf(now, "day"), { days: 1 })
 
 const dollars = (amount: bigint): string => `$${(Number(amount) / 1_000_000).toFixed(2)}`
@@ -377,6 +386,14 @@ export const evaluate = (proposal: Proposal): Decision => {
   }
   if (after.usdc < holdings.usdc && after.usdc * BigInt(10_000) < BigInt(limits.cashReserve) * valued.total) {
     violate("underCashReserve", null, `Cash would fall under ${limits.cashReserve / 100}% of your money.`)
+  }
+
+  if (limits.mode === "rebalance") {
+    const moved = [...new Set(legs.map((leg) => leg.symbol))]
+    for (const breach of rebalanceBreaches({ limits, before, after: valued, moved })) {
+      const symbol = breach.asset === null || breach.asset === "USDC" ? null : breach.asset
+      violate(breach.rule, symbol, REBALANCE_MESSAGES[breach.rule](breach.asset ?? "your portfolio"))
+    }
   }
 
   const budget = (BigInt(limits.weeklySlippage) * before.total) / BigInt(10_000)
