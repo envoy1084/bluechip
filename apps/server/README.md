@@ -11,14 +11,14 @@ cp .env.example .env.local        # here; the root .env.local holds the fork's B
 docker compose --profile chain up -d   # Postgres, a Base fork (8545) and a bundler (4337)
 pnpm --filter @bluechip/server db:migrate
 pnpm --filter @bluechip/server dev
-curl localhost:4000/health
-curl localhost:4000/api/version
-curl -N localhost:4000/api/events   # live events (Server-Sent Events)
-open http://localhost:4000/api/docs  # API docs; the OpenAPI document is /api/openapi.json
+curl localhost:8080/health
+curl localhost:8080/api/version
+curl -N localhost:8080/api/events   # live events (Server-Sent Events)
+open http://localhost:8080/api/docs  # API docs; the OpenAPI document is /api/openapi.json
 ```
 
 The web app (`pnpm --filter @bluechip/web dev`) proxies `/api` and `/auth` to this server (`SERVER_ORIGIN`,
-default `http://localhost:4000`); `localhost:3000/dev/connection` shows the connection live.
+default `http://localhost:8080`); `localhost:3000/dev/connection` shows the connection live.
 
 ## Local chain
 
@@ -99,7 +99,7 @@ once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` 
 | Variable                | Default                 | Meaning                                                          |
 | ----------------------- | ----------------------- | ---------------------------------------------------------------- |
 | `DATABASE_URL`          | required                | Postgres connection string (redacted in logs)                    |
-| `PORT`                  | `4000`                  | HTTP port                                                        |
+| `PORT`                  | `8080`                  | HTTP port                                                        |
 | `PUBLIC_ORIGIN`         | `http://localhost:3000` | The web app's origin                                             |
 | `NODE_ENV`              | `development`           | `development`, `test` or `production` (JSON logs in production)  |
 | `LOG_LEVEL`             | `Info`                  | Minimum log level                                                |

@@ -20,7 +20,7 @@ export class AppConfig extends Context.Service<AppConfig, {
         env: yield* Config.Literals(["development", "test", "production"], "NODE_ENV").pipe(
           Config.withDefault("development")
         ),
-        port: yield* Config.Port("PORT").pipe(Config.withDefault(4000)),
+        port: yield* Config.Port("PORT").pipe(Config.withDefault(8080)),
         publicOrigin: yield* Config.String("PUBLIC_ORIGIN").pipe(Config.withDefault("http://localhost:3000")),
         rpId: yield* Config.String("RP_ID").pipe(Config.withDefault("localhost")),
         databaseUrl: yield* Config.Redacted("DATABASE_URL")

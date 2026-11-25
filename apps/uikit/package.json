@@ -6,9 +6,9 @@
   "license": "Apache-2.0",
   "description": "bluechip's component kit: every @bluechip/ui component, animation and illustration on one site.",
   "scripts": {
-    "dev": "vite dev --port 3001",
+    "dev": "vite dev --port 4000",
     "build": "vite build",
-    "start": "vite preview --port 3001",
+    "start": "vite preview --port 4000",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {

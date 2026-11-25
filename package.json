@@ -11,6 +11,8 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm circular && pnpm test",
     "circular": "node scripts/bin.ts circular",
     "clean": "node scripts/bin.ts clean",
+    "dev": "node scripts/bin.ts dev up",
+    "dev:stop": "node scripts/bin.ts dev down",
     "format": "dprint fmt",
     "format:check": "dprint check",
     "lint": "oxlint --deny-warnings && node scripts/bin.ts lint",
