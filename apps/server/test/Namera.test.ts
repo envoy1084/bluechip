@@ -1,19 +1,22 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { usdc } from "@bluechip/chain/Contracts"
 import { DevChain } from "@bluechip/chain/DevChain"
+import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { assert, describe, layer } from "@effect/vitest"
 import * as SmartAccount from "@namera-ai/sdk/effect/accounts/SmartAccount"
+import * as ConfigProvider from "effect/ConfigProvider"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { encodeFunctionData, erc20Abi, parseEther } from "viem"
 import { Namera } from "../src/Namera.ts"
-import { chainAvailable, ForkLayer } from "./support/fork.ts"
 import { softwarePasskey } from "./support/passkey.ts"
 
 const recipient = "0x000000000000000000000000000000000000dEaD"
 
-describe.skipIf(!chainAvailable)("Namera on the local fork", () => {
-  layer(Layer.provideMerge(Namera.layer, ForkLayer))((it) => {
+const bundlerConfig = ConfigProvider.layer(ConfigProvider.fromEnvRecord({ BUNDLER_URL: DevnetTest.urls().bundlerUrl }))
+
+layer(Layer.provideMerge(Namera.layer, DevnetTest.layer).pipe(Layer.provide(bundlerConfig)))("Namera", (it) => {
+  describe("kernelAccount", () => {
     it.effect("a passkey always owns the same, not yet deployed, Kernel account", () =>
       Effect.gen(function*() {
         const namera = yield* Namera
@@ -25,7 +28,9 @@ describe.skipIf(!chainAvailable)("Namera on the local fork", () => {
         const detected = yield* SmartAccount.detect(chain.client, { address: first.address })
         assert.strictEqual(detected.type, "undeployed")
       }))
+  })
 
+  describe("bundlerClient", () => {
     it.effect("a passkey-signed user operation deploys the account and moves USDC", () =>
       Effect.gen(function*() {
         const namera = yield* Namera

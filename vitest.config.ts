@@ -36,7 +36,7 @@ export default defineConfig({
       // Chain tests run on the devnet: one Anvil and Alto per worker, from the captured state.
       project("devnet", "packages/devnet", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
       project("chain", "packages/chain", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
-      project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
+      project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts", "test/setup/database.ts"] } }),
       // Real-chain facts on a fork of Base: only with `pnpm test:fork`.
       ...(process.env["BLUECHIP_FORK_TESTS"] === "1"
         ? [project("fork", "packages/chain", { test: { include: ["test-fork/**/*.test.ts"] } })]

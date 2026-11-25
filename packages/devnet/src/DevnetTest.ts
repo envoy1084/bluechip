@@ -5,6 +5,7 @@
  * @since 0.0.0
  */
 import * as Layer from "effect/Layer"
+import { Server } from "prool/vitest"
 import { inject } from "vitest"
 import { contextKey, Devnet, type DevnetContext } from "./Devnet.ts"
 
@@ -22,3 +23,15 @@ declare module "vitest" {
  * @since 0.0.0
  */
 export const layer = Layer.provideMerge(Devnet.layerChain, Devnet.layer(inject(contextKey)))
+
+/**
+ * This worker's Anvil and Alto URLs, for code that reads them from config (such as `BUNDLER_URL`).
+ *
+ * @stability unstable
+ * @category getters
+ * @since 0.0.0
+ */
+export const urls = (): { readonly rpcUrl: string; readonly bundlerUrl: string } => {
+  const servers = Server.get(inject(contextKey))
+  return { rpcUrl: servers.anvil.url, bundlerUrl: servers.alto.url }
+}

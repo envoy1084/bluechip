@@ -1,5 +1,5 @@
-// The API served in memory on the local fork, and the requests a browser makes to it.
-import { ChainClient } from "@bluechip/chain/ChainClient"
+// The API served in memory on this worker's devnet, and the requests a browser makes to it.
+import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { ContractVersion, contractVersionHeader } from "@bluechip/domain/Contract"
 import { afterAll } from "@effect/vitest"
 import * as ConfigProvider from "effect/ConfigProvider"
@@ -21,22 +21,22 @@ import { AccountBalances } from "../../src/portfolio/AccountBalances.ts"
 import { Trades } from "../../src/trading/Trades.ts"
 import { AlpacaTest } from "./alpaca.ts"
 import { softwareAuthenticator } from "./authenticator.ts"
+import { origin, testDatabaseUrl } from "./config.ts"
 
-export const origin = "http://localhost:3000"
+export { origin }
 
 const config = ConfigProvider.layer(ConfigProvider.fromEnvRecord({
-  // Tests' own database (created with the Postgres volume), so they never leave accounts in dev data.
-  DATABASE_URL: "postgres://bluechip:bluechip@localhost:5432/bluechip_test",
+  DATABASE_URL: testDatabaseUrl,
   PUBLIC_ORIGIN: origin,
-  RP_ID: "localhost"
+  RP_ID: "localhost",
+  BUNDLER_URL: DevnetTest.urls().bundlerUrl
 }))
 
-// Sign-up reads the chain (Namera checks for Base's P-256 precompile), so these tests run on the local fork.
 const Services = Layer.mergeAll(Withdrawals.layer, Trades.layer, Charts.layer).pipe(
   Layer.provideMerge(Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer)),
-  Layer.provideMerge(Layer.mergeAll(AlpacaTest, Database.layerMigrated, AppConfig.layer)),
+  Layer.provideMerge(Layer.mergeAll(AlpacaTest, Database.layer, AppConfig.layer)),
   Layer.provideMerge(LiveEvents.layer),
-  Layer.provideMerge(Layer.succeed(ChainClient, ChainClient.make("local", "http://localhost:8545"))),
+  Layer.provideMerge(DevnetTest.layer),
   Layer.provide(config)
 )
 
