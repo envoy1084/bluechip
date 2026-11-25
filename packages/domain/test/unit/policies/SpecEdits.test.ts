@@ -1,13 +1,17 @@
 import { Usdc } from "@bluechip/domain/market/Units"
 import type { AgentSpec, PolicyId } from "@bluechip/domain/policies/AgentSpec"
+import { cashReserve } from "@bluechip/domain/policies/CashReserve"
 import { checkSpec } from "@bluechip/domain/policies/Catalog"
-import type { Target } from "@bluechip/domain/policies/Rebalance"
+import { fairPrice } from "@bluechip/domain/policies/FairPrice"
+import { configOf } from "@bluechip/domain/policies/Policy"
+import { rebalance, type Target } from "@bluechip/domain/policies/Rebalance"
 import {
   addPolicy,
   applyPreset,
   cantAdd,
   cantRemove,
   evenTargets,
+  hasPolicy,
   presetOf,
   removePolicy,
   scratchSpec,
@@ -15,14 +19,14 @@ import {
   setStocks,
   templateSpec
 } from "@bluechip/domain/policies/SpecEdits"
+import { stockCap } from "@bluechip/domain/policies/StockCap"
 import { Preset } from "@bluechip/domain/policies/Templates"
+import { trade } from "@bluechip/domain/policies/Trade"
+import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import { assert, describe, it } from "@effect/vitest"
 
 const PICKER = templateSpec("stockPicker", "balanced", ["NVDA", "AAPL"])
 const REBALANCER = templateSpec("rebalancer", "balanced", ["NVDA", "AAPL"])
-
-const ids = (spec: AgentSpec) => spec.policies.map((entry) => entry.id)
-const configOf = (spec: AgentSpec, id: PolicyId) => spec.policies.find((entry) => entry.id === id)?.config
 
 describe("evenTargets", () => {
   it.each<{ name: string; stocks: ReadonlyArray<"NVDA" | "AAPL" | "TSLA" | "MSFT">; expected: ReadonlyArray<Target> }>([
@@ -52,7 +56,7 @@ describe("setStocks", () => {
   it("a Rebalancer's new stocks start again from an even mix", () => {
     const spec = setStocks(REBALANCER, ["TSLA"])
 
-    assert.deepStrictEqual(configOf(spec, "rebalance"), {
+    assert.deepStrictEqual(configOf(spec.policies, rebalance), {
       targets: [{ asset: "TSLA", weight: 3000 }, { asset: "USDC", weight: 7000 }],
       triggerBps: 500
     })
@@ -64,7 +68,7 @@ describe("setDirection", () => {
     const spec = setDirection(PICKER, "rebalance")
 
     assert.deepStrictEqual(
-      [ids(spec).includes("rebalance"), configOf(spec, "fairPrice"), checkSpec(spec)],
+      [hasPolicy(spec, "rebalance"), configOf(spec.policies, fairPrice), checkSpec(spec)],
       [true, { collarBps: 100, tradeWhilePaused: false }, []]
     )
   })
@@ -72,13 +76,13 @@ describe("setDirection", () => {
   it("leaving rebalancing drops the target mix", () => {
     const spec = setDirection(REBALANCER, "buy")
 
-    assert.deepStrictEqual([ids(spec).includes("rebalance"), checkSpec(spec)], [false, []])
+    assert.deepStrictEqual([hasPolicy(spec, "rebalance"), checkSpec(spec)], [false, []])
   })
 
   it("selling only sets the daily budget to nothing", () => {
     const spec = setDirection(PICKER, "sell")
 
-    assert.deepStrictEqual(configOf(spec, "trade"), {
+    assert.deepStrictEqual(configOf(spec.policies, trade), {
       stocks: ["NVDA", "AAPL"],
       direction: "sell",
       dailyBudget: Usdc.make(0n)
@@ -88,7 +92,7 @@ describe("setDirection", () => {
   it("buying again after selling only brings back the standard budget", () => {
     const spec = setDirection(setDirection(PICKER, "sell"), "buy")
 
-    assert.strictEqual((configOf(spec, "trade") as { dailyBudget: bigint }).dailyBudget, 250_000_000n)
+    assert.strictEqual(configOf(spec.policies, trade)?.dailyBudget, 250_000_000n)
   })
 })
 
@@ -96,20 +100,20 @@ describe("addPolicy and removePolicy", () => {
   it("a removed stock cap comes back at its defaults", () => {
     const spec = addPolicy(removePolicy(PICKER, "stockCap"), "stockCap")
 
-    assert.deepStrictEqual(configOf(spec, "stockCap"), { maxBps: 3000 })
+    assert.deepStrictEqual(configOf(spec.policies, stockCap), { maxBps: 3000 })
   })
 
   it("adding a target mix makes the agent rebalance", () => {
     const spec = addPolicy(PICKER, "rebalance")
 
-    assert.strictEqual((configOf(spec, "trade") as { direction: string }).direction, "rebalance")
+    assert.strictEqual(configOf(spec.policies, trade)?.direction, "rebalance")
   })
 
   it("removing the target mix makes a Rebalancer trade both ways", () => {
     const spec = removePolicy(REBALANCER, "rebalance")
 
     assert.deepStrictEqual(
-      [(configOf(spec, "trade") as { direction: string }).direction, ids(spec).includes("rebalance")],
+      [configOf(spec.policies, trade)?.direction, hasPolicy(spec, "rebalance")],
       ["both", false]
     )
   })
@@ -131,7 +135,7 @@ describe("cantAdd and cantRemove", () => {
 
 describe("scratchSpec", () => {
   it("every required policy at its defaults, and nothing else", () => {
-    assert.deepStrictEqual(ids(scratchSpec()), [
+    assert.deepStrictEqual(scratchSpec().policies.map((entry) => entry.id), [
       "trade",
       "tradeSize",
       "fairPrice",
@@ -163,7 +167,12 @@ describe("presets", () => {
     const spec = applyPreset(setStocks(PICKER, ["TSLA"]), "stockPicker", "conservative")
 
     assert.deepStrictEqual(
-      [configOf(spec, "trade"), configOf(spec, "tradeSize"), configOf(spec, "stockCap"), configOf(spec, "cashReserve")],
+      [
+        configOf(spec.policies, trade),
+        configOf(spec.policies, tradeSize),
+        configOf(spec.policies, stockCap),
+        configOf(spec.policies, cashReserve)
+      ],
       [
         { stocks: ["TSLA"], direction: "both", dailyBudget: 100_000_000n },
         { maxPerTrade: 50_000_000n, minPerTrade: 5_000_000n },

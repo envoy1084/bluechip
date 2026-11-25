@@ -22,8 +22,6 @@ const REFUSED: Decision = {
 }
 const WAIT: Decision = { _tag: "Wait", reason: "pricesPaused", until: DateTime.makeUnsafe("2026-11-30T14:30:00Z") }
 
-const decided = (decision: Decision): IntentEvent => ({ _tag: "Decided", decision })
-
 describe("transition", () => {
   it.each<{ name: string; status: IntentStatus; event: IntentEvent; expected: Result.Result<IntentStatus, string> }>([
     {
@@ -47,26 +45,31 @@ describe("transition", () => {
     {
       name: "deciding, passes: sending",
       status: "deciding",
-      event: decided(PASSES),
+      event: { _tag: "Decided", decision: PASSES },
       expected: Result.succeed("sending")
     },
     {
       name: "deciding, over the largest trade: needsApproval",
       status: "deciding",
-      event: decided(OVER),
+      event: { _tag: "Decided", decision: OVER },
       expected: Result.succeed("needsApproval")
     },
     {
       name: "deciding, refused: blocked",
       status: "deciding",
-      event: decided(REFUSED),
+      event: { _tag: "Decided", decision: REFUSED },
       expected: Result.succeed("blocked")
     },
-    { name: "deciding, wait: waiting", status: "deciding", event: decided(WAIT), expected: Result.succeed("waiting") },
+    {
+      name: "deciding, wait: waiting",
+      status: "deciding",
+      event: { _tag: "Decided", decision: WAIT },
+      expected: Result.succeed("waiting")
+    },
     {
       name: "proposed, decided without deciding",
       status: "proposed",
-      event: decided(PASSES),
+      event: { _tag: "Decided", decision: PASSES },
       expected: Result.fail("a proposed intent can't take a decision")
     },
     {

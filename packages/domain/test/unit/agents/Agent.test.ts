@@ -3,15 +3,18 @@ import { assert, describe, it } from "@effect/vitest"
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
 
-const sent = (action: "lock" | "update" | "renew" | "remove"): AgentEvent => ({ _tag: "Sent", action })
-
 describe("transition", () => {
   it.each<{ name: string; status: AgentStatus; event: AgentEvent; expected: Result.Result<AgentStatus, string> }>([
-    { name: "draft, lock sent: locking", status: "draft", event: sent("lock"), expected: Result.succeed("locking") },
+    {
+      name: "draft, lock sent: locking",
+      status: "draft",
+      event: { _tag: "Sent", action: "lock" },
+      expected: Result.succeed("locking")
+    },
     {
       name: "draft, change sent: nothing locked to change",
       status: "draft",
-      event: sent("update"),
+      event: { _tag: "Sent", action: "update" },
       expected: Result.fail("a draft agent can't update")
     },
     {
@@ -35,37 +38,37 @@ describe("transition", () => {
     {
       name: "locking, another lock sent",
       status: "locking",
-      event: sent("lock"),
+      event: { _tag: "Sent", action: "lock" },
       expected: Result.fail("a locking agent can't lock")
     },
     {
       name: "active, change sent: updating",
       status: "active",
-      event: sent("update"),
+      event: { _tag: "Sent", action: "update" },
       expected: Result.succeed("updating")
     },
     {
       name: "active, renewal sent: updating",
       status: "active",
-      event: sent("renew"),
+      event: { _tag: "Sent", action: "renew" },
       expected: Result.succeed("updating")
     },
     {
       name: "updating, renewal sent",
       status: "updating",
-      event: sent("renew"),
+      event: { _tag: "Sent", action: "renew" },
       expected: Result.fail("a updating agent can't renew")
     },
     {
       name: "active, removal sent: removing",
       status: "active",
-      event: sent("remove"),
+      event: { _tag: "Sent", action: "remove" },
       expected: Result.succeed("removing")
     },
     {
       name: "active, locked again",
       status: "active",
-      event: sent("lock"),
+      event: { _tag: "Sent", action: "lock" },
       expected: Result.fail("a active agent can't lock")
     },
     {
@@ -95,7 +98,7 @@ describe("transition", () => {
     {
       name: "updating, removal sent: one operation at a time",
       status: "updating",
-      event: sent("remove"),
+      event: { _tag: "Sent", action: "remove" },
       expected: Result.fail("a updating agent can't remove")
     },
     {
@@ -113,7 +116,7 @@ describe("transition", () => {
     {
       name: "removed, change sent",
       status: "removed",
-      event: sent("update"),
+      event: { _tag: "Sent", action: "update" },
       expected: Result.fail("a removed agent can't update")
     },
     {

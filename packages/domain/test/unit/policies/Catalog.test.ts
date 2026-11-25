@@ -1,43 +1,11 @@
 import { Usdc } from "@bluechip/domain/market/Units"
-import { AgentSpec, type PolicyEntry, type PolicyId } from "@bluechip/domain/policies/AgentSpec"
+import { AgentSpec, type PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import { catalogInfo, checkSpec, compareSpecs, complete, describeSpec } from "@bluechip/domain/policies/Catalog"
+import { gasBudget } from "@bluechip/domain/policies/GasBudget"
+import { configOf } from "@bluechip/domain/policies/Policy"
 import { draftSpec } from "@bluechip/domain/policies/Templates"
 import { assert, describe, it } from "@effect/vitest"
-
-const usdc = (dollars: number) => Usdc.make(BigInt(Math.round(dollars * 1_000_000)))
-
-// $250 a day, $100 a trade, 30% in one stock, 10% cash, 1% slippage a week, 12 trades a day, trades while paused.
-const PICKER = draftSpec({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
-
-// The same amounts, with a target mix of 30% NVDA, 30% AAPL and 40% cash and a 5% trigger.
-const REBALANCER = draftSpec({
-  template: "rebalancer",
-  preset: "balanced",
-  stocks: ["NVDA", "AAPL"],
-  targets: [{ asset: "NVDA", weight: 3000 }, { asset: "AAPL", weight: 3000 }, { asset: "USDC", weight: 4000 }]
-})
-
-const configOf = (spec: AgentSpec, id: PolicyId) => spec.policies.find((entry) => entry.id === id)!.config
-
-// `spec` with each entry's configuration changed, or added.
-const changed = (spec: AgentSpec, ...changes: ReadonlyArray<{ id: PolicyId; config: object }>) =>
-  new AgentSpec({
-    policies: [
-      ...spec.policies.map((entry) => {
-        const change = changes.find((candidate) => candidate.id === entry.id)
-        return (change === undefined
-          ? entry
-          : { id: entry.id, config: { ...entry.config, ...change.config } }) as PolicyEntry
-      }),
-      ...changes.filter((change) => !spec.policies.some((entry) => entry.id === change.id)) as Array<PolicyEntry>
-    ]
-  })
-
-const without = (spec: AgentSpec, ...ids: ReadonlyArray<PolicyId>) =>
-  new AgentSpec({ policies: spec.policies.filter((entry) => !ids.includes(entry.id)) })
-
-const problemsOf = (spec: AgentSpec): ReadonlyArray<readonly [PolicyId, string | null, string]> =>
-  checkSpec(spec).map(({ field, message, policy }) => [policy, field, message])
+import { changed, PICKER, REBALANCER, without } from "../../fixtures/Specs.ts"
 
 describe("checkSpec", () => {
   it.each<{ name: string; spec: AgentSpec; expected: ReadonlyArray<readonly [PolicyId, string | null, string]> }>([
@@ -75,12 +43,12 @@ describe("checkSpec", () => {
     },
     {
       name: "a daily budget at the $2,000 ceiling",
-      spec: changed(PICKER, { id: "trade", config: { dailyBudget: usdc(2000) } }),
+      spec: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(2_000_000_000n) } }),
       expected: []
     },
     {
       name: "a daily budget a unit over the $2,000 ceiling",
-      spec: changed(PICKER, { id: "trade", config: { dailyBudget: usdc(2000.000001) } }),
+      spec: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(2_000_000_001n) } }),
       expected: [["trade", "dailyBudget", "Pick $0 to $2,000."]]
     },
     {
@@ -90,7 +58,7 @@ describe("checkSpec", () => {
     },
     {
       name: "a buyer without a daily budget",
-      spec: changed(PICKER, { id: "trade", config: { direction: "buy", dailyBudget: usdc(0) } }),
+      spec: changed(PICKER, { id: "trade", config: { direction: "buy", dailyBudget: Usdc.make(0n) } }),
       expected: [["trade", "dailyBudget", "Give it a daily budget to buy with."]]
     },
     {
@@ -105,30 +73,33 @@ describe("checkSpec", () => {
     },
     {
       name: "the largest trade at $10",
-      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(10) } }),
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: Usdc.make(10_000_000n) } }),
       expected: []
     },
     {
       name: "the largest trade a unit under $10",
-      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(9.999999) } }),
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: Usdc.make(9_999_999n) } }),
       expected: [["tradeSize", "maxPerTrade", "Pick $10 to $1,000."]]
     },
     {
       name: "the largest trade over the daily budget",
-      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(300) } }),
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: Usdc.make(300_000_000n) } }),
       expected: [["tradeSize", "maxPerTrade", "Can't be more than the daily budget ($250)."]]
     },
     {
       name: "a seller's largest trade, with no budget to stay under",
-      spec: changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: usdc(0) } }, {
+      spec: changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: Usdc.make(0n) } }, {
         id: "tradeSize",
-        config: { maxPerTrade: usdc(1000) }
+        config: { maxPerTrade: Usdc.make(1_000_000_000n) }
       }),
       expected: []
     },
     {
       name: "the smallest trade over the largest",
-      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(20), minPerTrade: usdc(25) } }),
+      spec: changed(PICKER, {
+        id: "tradeSize",
+        config: { maxPerTrade: Usdc.make(20_000_000n), minPerTrade: Usdc.make(25_000_000n) }
+      }),
       expected: [["tradeSize", "minPerTrade", "Can't be more than the largest trade."]]
     },
     {
@@ -218,7 +189,9 @@ describe("checkSpec", () => {
       expected: [["rebalance", "targets", "Cash's target can't be under the cash reserve (45%)."]]
     }
   ])("$name", ({ expected, spec }) => {
-    assert.deepStrictEqual(problemsOf(spec), expected)
+    const problems = checkSpec(spec).map(({ field, message, policy }) => [policy, field, message] as const)
+
+    assert.deepStrictEqual(problems, expected)
   })
 })
 
@@ -235,7 +208,7 @@ describe("complete", () => {
   it("replaces a hidden policy's configuration with bluechip's", () => {
     const spec = complete(changed(PICKER, { id: "gasBudget", config: { weiPerDay: 1n } }))
 
-    assert.deepStrictEqual(configOf(spec, "gasBudget"), { weiPerDay: 1_000_000_000_000_000n })
+    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 1_000_000_000_000_000n })
   })
 
   it("lists policies in the catalog's order", () => {
@@ -260,7 +233,7 @@ describe("compareSpecs", () => {
     { name: "the same policies", after: PICKER, expected: { overall: "same", policies: [] } as never },
     {
       name: "a lower daily budget",
-      after: changed(PICKER, { id: "trade", config: { dailyBudget: usdc(100) } }),
+      after: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(100_000_000n) } }),
       expected: { overall: "tighter", policies: [{ policy: "trade", change: "tighter" }] } as never
     },
     {
@@ -287,7 +260,7 @@ describe("compareSpecs", () => {
       name: "a higher cash reserve and a bigger largest trade",
       after: changed(PICKER, { id: "cashReserve", config: { minBps: 2000 } }, {
         id: "tradeSize",
-        config: { maxPerTrade: usdc(200) }
+        config: { maxPerTrade: Usdc.make(200_000_000n) }
       }),
       expected: {
         overall: "looser",
@@ -362,9 +335,9 @@ describe("compareSpecs", () => {
   })
 })
 
-const NAMES: Record<string, string> = { NVDA: "Nvidia", AAPL: "Apple", TSLA: "Tesla", MSFT: "Microsoft" }
-
 describe("describeSpec", () => {
+  const NAMES: Record<string, string> = { NVDA: "Nvidia", AAPL: "Apple", TSLA: "Tesla", MSFT: "Microsoft" }
+
   it("a balanced Stock picker", () => {
     const description = describeSpec(PICKER, (symbol) => NAMES[symbol] ?? symbol)
 

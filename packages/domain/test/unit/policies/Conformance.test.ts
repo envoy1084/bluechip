@@ -6,15 +6,6 @@ import * as Schema from "effect/Schema"
 
 const policies = POLICIES as unknown as ReadonlyArray<PolicyType<PolicyId, Schema.Codec<unknown, unknown>>>
 
-const fieldsOf = (policy: PolicyType<PolicyId, Schema.Codec<unknown, unknown>>) =>
-  Object.entries(policy.fields as Record<string, Field>)
-
-// The defaults with one number field set to `value`.
-const withField = (policy: PolicyType<PolicyId, Schema.Codec<unknown, unknown>>, name: string, value: number) => {
-  const current = (policy.defaults as Record<string, unknown>)[name]
-  return { ...(policy.defaults as object), [name]: typeof current === "bigint" ? BigInt(value) : value }
-}
-
 describe("the catalog", () => {
   it("lists each policy once", () => {
     const ids = policies.map((policy) => policy.id)
@@ -41,13 +32,13 @@ describe("the catalog", () => {
 
   it.each(policies)("$id: every configuration field has editing hints, and only those", (policy) => {
     assert.deepStrictEqual(
-      fieldsOf(policy).map(([name]) => name).sort(),
+      Object.entries(policy.fields as Record<string, Field>).map(([name]) => name).sort(),
       Object.keys(policy.defaults as object).sort()
     )
   })
 
   it.each(policies)("$id: its defaults are within its fields' ranges", (policy) => {
-    const outside = fieldsOf(policy).filter(([name, field]) => {
+    const outside = Object.entries(policy.fields as Record<string, Field>).filter(([name, field]) => {
       const value = (policy.defaults as Record<string, unknown>)[name]
       if (field.min === undefined || field.max === undefined) return false
       return Number(value) < field.min || Number(value) > field.max
@@ -61,12 +52,16 @@ describe("the catalog", () => {
   })
 
   it.each(policies.flatMap((policy) =>
-    fieldsOf(policy)
+    Object.entries(policy.fields as Record<string, Field>)
       .filter(([, field]) => field.min !== undefined && field.max !== undefined && field.min !== field.max)
       .map(([name, field]) => ({ id: policy.id, policy, name, field }))
   ))("$id.$name: one end of its range is tighter, the other looser", ({ field, name, policy }) => {
-    const low = withField(policy, name, field.min!)
-    const high = withField(policy, name, field.max!)
+    const current = (policy.defaults as Record<string, unknown>)[name]
+    const low = { ...(policy.defaults as object), [name]: typeof current === "bigint" ? BigInt(field.min!) : field.min }
+    const high = {
+      ...(policy.defaults as object),
+      [name]: typeof current === "bigint" ? BigInt(field.max!) : field.max
+    }
 
     const changes = [policy.compare(low, high), policy.compare(high, low)].sort()
 
