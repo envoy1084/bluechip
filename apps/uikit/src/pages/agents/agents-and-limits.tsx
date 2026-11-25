@@ -13,7 +13,16 @@ import { toast } from "@bluechip/ui/components/toast"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatDollars } from "@bluechip/ui/lib/agent-limits"
 import { useState } from "react"
-import { AGENTS, EDITOR_START, GUARD, LAST_ACTION, REBALANCER, WEEKLY } from "./data.ts"
+import {
+  AGENTS,
+  EDITOR_START,
+  GUARD,
+  LAST_ACTION,
+  REBALANCER,
+  STOP_LOSS_PRESETS,
+  WEEKLY,
+  WEEKLY_BUYER_PRESETS
+} from "./data.ts"
 import { Demo, Section, States } from "./layout.tsx"
 
 export function StatusSection() {
@@ -156,9 +165,9 @@ export function PresetSection() {
   return (
     <Section
       title="Preset picker"
-      purpose="Three starting points for limits, so nobody faces five sliders first. Arrow keys move between them; picking one fills the limit editor."
+      purpose="Three starting points for limits, so nobody faces five sliders first. Arrow keys move between them; picking one fills the limit editor. Given amounts, it shows what a template actually drafts."
     >
-      <Demo className="flex-col items-stretch">
+      <Demo label="The presets' own amounts" className="flex-col items-stretch">
         <PresetPicker
           defaultValue="balanced"
           onValueChange={(preset) =>
@@ -169,6 +178,12 @@ export function PresetSection() {
             )}
         />
         <span aria-live="polite" className="text-label text-g-500">{picked}</span>
+      </Demo>
+      <Demo label="A weekly buyer's, capped at $500 a day" className="flex-col items-stretch">
+        <PresetPicker defaultValue="active" amounts={WEEKLY_BUYER_PRESETS} />
+      </Demo>
+      <Demo label="A stop-loss guard's: it never buys, and has no stock cap" className="flex-col items-stretch">
+        <PresetPicker defaultValue="balanced" amounts={STOP_LOSS_PRESETS} />
       </Demo>
     </Section>
   )

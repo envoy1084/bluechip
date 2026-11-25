@@ -41,6 +41,36 @@ describe("PresetPicker", () => {
     )
   })
 
+  it("shows the amounts it's given in place of the presets' own", async () => {
+    const screen = await render(
+      <PresetPicker
+        amounts={{
+          conservative: { dailySpend: 100, maxPerTrade: 50, maxInOneStock: 20 },
+          balanced: { dailySpend: 250, maxPerTrade: 100, maxInOneStock: 30 },
+          active: { dailySpend: 500, maxPerTrade: 400, maxInOneStock: 40 }
+        }}
+      />
+    )
+    expect(screen.getByRole("radio", { name: /Active/ }).element().textContent).toBe(
+      "ActiveMore room, still capped$500a day$400per trade40%max in one"
+    )
+  })
+
+  it("leaves out the stock cap when its amounts have none", async () => {
+    const screen = await render(
+      <PresetPicker
+        amounts={{
+          conservative: { dailySpend: 0, maxPerTrade: 50 },
+          balanced: { dailySpend: 0, maxPerTrade: 100 },
+          active: { dailySpend: 0, maxPerTrade: 400 }
+        }}
+      />
+    )
+    expect(screen.getByRole("radio", { name: /Balanced/ }).element().textContent).toBe(
+      "BalancedMost people start here$0a day$100per trade"
+    )
+  })
+
   it("shows only the daily spend when compact", async () => {
     const screen = await render(<PresetPicker compact />)
     expect(screen.getByRole("radio", { name: /Conservative/ }).element().textContent).toBe("Conservative$100a day")

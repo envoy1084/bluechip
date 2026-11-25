@@ -1,7 +1,8 @@
 import type { Agent } from "@bluechip/ui/bluechip/agent-card"
 import type { CitationSource } from "@bluechip/ui/bluechip/citation-chip"
+import type { PresetAmounts } from "@bluechip/ui/bluechip/preset-picker"
 import type { ProposalCardProps } from "@bluechip/ui/bluechip/proposal-card"
-import { type AgentLimits, LIMIT_PRESETS } from "@bluechip/ui/lib/agent-limits"
+import { type AgentLimits, LIMIT_PRESETS, type LimitPresetName } from "@bluechip/ui/lib/agent-limits"
 
 export const AGENTS: ReadonlyArray<Agent> = [
   {
@@ -138,3 +139,17 @@ export const SUGGESTIONS = [
   "Sell Tesla if it drops 10%",
   "How did I do this week?"
 ]
+
+/** What a weekly buyer's presets draft: Active capped at its $500 a day. */
+export const WEEKLY_BUYER_PRESETS: Readonly<Record<LimitPresetName, PresetAmounts>> = {
+  conservative: { dailySpend: 100, maxPerTrade: 50, maxInOneStock: 20 },
+  balanced: { dailySpend: 250, maxPerTrade: 100, maxInOneStock: 30 },
+  active: { dailySpend: 500, maxPerTrade: 400, maxInOneStock: 40 }
+}
+
+/** What a stop-loss guard's presets draft: it never buys and has no stock cap. */
+export const STOP_LOSS_PRESETS: Readonly<Record<LimitPresetName, PresetAmounts>> = {
+  conservative: { dailySpend: 0, maxPerTrade: 50 },
+  balanced: { dailySpend: 0, maxPerTrade: 100 },
+  active: { dailySpend: 0, maxPerTrade: 400 }
+}
