@@ -4,7 +4,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
-import { ReferencePrice, StockSymbol } from "../market/Market.ts"
+import { MarketPrice, StockSymbol } from "../market/Market.ts"
 import { Bps, Shares, Usdc } from "../market/Units.ts"
 
 /**
@@ -17,17 +17,17 @@ import { Bps, Shares, Usdc } from "../market/Units.ts"
 export class Holding extends Schema.Class<Holding>("@bluechip/domain/portfolio/Portfolio/Holding")({
   symbol: StockSymbol,
   shares: Shares,
-  /** `null` while the stock's feed can't be read; the holding is then valued at zero. */
-  price: Schema.NullOr(ReferencePrice),
+  /** `null` while the stock has no market price; the holding is then valued at zero. */
+  price: Schema.NullOr(MarketPrice),
   value: Usdc,
   /** Its share of the portfolio's value (cash included). */
   weightBps: Bps,
-  /** The price change since about 24 hours earlier, when history reaches that far. */
+  /** The market price against the previous close. */
   change24h: Schema.NullOr(Bps)
 }) {}
 
 /**
- * The user's money: cash, stocks and their total, as of the chain's latest block the server read.
+ * The user's money: cash, stocks and their total, from the account's balances on chain at market prices.
  *
  * @stability unstable
  * @category models
@@ -41,13 +41,13 @@ export class Portfolio extends Schema.Class<Portfolio>("@bluechip/domain/portfol
   value: Usdc,
   /** Biggest holding first. */
   holdings: Schema.Array(Holding),
-  /** How much the value moved over the last 24 hours (USDC base units; negative when it fell). */
+  /** What price moves since the previous close did to the stocks held now (USDC base units; negative when down). */
   change24h: Schema.BigInt,
   asOf: Schema.DateTimeUtc
 }) {}
 
 /**
- * The portfolio's value at a moment, for its chart.
+ * The portfolio's value at a moment, for its 30-day chart (a snapshot every 4 hours, plus now).
  *
  * @stability unstable
  * @category models

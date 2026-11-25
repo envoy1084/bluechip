@@ -6,7 +6,7 @@
  */
 import * as Duration from "effect/Duration"
 import * as Schema from "effect/Schema"
-import { ReferencePrice } from "./market/Market.ts"
+import { MarketPrice } from "./market/Market.ts"
 import { Transfer } from "./portfolio/Transfer.ts"
 
 /**
@@ -29,9 +29,9 @@ export const heartbeatInterval = Duration.seconds(5)
 export const LiveEvent = Schema.TaggedUnion({
   /** Sent every few seconds, so the client can show that the stream is alive. */
   Heartbeat: { at: Schema.DateTimeUtc, sequence: Schema.Int },
-  /** Reference prices that changed since the last tick. */
-  PriceTick: { prices: Schema.Array(ReferencePrice) },
-  /** One of the user's transfers arrived or changed status (only sent to its owner). */
+  /** Market prices that changed since the last tick. */
+  PriceTick: { prices: Schema.Array(MarketPrice) },
+  /** One of the user's withdrawals changed status (only sent to its owner). */
   TransferUpdated: { transfer: Transfer },
   /** The user's balances changed: refetch the portfolio (only sent to its owner). */
   PortfolioChanged: {}

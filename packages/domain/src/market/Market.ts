@@ -38,33 +38,51 @@ export const StockSymbol = Schema.Literals([
 export type StockSymbol = typeof StockSymbol.Type
 
 /**
- * Whether the US market (NYSE hours) is open, why not, and when that changes.
+ * Where the US market's trading day stands. The stock tokens trade around the clock; this is about prices:
+ * `regular`, `preMarket`, `afterHours` and `overnight` prices keep moving (Sunday 8 pm to Friday 8 pm New York),
+ * `paused` ones don't (weekends and NYSE holidays), so a pool can drift from the last price.
+ *
+ * @stability unstable
+ * @category schemas
+ * @since 0.0.0
+ */
+export const MarketSession = Schema.Literals(["regular", "preMarket", "afterHours", "overnight", "paused"])
+
+/**
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export type MarketSession = typeof MarketSession.Type
+
+/**
+ * The market's session now, when the next one starts and when regular trading next opens.
  *
  * @stability unstable
  * @category models
  * @since 0.0.0
  */
 export class MarketStatus extends Schema.Class<MarketStatus>("@bluechip/domain/market/Market/MarketStatus")({
-  state: Schema.Literals(["open", "closed"]),
-  /** Why it's closed. */
-  reason: Schema.NullOr(Schema.Literals(["weekend", "holiday", "beforeOpen", "afterClose"])),
-  /** The next open, while closed. */
-  opensAt: Schema.NullOr(Schema.DateTimeUtc),
-  /** Today's close (early on some holiday eves), while open. */
+  session: MarketSession,
+  /** Why prices are paused. */
+  pausedFor: Schema.NullOr(Schema.Literals(["weekend", "holiday"])),
+  changesAt: Schema.DateTimeUtc,
+  /** Today's open while regular trading is on, otherwise the next one. */
+  opensAt: Schema.DateTimeUtc,
+  /** Today's close (early on some holiday eves) while regular trading is on. */
   closesAt: Schema.NullOr(Schema.DateTimeUtc),
-  /** The chain time this was worked out at. */
   asOf: Schema.DateTimeUtc
 }) {}
 
 /**
- * How much to trust a reference price: `live` while the market is open and the feed is fresh, `closed` (the last
- * close) while it's shut, `stale` when the market is open but the feed hasn't updated within its heartbeat.
+ * How much to trust a Chainlink reference price: `live` while the feed updates, `paused` on weekends and holidays
+ * (the last price before the pause), `stale` when it missed its 24-hour heartbeat.
  *
  * @stability unstable
- * @category models
+ * @category schemas
  * @since 0.0.0
  */
-export const PriceStatus = Schema.Literals(["live", "closed", "stale"])
+export const PriceStatus = Schema.Literals(["live", "paused", "stale"])
 
 /**
  * @stability unstable
@@ -74,7 +92,7 @@ export const PriceStatus = Schema.Literals(["live", "closed", "stale"])
 export type PriceStatus = typeof PriceStatus.Type
 
 /**
- * A stock's Chainlink reference price: what limits and fair-price checks compare trades against.
+ * A stock's Chainlink price per token: what quotes and limits compare trades against.
  *
  * @stability unstable
  * @category models
@@ -88,7 +106,22 @@ export class ReferencePrice extends Schema.Class<ReferencePrice>("@bluechip/doma
 }) {}
 
 /**
- * A supported stock with its current reference price (`null` when its feed couldn't be read).
+ * A stock's market price per token: its last trade on the stock market (Alpaca's IEX feed) times the token's
+ * multiplier, with the previous session's close for the daily change.
+ *
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export class MarketPrice extends Schema.Class<MarketPrice>("@bluechip/domain/market/Market/MarketPrice")({
+  symbol: StockSymbol,
+  price: Price,
+  tradedAt: Schema.DateTimeUtc,
+  previousClose: Schema.NullOr(Price)
+}) {}
+
+/**
+ * A supported stock with its market price, Chainlink reference and daily change (each `null` when unavailable).
  *
  * @stability unstable
  * @category models
@@ -103,8 +136,9 @@ export class Stock extends Schema.Class<Stock>("@bluechip/domain/market/Market/S
   tradable: Schema.Boolean,
   /** The company's logo (published by Coinbase), when there is one. */
   logoUrl: Schema.NullOr(Schema.String),
-  price: Schema.NullOr(ReferencePrice),
-  /** The price change since about 24 hours earlier, when history reaches that far. */
+  price: Schema.NullOr(MarketPrice),
+  reference: Schema.NullOr(ReferencePrice),
+  /** The market price against the previous close. */
   change24h: Schema.NullOr(Bps)
 }) {}
 
