@@ -29,7 +29,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("AccountDesk", (it) => {
         const { row: proposed } = yield* intents.insert({ id: me.id, account: user.account }, {
           requestId: randomUUID(),
           agentId: agent.id,
-          leg: buy("NVDA", 50)
+          leg: buy("AAPL", 50)
         })
         const deciding = yield* intents.advance(proposed, { _tag: "Decide" }, { sessionId: session!.id })
         const decided = yield* executor.decide({

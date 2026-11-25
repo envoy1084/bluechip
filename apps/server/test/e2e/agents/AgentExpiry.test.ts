@@ -69,7 +69,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("agent expiry", (it) => {
         const { agent: renewed } = yield* agents.sign(user, prepared, "active")
         const sessions = yield* user.api.agents.sessions({ params: { id: agent.id } })
         const created = yield* user.api.intents.create({
-          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("NVDA", 50) }
+          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("AAPL", 50) }
         })
         assert.instanceOf(created, Intent)
         const { intent: filled } = yield* user.events.next(
