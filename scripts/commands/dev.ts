@@ -36,11 +36,10 @@ const script = (name: string, color: number, filter: string, run: string): DevPr
 })
 
 /** The apps `pnpm dev` runs, without the ones switched off. */
-export const devProcesses = (options: { readonly uikit: boolean; readonly jobs: boolean }): Array<DevProcess> => [
+export const devProcesses = (options: { readonly uikit: boolean }): Array<DevProcess> => [
   script("server", 34, "@bluechip/server", "dev"),
   script("web", 32, "@bluechip/web", "dev"),
-  ...(options.uikit ? [script("uikit", 35, "@bluechip/uikit", "dev")] : []),
-  ...(options.jobs ? [script("jobs", 33, "@bluechip/server", "jobs:dev")] : [])
+  ...(options.uikit ? [script("uikit", 35, "@bluechip/uikit", "dev")] : [])
 ]
 
 /**
@@ -162,7 +161,6 @@ const up = Effect.fn("dev.up")(
     readonly chain: ChainMode
     readonly resetChain: boolean
     readonly uikit: boolean
-    readonly jobs: boolean
   }) {
     const tools = yield* Tools
     const fork = options.chain === "fork"
@@ -232,8 +230,6 @@ const down = Effect.fn("dev.down")(function*(options: { readonly all: boolean })
     }
   }
 
-  // The Trigger.dev CLI listens on no port of ours: it's found by its command line.
-  yield* tools.run("pkill", ["-f", "trigger.dev/.*dev|trigger dev"]).pipe(Effect.ignore)
   yield* stopFork
 
   if (options.all) {
@@ -255,16 +251,14 @@ const upCommand = Command.make("up", {
     Flag.withDefault(false),
     Flag.withDescription("Start the local chain again from the captured devnet state")
   ),
-  uikit: Flag.Boolean("no-uikit").pipe(Flag.withDefault(false), Flag.withDescription("Skip the component kit")),
-  jobs: Flag.Boolean("no-jobs").pipe(Flag.withDefault(false), Flag.withDescription("Skip the Trigger.dev job runner"))
+  uikit: Flag.Boolean("no-uikit").pipe(Flag.withDefault(false), Flag.withDescription("Skip the component kit"))
 }).pipe(
-  Command.withDescription("Start Postgres, the chain, the bundler, the server, the web app, the kit and the jobs"),
+  Command.withDescription("Start Postgres, the chain, the bundler, the server, the web app and the kit"),
   Command.withHandler((flags) =>
     up({
       chain: flags.chain ? "none" : flags.fork ? "fork" : "local",
       resetChain: flags.resetChain,
-      uikit: !flags.uikit,
-      jobs: !flags.jobs
+      uikit: !flags.uikit
     })
   )
 )

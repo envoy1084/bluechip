@@ -53,9 +53,9 @@ Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's
 `AGENT_KEY_ENCRYPTION_KEY` from `openssl rand -base64 32`; `apps/web`; never committed), then `pnpm dev`: Postgres, the local chain (the devnet on Anvil, 8545, no RPC; its
 feeds and pools follow the server's market prices every 15 s, and its state carries over between runs in
 `.data/devnet/`), the Alto bundler (4337), migrations, then the server (8080), the web app (3000), the component
-kit (4000) and the Trigger.dev job runner, in one terminal. Ctrl+C stops everything; `pnpm dev:stop` stops anything
+kit (4000), in one terminal. Ctrl+C stops everything; `pnpm dev:stop` stops anything
 left running (`--all` stops Postgres too). `pnpm dev --fork` uses an Anvil fork of Base through your RPC instead,
-`--reset-chain` starts the local chain again from the capture, and `--no-chain` (or `--no-uikit`, `--no-jobs`) skips
+`--reset-chain` starts the local chain again from the capture, and `--no-chain` (or `--no-uikit`) skips
 parts. Fork money: `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Tests need only Postgres
 (server tests use their own `bluechip_test` database); chain tests run on the devnet. `pnpm devnet:capture`
 rebuilds the devnet's state from the fork block in the root `.env.local` (needs `BASE_FORK_RPC_URL`); run it when

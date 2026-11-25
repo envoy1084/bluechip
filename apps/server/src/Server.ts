@@ -9,6 +9,8 @@ import { SavedTemplates } from "./agents/SavedTemplates.ts"
 import { ApiRoutes } from "./api/Api.ts"
 import { AppConfig } from "./Config.ts"
 import { Database } from "./db/Database.ts"
+import { CronsLive } from "./engine/Crons.ts"
+import { EngineLive } from "./engine/Engine.ts"
 import { Withdrawals } from "./funding/Withdrawals.ts"
 import { HealthRoutes } from "./http/Health.ts"
 import { OriginCheckMiddleware } from "./http/OriginCheck.ts"
@@ -26,7 +28,7 @@ import { Trades } from "./trading/Trades.ts"
 /** Every HTTP route the server answers: health and the API under `/api` (passkey auth included). */
 export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware, OriginCheckMiddleware)
 
-/** The server: routes, Node HTTP on `PORT`, the database, the chain, Namera, config and logging. */
+/** The server: routes, Node HTTP on `PORT`, the durable engine and its crons, the database, the chain, Namera, config and logging. */
 export const ServerLive = HttpRouter.serve(Routes).pipe(
   Layer.provide(NodeHttpServer.layerConfig(createServer, {
     port: Config.Port("PORT").pipe(Config.withDefault(8080)),
@@ -34,12 +36,14 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
     gracefulShutdownTimeout: Config.succeed("2 seconds")
   })),
   // Namera checks at startup that the bundler and paymaster work together, and refuses to boot otherwise.
+  Layer.merge(CronsLive),
   Layer.provide(Layer.mergeAll(Withdrawals.layer, Trades.layer, Agents.layer, Charts.layer)),
   Layer.provide(
     Layer.mergeAll(AccountBalances.layer, MarketPrices.layer, ReferencePrices.layer, Namera.layer, SavedTemplates.layer)
   ),
   Layer.provide(Alpaca.layer),
   Layer.provide(LiveEvents.layer),
+  Layer.provide(EngineLive),
   Layer.provide(Database.layer),
   Layer.provide(ChainClient.layer),
   Layer.provide(AppConfig.layer),

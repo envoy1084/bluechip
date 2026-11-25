@@ -15,10 +15,13 @@ export const migrationsFolder = Path.join(import.meta.dirname, "../../drizzle")
 export class Database extends Context.Service<Database, PgDrizzle.EffectPgDatabase<typeof relations>>()(
   "@bluechip/server/Database"
 ) {
-  /** Postgres from `DATABASE_URL`. Migrations are applied separately (`db:migrate`) or by `layerMigrated`. */
+  /**
+   * Postgres from `DATABASE_URL`, with its `SqlClient` (the durable engine stores its state through it). Migrations
+   * are applied separately (`db:migrate`) or by `layerMigrated`.
+   */
   static readonly layer = Layer.effect(Database, PgDrizzle.make({ relations })).pipe(
     Layer.provide(PgDrizzle.DefaultServices),
-    Layer.provide(PgClient.layerConfig({ url: Config.Redacted("DATABASE_URL") }))
+    Layer.provideMerge(PgClient.layerConfig({ url: Config.Redacted("DATABASE_URL") }))
   )
 
   /** Postgres, migrated to the latest schema at startup (development). */

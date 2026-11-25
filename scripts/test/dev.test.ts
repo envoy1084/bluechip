@@ -3,18 +3,18 @@ import { assert, describe, it } from "@effect/vitest"
 import { devProcesses, localChainProcesses, prefixLine } from "../commands/dev.ts"
 
 describe("devProcesses", () => {
-  const names = (options: { uikit: boolean; jobs: boolean }) => devProcesses(options).map((process) => process.name)
+  const names = (options: { uikit: boolean }) => devProcesses(options).map((process) => process.name)
 
-  it("the server, the web app, the kit and the jobs", () => {
-    assert.deepStrictEqual(names({ uikit: true, jobs: true }), ["server", "web", "uikit", "jobs"])
+  it("the server, the web app and the kit", () => {
+    assert.deepStrictEqual(names({ uikit: true }), ["server", "web", "uikit"])
   })
 
-  it("without the kit and the jobs", () => {
-    assert.deepStrictEqual(names({ uikit: false, jobs: false }), ["server", "web"])
+  it("without the kit", () => {
+    assert.deepStrictEqual(names({ uikit: false }), ["server", "web"])
   })
 
   it("each app is its package's script", () => {
-    assert.deepStrictEqual(devProcesses({ uikit: false, jobs: false })[0], {
+    assert.deepStrictEqual(devProcesses({ uikit: false })[0], {
       name: "server",
       color: 34,
       command: "pnpm",
@@ -68,7 +68,7 @@ describe("localChainProcesses", () => {
 
 describe("prefixLine", () => {
   it("a line under its process's name, padded to the widest name", () => {
-    const [server] = devProcesses({ uikit: false, jobs: false })
+    const [server] = devProcesses({ uikit: false })
     assert.strictEqual(prefixLine(server!, 7, "ready"), "\u001b[34mserver  │\u001b[0m ready")
   })
 })

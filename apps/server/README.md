@@ -2,7 +2,7 @@
 
 bluechip's API server: Effect v4 on Node, Postgres through Drizzle ORM's Effect driver. It implements
 `BluechipApi` from `@bluechip/domain` (Effect `HttpApi`) under `/api`, builds Namera v2 Kernel accounts for passkeys,
-and runs scheduled jobs on Trigger.dev.
+and runs scheduled jobs and durable workflows on Effect's cluster engine, in the same process.
 
 ## Run locally
 
@@ -33,9 +33,10 @@ The fork keeps Base's chain id (8453), so contracts, Namera and signatures behav
 
 ## Jobs
 
-Tasks live in `trigger/` and run their Effect programs with `JobsRuntime` (`src/Jobs.ts`). `pnpm --filter @bluechip/server jobs:login`
-once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` runs them on this machine;
-`jobs:deploy` deploys them. Each run writes a `job_runs` row.
+Scheduled jobs run on Effect's durable engine inside the server (`src/engine/`): one runner keeps entity
+mailboxes, workflow state and cron runs in Postgres (`cluster_*` tables, created by Effect's migrations at startup and
+excluded from drizzle-kit). Crons are in `src/engine/Crons.ts` (`portfolio.snapshot` every 4 hours); each run writes
+a `job_runs` row.
 
 ## Market
 
@@ -110,7 +111,6 @@ once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` 
 | `GAS_SPONSORSHIP`       | `none`                  | `none`, `alchemy-bso` (Alchemy's bundler) or `alchemy-paymaster` |
 | `ALCHEMY_API_KEY`       | —                       | Alchemy key (redacted), when `BUNDLER=alchemy`                   |
 | `ALCHEMY_GAS_POLICY_ID` | —                       | Gas Manager policy that pays sponsored gas                       |
-| `TRIGGER_PROJECT_REF`   | —                       | Trigger.dev project (`proj_…`)                                   |
 | `ALPACA_API_KEY_ID`     | required                | Alpaca market data key (paper account is enough)                 |
 | `ALPACA_API_SECRET_KEY` | required                | Its secret (redacted)                                            |
 | `ALPACA_FEED`           | `iex`                   | `iex` (free plan) or `sip` (Algo Trader Plus)                    |
