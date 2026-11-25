@@ -62,7 +62,7 @@ export const initCodeOf = (spec: ContractSpec, bytecode: Hex): Hex =>
 export const addressOf = (spec: ContractSpec, initCode: Hex): Address =>
   getContractAddress({ opcode: "CREATE2", from: CREATE2_DEPLOYER, salt: saltOf(spec.label), bytecode: initCode })
 
-/** The generated TypeScript module of each contract's ABI and address, for `packages/chain/src/agents/Deployed.ts`. */
+/** The generated TypeScript module of each contract's ABI and address, for `packages/chain/src/policies/Deployed.ts`. */
 export const deployedModule = (
   contracts: ReadonlyArray<{ readonly spec: ContractSpec; readonly abi: Abi; readonly address: Address }>
 ): string => {

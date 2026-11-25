@@ -36,10 +36,11 @@ const changed = (spec: AgentSpec, ...changes: ReadonlyArray<{ id: PolicyId; conf
 const without = (spec: AgentSpec, ...ids: ReadonlyArray<PolicyId>) =>
   new AgentSpec({ policies: spec.policies.filter((entry) => !ids.includes(entry.id)) })
 
-const problemsOf = (spec: AgentSpec) => checkSpec(spec).map(({ field, message, policy }) => [policy, field, message])
+const problemsOf = (spec: AgentSpec): ReadonlyArray<readonly [PolicyId, string | null, string]> =>
+  checkSpec(spec).map(({ field, message, policy }) => [policy, field, message])
 
 describe("checkSpec", () => {
-  it.each<{ name: string; spec: AgentSpec; expected: ReadonlyArray<[PolicyId, string | null, string]> }>([
+  it.each<{ name: string; spec: AgentSpec; expected: ReadonlyArray<readonly [PolicyId, string | null, string]> }>([
     { name: "a balanced Stock picker", spec: PICKER, expected: [] },
     { name: "a balanced Rebalancer", spec: REBALANCER, expected: [] },
     {

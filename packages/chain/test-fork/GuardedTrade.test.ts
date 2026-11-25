@@ -1,17 +1,19 @@
 // An agent's guarded trade on a fork of Base: Base's own Namera contracts, pools, Chainlink feeds and sequencer feed,
 // with bluechip's policies deployed by `pnpm test:fork` (`contracts deploy`). Needs the fork and its bundler
 // (`docker compose --profile chain up -d`); not part of `pnpm check`.
-import { guardedTradeCallGas } from "@bluechip/chain/agents/Policies"
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks, usdc } from "@bluechip/chain/Contracts"
 import { DevChain } from "@bluechip/chain/DevChain"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
+import { tradeGuard } from "@bluechip/chain/policies/Deployed"
+import { encodeGuardConfig, guardConfig } from "@bluechip/chain/policies/Guard"
+import { compileSession, guardedTradeCallGas } from "@bluechip/chain/policies/Session"
 import { rpc } from "@bluechip/devnet/Controls"
-import { policyConfig } from "@bluechip/domain/agents/PolicyConfig"
 import { assert, beforeAll, layer } from "@effect/vitest"
+import { Policy } from "@namera-ai/sdk"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { type Agent, agentOnNewAccount, balanceOf, LIMITS, trade } from "../test/support/Agents.ts"
+import { type Agent, agentOnNewAccount, balanceOf, PICKER, trade } from "../test/support/Agents.ts"
 
 const ForkChain = Layer.provideMerge(
   DevChain.layer,
@@ -30,11 +32,14 @@ const forkFees = Effect.fnUntraced(function*() {
 // The fork is pinned inside market hours on a past day, and Alto checks an operation's validity (the daily budget's
 // day) against the wall clock: the fork moves to now, so Chainlink's prices are as old as the fork, and the agent
 // trades on paused prices of any age.
-const defaults = policyConfig(LIMITS)
-const config = { ...defaults, guard: { ...defaults.guard, tradeWhilePaused: true, pausedAgeSeconds: 2 ** 32 - 1 } }
+const defaults = guardConfig(PICKER)
+const guard = encodeGuardConfig({ ...defaults, prices: { ...defaults.prices, pausedAge: 2 ** 32 - 1 } })
+const policies = compileSession(PICKER).map((policy) =>
+  policy.type === "execution" ? Policy.execution({ address: tradeGuard, initData: guard }) : policy
+)
 
 const newAgent = Effect.gen(function*() {
-  return yield* agentOnNewAccount({ bundlerUrl: "http://localhost:4337", fees: yield* forkFees(), config })
+  return yield* agentOnNewAccount({ bundlerUrl: "http://localhost:4337", fees: yield* forkFees(), policies })
 }).pipe(Effect.provide(ForkChain))
 
 const buyNvda = Effect.fnUntraced(function*({ address, agent }: Agent) {
