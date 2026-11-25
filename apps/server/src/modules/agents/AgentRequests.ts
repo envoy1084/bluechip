@@ -156,6 +156,12 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         if (row === undefined) return
         const sending = yield* sessions.get(row.status === "removing" ? row.currentSessionId : row.pendingSessionId)
         const outcome = yield* operations.wait(passkey, sending.userOpHash as Hex).pipe(Effect.result)
+        // The wait takes up to 2 minutes, and every server follows every operation in flight when it starts: act only
+        // if the agent is still where it was, or this would undo what another server (or a later change) did.
+        const latest = yield* store.get(agentId)
+        const unchanged = latest !== undefined && latest.status === row.status &&
+          latest.pendingSessionId === row.pendingSessionId && latest.currentSessionId === row.currentSessionId
+        if (!unchanged) return
         const landed = outcome._tag === "Success" && outcome.success.success
         const next = transition(row.status, { _tag: landed ? "Landed" : "Failed" })
         if (Result.isFailure(next)) return yield* Effect.logWarning(`Agent ${row.id}: ${next.failure}`)
