@@ -67,7 +67,8 @@ export type Citation = typeof Citation.Type
  * - `SaveTemplate`: a set of policies to save as a template, saved when you confirm.
  * - `Memory`: a memory saved or forgotten, or one the assistant inferred and keeps only if you confirm.
  * - `Research`: web pages the assistant read, untrusted, with citations.
- * - `Error`: why the assistant stopped early: the day's budget, too many steps in one turn, or you cancelled.
+ * - `Error`: why the assistant stopped early: the day's budget, too many steps in one turn, you cancelled, or the model
+ *   can't answer right now (`unavailable`, after its retries).
  *
  * @stability unstable
  * @category schemas
@@ -120,7 +121,7 @@ export const Card = Schema.TaggedUnion({
   },
   Error: {
     id: CardId,
-    reason: Schema.Literals(["budget", "rounds", "cancelled"]),
+    reason: Schema.Literals(["budget", "rounds", "cancelled", "unavailable"]),
     message: Schema.String
   }
 })
