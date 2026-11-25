@@ -27,10 +27,12 @@ services:
     command:
       - >-
         exec anvil --host 0.0.0.0 --port 8545 --chain-id 8453 --block-time 1
-        --fork-url "$${BASE_FORK_RPC_URL}" $${BASE_FORK_BLOCK:+--fork-block-number $$BASE_FORK_BLOCK}
-    environment:
-      BASE_FORK_RPC_URL: ${BASE_FORK_RPC_URL:-https://mainnet.base.org}
-      BASE_FORK_BLOCK: ${BASE_FORK_BLOCK:-}
+        --fork-url "$${BASE_FORK_RPC_URL:-https://mainnet.base.org}"
+        $${BASE_FORK_BLOCK:+--fork-block-number $$BASE_FORK_BLOCK}
+    # BASE_FORK_RPC_URL and BASE_FORK_BLOCK, read inside the container so the RPC URL never lands in compose output.
+    env_file:
+      - path: .env.local
+        required: false
     ports:
       - "8545:8545"
     volumes:

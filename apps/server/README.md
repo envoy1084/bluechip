@@ -7,7 +7,7 @@ and runs scheduled jobs on Trigger.dev.
 ## Run locally
 
 ```sh
-cp .env.example .env              # at the repository root
+cp .env.example .env.local        # here; the root .env.local holds the fork's BASE_FORK_RPC_URL
 docker compose --profile chain up -d   # Postgres, a Base fork (8545) and a bundler (4337)
 pnpm --filter @bluechip/server db:migrate
 pnpm --filter @bluechip/server dev
@@ -26,7 +26,7 @@ The fork keeps Base's chain id (8453), so contracts, Namera and signatures behav
 
 - `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1` sets an address's balances (refuses unless
   `NETWORK=local`).
-- Set `BASE_FORK_RPC_URL` to a Base RPC you control: the public endpoint rate-limits the fork. Pin `BASE_FORK_BLOCK`
+- Set `BASE_FORK_RPC_URL` in the root `.env.local` to a Base RPC you control: the public endpoint rate-limits the fork. Pin `BASE_FORK_BLOCK`
   so Anvil's cache (the `foundry-cache` volume) serves restarts without RPC; restart at a newer weekday block to
   refresh prices, which freeze at the fork block.
 - Gas: locally the account pays in fork ETH (`GAS_SPONSORSHIP=none`); in production Alchemy sponsors it.

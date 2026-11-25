@@ -6,13 +6,13 @@
   "license": "Apache-2.0",
   "description": "bluechip API server.",
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env --watch src/main.ts",
+    "dev": "node --env-file-if-exists=.env.local --watch src/main.ts",
     "start": "node src/main.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=../../.env src/bin/migrate.ts",
+    "db:migrate": "node --env-file-if-exists=.env.local src/bin/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "dev:fund": "node --env-file-if-exists=../../.env src/bin/dev-fund.ts",
+    "dev:fund": "node --env-file-if-exists=.env.local src/bin/dev-fund.ts",
     "jobs:dev": "trigger.dev dev",
     "jobs:deploy": "trigger.dev deploy"
   },

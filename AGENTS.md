@@ -37,7 +37,8 @@ Dependencies point inward: apps depend on packages, packages never depend on app
 | `pnpm build`     | `tsc -b`, then each package's build                                 |
 | `pnpm circular`  | Fail on import cycles between modules                               |
 
-Local services: `cp .env.example .env`, `docker compose --profile chain up -d` (Postgres, an Anvil fork of Base
+Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's fork RPC; `apps/server`,
+`apps/web`; never committed), `docker compose --profile chain up -d` (Postgres, an Anvil fork of Base
 mainnet on 8545 and the Alto bundler on 4337; plain `docker compose up -d` starts Postgres only), then
 `pnpm --filter @bluechip/server db:migrate` and `pnpm --filter @bluechip/server dev`. Fork money:
 `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Fork tests skip when the fork is down.
