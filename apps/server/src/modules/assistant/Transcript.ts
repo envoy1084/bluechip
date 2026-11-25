@@ -91,21 +91,25 @@ export const research = (
   return { query, citations: [...citations.values()] }
 }
 
-/** What a round used, from its finish part; zero when the provider reported nothing. */
-export const usageOf = (parts: ReadonlyArray<Response.AnyPart>): TokenUsage => {
-  const finish = parts.find((part) => part.type === "finish")
-  if (finish === undefined || finish.type !== "finish") {
-    return { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }
-  }
-  const input = finish.usage.inputTokens
-  const cacheReadTokens = input.cacheRead ?? 0
-  const cacheWriteTokens = input.cacheWrite ?? 0
+/** Tokens as budgets count them: input at full price, output, and cache reads and writes. */
+export const tokenUsage = (usage: Response.Usage): TokenUsage => {
+  const cacheReadTokens = usage.inputTokens.cacheRead ?? 0
+  const cacheWriteTokens = usage.inputTokens.cacheWrite ?? 0
   return {
-    inputTokens: input.uncached ?? Math.max(0, (input.total ?? 0) - cacheReadTokens - cacheWriteTokens),
-    outputTokens: finish.usage.outputTokens.total ?? 0,
+    inputTokens: usage.inputTokens.uncached ??
+      Math.max(0, (usage.inputTokens.total ?? 0) - cacheReadTokens - cacheWriteTokens),
+    outputTokens: usage.outputTokens.total ?? 0,
     cacheReadTokens,
     cacheWriteTokens
   }
+}
+
+/** What a round used, from its finish part; nothing when the provider reported none. */
+export const usageOf = (parts: ReadonlyArray<Response.AnyPart>): TokenUsage => {
+  const finish = parts.find((part) => part.type === "finish")
+  return finish?.type === "finish" ?
+    tokenUsage(finish.usage) :
+    { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }
 }
 
 /**
