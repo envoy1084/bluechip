@@ -1,75 +1,38 @@
 import { aggregatorAbi } from "@bluechip/chain/Abis"
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { type Stock, stocks } from "@bluechip/chain/Contracts"
 import { simulateAsAgent } from "@bluechip/chain/policies/Simulate"
 import { BASE_FEES } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
-import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
+import { dollars } from "@bluechip/domain/policies/Format"
 import { draftSpec } from "@bluechip/domain/policies/Templates"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
 import { http } from "viem"
 import { createBundlerClient } from "viem/account-abstraction"
-import { agentOnNewAccount, changed, PICKER, trade, without } from "../support/Agents.ts"
+import { aapl, nvda, tradeCalls, tsla } from "../../fixtures/Market.ts"
+import { changed, PICKER, without } from "../../fixtures/Specs.ts"
+import { TestAgents } from "../../utils/TestAgents.ts"
 
-const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
-const aapl = stocks.find((stock) => stock.symbol === "AAPL")!
-const tsla = stocks.find((stock) => stock.symbol === "TSLA")!
-
-const agentWith = Effect.fnUntraced(function*(spec: AgentSpec) {
-  return yield* agentOnNewAccount({ bundlerUrl: (yield* Devnet).bundlerUrl, fees: BASE_FEES, spec })
-})
-
-const feedPrice = Effect.fnUntraced(function*(stock: Stock) {
-  const [, price] = yield* (yield* ChainClient).use(
-    "latestRoundData",
-    (client) => client.readContract({ address: stock.feed, abi: aggregatorAbi, functionName: "latestRoundData" })
-  )
-  return price
-})
-
-// The stock's pool moved `bps` above Chainlink's price for the test, and put back after it.
-const poolOff = (stock: Stock, bps: number) => <A, E, R>(test: Effect.Effect<A, E, R>) =>
-  Effect.gen(function*() {
-    const devnet = yield* Devnet
-    const price = yield* feedPrice(stock)
-    yield* devnet.movePool(stock.symbol, (price * BigInt(10_000 + bps)) / BigInt(10_000))
-    return yield* test.pipe(Effect.ensuring(devnet.movePool(stock.symbol, price)))
-  })
-
-// What bluechip decides for one trade by a new agent with `spec`.
-const decide = Effect.fnUntraced(function*(
-  spec: AgentSpec,
-  stock: Stock,
-  side: "buy" | "sell",
-  amountIn: bigint,
-  holding?: bigint
-) {
-  const { address, agent } = yield* agentWith(spec)
-  if (holding !== undefined) yield* (yield* Devnet).mintShares(address, stock.symbol, holding)
-  return yield* simulateAsAgent(agent, trade(stock, side, amountIn, address))
-})
-
-const dollars = (amount: number) => BigInt(amount * 1_000_000)
-
-layer(DevnetTest.layer)("simulateAsAgent", (it) => {
+layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent", (it) => {
   describe("passes", () => {
     it.effect("a $50 buy of NVDA within every policy", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(PICKER, nvda, "buy", dollars(50))
+        const { address, agent } = yield* (yield* TestAgents).lock()
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(50), address))
 
         assert.strictEqual(decision._tag, "Passes")
       }))
 
     it.effect("the same buy by an agent carrying only the required policies", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(
-          without(PICKER, "stockCap", "cashReserve", "slippageBudget"),
-          nvda,
-          "buy",
-          dollars(50)
-        )
+        const { address, agent } = yield* (yield* TestAgents).lock({
+          spec: without(PICKER, "stockCap", "cashReserve", "slippageBudget")
+        })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(50), address))
 
         assert.strictEqual(decision._tag, "Passes")
       }))
@@ -78,7 +41,9 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
   describe("refused by trade", () => {
     it.effect("a stock it didn't pick", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(PICKER, tsla, "buy", dollars(20))
+        const { address, agent } = yield* (yield* TestAgents).lock()
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(tsla, "buy", dollars(20), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -93,12 +58,11 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
 
     it.effect("a buy by an agent that only sells", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(
-          changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: BigInt(0) } }),
-          nvda,
-          "buy",
-          dollars(20)
-        )
+        const { address, agent } = yield* (yield* TestAgents).lock({
+          spec: changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: BigInt(0) } })
+        })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.strictEqual(decision._tag === "Refused" ? decision.refusal.policy : decision._tag, "trade")
       }))
@@ -107,7 +71,10 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
   describe("refused by tradeSize", () => {
     it.effect("a sale worth more than the largest trade", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(PICKER, nvda, "sell", BigInt(150_000_000), BigInt(200_000_000))
+        const { address, agent } = yield* (yield* TestAgents).lock()
+        yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(200_000_000))
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "sell", BigInt(150_000_000), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -122,7 +89,9 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
 
     it.effect("a buy under the smallest trade", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(PICKER, nvda, "buy", dollars(2))
+        const { address, agent } = yield* (yield* TestAgents).lock()
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(2), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -138,8 +107,19 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
 
   describe("refused by fairPrice", () => {
     it.effect("a buy from a pool 5% off Chainlink's price", () =>
-      poolOff(aapl, 500)(Effect.gen(function*() {
-        const decision = yield* decide(PICKER, aapl, "buy", dollars(50))
+      Effect.gen(function*() {
+        const devnet = yield* Devnet
+        const [, price] = yield* (yield* ChainClient).use(
+          "latestRoundData",
+          (client) => client.readContract({ address: aapl.feed, abi: aggregatorAbi, functionName: "latestRoundData" })
+        )
+        yield* Effect.acquireRelease(
+          devnet.movePool("AAPL", (price * BigInt(10500)) / BigInt(10_000)),
+          () => devnet.movePool("AAPL", price)
+        )
+        const { address, agent } = yield* (yield* TestAgents).lock()
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(aapl, "buy", dollars(50), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -150,28 +130,43 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
             message: "Too far from Chainlink's price."
           }
         })
-      })))
+      }))
 
     it.effect("the same buy by an agent with a 10% collar", () =>
-      poolOff(aapl, 500)(Effect.gen(function*() {
-        const decision = yield* decide(
-          changed(PICKER, { id: "fairPrice", config: { collarBps: 1000 } }),
-          aapl,
-          "buy",
-          dollars(50)
+      Effect.gen(function*() {
+        const devnet = yield* Devnet
+        const [, price] = yield* (yield* ChainClient).use(
+          "latestRoundData",
+          (client) => client.readContract({ address: aapl.feed, abi: aggregatorAbi, functionName: "latestRoundData" })
         )
+        yield* Effect.acquireRelease(
+          devnet.movePool("AAPL", (price * BigInt(10500)) / BigInt(10_000)),
+          () => devnet.movePool("AAPL", price)
+        )
+        const { address, agent } = yield* (yield* TestAgents).lock({
+          spec: changed(PICKER, { id: "fairPrice", config: { collarBps: 1000 } })
+        })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(aapl, "buy", dollars(50), address))
 
         assert.strictEqual(decision._tag, "Passes")
-      })))
+      }))
   })
 
   describe("refused by stockCap", () => {
     it.effect("a buy taking NVDA past 30%", () =>
       Effect.gen(function*() {
         // $400 of NVDA and $1,000 of cash: buying $100 more takes NVDA past 30%.
-        const held = (BigInt(400) * BigInt(10) ** BigInt(16)) / (yield* feedPrice(nvda))
+        const [, price] = yield* (yield* ChainClient).use(
+          "latestRoundData",
+          (client) => client.readContract({ address: nvda.feed, abi: aggregatorAbi, functionName: "latestRoundData" })
+        )
+        const held = (BigInt(400) * BigInt(10) ** BigInt(16)) / price
 
-        const decision = yield* decide(PICKER, nvda, "buy", dollars(100), held)
+        const { address, agent } = yield* (yield* TestAgents).lock()
+        yield* (yield* Devnet).mintShares(address, "NVDA", held)
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(100), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -188,12 +183,11 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
   describe("refused by cashReserve", () => {
     it.effect("a buy leaving 90% in cash, under a 95% reserve", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(
-          changed(without(PICKER, "stockCap"), { id: "cashReserve", config: { minBps: 9500 } }),
-          nvda,
-          "buy",
-          dollars(100)
-        )
+        const { address, agent } = yield* (yield* TestAgents).lock({
+          spec: changed(without(PICKER, "stockCap"), { id: "cashReserve", config: { minBps: 9500 } })
+        })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(100), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -221,7 +215,9 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
           { id: "fairPrice", config: { tradeWhilePaused: true } }
         )
 
-        const decision = yield* decide(spec, nvda, "buy", dollars(50))
+        const { address, agent } = yield* (yield* TestAgents).lock({ spec })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(50), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -232,13 +228,21 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
 
   describe("refused by slippageBudget", () => {
     it.effect("a buy losing 0.8% of $100, over a budget of 0.01% of $1,000", () =>
-      poolOff(nvda, 80)(Effect.gen(function*() {
-        const decision = yield* decide(
-          changed(PICKER, { id: "slippageBudget", config: { weeklyBps: 1 } }),
-          nvda,
-          "buy",
-          dollars(100)
+      Effect.gen(function*() {
+        const devnet = yield* Devnet
+        const [, price] = yield* (yield* ChainClient).use(
+          "latestRoundData",
+          (client) => client.readContract({ address: nvda.feed, abi: aggregatorAbi, functionName: "latestRoundData" })
         )
+        yield* Effect.acquireRelease(
+          devnet.movePool("NVDA", (price * BigInt(10080)) / BigInt(10_000)),
+          () => devnet.movePool("NVDA", price)
+        )
+        const { address, agent } = yield* (yield* TestAgents).lock({
+          spec: changed(PICKER, { id: "slippageBudget", config: { weeklyBps: 1 } })
+        })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(100), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -249,23 +253,22 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
             message: "Would lose more to prices than this week's budget allows."
           }
         })
-      })))
+      }))
   })
 
   describe("refused by tradesPerDay", () => {
     it.effect("a second trade on a day with one", () =>
       Effect.gen(function*() {
-        const { address, agent } = yield* agentWith(changed(PICKER, { id: "tradesPerDay", config: { count: 1 } }))
-        const first = yield* simulateAsAgent(agent, trade(nvda, "buy", dollars(20), address))
-        yield* Effect.promise(async () => {
-          const hash = await agent.sendUserOperation({
-            calls: trade(nvda, "buy", dollars(20), address),
-            callGasLimit: first._tag === "Passes" ? first.callGasLimit : undefined
-          })
-          return agent.waitForUserOperationReceipt({ hash })
+        const { address, agent, trade } = yield* (yield* TestAgents).lock({
+          spec: changed(PICKER, { id: "tradesPerDay", config: { count: 1 } })
         })
+        const first = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
+        yield* trade(
+          tradeCalls(nvda, "buy", dollars(20), address),
+          first._tag === "Passes" ? first.callGasLimit : undefined
+        )
 
-        const decision = yield* simulateAsAgent(agent, trade(nvda, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -277,12 +280,11 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
   describe("refused by gasBudget", () => {
     it.effect("any trade on a budget of 1 wei a day", () =>
       Effect.gen(function*() {
-        const decision = yield* decide(
-          changed(PICKER, { id: "gasBudget", config: { weiPerDay: BigInt(1) } }),
-          nvda,
-          "buy",
-          dollars(20)
-        )
+        const { address, agent } = yield* (yield* TestAgents).lock({
+          spec: changed(PICKER, { id: "gasBudget", config: { weiPerDay: BigInt(1) } })
+        })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -295,7 +297,7 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
     it.effect("a bundler that doesn't answer", () =>
       Effect.gen(function*() {
         const chain = yield* ChainClient
-        const { address, agent } = yield* agentWith(PICKER)
+        const { address, agent } = yield* (yield* TestAgents).lock()
         const unreachable = createBundlerClient({
           account: agent.account!,
           client: chain.client,
@@ -303,7 +305,7 @@ layer(DevnetTest.layer)("simulateAsAgent", (it) => {
           userOperation: { estimateFeesPerGas: async () => BASE_FEES }
         })
 
-        const decision = yield* simulateAsAgent(unreachable, trade(nvda, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(unreachable, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.match(decision._tag === "Retry" ? decision.reason : decision._tag, /HTTP request failed/)
       }))

@@ -10,8 +10,7 @@ import { assert, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { createTestClient, createWalletClient, http, parseEther } from "viem"
 import { base } from "viem/chains"
-
-const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
+import { nvda } from "../../fixtures/Market.ts"
 
 layer(DevnetTest.layer)("readPrices", (it) => {
   it.effect("a stock's price and when its feed last updated", () =>
