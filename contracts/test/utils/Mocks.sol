@@ -3,6 +3,7 @@ pragma solidity 0.8.38;
 
 import {ERC20} from "solady/tokens/ERC20.sol";
 
+import {AerodromeTradePolicy} from "../../src/AerodromeTradePolicy.sol";
 import {TradeGuard} from "../../src/TradeGuard.sol";
 import {GuardRules} from "../../src/lib/GuardRules.sol";
 import {TradeShape} from "../../src/lib/TradeShape.sol";
@@ -84,5 +85,14 @@ contract TradeGuardHarness is TradeGuard {
     function roundTrip(GuardRules.Settings memory s) external pure returns (GuardRules.Settings memory) {
         (uint256 sizes, uint256 rest) = _packSettings(s);
         return _unpackSettings(sizes, rest);
+    }
+}
+
+/// @notice AerodromeTradePolicy's settings packing, for the round trip.
+contract AerodromeTradePolicyHarness is AerodromeTradePolicy {
+    constructor() AerodromeTradePolicy(address(0), address(0)) {}
+
+    function roundTrip(bytes calldata initData) external pure returns (TradeShape.Settings memory) {
+        return _settings(_pack(initData));
     }
 }

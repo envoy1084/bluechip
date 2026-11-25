@@ -13,7 +13,7 @@ import type { Address } from "viem"
  * @category contracts
  * @since 0.0.0
  */
-export const aerodromeTradePolicy: Address = "0x6a8Ff74F0D94dB667CcdeA596a4B2DA796Da1E55"
+export const aerodromeTradePolicy: Address = "0x72459B516f9De0dfE63AB53684ca1f3248d6ed15"
 
 /**
  * `AerodromeTradePolicy`'s ABI.
@@ -34,23 +34,9 @@ export const aerodromeTradePolicyAbi = [
   },
   {
     "type": "function",
-    "name": "ACTION",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "DAY",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "OPERATION",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "uint8", "internalType": "uint8" }],
     "stateMutability": "view"
   },
   {
@@ -65,19 +51,6 @@ export const aerodromeTradePolicyAbi = [
     "name": "USDC",
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "checkAction",
-    "inputs": [
-      { "name": "id", "type": "bytes32", "internalType": "bytes32" },
-      { "name": "account", "type": "address", "internalType": "address" },
-      { "name": "", "type": "address", "internalType": "address" },
-      { "name": "value", "type": "uint256", "internalType": "uint256" },
-      { "name": "", "type": "bytes", "internalType": "bytes" }
-    ],
-    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view"
   },
   {
@@ -143,7 +116,7 @@ export const aerodromeTradePolicyAbi = [
     }, { "name": "account", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false
   },
-  { "type": "error", "name": "InvalidRole", "inputs": [{ "name": "role", "type": "uint8", "internalType": "uint8" }] },
+  { "type": "error", "name": "LimitTooLarge", "inputs": [] },
   {
     "type": "error",
     "name": "PolicyNotInitialized",
@@ -167,7 +140,7 @@ export const aerodromeTradePolicyAbi = [
  * @category contracts
  * @since 0.0.0
  */
-export const tradeGuard: Address = "0x9246C1e5448Cc76685a21BD4e9f56a449E9b9BdD"
+export const tradeGuard: Address = "0xA7dB12C856Ca06b2d4d19DAFf749907b0E5c9eD3"
 
 /**
  * `TradeGuard`'s ABI.

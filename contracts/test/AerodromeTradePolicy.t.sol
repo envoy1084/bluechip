@@ -4,7 +4,7 @@ pragma solidity 0.8.38;
 import {Test} from "forge-std/Test.sol";
 import {ERC4337} from "solady/accounts/ERC4337.sol";
 
-import {IPolicy} from "namera/policies/interfaces/IPolicy.sol";
+import {IActionPolicy, IPolicy, IUserOpPolicy} from "namera/policies/interfaces/IPolicy.sol";
 import {Period} from "namera/policies/lib/Period.sol";
 import {UserOpCalls} from "namera/policies/lib/UserOpCalls.sol";
 
@@ -21,7 +21,6 @@ contract AerodromeTradePolicyTest is Test {
     address internal constant TSLA = address(0xA3);
     address internal constant ACCOUNT = address(0xACC);
 
-    bytes32 internal constant ACTION_ID = keccak256("action");
     bytes32 internal constant OPERATION_ID = keccak256("operation");
     uint256 internal constant NOW = 1_800_000_000;
     uint256 internal constant FAILED = 1;
@@ -38,8 +37,7 @@ contract AerodromeTradePolicyTest is Test {
     }
 
     function setUp() public {
-        policy.initializeWithMultiplexer(ACCOUNT, ACTION_ID, abi.encode(policy.ACTION()));
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(policy.OPERATION(), settings(2)));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(2)));
     }
 
     // Calls ----------------------------------------------------------------------------------------------------------
@@ -197,12 +195,12 @@ contract AerodromeTradePolicyTest is Test {
     }
 
     function test_aSellByABuyOnlyAgent() public {
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(policy.OPERATION(), settings(0)));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(0)));
         assertEq(check(sell(NVDA, 1e8)), FAILED);
     }
 
     function test_aBuyByASellOnlyAgent() public {
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(policy.OPERATION(), settings(1)));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(1)));
         assertEq(check(buy(NVDA, 50e6)), FAILED);
     }
 
@@ -243,34 +241,29 @@ contract AerodromeTradePolicyTest is Test {
         assertEq(policy.checkUserOpPolicy(OPERATION_ID, op), FAILED);
     }
 
-    // Roles ---------------------------------------------------------------------------------------------------------
-
-    function test_anAllowedCallWithoutValuePasses() public view {
-        assertEq(policy.checkAction(ACTION_ID, ACCOUNT, ROUTER, 0, ""), 0);
-    }
-
-    function test_anAllowedCallWithValueFails() public view {
-        assertEq(policy.checkAction(ACTION_ID, ACCOUNT, ROUTER, 1, ""), FAILED);
-    }
-
-    function test_anOperationCheckedUnderTheActionsConfiguration() public {
-        assertEq(policy.checkUserOpPolicy(ACTION_ID, operation(buy(NVDA, 50e6), NOW)), FAILED);
-    }
+    // Configuration -------------------------------------------------------------------------------------------------
 
     function test_aCheckForAnAccountWithoutAConfiguration() public {
         vm.expectRevert(
-            abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ACTION_ID, address(this), address(0xBEEF))
+            abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, OPERATION_ID, address(this), address(0xBEEF))
         );
-        policy.checkAction(ACTION_ID, address(0xBEEF), ROUTER, 0, "");
+        ERC4337.PackedUserOperation memory op = operation(buy(NVDA, 50e6), NOW);
+        op.sender = address(0xBEEF);
+        policy.checkUserOpPolicy(OPERATION_ID, op);
     }
 
-    function test_aConfigurationWithAnUnknownRole() public {
-        vm.expectRevert(abi.encodeWithSelector(AerodromeTradePolicy.InvalidRole.selector, 7));
-        policy.initializeWithMultiplexer(ACCOUNT, ACTION_ID, abi.encode(uint8(7)));
+    function test_aBudgetTooLargeToStore() public {
+        TradeShape.Settings memory s = settings(2);
+        s.dailyBudget = uint128(1) << 124;
+
+        vm.expectRevert(AerodromeTradePolicy.LimitTooLarge.selector);
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(s));
     }
 
-    function test_reportsBothPolicyKinds() public view {
+    function test_reportsOnlyTheUserOperationKind() public view {
         assertTrue(policy.supportsInterface(0x01ffc9a7));
         assertTrue(policy.supportsInterface(type(IPolicy).interfaceId));
+        assertTrue(policy.supportsInterface(type(IUserOpPolicy).interfaceId));
+        assertFalse(policy.supportsInterface(type(IActionPolicy).interfaceId));
     }
 }

@@ -7,9 +7,8 @@
  */
 import type { PolicyConfig } from "@bluechip/domain/agents/PolicyConfig"
 import * as Policy from "@namera-ai/sdk/Policy"
-import { type Address, encodeAbiParameters, erc20Abi, type Hex, toFunctionSelector } from "viem"
-import { stocks, usdc } from "../Contracts.ts"
-import { swapRouter, swapRouterAbi } from "../market/Aerodrome.ts"
+import { encodeAbiParameters, type Hex } from "viem"
+import { stocks } from "../Contracts.ts"
 import { swapCallGas } from "../market/Swaps.ts"
 import { aerodromeTradePolicy, tradeGuard } from "./Deployed.ts"
 
@@ -144,7 +143,7 @@ export const tradeGuardInitData = (config: PolicyConfig): Hex =>
  * @since 0.0.0
  */
 export const tradeOperationInitData = (config: PolicyConfig): Hex =>
-  encodeAbiParameters([{ type: "uint8" }, {
+  encodeAbiParameters([{
     type: "tuple",
     components: [
       { type: "uint8", name: "mode" },
@@ -156,7 +155,7 @@ export const tradeOperationInitData = (config: PolicyConfig): Hex =>
         components: [{ type: "address", name: "token" }, { type: "int24", name: "tickSpacing" }]
       }
     ]
-  }], [1, {
+  }], [{
     mode: MODES[config.trade.mode],
     maxUsdcIn: config.trade.maxUsdcIn,
     dailyBudget: config.trade.dailyBudget,
@@ -166,29 +165,20 @@ export const tradeOperationInitData = (config: PolicyConfig): Hex =>
     }))
   }])
 
-const ACTION_INIT_DATA = encodeAbiParameters([{ type: "uint8" }], [0])
-const APPROVE = toFunctionSelector(erc20Abi.find((item) => item.name === "approve")!)
-const EXACT_INPUT_SINGLE = toFunctionSelector(swapRouterAbi.find((item) => item.name === "exactInputSingle")!)
-
 /**
- * The Namera policies of an agent's session: `AerodromeTradePolicy` on the router's swap and on `approve` of USDC
- * and each of the agent's stocks, and on the whole operation; `TradeGuard` around it; and the daily trade count and
- * gas budget. Experimental, as Namera's policies are.
+ * The Namera policies of an agent's session: `AerodromeTradePolicy` on every operation, `TradeGuard` around it, and
+ * the daily trade count and gas budget. Calls pass Namera's `AllowPolicy` (`Policy.anyCall`) rather than an action
+ * policy each: `AerodromeTradePolicy` checks every call of every operation more strictly than an allowlist would,
+ * and each action would cost the lock a session entry. Experimental, as Namera's policies are.
  *
  * @stability experimental
  * @category constructors
  * @since 0.0.0
  */
-export const sessionPolicies = (config: PolicyConfig): ReadonlyArray<Policy.Policy> => {
-  const action = (to: Address, selector: Hex) =>
-    Policy.custom({ kind: "call", address: aerodromeTradePolicy, initData: ACTION_INIT_DATA, to, selector })
-
-  return [
-    action(swapRouter, EXACT_INPUT_SINGLE),
-    ...[usdc, ...config.trade.stocks.map((symbol) => stockOf(symbol).token)].map((token) => action(token, APPROVE)),
-    Policy.custom({ kind: "limit", address: aerodromeTradePolicy, initData: tradeOperationInitData(config) }),
-    Policy.execution({ address: tradeGuard, initData: tradeGuardInitData(config) }),
-    Policy.rateLimit({ count: config.tradesPerDay, period: "day" }),
-    Policy.gas({ maxCost: DAILY_GAS_WEI, period: "day" })
-  ]
-}
+export const sessionPolicies = (config: PolicyConfig): ReadonlyArray<Policy.Policy> => [
+  Policy.anyCall({ unsafe: true }),
+  Policy.custom({ kind: "limit", address: aerodromeTradePolicy, initData: tradeOperationInitData(config) }),
+  Policy.execution({ address: tradeGuard, initData: tradeGuardInitData(config) }),
+  Policy.rateLimit({ count: config.tradesPerDay, period: "day" }),
+  Policy.gas({ maxCost: DAILY_GAS_WEI, period: "day" })
+]

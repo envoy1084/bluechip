@@ -24,8 +24,8 @@ describe("deployContracts", () => {
     const second = await deployContracts(node, contracts)
 
     assert.deepStrictEqual(first, [
-      { name: "AerodromeTradePolicy", address: "0x6a8Ff74F0D94dB667CcdeA596a4B2DA796Da1E55", status: "deployed" },
-      { name: "TradeGuard", address: "0x9246C1e5448Cc76685a21BD4e9f56a449E9b9BdD", status: "deployed" }
+      { name: "AerodromeTradePolicy", address: "0x72459B516f9De0dfE63AB53684ca1f3248d6ed15", status: "deployed" },
+      { name: "TradeGuard", address: "0xA7dB12C856Ca06b2d4d19DAFf749907b0E5c9eD3", status: "deployed" }
     ])
     assert.deepStrictEqual(second.map((deployment) => deployment.status), ["present", "present"])
     assert.deepStrictEqual((await contractStatus(node, contracts)).map((deployment) => deployment.status), [

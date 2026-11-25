@@ -1,5 +1,6 @@
 # bluechip's onchain policies. Compiler settings fix the bytecode and so every CREATE2 address: they live only in
-# [profile.default] and match Namera's (solc 0.8.38, via-IR, cancun, no metadata hash).
+# [profile.default] and match Namera's (solc 0.8.38, via-IR, cancun, no metadata hash), but for optimizer_runs: high,
+# since each contract is deployed once and runs on every trade.
 [profile.default]
 src = "src"
 test = "test"
@@ -9,7 +10,7 @@ libs = ["dependencies"]
 solc_version = "0.8.38"
 evm_version = "cancun"
 optimizer = true
-optimizer_runs = 200
+optimizer_runs = 1000000
 via_ir = true
 bytecode_hash = "none"
 cbor_metadata = false

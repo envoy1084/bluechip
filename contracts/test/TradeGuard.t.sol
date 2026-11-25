@@ -116,6 +116,19 @@ contract TradeGuardTest is Test {
         buy(100e6, 1e8);
     }
 
+    function test_aReconfiguredSessionChecksTheNewConfiguration() public {
+        TradeGuard.Config memory c = config();
+        c.settings.mode = GuardRules.SELL;
+        guard.initializeWithMultiplexer(ACCOUNT, ID, abi.encode(c));
+
+        bytes memory context = guard.preCheck(ID, ACCOUNT, "");
+        usdc.burn(ACCOUNT, 100e6);
+        nvda.mint(ACCOUNT, 0.995e8);
+
+        vm.expectRevert(abi.encodeWithSelector(GuardRules.WrongDirection.selector, address(nvda)));
+        guard.postCheck(ID, ACCOUNT, context);
+    }
+
     function test_anAccountWithoutAConfiguration() public {
         vm.expectRevert(
             abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ID, address(this), address(0xBEEF))

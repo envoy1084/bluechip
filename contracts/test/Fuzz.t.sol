@@ -8,15 +8,16 @@ import {UserOpCalls} from "namera/policies/lib/UserOpCalls.sol";
 import {GuardRules} from "../src/lib/GuardRules.sol";
 import {TradeMath} from "../src/lib/TradeMath.sol";
 import {TradeShape} from "../src/lib/TradeShape.sol";
-import {RulesHarness, TradeGuardHarness} from "./utils/Mocks.sol";
+import {AerodromeTradePolicyHarness, RulesHarness, TradeGuardHarness} from "./utils/Mocks.sol";
 
 /// @notice Properties the rules keep for any input: no batch but approve-then-swap pairs passes, nothing is ever
 /// paid to another address, no accepted trade loses more than the collar, an accepted rebalance always gets closer to
-/// the target mix, the slippage ledger only ever shrinks with time, and TradeGuard's packed settings read back as
+/// the target mix, the slippage ledger only ever shrinks with time, and both policies' packed settings read back as
 /// stored.
 contract FuzzTest is Test {
     RulesHarness internal rules = new RulesHarness();
     TradeGuardHarness internal guard = new TradeGuardHarness();
+    AerodromeTradePolicyHarness internal policy = new AerodromeTradePolicyHarness();
 
     address internal constant USDC = address(0xC0);
     address internal constant ROUTER = address(0xE0);
@@ -187,5 +188,12 @@ contract FuzzTest is Test {
 
     function testFuzz_settingsComeBackAsStored(GuardRules.Settings memory s) public view {
         assertEq(abi.encode(guard.roundTrip(s)), abi.encode(s));
+    }
+
+    function testFuzz_policySettingsComeBackAsStored(TradeShape.Settings memory s) public view {
+        s.maxUsdcIn = uint128(bound(s.maxUsdcIn, 0, (uint256(1) << 124) - 1));
+        s.dailyBudget = uint128(bound(s.dailyBudget, 0, (uint256(1) << 124) - 1));
+
+        assertEq(abi.encode(policy.roundTrip(abi.encode(s))), abi.encode(s));
     }
 }
