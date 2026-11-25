@@ -13,7 +13,6 @@ const SHARE_DECIMALS = 8
 const toNumber = (units: bigint, decimals: number) => Number(units) / 10 ** decimals
 
 export const priceDollars = (price: bigint) => toNumber(price, PRICE_DECIMALS)
-export const usdcDollars = (usdc: bigint) => toNumber(usdc, USDC_DECIMALS)
 export const shareCount = (shares: bigint) => toNumber(shares, SHARE_DECIMALS)
 export const bpsPercent = (bps: number) => bps / 100
 

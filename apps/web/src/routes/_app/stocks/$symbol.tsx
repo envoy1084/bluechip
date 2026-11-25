@@ -9,6 +9,7 @@ import * as Schema from "effect/Schema"
 import { stockAtom } from "../../../atoms/market.ts"
 import { MarketPill } from "../../../market/MarketPill.tsx"
 import { AppPage } from "../../../shell/AppPage.tsx"
+import { MarketClosedBanner } from "./-components/MarketClosedBanner.tsx"
 import { PriceHistoryChart } from "./-components/PriceHistoryChart.tsx"
 import { QuoteBox } from "./-components/QuoteBox.tsx"
 import { StockHeader } from "./-components/StockHeader.tsx"
@@ -63,15 +64,21 @@ function StockContent({ stock }: Readonly<{ stock: Stock }>) {
   return (
     <AppPage
       title={stock.name}
-      sub={<Link to="/stocks" className="hover:text-ink">Stocks</Link>}
+      sub={
+        <>
+          <Link to="/stocks" className="hover:text-ink">Stocks</Link> / {stock.name}
+        </>
+      }
       actions={<MarketPill className="hidden sm:inline-flex" />}
       width="wide"
     >
-      <MarketPill className="justify-self-start sm:hidden" />
-      <StockHeader stock={stock} />
-      <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <PriceHistoryChart symbol={stock.symbol} />
-        <QuoteBox stock={stock} />
+      <div className="grid gap-4">
+        <MarketClosedBanner />
+        <StockHeader stock={stock} />
+        <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <PriceHistoryChart symbol={stock.symbol} />
+          <QuoteBox stock={stock} />
+        </div>
       </div>
     </AppPage>
   )

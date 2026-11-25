@@ -1,37 +1,49 @@
-import type { Quote } from "@bluechip/domain/market/Market"
-import { OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
+import type { Quote, Stock } from "@bluechip/domain/market/Market"
+import { FairPriceCheck, OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
+import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
-import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../../market/amounts.ts"
+import { formatMoney, formatShares, formatTokenAmount } from "@bluechip/ui/lib/format"
+import { UsdcLogo } from "@bluechip/ui/logos/usdc"
+import { bpsPercent, priceDollars, shareCount } from "../../../../market/amounts.ts"
 
-const usdc = (units: bigint) => `${formatMoney(usdcDollars(units))} USDC`
+const usdc = (units: bigint) => (
+  <>
+    <UsdcLogo size={14} />
+    {formatTokenAmount(units, "USDC", { decimals: 6 })}
+  </>
+)
 const shares = (units: bigint) => `${formatShares(shareCount(units))} shares`
 
+// More than 1% off the Chainlink reference is what the fair price check flags.
+const FAIR_GAP_BPS = 100
+
 /** How far the pool's price is from the Chainlink one, from the trader's side: buying above or selling below is worse. */
-const gapSentence = (quote: Quote) => {
-  const percent = Math.abs(bpsPercent(quote.gapBps)).toFixed(2)
-  if (quote.gapBps === 0) return "In line with the reference price"
-  const above = (quote.gapBps > 0) === (quote.side === "buy")
-  return `${percent}% ${above ? "above" : "below"} the reference price`
+function FairPrice({ quote }: Readonly<{ quote: Quote }>) {
+  const worse = (quote.gapBps > 0) === (quote.side === "buy")
+  if (Math.abs(quote.gapBps) <= FAIR_GAP_BPS || !worse) return <FairPriceCheck />
+  return (
+    <FairPriceCheck passed={false}>
+      {Math.abs(bpsPercent(quote.gapBps)).toFixed(2)}% {quote.side === "buy" ? "above" : "below"} the market
+    </FairPriceCheck>
+  )
 }
 
-// Over 1% off the reference is what the fair price check would flag later, so it reads as a warning here too.
-const WARN_GAP_BPS = 100
-
-/** What a quoted trade does: what you pay, what you get, at what price, and the least you would receive. */
-export function QuoteSummary({ quote }: Readonly<{ quote: Quote }>) {
+/** What a quoted trade does: the stock, what you pay and get, at what price, the fair price check and the least out. */
+export function QuoteSummary({ stock, quote }: Readonly<{ stock: Stock; quote: Quote }>) {
   const buying = quote.side === "buy"
   return (
     <OrderPreview>
-      <OrderPreviewRow label="You pay">{buying ? usdc(quote.usdc) : shares(quote.shares)}</OrderPreviewRow>
-      <OrderPreviewRow label="You get about">{buying ? shares(quote.shares) : usdc(quote.usdc)}</OrderPreviewRow>
-      <OrderPreviewRow label="Price per share">{formatMoney(priceDollars(quote.price))}</OrderPreviewRow>
-      <OrderPreviewRow label="Chainlink price">
-        <span className={Math.abs(quote.gapBps) > WARN_GAP_BPS && quote.gapBps > 0 ? "text-warn" : undefined}>
-          {gapSentence(quote)}
-        </span>
+      <OrderPreviewRow label={buying ? "Buy" : "Sell"}>
+        <TickerChip symbol={stock.symbol} size="sm" />
+        {stock.name}
       </OrderPreviewRow>
-      <OrderPreviewRow label="At least, 0.5% slippage">
+      <OrderPreviewRow label="You pay">{buying ? usdc(quote.usdc) : shares(quote.shares)}</OrderPreviewRow>
+      <OrderPreviewRow label="Price">{formatMoney(priceDollars(quote.price))} a share</OrderPreviewRow>
+      <OrderPreviewRow label="You get about">{buying ? shares(quote.shares) : usdc(quote.usdc)}</OrderPreviewRow>
+      <OrderPreviewRow label="Fair price check">
+        <FairPrice quote={quote} />
+      </OrderPreviewRow>
+      <OrderPreviewRow label="At least, after 0.5% slippage">
         {buying ? shares(quote.minimumOut) : usdc(quote.minimumOut)}
       </OrderPreviewRow>
     </OrderPreview>
@@ -41,7 +53,7 @@ export function QuoteSummary({ quote }: Readonly<{ quote: Quote }>) {
 export function QuoteSummarySkeleton() {
   return (
     <div aria-busy className="grid gap-3 rounded-[12px] px-3.5 py-3.5 surface-well">
-      {["a", "b", "c", "d", "e"].map((id) => <SkeletonBlock key={id} className="h-4 w-full" />)}
+      {["a", "b", "c", "d", "e", "f"].map((id) => <SkeletonBlock key={id} className="h-4 w-full" />)}
     </div>
   )
 }

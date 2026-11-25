@@ -12,13 +12,13 @@ import { historiesAtom, HISTORY_RANGES } from "../../../../market/historyAtoms.t
 const dayLabel = (at: DateTime.Utc) => formatTime(DateTime.toDateUtc(at), { timeZone: MARKET_TIME_ZONE })
 const dateLabel = (at: DateTime.Utc) => formatDate(DateTime.toDateUtc(at), { time: false })
 
-/** A stock's price over time, with 1D / 1W / 1M / 3M / ALL tabs. */
+/** A stock's price over time, with 1D / 1W / 1M / All tabs. */
 export function PriceHistoryChart({ symbol }: Readonly<{ symbol: StockSymbol }>) {
   const histories = useAtomValue(historiesAtom(symbol))
   const ranges = useMemo(
     () =>
-      HISTORY_RANGES.map(({ id, description }, index): PortfolioRange => ({
-        id,
+      HISTORY_RANGES.map(({ id, label, description }, index): PortfolioRange => ({
+        id: label,
         description,
         points: Option.getOrElse(AsyncResult.value(histories[index]!), () => []).map((point) => ({
           value: priceDollars(point.price),
@@ -30,7 +30,7 @@ export function PriceHistoryChart({ symbol }: Readonly<{ symbol: StockSymbol }>)
   return (
     <PortfolioChart
       ranges={ranges}
-      defaultRange="1M"
+      defaultRange="1D"
       title="Price"
       loading={histories.some(AsyncResult.isInitial)}
     />
