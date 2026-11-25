@@ -20,6 +20,10 @@ const WHY: Readonly<Record<Exclude<AgentStatus, "active">, { readonly title: str
     title: "It's being removed",
     say: "Its rules can't change while it's being removed."
   },
+  expired: {
+    title: "Its rules ran out",
+    say: "Its session ended, so it can't trade. Renew it with Face ID first, then you can change its rules."
+  },
   removed: {
     title: "It was removed",
     say: "A removed agent has no rules to change."

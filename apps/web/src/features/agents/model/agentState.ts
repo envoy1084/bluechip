@@ -20,6 +20,7 @@ const limitReached = (usage: AgentUsage): boolean =>
 export const agentState = (agent: Agent, now: Date, usage?: AgentUsage): AgentDisplayState => {
   if (agent.status === "removed") return "removed"
   if (agent.status === "draft") return "unlocked"
+  if (agent.status === "expired") return "expired"
   if (agent.status !== "active") return "sending"
   if (agent.paused) return "paused"
   if (agent.lockedUntil !== null && DateTime.toEpochMillis(agent.lockedUntil) <= now.getTime()) return "expired"

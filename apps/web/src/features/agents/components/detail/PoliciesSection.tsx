@@ -18,7 +18,8 @@ function Heading({ children }: Readonly<{ children: string }>) {
 }
 
 /**
- * The rules in force (or, for a draft, the ones it will lock) in words, with Edit and Renew while it's active, and a
+ * The rules in force (or, for a draft, the ones it will lock) in words, with Edit and Renew while it's active (Renew
+ * once it ran out), and a
  * change on its way to Base.
  */
 export function PoliciesSection(
@@ -27,6 +28,7 @@ export function PoliciesSection(
   const navigate = useNavigate()
   const removed = agent.status === "removed"
   const active = agent.status === "active"
+  const expired = agent.status === "expired"
   const lockedUntil = agent.lockedUntil === null || removed
     ? undefined
     : dayLabel(agent.lockedUntil)
@@ -47,7 +49,11 @@ export function PoliciesSection(
         <PolicyRules
           description={describeSpec(agent.spec, nameOf)}
           lockedUntil={lockedUntil}
-          lockLine={removed ? "Removed, so these rules no longer apply" : undefined}
+          lockLine={removed ?
+            "Removed, so these rules no longer apply" :
+            expired ?
+            `Ran out${lockedUntil === undefined ? "" : ` on ${lockedUntil}`}. Renew it to keep these rules` :
+            undefined}
           className="rounded-none shadow-none"
           footer={active ?
             (
@@ -62,6 +68,8 @@ export function PoliciesSection(
                 </Button>
               </span>
             ) :
+            expired ?
+            <RenewButton agent={agent} variant="primary" /> :
             undefined}
         />
       </div>

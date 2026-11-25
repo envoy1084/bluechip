@@ -62,7 +62,7 @@ describe("intentProblem", () => {
     {
       name: "the agent can't trade",
       error: new Conflict({ reason: "agentBusy" }),
-      expected: "This agent can't trade right now: it's paused, not locked or changing."
+      expected: "This agent can't trade right now: it's paused, its rules ran out, or it isn't locked or is changing."
     },
     {
       name: "the trade moved on",

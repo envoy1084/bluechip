@@ -16,7 +16,11 @@ const summary = (agent: Agent, templateLabel: string): string =>
   [
     agent.template === null ? templateLabel : `${templateLabel} template`,
     `created ${dayLabel(agent.createdAt)}`,
-    agent.lockedUntil === null || agent.status === "removed" ? null : `locked until ${dayLabel(agent.lockedUntil)}`
+    agent.lockedUntil === null || agent.status === "removed" ?
+      null :
+      agent.status === "expired" ?
+      `ran out on ${dayLabel(agent.lockedUntil)}` :
+      `locked until ${dayLabel(agent.lockedUntil)}`
   ].filter((part) => part !== null).join(", ")
 
 /** Who the agent is and what it's doing, with Pause and Remove. */
@@ -27,7 +31,7 @@ export function AgentHeader(
   const templateLabel = useTemplateLabel(agent)
   const promise = agent.template !== null && isTemplateId(agent.template) ? TEMPLATES[agent.template].summary : null
   const removed = agent.status === "removed"
-  const removable = agent.status === "draft" || agent.status === "active"
+  const removable = agent.status === "draft" || agent.status === "active" || agent.status === "expired"
 
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-lg bg-white p-5 shadow-e2">

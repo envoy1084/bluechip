@@ -1,4 +1,4 @@
-import { AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
+import { type Agent, AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
 import { assert, describe, it } from "@effect/vitest"
 import { agentDot, agentState, hasSession } from "../../../../../src/features/agents/model/agentState.ts"
 import { agent } from "../../../../fixtures/Agents.ts"
@@ -9,12 +9,13 @@ const usage = (used: bigint, limit: bigint | null) =>
   new AgentUsage({ policies: [new PolicyUsage({ policy: "trade", unit: "usd", used, limit })] })
 
 describe("hasSession", () => {
-  it.each<{ status: "draft" | "locking" | "active" | "updating" | "removing" | "removed"; expected: boolean }>([
+  it.each<{ status: Agent["status"]; expected: boolean }>([
     { status: "draft", expected: false },
     { status: "locking", expected: false },
     { status: "active", expected: true },
     { status: "updating", expected: true },
     { status: "removing", expected: true },
+    { status: "expired", expected: false },
     { status: "removed", expected: false }
   ])("$status: $expected", ({ expected, status }) => {
     assert.strictEqual(hasSession(agent(status)), expected)
@@ -36,6 +37,14 @@ describe("agentState", () => {
     { status: "removing" }
   ])("$status: on its way to Base", ({ status }) => {
     assert.strictEqual(agentState(agent(status), NOW), "sending")
+  })
+
+  it("marked expired by bluechip", () => {
+    assert.strictEqual(agentState(agent("expired", { lockedUntil: "2026-11-25T00:00:00Z" }), NOW), "expired")
+  })
+
+  it("marked expired and paused: expired, since renewing comes first", () => {
+    assert.strictEqual(agentState(agent("expired", { paused: true }), NOW), "expired")
   })
 
   it("paused, even past its end", () => {
@@ -80,7 +89,8 @@ describe("agentDot", () => {
     { state: "sending", expected: "waiting" },
     { state: "active", expected: "active" },
     { state: "paused", expected: "paused" },
-    { state: "stopped", expected: "stopped" }
+    { state: "stopped", expected: "stopped" },
+    { state: "expired", expected: "idle" }
   ])("$state: $expected", ({ expected, state }) => {
     assert.strictEqual(agentDot(state), expected)
   })

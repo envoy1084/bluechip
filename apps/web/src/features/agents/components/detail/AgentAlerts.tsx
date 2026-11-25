@@ -76,10 +76,10 @@ function SendingAlert({ title, description }: Readonly<{ title: string; descript
 }
 
 /** A session past its end: the agent stopped until it's renewed with Face ID. */
-function ExpiredAlert({ agent, ended }: Readonly<{ agent: Agent; ended: Date }>) {
+function ExpiredAlert({ agent, ended }: Readonly<{ agent: Agent; ended: Date | null }>) {
   return (
     <Alert variant="warning" icon="hourglass">
-      <AlertTitle>Its rules ran out on {dayLabel(ended)}</AlertTitle>
+      <AlertTitle>{ended === null ? "Its rules ran out" : `Its rules ran out on ${dayLabel(ended)}`}</AlertTitle>
       <AlertDescription>
         {agent.name} stopped trading. Renew it with Face ID to keep it running with the same rules.
       </AlertDescription>
@@ -138,7 +138,7 @@ export function AgentAlerts({ agent, now }: Readonly<{ agent: Agent; now: Date }
             )
         ) :
         null}
-      {agent.status === "active" && ended !== null && ended.getTime() <= now.getTime() ?
+      {agent.status === "expired" || (agent.status === "active" && ended !== null && ended.getTime() <= now.getTime()) ?
         <ExpiredAlert agent={agent} ended={ended} /> :
         null}
       {agent.status === "removing" ?

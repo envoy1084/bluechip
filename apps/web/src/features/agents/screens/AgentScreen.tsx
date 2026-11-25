@@ -86,7 +86,7 @@ function AgentContent({ agent, Trade, Activity, Ask }: Readonly<{ agent: Agent }
     usage !== undefined && AsyncResult.isSuccess(usage) ? usage.value : undefined
   )
 
-  const removable = agent.status === "draft" || agent.status === "active"
+  const removable = agent.status === "draft" || agent.status === "active" || agent.status === "expired"
   const keep = () => {
     setConfirming(false)
     removal.reset()

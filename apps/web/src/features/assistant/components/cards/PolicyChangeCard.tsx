@@ -1,4 +1,4 @@
-import { AgentRequest } from "@bluechip/domain/agents/Agent"
+import { AgentRequest, transition } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
@@ -9,6 +9,7 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
+import * as Result from "effect/Result"
 import { useState } from "react"
 import { changeAgentAtom, confirmAgentAtom, removeAgentAtom, renewAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
@@ -98,7 +99,8 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
     }
   }
 
-  const waiting = !sent && agent.status === "active"
+  // Still to sign while the agent can take it: a change only while active, a renewal or removal once it ran out too.
+  const waiting = !sent && Result.isSuccess(transition(agent.status, { _tag: "Sent", action: card.action }))
 
   return (
     <CardFrame

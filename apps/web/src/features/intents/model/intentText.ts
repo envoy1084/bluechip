@@ -47,7 +47,9 @@ export const expiresIn = (at: DateTime.Utc, now: Date): string => {
 /** Why asking for, approving or cancelling a trade didn't go, in words. */
 export const intentProblem = (error: unknown, side: "buy" | "sell"): string => {
   if (error instanceof Conflict) {
-    if (error.reason === "agentBusy") return "This agent can't trade right now: it's paused, not locked or changing."
+    if (error.reason === "agentBusy") {
+      return "This agent can't trade right now: it's paused, its rules ran out, or it isn't locked or is changing."
+    }
     if (error.reason === "intentClosed") return "This trade has already moved on, so there's nothing to do."
   }
   if (error instanceof Unavailable) return "We couldn't reach Base just now. Nothing changed, so try again in a moment."

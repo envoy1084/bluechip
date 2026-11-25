@@ -36,5 +36,6 @@ export const AGENT_STANDING: Readonly<Record<AgentStatus, string>> = {
   active: "Running",
   updating: "Changing on Base",
   removing: "Being removed",
+  expired: "Ran out, renew it to keep it running",
   removed: "Removed"
 }
