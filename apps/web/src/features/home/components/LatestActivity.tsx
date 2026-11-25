@@ -1,26 +1,17 @@
-import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { Button } from "@bluechip/ui/components/button"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link, useNavigate } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useMemo } from "react"
 import { activityAtom } from "../../../atoms/activity.ts"
-import { stocksAtom } from "../../../atoms/market.ts"
 import { ActivityLine } from "../../../components/ActivityLine.tsx"
+import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 
 /** The three latest trades or withdrawals, with the way to the rest. Nothing shows before the first one. */
 export function LatestActivity() {
   const activity = useAtomValue(activityAtom("all all"))
-  const stocks = useAtomValue(stocksAtom)
   const navigate = useNavigate()
 
-  const names = useMemo(
-    () =>
-      new Map<StockSymbol, string>(
-        AsyncResult.isSuccess(stocks) ? stocks.value.map((stock) => [stock.symbol, stock.name]) : []
-      ),
-    [stocks]
-  )
+  const { names } = useStockLookup()
   if (!AsyncResult.isSuccess(activity) || activity.value.items.length === 0) return null
 
   return (

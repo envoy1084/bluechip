@@ -4,6 +4,7 @@ import { formatDollars, formatPercent, listNames } from "@bluechip/domain/polici
 import type { Field } from "@bluechip/domain/policies/Policy"
 import type { Target } from "@bluechip/domain/policies/Rebalance"
 import type { Direction } from "@bluechip/domain/policies/Trade"
+import * as DateTime from "effect/DateTime"
 
 export const DIRECTION_LABELS: Readonly<Record<Direction, string>> = {
   both: "Buy and sell",
@@ -14,14 +15,6 @@ export const DIRECTION_LABELS: Readonly<Record<Direction, string>> = {
 
 /** USDC units as dollars, for inputs and meters. */
 export const toDollars = (amount: bigint | number): number => Number(amount) / 1_000_000
-
-/** A target mix as people say it: "Nvidia 40%, Apple 30% and cash 30%". */
-export const mixText = (targets: ReadonlyArray<Target>, nameOf: (symbol: StockSymbol) => string): string =>
-  listNames(
-    targets.map((target) =>
-      `${target.asset === "USDC" ? "cash" : nameOf(target.asset)} ${formatPercent(target.weight)}`
-    )
-  )
 
 /** One field's value as the review shows it. */
 export const fieldText = (field: Field, value: unknown, nameOf: (symbol: StockSymbol) => string): string => {
@@ -39,7 +32,12 @@ export const fieldText = (field: Field, value: unknown, nameOf: (symbol: StockSy
     case "direction":
       return DIRECTION_LABELS[value as Direction]
     case "mix":
-      return mixText(value as ReadonlyArray<Target>, nameOf)
+      // "Nvidia 40%, Apple 30% and cash 30%"
+      return listNames(
+        (value as ReadonlyArray<Target>).map((target) =>
+          `${target.asset === "USDC" ? "cash" : nameOf(target.asset)} ${formatPercent(target.weight)}`
+        )
+      )
     case "wei":
       return `${Number(value as bigint) / 1e9} gwei`
   }
@@ -48,4 +46,5 @@ export const fieldText = (field: Field, value: unknown, nameOf: (symbol: StockSy
 const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" })
 
 /** A day as the agent screens say it: "21 Feb". */
-export const dayLabel = (date: Date): string => dayFormat.format(date)
+export const dayLabel = (date: Date | DateTime.Utc): string =>
+  dayFormat.format(date instanceof Date ? date : DateTime.toDateUtc(date))

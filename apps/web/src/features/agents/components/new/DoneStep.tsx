@@ -1,25 +1,19 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { describeSpec } from "@bluechip/domain/policies/Catalog"
 import { AgentStatus } from "@bluechip/ui/bluechip/agent-status"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { ButterflyAssemble } from "@bluechip/ui/motion/butterfly-assemble"
-import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
-import * as DateTime from "effect/DateTime"
-import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { stocksAtom } from "../../../../atoms/market.ts"
+import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 
 /** Step five: the new agent, live, with what it does said once more and the way to it. */
 export function DoneStep({ agent }: Readonly<{ agent: Agent }>) {
-  const stocks = useAtomValue(stocksAtom)
-  const nameOf = (symbol: StockSymbol) =>
-    (AsyncResult.isSuccess(stocks) ? stocks.value.find((stock) => stock.symbol === symbol)?.name : undefined) ?? symbol
+  const { nameOf } = useStockLookup()
 
   const [trade] = describeSpec(agent.spec, nameOf).can
-  const until = agent.lockedUntil === null ? null : dayLabel(DateTime.toDateUtc(agent.lockedUntil))
+  const until = agent.lockedUntil === null ? null : dayLabel(agent.lockedUntil)
 
   return (
     <div className="mx-auto grid w-full max-w-[480px] justify-items-center gap-2.5 rounded-lg bg-white px-[26px] pt-7 pb-[26px] text-center shadow-e2">

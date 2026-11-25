@@ -90,16 +90,14 @@ function ExpiredAlert({ agent, ended }: Readonly<{ agent: Agent; ended: Date }>)
   )
 }
 
-// A renewal locks the same policies again; anything else on its way is a change of them.
-const renewing = (agent: Agent): boolean =>
-  agent.pendingSpec !== null && compareSpecs(agent.spec, agent.pendingSpec).policies.length === 0
-
 /**
  * What needs saying about the agent before anything else: removed, not locked, a change or renewal on its way, its
  * session ended, or paused.
  */
 export function AgentAlerts({ agent, now }: Readonly<{ agent: Agent; now: Date }>) {
   const ended = agent.lockedUntil === null ? null : DateTime.toDateUtc(agent.lockedUntil)
+  // A renewal locks the same policies again; anything else on its way is a change of them.
+  const renewing = agent.pendingSpec !== null && compareSpecs(agent.spec, agent.pendingSpec).policies.length === 0
 
   if (agent.status === "removed") {
     return (
@@ -125,7 +123,7 @@ export function AgentAlerts({ agent, now }: Readonly<{ agent: Agent; now: Date }
         null}
       {agent.status === "updating" ?
         (
-          renewing(agent) ?
+          renewing ?
             (
               <SendingAlert
                 title={`Renewing ${agent.name}`}

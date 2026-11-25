@@ -5,15 +5,10 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { UsdcLogo } from "@bluechip/ui/logos/usdc"
 import { useId } from "react"
+import { cleanAmount } from "../../../lib/amounts.ts"
 
 /** What a trade's amount is typed in: dollars (USDC) or shares of the stock. */
 export type AmountUnit = "usd" | "shares"
-
-/** Digits with at most one dot and `decimals` places, as someone types them. */
-const cleanAmount = (text: string, decimals: number) => {
-  const [whole = "", ...rest] = text.replace(/[^\d.]/g, "").split(".")
-  return rest.length === 0 ? whole : `${whole}.${rest.join("").slice(0, decimals)}`
-}
 
 /**
  * The trade's amount, with its unit as a pill: press it to switch between dollars (USDC) and the stock's shares.

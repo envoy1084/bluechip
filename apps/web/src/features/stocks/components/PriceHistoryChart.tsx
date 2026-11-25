@@ -9,9 +9,6 @@ import { useMemo } from "react"
 import { priceDollars } from "../../../lib/amounts.ts"
 import { historiesAtom, HISTORY_RANGES } from "../atoms/history.ts"
 
-const dayLabel = (at: DateTime.Utc) => formatTime(DateTime.toDateUtc(at), { timeZone: MARKET_TIME_ZONE })
-const dateLabel = (at: DateTime.Utc) => formatDate(DateTime.toDateUtc(at), { time: false })
-
 /** A stock's price over time, with 1D / 1W / 1M / All tabs. */
 export function PriceHistoryChart({ symbol }: Readonly<{ symbol: StockSymbol }>) {
   const histories = useAtomValue(historiesAtom(symbol))
@@ -22,7 +19,9 @@ export function PriceHistoryChart({ symbol }: Readonly<{ symbol: StockSymbol }>)
         description,
         points: Option.getOrElse(AsyncResult.value(histories[index]!), () => []).map((point) => ({
           value: priceDollars(point.price),
-          label: id === "1D" ? dayLabel(point.at) : dateLabel(point.at)
+          label: id === "1D" ?
+            formatTime(DateTime.toDateUtc(point.at), { timeZone: MARKET_TIME_ZONE }) :
+            formatDate(DateTime.toDateUtc(point.at), { time: false })
         }))
       })),
     [histories]

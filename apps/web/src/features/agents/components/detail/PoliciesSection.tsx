@@ -6,7 +6,6 @@ import { rebalance } from "@bluechip/domain/policies/Rebalance"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useNavigate } from "@tanstack/react-router"
-import * as DateTime from "effect/DateTime"
 import { dayLabel } from "../../model/fieldText.ts"
 import { SaveTemplate } from "../SaveTemplate.tsx"
 import { PolicyRules } from "../spec/PolicyRules.tsx"
@@ -30,7 +29,7 @@ export function PoliciesSection(
   const active = agent.status === "active"
   const lockedUntil = agent.lockedUntil === null || removed
     ? undefined
-    : dayLabel(DateTime.toDateUtc(agent.lockedUntil))
+    : dayLabel(agent.lockedUntil)
   const targets = configOf(agent.spec.policies, rebalance)?.targets
   const pending = agent.pendingSpec === null ? null : compareSpecs(agent.spec, agent.pendingSpec)
 

@@ -5,7 +5,6 @@ import { checkSpec, compareSpecs, describeSpec } from "@bluechip/domain/policies
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
-import * as DateTime from "effect/DateTime"
 import { useState } from "react"
 import { dayLabel } from "../../model/fieldText.ts"
 import { isTemplateId } from "../../model/templateLabel.ts"
@@ -27,7 +26,7 @@ export function EditRulesStep(
   const [formKey, setFormKey] = useState(0)
   const unchanged = compareSpecs(agent.spec, spec).policies.length === 0
   const ready = !unchanged && checkSpec(spec).length === 0
-  const lockedUntil = agent.lockedUntil === null ? undefined : dayLabel(DateTime.toDateUtc(agent.lockedUntil))
+  const lockedUntil = agent.lockedUntil === null ? undefined : dayLabel(agent.lockedUntil)
   const template = agent.template !== null && isTemplateId(agent.template) ? agent.template : null
 
   return (

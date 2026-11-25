@@ -2,8 +2,6 @@ import { formatPercent } from "@bluechip/domain/policies/Format"
 import type { Target } from "@bluechip/domain/policies/Rebalance"
 import { CASH_SYMBOL, TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 
-const segment = (index: number) => `var(--color-series-${(index % 8) + 1})`
-
 /** A target mix as one bar, with each stock's and cash's share beside its chip. */
 export function TargetMixBar({ targets }: Readonly<{ targets: ReadonlyArray<Target> }>) {
   const stocks = targets.filter((target) => target.asset !== "USDC")
@@ -17,7 +15,7 @@ export function TargetMixBar({ targets }: Readonly<{ targets: ReadonlyArray<Targ
           <i
             key={target.asset}
             className="block min-w-0"
-            style={{ flexGrow: target.weight, background: segment(index) }}
+            style={{ flexGrow: target.weight, background: `var(--color-series-${(index % 8) + 1})` }}
           />
         ))}
         <i className="block min-w-0" style={{ flexGrow: cash, background: "var(--color-series-cash)" }} />

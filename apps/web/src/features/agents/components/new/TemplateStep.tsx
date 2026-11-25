@@ -50,23 +50,21 @@ function TemplateCard(
   )
 }
 
-const savedTag = (template: SavedTemplate): string => {
-  const direction = configOf(template.spec.policies, trade)?.direction
-  return direction === undefined ? "Saved" : DIRECTION_LABELS[direction]
-}
-
 /** The user's saved templates, after they load; a failed load leaves the built-ins to pick from. */
 function SavedCards({ saved }: Readonly<{ saved: ReadonlyArray<SavedTemplate> }>) {
-  return saved.map((template) => (
-    <TemplateCard
-      key={template.id}
-      value={template.id}
-      title={template.name}
-      summary="Your saved template: its rules start as you saved them."
-      tag={savedTag(template)}
-      illustration="key"
-    />
-  ))
+  return saved.map((template) => {
+    const direction = configOf(template.spec.policies, trade)?.direction
+    return (
+      <TemplateCard
+        key={template.id}
+        value={template.id}
+        title={template.name}
+        summary="Your saved template: its rules start as you saved them."
+        tag={direction === undefined ? "Saved" : DIRECTION_LABELS[direction]}
+        illustration="key"
+      />
+    )
+  })
 }
 
 /** Step one: start from a built-in template, one you saved, or from scratch. */

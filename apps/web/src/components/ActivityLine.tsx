@@ -10,10 +10,6 @@ import { localTimeZone } from "../lib/localTime.ts"
 /** When an item happened. */
 export const activityAt = (item: Activity) => item._tag === "Trade" ? item.trade.createdAt : item.transfer.createdAt
 
-/** When an item happened, for its row: the time (the list groups rows by day). */
-export const activityTime = (item: Activity) =>
-  formatTime(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() })
-
 /** What an item says: a trade's result in words, a withdrawal's amount and address. */
 export const describeActivity = (item: Activity, names: ReadonlyMap<StockSymbol, string>) => {
   if (item._tag === "Withdrawal") {
@@ -61,7 +57,8 @@ export function ActivityLine(
       kind={kind}
       icon={icon}
       title={title}
-      time={activityTime(item)}
+      // Only the time: the list groups rows by day.
+      time={formatTime(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() })}
       {...(onOpen === undefined ? {} : { onOpen })}
     >
       {body}

@@ -29,17 +29,15 @@ const AUTHOR: Readonly<Record<SessionAuthor, string>> = {
   automation: "asked by an automation, signed by you"
 }
 
-const day = (date: DateTime.Utc) => dayLabel(DateTime.toDateUtc(date))
-
 /** "Locked 24 Aug by you, until 22 Nov", from what the session records. */
 const when = (session: AgentSession): string => {
   const start = session.installedAt === null ?
-    `Asked ${day(session.createdAt)}` :
-    `Locked ${day(session.installedAt)}`
+    `Asked ${dayLabel(session.createdAt)}` :
+    `Locked ${dayLabel(session.installedAt)}`
   const end = session.endedAt !== null ?
-    `, ended ${day(session.endedAt)}` :
+    `, ended ${dayLabel(session.endedAt)}` :
     session.validUntil !== null && session.status === "active" ?
-    `, until ${day(session.validUntil)}` :
+    `, until ${dayLabel(session.validUntil)}` :
     ""
   return `${start} ${AUTHOR[session.createdBy]}${end}`
 }

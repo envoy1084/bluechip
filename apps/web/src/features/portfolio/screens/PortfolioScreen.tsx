@@ -1,4 +1,3 @@
-import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
@@ -8,11 +7,10 @@ import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useMemo } from "react"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
-import { stocksAtom } from "../../../atoms/market.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { CashCard } from "../components/CashCard.tsx"
 import { HoldingsCard } from "../components/HoldingsCard.tsx"
 import { MixCard } from "../components/MixCard.tsx"
@@ -22,16 +20,9 @@ import { WithdrawalsCard } from "../components/WithdrawalsCard.tsx"
 export function PortfolioScreen() {
   const portfolio = useAtomValue(portfolioAtom)
   const refresh = useAtomRefresh(portfolioAtom)
-  const stocks = useAtomValue(stocksAtom)
   const openCash = useAtomSet(cashDialogAtom)
 
-  const names = useMemo(
-    () =>
-      new Map<StockSymbol, string>(
-        AsyncResult.isSuccess(stocks) ? stocks.value.map((stock) => [stock.symbol, stock.name]) : []
-      ),
-    [stocks]
-  )
+  const { names } = useStockLookup()
   const cash = AsyncResult.isSuccess(portfolio) ? portfolio.value.cash : BigInt(0)
 
   return (

@@ -1,5 +1,4 @@
 import type { ActivityItem, ActivityKind, ActivityPeriod } from "@bluechip/domain/activity/Activity"
-import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { Button } from "@bluechip/ui/components/button"
 import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
@@ -10,11 +9,11 @@ import { formatDate } from "@bluechip/ui/lib/format"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { activityAtom } from "../../../atoms/activity.ts"
-import { stocksAtom } from "../../../atoms/market.ts"
 import { activityAt, ActivityLine } from "../../../components/ActivityLine.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { ActivityDetails } from "../components/ActivityDetails.tsx"
 
@@ -41,15 +40,8 @@ export function ActivityScreen() {
   const [selected, setSelected] = useState<ActivityItem | undefined>(undefined)
   const activity = useAtomValue(activityAtom(`${kind} ${period}`))
   const refresh = useAtomRefresh(activityAtom(`${kind} ${period}`))
-  const stocks = useAtomValue(stocksAtom)
 
-  const names = useMemo(
-    () =>
-      new Map<StockSymbol, string>(
-        AsyncResult.isSuccess(stocks) ? stocks.value.map((stock) => [stock.symbol, stock.name]) : []
-      ),
-    [stocks]
-  )
+  const { names } = useStockLookup()
   const items = AsyncResult.isSuccess(activity) ? activity.value.items : []
   const days = [...new Set(items.map(dayOf))]
 

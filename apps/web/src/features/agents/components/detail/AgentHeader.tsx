@@ -3,7 +3,6 @@ import { TEMPLATES } from "@bluechip/domain/policies/Templates"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
-import * as DateTime from "effect/DateTime"
 import { isPausable } from "../../../../hooks/usePauseAll.ts"
 import { usePauseAgent } from "../../hooks/usePauseAgent.ts"
 import { useTemplateLabel } from "../../hooks/useTemplateLabel.ts"
@@ -12,14 +11,12 @@ import { dayLabel } from "../../model/fieldText.ts"
 import { isTemplateId } from "../../model/templateLabel.ts"
 import { AgentStatePill } from "../AgentStatePill.tsx"
 
-const day = (date: DateTime.Utc) => dayLabel(DateTime.toDateUtc(date))
-
 /** "Rebalancer template, created 24 Aug, locked until 22 Feb"; "Custom, created 24 Aug" for one built from scratch. */
 const summary = (agent: Agent, templateLabel: string): string =>
   [
     agent.template === null ? templateLabel : `${templateLabel} template`,
-    `created ${day(agent.createdAt)}`,
-    agent.lockedUntil === null || agent.status === "removed" ? null : `locked until ${day(agent.lockedUntil)}`
+    `created ${dayLabel(agent.createdAt)}`,
+    agent.lockedUntil === null || agent.status === "removed" ? null : `locked until ${dayLabel(agent.lockedUntil)}`
   ].filter((part) => part !== null).join(", ")
 
 /** Who the agent is and what it's doing, with Pause and Remove. */

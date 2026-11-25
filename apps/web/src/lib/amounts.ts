@@ -29,3 +29,9 @@ const parseUnits = (text: string, decimals: number): bigint | null => {
 
 export const parseUsdc = (text: string) => parseUnits(text, USDC_DECIMALS) as Usdc | null
 export const parseShares = (text: string) => parseUnits(text, SHARE_DECIMALS) as Shares | null
+
+/** Digits with at most one dot and `decimals` places, as someone types them. */
+export const cleanAmount = (text: string, decimals: number) => {
+  const [whole = "", ...rest] = text.replace(/[^\d.]/g, "").split(".")
+  return rest.length === 0 ? whole : `${whole}.${rest.join("").slice(0, decimals)}`
+}

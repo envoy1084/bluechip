@@ -44,7 +44,9 @@ export function HomeScreen({ approvals }: Readonly<{ approvals: ReactNode }>) {
       }
     >
       <div className="grid gap-0.5">
-        <span className="text-label-sm font-medium text-g-500">{today()}</span>
+        <span className="text-label-sm font-medium text-g-500">
+          {today()}
+        </span>
         <h2 className="text-[26px] font-semibold tracking-[-0.035em]">
           {user.displayName === null ? greeting() : `${greeting()}, ${user.displayName}`}
         </h2>

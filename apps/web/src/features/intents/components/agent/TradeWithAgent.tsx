@@ -13,7 +13,7 @@ import { Spinner } from "@bluechip/ui/components/spinner"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useId, useState } from "react"
-import { parseShares, parseUsdc } from "../../../../lib/amounts.ts"
+import { cleanAmount, parseShares, parseUsdc } from "../../../../lib/amounts.ts"
 import { createIntentAtom } from "../../atoms/intents.ts"
 import { useIntentPreview } from "../../hooks/useIntentPreview.ts"
 import { intentProblem } from "../../model/intentText.ts"
@@ -27,12 +27,6 @@ type Asking =
   | { readonly status: "asking" }
   | { readonly status: "asked"; readonly intent: Intent }
   | { readonly status: "failed"; readonly message: string }
-
-/** Digits with at most one dot and `decimals` places, as someone types them. */
-const cleanAmount = (text: string, decimals: number) => {
-  const [whole = "", ...rest] = text.replace(/[^\d.]/g, "").split(".")
-  return rest.length === 0 ? whole : `${whole}.${rest.join("").slice(0, decimals)}`
-}
 
 /** The ways its trade policy lets it go: buy, sell or both (a rebalancer does both). */
 const sidesOf = (agent: Agent): ReadonlyArray<Side> => {

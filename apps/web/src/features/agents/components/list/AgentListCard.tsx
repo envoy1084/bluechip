@@ -4,7 +4,6 @@ import { UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
-import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentUsageAtom } from "../../atoms/agents.ts"
@@ -40,7 +39,7 @@ function Card({ agent, usage }: Readonly<{ agent: Agent; usage: AgentUsage | und
         <Icon name="lock" size={14} />
         {agent.lockedUntil === null ?
           "Not locked yet" :
-          `Locked until ${dayLabel(DateTime.toDateUtc(agent.lockedUntil))}`}
+          `Locked until ${dayLabel(agent.lockedUntil)}`}
       </span>
     </Link>
   )
