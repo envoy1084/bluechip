@@ -50,21 +50,6 @@ layer(DevnetTest.layer)("an agent's session", (it) => {
       }))
   })
 
-  describe("under the call gas floor", () => {
-    it.effect("a buy at the bundler's call gas estimate reverts in Aerodrome's swap hook", () =>
-      Effect.gen(function*() {
-        const { address, agent } = yield* agentOnNewAccount()
-
-        const receipt = yield* Effect.promise(async () => {
-          const hash = await agent.sendUserOperation({ calls: trade(nvda, "buy", BigInt(50_000_000), address) })
-          return agent.waitForUserOperationReceipt({ hash })
-        })
-
-        assert.isFalse(receipt.success)
-        assert.strictEqual(yield* balanceOf(nvda.token, address), BigInt(0))
-      }))
-  })
-
   describe("refused before it reaches the chain", () => {
     it.effect("a stock the agent can't trade", () =>
       Effect.gen(function*() {

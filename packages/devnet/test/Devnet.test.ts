@@ -1,12 +1,15 @@
 import { aggregatorAbi } from "@bluechip/chain/Abis"
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks, usdc } from "@bluechip/chain/Contracts"
+import { DevChain } from "@bluechip/chain/DevChain"
 import { metaquoter, metaquoterAbi } from "@bluechip/chain/market/Aerodrome"
+import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
+import { DEVNET_ADMIN, rpc } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
-import { erc20Abi } from "viem"
+import { erc20Abi, type Hex, toHex } from "viem"
 
 const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
 
@@ -16,6 +19,34 @@ const feedRound = Effect.fnUntraced(function*(feed: `0x${string}`) {
     "latestRoundData",
     (client) => client.readContract({ address: feed, abi: aggregatorAbi, functionName: "latestRoundData" })
   )
+})
+
+// A $10 buy of NVDA by the admin, approved then swapped: the swap's receipt status, sent with `gas` or at Anvil's
+// estimate.
+const adminBuy = Effect.fnUntraced(function*(gas?: bigint) {
+  const devnet = yield* Devnet
+  yield* (yield* DevChain).setUsdcBalance(DEVNET_ADMIN, BigInt(1_000_000_000))
+  const node = rpc(devnet.rpcUrl)
+  const send = async (call: { readonly to: Hex; readonly data: Hex }, limit?: bigint) => {
+    const hash = await node("eth_sendTransaction", [{ from: DEVNET_ADMIN, ...call, gas: limit && toHex(limit) }])
+    for (;;) {
+      const receipt = await node("eth_getTransactionReceipt", [hash]) as { status: Hex } | null
+      if (receipt !== null) return receipt.status
+    }
+  }
+
+  const [approve, swap] = swapCalls({
+    stock: nvda,
+    side: "buy",
+    amountIn: BigInt(10_000_000),
+    minimumOut: BigInt(1),
+    recipient: DEVNET_ADMIN,
+    deadline: BigInt(2) ** BigInt(40)
+  })
+  return yield* Effect.promise(async () => {
+    await send(approve!)
+    return send(swap!, gas)
+  })
 })
 
 layer(DevnetTest.layer)("Devnet", (it) => {
@@ -41,6 +72,18 @@ layer(DevnetTest.layer)("Devnet", (it) => {
           const fair = (BigInt(100) * BigInt(10) ** BigInt(16)) / price
           assert.isTrue(result[0] <= fair && result[0] * BigInt(1000) >= fair * BigInt(995), stock.symbol)
         }
+      }))
+  })
+
+  describe("Aerodrome's swap hook, as on Base", () => {
+    it.effect("a swap sent at Anvil's gas estimate reverts", () =>
+      Effect.gen(function*() {
+        assert.strictEqual(yield* adminBuy(), "0x0")
+      }))
+
+    it.effect("a swap sent with the swap call gas floor fills", () =>
+      Effect.gen(function*() {
+        assert.strictEqual(yield* adminBuy(swapCallGas), "0x1")
       }))
   })
 
