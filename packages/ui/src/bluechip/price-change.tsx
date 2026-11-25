@@ -83,8 +83,8 @@ export const priceVariants = cva("inline-flex flex-wrap items-baseline", {
 
 export interface PriceProps extends Omit<ComponentProps<"span">, "children">, VariantProps<typeof priceVariants> {
   readonly price: number
-  /** Change since the last close, in percent. */
-  readonly change: number
+  /** Change since the last close, in percent. Leave it out when it isn't known; nothing is shown then. */
+  readonly change?: number
   /** Change in dollars, shown with the percent. */
   readonly changeAmount?: number
   /** Tint the price briefly in the direction it moved when it changes. Defaults to true. */
@@ -107,11 +107,13 @@ export function Price(
       >
         <NumberRoll value={price} format={formatMoney} />
       </span>
-      <PriceChange
-        value={change}
-        size={size === "xl" ? "lg" : size === "sm" ? "sm" : "md"}
-        {...(changeAmount === undefined ? {} : { amount: changeAmount })}
-      />
+      {change === undefined ? null : (
+        <PriceChange
+          value={change}
+          size={size === "xl" ? "lg" : size === "sm" ? "sm" : "md"}
+          {...(changeAmount === undefined ? {} : { amount: changeAmount })}
+        />
+      )}
     </span>
   )
 }
