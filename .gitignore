@@ -43,6 +43,8 @@ scratchpad/*
 .vite/
 vite.config.*.timestamp-*
 vitest.config.*.timestamp-*
+# Trigger.dev's local dev builds
+.trigger/
 # Astro, Svelte, Nuxt, Remix / React Router, Solid, Qwik
 .astro/
 .svelte-kit/
