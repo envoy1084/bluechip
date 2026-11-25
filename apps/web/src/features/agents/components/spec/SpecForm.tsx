@@ -11,6 +11,7 @@ import { PresetPicker } from "@bluechip/ui/bluechip/preset-picker"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@bluechip/ui/components/collapsible"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { type ReactNode, useState } from "react"
+import { presetAmounts } from "../../model/presetAmounts.ts"
 import { PolicyEditor } from "./editors/PolicyEditor.tsx"
 import type { FieldContext } from "./fields/FieldEditor.tsx"
 import { PolicySection } from "./fields/PolicySection.tsx"
@@ -80,6 +81,7 @@ export function SpecForm(
         <PolicySection title="Start from a preset">
           <PresetPicker
             value={preset ?? null}
+            amounts={presetAmounts(template)}
             onValueChange={(picked) => onChange(applyPreset(spec, template, picked.name))}
           />
           {preset === undefined && <p className="text-label-sm text-g-500">Custom amounts.</p>}
