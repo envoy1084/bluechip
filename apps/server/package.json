@@ -19,6 +19,7 @@
     "@bluechip/domain": "workspace:^",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "4.1.5",
+    "@namera-ai/sdk": "2.0.0-rc.0",
     "drizzle-orm": "1.0.0-rc.6",
     "effect": "catalog:",
     "typeid-js": "1.2.0",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
-    "drizzle-kit": "1.0.0-rc.6"
+    "drizzle-kit": "1.0.0-rc.6",
+    "ox": "0.14.67"
   }
 }

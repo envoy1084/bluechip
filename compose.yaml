@@ -26,7 +26,7 @@ services:
     # BASE_FORK_BLOCK is cached in the volume, so restarts at that block cost no RPC.
     command:
       - >-
-        exec anvil --host 0.0.0.0 --port 8545 --chain-id 8453 --block-time 2
+        exec anvil --host 0.0.0.0 --port 8545 --chain-id 8453 --block-time 1
         --fork-url "$${BASE_FORK_RPC_URL}" $${BASE_FORK_BLOCK:+--fork-block-number $$BASE_FORK_BLOCK}
     environment:
       BASE_FORK_RPC_URL: ${BASE_FORK_RPC_URL:-https://mainnet.base.org}
@@ -56,6 +56,8 @@ services:
       - --chain-type=op-stack
       - --safe-mode=false
       - --port=4337
+      - --block-polling-interval=250
+      - --log-level=warn
     ports:
       - "4337:4337"
 
