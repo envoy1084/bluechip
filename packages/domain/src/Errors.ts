@@ -5,7 +5,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
-import { LimitProblem } from "./agents/Rules.ts"
+import { PolicyProblem } from "./policies/AgentSpec.ts"
 
 /**
  * @stability unstable
@@ -209,15 +209,15 @@ export class Unavailable extends Schema.TaggedError<Unavailable>("@bluechip/doma
 export const isRetryable = (error: unknown): boolean => error instanceof Unavailable || error instanceof RateLimited
 
 /**
- * An agent's limits break a rule: each problem names the limit and why (outside its range, or not allowed for the
- * template).
+ * An agent's policies can't be locked: each problem names the policy, its field and why (outside its range, missing,
+ * or at odds with another policy).
  *
  * @stability unstable
  * @category errors
  * @since 0.0.0
  */
-export class InvalidLimits extends Schema.TaggedError<InvalidLimits>("@bluechip/domain/Errors/InvalidLimits")(
-  "InvalidLimits",
-  { problems: Schema.Array(LimitProblem) },
+export class InvalidSpec extends Schema.TaggedError<InvalidSpec>("@bluechip/domain/Errors/InvalidSpec")(
+  "InvalidSpec",
+  { problems: Schema.Array(PolicyProblem) },
   { httpApiStatus: 422 }
 ) {}

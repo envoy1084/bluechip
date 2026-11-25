@@ -178,3 +178,37 @@ export const AgentId = typeId("agent").pipe(
  * @since 0.0.0
  */
 export type AgentId = typeof AgentId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const SessionId = typeId("session").pipe(
+  Schema.brand("SessionId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/SessionId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type SessionId = typeof SessionId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const SavedTemplateId = typeId("template").pipe(
+  Schema.brand("SavedTemplateId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/SavedTemplateId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type SavedTemplateId = typeof SavedTemplateId.Type

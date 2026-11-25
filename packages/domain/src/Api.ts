@@ -12,6 +12,7 @@ import { AuthApi } from "./api/AuthApi.ts"
 import { DevApi } from "./api/DevApi.ts"
 import { EventsApi } from "./api/EventsApi.ts"
 import { MarketApi } from "./api/MarketApi.ts"
+import { PoliciesApi } from "./api/PoliciesApi.ts"
 import { PortfolioApi } from "./api/PortfolioApi.ts"
 import { SystemApi } from "./api/SystemApi.ts"
 import { TradesApi } from "./api/TradesApi.ts"
@@ -35,6 +36,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(PortfolioApi)
   .add(TransfersApi)
   .add(TradesApi)
+  .add(PoliciesApi)
   .add(AgentsApi)
   .add(ActivityApi)
   .add(DevApi)

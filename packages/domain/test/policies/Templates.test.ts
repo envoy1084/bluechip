@@ -1,0 +1,85 @@
+import { Usdc } from "@bluechip/domain/market/Units"
+import { checkSpec } from "@bluechip/domain/policies/Catalog"
+import { draftSpec, Preset, TemplateId, templateInfos } from "@bluechip/domain/policies/Templates"
+import { assert, describe, it } from "@effect/vitest"
+
+const TARGETS = [{ asset: "NVDA", weight: 2000 }, { asset: "USDC", weight: 8000 }] as const
+
+describe("draftSpec", () => {
+  it("a balanced Stock picker", () => {
+    const spec = draftSpec({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
+
+    assert.deepStrictEqual(spec.policies, [
+      { id: "trade", config: { stocks: ["NVDA", "AAPL"], direction: "both", dailyBudget: Usdc.make(250_000_000n) } },
+      { id: "tradeSize", config: { maxPerTrade: Usdc.make(100_000_000n), minPerTrade: Usdc.make(5_000_000n) } },
+      { id: "fairPrice", config: { collarBps: 100, tradeWhilePaused: true } },
+      { id: "stockCap", config: { maxBps: 3000 } },
+      { id: "cashReserve", config: { minBps: 1000 } },
+      { id: "slippageBudget", config: { weeklyBps: 100 } },
+      { id: "tradesPerDay", config: { count: 12 } },
+      { id: "gasBudget", config: { weiPerDay: 1_000_000_000_000_000n } },
+      { id: "anyCall", config: {} }
+    ])
+  })
+
+  it("a conservative Rebalancer keeps its target mix and never trades while paused", () => {
+    const spec = draftSpec({ template: "rebalancer", preset: "conservative", stocks: ["NVDA"], targets: TARGETS })
+
+    assert.deepStrictEqual(spec.policies.slice(0, 7), [
+      { id: "trade", config: { stocks: ["NVDA"], direction: "rebalance", dailyBudget: Usdc.make(100_000_000n) } },
+      { id: "tradeSize", config: { maxPerTrade: Usdc.make(50_000_000n), minPerTrade: Usdc.make(5_000_000n) } },
+      { id: "fairPrice", config: { collarBps: 100, tradeWhilePaused: false } },
+      { id: "stockCap", config: { maxBps: 2000 } },
+      { id: "cashReserve", config: { minBps: 2000 } },
+      { id: "rebalance", config: { targets: TARGETS, triggerBps: 500 } },
+      { id: "slippageBudget", config: { weeklyBps: 100 } }
+    ])
+  })
+
+  it("an active Weekly buyer: the $1,000 preset budget is capped at the template's $500", () => {
+    const spec = draftSpec({ template: "weeklyBuyer", preset: "active", stocks: ["NVDA"], targets: [] })
+
+    assert.deepStrictEqual(spec.policies.slice(0, 2), [
+      { id: "trade", config: { stocks: ["NVDA"], direction: "buy", dailyBudget: Usdc.make(500_000_000n) } },
+      { id: "tradeSize", config: { maxPerTrade: Usdc.make(400_000_000n), minPerTrade: Usdc.make(5_000_000n) } }
+    ])
+  })
+
+  it("a Stop-loss guard only sells, spends nothing and carries no stock cap or cash reserve", () => {
+    const spec = draftSpec({ template: "stopLossGuard", preset: "active", stocks: ["NVDA"], targets: [] })
+
+    assert.deepStrictEqual(spec.policies.map((entry) => entry.id), [
+      "trade",
+      "tradeSize",
+      "fairPrice",
+      "slippageBudget",
+      "tradesPerDay",
+      "gasBudget",
+      "anyCall"
+    ])
+    assert.deepStrictEqual(spec.policies[0], {
+      id: "trade",
+      config: { stocks: ["NVDA"], direction: "sell", dailyBudget: Usdc.make(0n) }
+    })
+  })
+
+  it.each(TemplateId.literals.flatMap((template) => Preset.literals.map((preset) => ({ template, preset }))))(
+    "a $preset $template can be locked",
+    ({ preset, template }) => {
+      const spec = draftSpec({ template, preset, stocks: ["NVDA"], targets: TARGETS })
+
+      assert.deepStrictEqual(checkSpec(spec), [])
+    }
+  )
+})
+
+describe("templateInfos", () => {
+  it("describes each built-in template with its direction and rules", () => {
+    assert.deepStrictEqual(templateInfos().map(({ direction, id, rules }) => ({ id, direction, rules })), [
+      { id: "rebalancer", direction: "rebalance", rules: ["stockCap", "cashReserve", "rebalance", "slippageBudget"] },
+      { id: "stockPicker", direction: "both", rules: ["stockCap", "cashReserve", "slippageBudget"] },
+      { id: "weeklyBuyer", direction: "buy", rules: ["stockCap", "cashReserve", "slippageBudget"] },
+      { id: "stopLossGuard", direction: "sell", rules: ["slippageBudget"] }
+    ])
+  })
+})

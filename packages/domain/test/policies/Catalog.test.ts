@@ -1,0 +1,480 @@
+import { Usdc } from "@bluechip/domain/market/Units"
+import { AgentSpec, type PolicyEntry, type PolicyId } from "@bluechip/domain/policies/AgentSpec"
+import { catalogInfo, checkSpec, compareSpecs, complete, describeSpec } from "@bluechip/domain/policies/Catalog"
+import { draftSpec } from "@bluechip/domain/policies/Templates"
+import { assert, describe, it } from "@effect/vitest"
+
+const usdc = (dollars: number) => Usdc.make(BigInt(Math.round(dollars * 1_000_000)))
+
+// $250 a day, $100 a trade, 30% in one stock, 10% cash, 1% slippage a week, 12 trades a day, trades while paused.
+const PICKER = draftSpec({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
+
+// The same amounts, with a target mix of 30% NVDA, 30% AAPL and 40% cash and a 5% trigger.
+const REBALANCER = draftSpec({
+  template: "rebalancer",
+  preset: "balanced",
+  stocks: ["NVDA", "AAPL"],
+  targets: [{ asset: "NVDA", weight: 3000 }, { asset: "AAPL", weight: 3000 }, { asset: "USDC", weight: 4000 }]
+})
+
+const configOf = (spec: AgentSpec, id: PolicyId) => spec.policies.find((entry) => entry.id === id)!.config
+
+// `spec` with each entry's configuration changed, or added.
+const changed = (spec: AgentSpec, ...changes: ReadonlyArray<{ id: PolicyId; config: object }>) =>
+  new AgentSpec({
+    policies: [
+      ...spec.policies.map((entry) => {
+        const change = changes.find((candidate) => candidate.id === entry.id)
+        return (change === undefined
+          ? entry
+          : { id: entry.id, config: { ...entry.config, ...change.config } }) as PolicyEntry
+      }),
+      ...changes.filter((change) => !spec.policies.some((entry) => entry.id === change.id)) as Array<PolicyEntry>
+    ]
+  })
+
+const without = (spec: AgentSpec, ...ids: ReadonlyArray<PolicyId>) =>
+  new AgentSpec({ policies: spec.policies.filter((entry) => !ids.includes(entry.id)) })
+
+const problemsOf = (spec: AgentSpec) => checkSpec(spec).map(({ field, message, policy }) => [policy, field, message])
+
+describe("checkSpec", () => {
+  it.each<{ name: string; spec: AgentSpec; expected: ReadonlyArray<[PolicyId, string | null, string]> }>([
+    { name: "a balanced Stock picker", spec: PICKER, expected: [] },
+    { name: "a balanced Rebalancer", spec: REBALANCER, expected: [] },
+    {
+      name: "no trade policy",
+      spec: without(PICKER, "trade"),
+      expected: [["trade", null, "Every agent needs this."]]
+    },
+    {
+      name: "no rules but the required ones",
+      spec: without(PICKER, "stockCap", "cashReserve", "slippageBudget"),
+      expected: []
+    },
+    {
+      name: "no hidden policies: bluechip adds them",
+      spec: without(PICKER, "gasBudget", "anyCall"),
+      expected: []
+    },
+    {
+      name: "a policy added twice",
+      spec: new AgentSpec({ policies: [...PICKER.policies, { id: "stockCap", config: { maxBps: 2000 } }] }),
+      expected: [["stockCap", null, "Each policy can be added once."]]
+    },
+    {
+      name: "no stocks",
+      spec: changed(PICKER, { id: "trade", config: { stocks: [] } }),
+      expected: [["trade", "stocks", "Pick at least one stock."]]
+    },
+    {
+      name: "a stock picked twice",
+      spec: changed(PICKER, { id: "trade", config: { stocks: ["NVDA", "NVDA"] } }),
+      expected: [["trade", "stocks", "Each stock can be picked once."]]
+    },
+    {
+      name: "a daily budget at the $2,000 ceiling",
+      spec: changed(PICKER, { id: "trade", config: { dailyBudget: usdc(2000) } }),
+      expected: []
+    },
+    {
+      name: "a daily budget a unit over the $2,000 ceiling",
+      spec: changed(PICKER, { id: "trade", config: { dailyBudget: usdc(2000.000001) } }),
+      expected: [["trade", "dailyBudget", "Pick $0 to $2,000."]]
+    },
+    {
+      name: "a seller with a daily budget",
+      spec: changed(PICKER, { id: "trade", config: { direction: "sell" } }),
+      expected: [["trade", "dailyBudget", "An agent that only sells never spends."]]
+    },
+    {
+      name: "a buyer without a daily budget",
+      spec: changed(PICKER, { id: "trade", config: { direction: "buy", dailyBudget: usdc(0) } }),
+      expected: [["trade", "dailyBudget", "Give it a daily budget to buy with."]]
+    },
+    {
+      name: "a rebalancing direction without a target mix",
+      spec: without(REBALANCER, "rebalance"),
+      expected: [["trade", "direction", "Set a target mix to rebalance toward."]]
+    },
+    {
+      name: "a target mix on an agent that trades both ways",
+      spec: changed(REBALANCER, { id: "trade", config: { direction: "both" } }),
+      expected: [["rebalance", null, "Only an agent that rebalances has a target mix."]]
+    },
+    {
+      name: "the largest trade at $10",
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(10) } }),
+      expected: []
+    },
+    {
+      name: "the largest trade a unit under $10",
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(9.999999) } }),
+      expected: [["tradeSize", "maxPerTrade", "Pick $10 to $1,000."]]
+    },
+    {
+      name: "the largest trade over the daily budget",
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(300) } }),
+      expected: [["tradeSize", "maxPerTrade", "Can't be more than the daily budget ($250)."]]
+    },
+    {
+      name: "a seller's largest trade, with no budget to stay under",
+      spec: changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: usdc(0) } }, {
+        id: "tradeSize",
+        config: { maxPerTrade: usdc(1000) }
+      }),
+      expected: []
+    },
+    {
+      name: "the smallest trade over the largest",
+      spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: usdc(20), minPerTrade: usdc(25) } }),
+      expected: [["tradeSize", "minPerTrade", "Can't be more than the largest trade."]]
+    },
+    {
+      name: "price protection a basis point over 5%",
+      spec: changed(PICKER, { id: "fairPrice", config: { collarBps: 501 } }),
+      expected: [["fairPrice", "collarBps", "Pick 0.1% to 5%."]]
+    },
+    {
+      name: "a Rebalancer trading while prices are paused",
+      spec: changed(REBALANCER, { id: "fairPrice", config: { tradeWhilePaused: true } }),
+      expected: [["fairPrice", "tradeWhilePaused", "A Rebalancer only trades while prices are live."]]
+    },
+    {
+      name: "max in one stock under 5%",
+      spec: changed(PICKER, { id: "stockCap", config: { maxBps: 499 } }),
+      expected: [["stockCap", "maxBps", "Pick 5% to 100%."]]
+    },
+    {
+      name: "a cash reserve and max in one stock past 100%",
+      spec: changed(PICKER, { id: "stockCap", config: { maxBps: 9500 } }),
+      expected: [["cashReserve", "minBps", "Cash reserve plus max in one stock can't pass 100%."]]
+    },
+    {
+      name: "a cash reserve of 100% without a stock cap",
+      spec: changed(without(PICKER, "stockCap"), { id: "cashReserve", config: { minBps: 5000 } }),
+      expected: []
+    },
+    {
+      name: "49 trades a day",
+      spec: changed(PICKER, { id: "tradesPerDay", config: { count: 49 } }),
+      expected: [["tradesPerDay", "count", "Pick 1 to 48."]]
+    },
+    {
+      name: "an empty target mix",
+      spec: changed(REBALANCER, { id: "rebalance", config: { targets: [] } }),
+      expected: [["rebalance", "targets", "Set a target mix."]]
+    },
+    {
+      name: "a stock without a target",
+      spec: changed(REBALANCER, {
+        id: "rebalance",
+        config: { targets: [{ asset: "NVDA", weight: 6000 }, { asset: "USDC", weight: 4000 }] }
+      }),
+      expected: [["rebalance", "targets", "Give every stock a target."]]
+    },
+    {
+      name: "a target for a stock it doesn't trade",
+      spec: changed(REBALANCER, {
+        id: "rebalance",
+        config: {
+          targets: [{ asset: "NVDA", weight: 2000 }, { asset: "AAPL", weight: 2000 }, { asset: "TSLA", weight: 2000 }, {
+            asset: "USDC",
+            weight: 4000
+          }]
+        }
+      }),
+      expected: [["rebalance", "targets", "The mix can only hold the stocks this agent trades, and cash."]]
+    },
+    {
+      name: "a mix that adds up to 99.99%",
+      spec: changed(REBALANCER, {
+        id: "rebalance",
+        config: {
+          targets: [{ asset: "NVDA", weight: 3000 }, { asset: "AAPL", weight: 3000 }, { asset: "USDC", weight: 3999 }]
+        }
+      }),
+      expected: [["rebalance", "targets", "The mix has to add up to 100%."]]
+    },
+    {
+      name: "a stock's target over the max in one stock",
+      spec: changed(REBALANCER, {
+        id: "rebalance",
+        config: {
+          targets: [{ asset: "NVDA", weight: 3100 }, { asset: "AAPL", weight: 2900 }, { asset: "USDC", weight: 4000 }]
+        }
+      }),
+      expected: [["rebalance", "targets", "No stock's target can pass the max in one stock (30%)."]]
+    },
+    {
+      name: "cash's target under the cash reserve",
+      spec: changed(REBALANCER, {
+        id: "rebalance",
+        config: {
+          targets: [{ asset: "NVDA", weight: 3000 }, { asset: "AAPL", weight: 3000 }, { asset: "USDC", weight: 4000 }]
+        }
+      }, { id: "cashReserve", config: { minBps: 4500 } }),
+      expected: [["rebalance", "targets", "Cash's target can't be under the cash reserve (45%)."]]
+    }
+  ])("$name", ({ expected, spec }) => {
+    assert.deepStrictEqual(problemsOf(spec), expected)
+  })
+})
+
+describe("complete", () => {
+  it("adds the hidden policies with bluechip's defaults", () => {
+    const spec = complete(without(PICKER, "gasBudget", "anyCall"))
+
+    assert.deepStrictEqual(spec.policies.slice(-2), [
+      { id: "gasBudget", config: { weiPerDay: 1_000_000_000_000_000n } },
+      { id: "anyCall", config: {} }
+    ])
+  })
+
+  it("replaces a hidden policy's configuration with bluechip's", () => {
+    const spec = complete(changed(PICKER, { id: "gasBudget", config: { weiPerDay: 1n } }))
+
+    assert.deepStrictEqual(configOf(spec, "gasBudget"), { weiPerDay: 1_000_000_000_000_000n })
+  })
+
+  it("lists policies in the catalog's order", () => {
+    const spec = complete(new AgentSpec({ policies: [...PICKER.policies].reverse() }))
+
+    assert.deepStrictEqual(spec.policies.map((entry) => entry.id), [
+      "trade",
+      "tradeSize",
+      "fairPrice",
+      "stockCap",
+      "cashReserve",
+      "slippageBudget",
+      "tradesPerDay",
+      "gasBudget",
+      "anyCall"
+    ])
+  })
+})
+
+describe("compareSpecs", () => {
+  it.each<{ name: string; after: AgentSpec; expected: ReturnType<typeof compareSpecs> }>([
+    { name: "the same policies", after: PICKER, expected: { overall: "same", policies: [] } as never },
+    {
+      name: "a lower daily budget",
+      after: changed(PICKER, { id: "trade", config: { dailyBudget: usdc(100) } }),
+      expected: { overall: "tighter", policies: [{ policy: "trade", change: "tighter" }] } as never
+    },
+    {
+      name: "a stock added",
+      after: changed(PICKER, { id: "trade", config: { stocks: ["NVDA", "AAPL", "TSLA"] } }),
+      expected: { overall: "looser", policies: [{ policy: "trade", change: "looser" }] } as never
+    },
+    {
+      name: "a stock dropped",
+      after: changed(PICKER, { id: "trade", config: { stocks: ["NVDA"] } }),
+      expected: { overall: "tighter", policies: [{ policy: "trade", change: "tighter" }] } as never
+    },
+    {
+      name: "both ways narrowed to buys",
+      after: changed(PICKER, { id: "trade", config: { direction: "buy" } }),
+      expected: { overall: "tighter", policies: [{ policy: "trade", change: "tighter" }] } as never
+    },
+    {
+      name: "a rule removed",
+      after: without(PICKER, "stockCap"),
+      expected: { overall: "looser", policies: [{ policy: "stockCap", change: "removed" }] } as never
+    },
+    {
+      name: "a higher cash reserve and a bigger largest trade",
+      after: changed(PICKER, { id: "cashReserve", config: { minBps: 2000 } }, {
+        id: "tradeSize",
+        config: { maxPerTrade: usdc(200) }
+      }),
+      expected: {
+        overall: "looser",
+        policies: [{ policy: "tradeSize", change: "looser" }, { policy: "cashReserve", change: "tighter" }]
+      } as never
+    },
+    {
+      name: "trading while prices are paused turned off",
+      after: changed(PICKER, { id: "fairPrice", config: { tradeWhilePaused: false } }),
+      expected: { overall: "tighter", policies: [{ policy: "fairPrice", change: "tighter" }] } as never
+    },
+    {
+      name: "a wider collar",
+      after: changed(PICKER, { id: "fairPrice", config: { collarBps: 200 } }),
+      expected: { overall: "looser", policies: [{ policy: "fairPrice", change: "looser" }] } as never
+    },
+    {
+      name: "fewer trades a day",
+      after: changed(PICKER, { id: "tradesPerDay", config: { count: 4 } }),
+      expected: { overall: "tighter", policies: [{ policy: "tradesPerDay", change: "tighter" }] } as never
+    },
+    {
+      name: "a lower slippage budget and a lower stock cap",
+      after: changed(PICKER, { id: "slippageBudget", config: { weeklyBps: 50 } }, {
+        id: "stockCap",
+        config: { maxBps: 2000 }
+      }),
+      expected: {
+        overall: "tighter",
+        policies: [{ policy: "stockCap", change: "tighter" }, { policy: "slippageBudget", change: "tighter" }]
+      } as never
+    }
+  ])("$name", ({ after, expected }) => {
+    const changes = compareSpecs(PICKER, after)
+
+    assert.deepStrictEqual(
+      { overall: changes.overall, policies: changes.policies.map(({ change, policy }) => ({ policy, change })) },
+      expected
+    )
+  })
+
+  it("buys turned into sells", () => {
+    const buyer = changed(PICKER, { id: "trade", config: { direction: "buy" } })
+
+    const changes = compareSpecs(buyer, changed(buyer, { id: "trade", config: { direction: "sell" } }))
+
+    assert.strictEqual(changes.overall, "looser")
+  })
+
+  it("a rule added to the policies in force", () => {
+    const changes = compareSpecs(without(PICKER, "stockCap"), PICKER)
+
+    assert.deepStrictEqual(
+      { overall: changes.overall, policies: changes.policies.map(({ change, policy }) => ({ policy, change })) },
+      { overall: "tighter", policies: [{ policy: "stockCap", change: "added" }] }
+    )
+  })
+
+  it.each<{ name: string; after: AgentSpec }>([
+    {
+      name: "a new target mix",
+      after: changed(REBALANCER, {
+        id: "rebalance",
+        config: {
+          targets: [{ asset: "NVDA", weight: 2000 }, { asset: "AAPL", weight: 3000 }, { asset: "USDC", weight: 5000 }]
+        }
+      })
+    },
+    { name: "a lower trigger", after: changed(REBALANCER, { id: "rebalance", config: { triggerBps: 300 } }) }
+  ])("$name loosens the Rebalancer", ({ after }) => {
+    assert.strictEqual(compareSpecs(REBALANCER, after).overall, "looser")
+  })
+})
+
+const NAMES: Record<string, string> = { NVDA: "Nvidia", AAPL: "Apple", TSLA: "Tesla", MSFT: "Microsoft" }
+
+describe("describeSpec", () => {
+  it("a balanced Stock picker", () => {
+    const description = describeSpec(PICKER, (symbol) => NAMES[symbol] ?? symbol)
+
+    assert.deepStrictEqual({ can: description.can, never: description.never }, {
+      can: [
+        "Buy and sell Nvidia and Apple",
+        "Spend up to $250 a day",
+        "Trade up to $100 at a time, and ask you before anything bigger",
+        "Trade on weekends and holidays, with a tighter price limit",
+        "Trade 12 times a day at most"
+      ],
+      never: [
+        "Send money out of your account",
+        "Trade stocks you didn't pick",
+        "Make a trade under $5",
+        "Trade more than 1% away from Chainlink's price",
+        "Put over 30% of your money in one stock",
+        "Leave less than 10% in cash",
+        "Lose more than 1% of your money to prices in a week",
+        "Change its own policies"
+      ]
+    })
+  })
+
+  it("a conservative Rebalancer of four stocks", () => {
+    const spec = draftSpec({
+      template: "rebalancer",
+      preset: "conservative",
+      stocks: ["NVDA", "AAPL", "TSLA", "MSFT"],
+      targets: [
+        { asset: "NVDA", weight: 1500 },
+        { asset: "AAPL", weight: 1500 },
+        { asset: "TSLA", weight: 1500 },
+        { asset: "MSFT", weight: 1500 },
+        { asset: "USDC", weight: 4000 }
+      ]
+    })
+
+    const description = describeSpec(spec, (symbol) => NAMES[symbol] ?? symbol)
+
+    assert.deepStrictEqual({ can: description.can, never: description.never }, {
+      can: [
+        "Trade Nvidia, Apple, Tesla and 1 more, only to move you back to your target mix",
+        "Spend up to $100 a day",
+        "Trade up to $50 at a time, and ask you before anything bigger",
+        "Start rebalancing once your mix is 5% off target",
+        "Trade 6 times a day at most"
+      ],
+      never: [
+        "Send money out of your account",
+        "Trade stocks you didn't pick",
+        "Make a trade under $5",
+        "Trade more than 1% away from Chainlink's price",
+        "Trade while prices are paused",
+        "Put over 20% of your money in one stock",
+        "Leave less than 20% in cash",
+        "Trade away from your target mix",
+        "Lose more than 1% of your money to prices in a week",
+        "Change its own policies"
+      ]
+    })
+  })
+
+  it("a Stop-loss guard trading once a day, with no cap on one stock", () => {
+    const spec = changed(
+      draftSpec({ template: "stopLossGuard", preset: "balanced", stocks: ["NVDA"], targets: [] }),
+      { id: "tradesPerDay", config: { count: 1 } },
+      { id: "stockCap", config: { maxBps: 10_000 } }
+    )
+
+    const description = describeSpec(spec, (symbol) => NAMES[symbol] ?? symbol)
+
+    assert.deepStrictEqual(description.can, [
+      "Sell Nvidia",
+      "Trade up to $100 at a time, and ask you before anything bigger",
+      "Trade on weekends and holidays, with a tighter price limit",
+      "Trade once a day at most"
+    ])
+  })
+})
+
+describe("catalogInfo", () => {
+  it("describes the trade policy with its fields, defaults and JSON Schema", () => {
+    const trade = catalogInfo().find((policy) => policy.id === "trade")!
+
+    assert.deepStrictEqual(
+      {
+        fields: trade.fields.map(({ field, name }) => [name, field.unit]),
+        defaults: trade.defaults,
+        properties: Object.keys((trade.schema as { schema: { properties: object } }).schema.properties)
+      },
+      {
+        fields: [["stocks", "stocks"], ["direction", "direction"], ["dailyBudget", "usd"]],
+        defaults: { stocks: [], direction: "both", dailyBudget: "250000000" },
+        properties: ["stocks", "direction", "dailyBudget"]
+      }
+    )
+  })
+
+  it("lists every policy once, hidden ones marked", () => {
+    assert.deepStrictEqual(catalogInfo().map((policy) => [policy.id, policy.hidden]), [
+      ["trade", false],
+      ["tradeSize", false],
+      ["fairPrice", false],
+      ["stockCap", false],
+      ["cashReserve", false],
+      ["rebalance", false],
+      ["slippageBudget", false],
+      ["tradesPerDay", false],
+      ["gasBudget", true],
+      ["anyCall", true]
+    ])
+  })
+})

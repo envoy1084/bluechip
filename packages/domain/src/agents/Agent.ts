@@ -1,16 +1,16 @@
 /**
- * An agent: a template, its limits, and where its onchain session stands. Its limits are locked with Face ID as a
- * Namera session on the user's account; every change to them is signed again, and removing it revokes the session.
+ * An agent: a session key on the user's account carrying onchain policies (its spec), locked with Face ID as a Namera
+ * session. A change of policies is signed again and kept as a new session in its history, renewing it locks a new key
+ * with the same policies, and removing it revokes the session.
  *
  * @since 0.0.0
  */
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
-import { AgentId, SigningRequestId } from "../Ids.ts"
-import { Usdc } from "../market/Units.ts"
+import { AgentId, SessionId, SigningRequestId } from "../Ids.ts"
+import { AgentSpec, PolicyId } from "../policies/AgentSpec.ts"
+import { FieldUnit } from "../policies/Policy.ts"
 import { CeremonyOptions } from "../WebAuthn.ts"
-import { Limits } from "./Limits.ts"
-import { Template } from "./Templates.ts"
 
 /**
  * Where an agent's session stands: not locked yet (`draft`), its lock, change or removal on its way to Base, locked
@@ -30,7 +30,7 @@ export const AgentStatus = Schema.Literals(["draft", "locking", "active", "updat
 export type AgentStatus = typeof AgentStatus.Type
 
 /**
- * What happens to an agent's session: an owner operation sent (to lock, change or remove it), the operation landed
+ * What happens to an agent's session: an owner operation sent (to lock, change, renew or remove it), the operation landed
  * or failed, or a draft discarded before anything was sent.
  *
  * @stability unstable
@@ -50,7 +50,7 @@ export type AgentEvent =
  * @category schemas
  * @since 0.0.0
  */
-export const AgentAction = Schema.Literals(["lock", "update", "remove"])
+export const AgentAction = Schema.Literals(["lock", "update", "renew", "remove"])
 
 /**
  * @stability unstable
@@ -62,12 +62,13 @@ export type AgentAction = typeof AgentAction.Type
 const SENDS_FROM: Readonly<Record<AgentAction, { readonly from: AgentStatus; readonly to: AgentStatus }>> = {
   lock: { from: "draft", to: "locking" },
   update: { from: "active", to: "updating" },
+  renew: { from: "active", to: "updating" },
   remove: { from: "active", to: "removing" }
 }
 
 /**
- * The next status after `event`, or why it can't happen. One operation at a time: a lock only from a draft, a change
- * or removal only while active; a failed operation leaves the session as it was, and a removed agent never changes.
+ * The next status after `event`, or why it can't happen. One operation at a time: a lock only from a draft, a change,
+ * renewal or removal only while active; a failed operation leaves the session as it was, and a removed agent never changes.
  *
  * **Example** (Locking an agent)
  *
@@ -121,8 +122,76 @@ export const MAX_NAME_LENGTH = 40
 export const AgentName = Schema.Trimmed.check(Schema.isMinLength(1), Schema.isMaxLength(MAX_NAME_LENGTH))
 
 /**
- * An agent as the user sees it: its limits in force (or, for a draft, the ones it will lock), a change on its way,
- * whether bluechip has paused it, and until when its lock lasts.
+ * How long a session lasts before the agent needs your Face ID again: 90 days.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const SESSION_DAYS = 90
+
+/**
+ * Where a session stands: not locked yet, its lock or change on its way, in force, replaced by a change or a renewal,
+ * revoked, past its end, or never locked because its operation failed.
+ *
+ * @stability unstable
+ * @category schemas
+ * @since 0.0.0
+ */
+export const SessionStatus = Schema.Literals([
+  "draft",
+  "locking",
+  "active",
+  "replaced",
+  "revoked",
+  "expired",
+  "failed"
+])
+
+/**
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export type SessionStatus = typeof SessionStatus.Type
+
+/**
+ * Who asked for a session: you, the assistant, or an automation. You always sign it.
+ *
+ * @stability unstable
+ * @category schemas
+ * @since 0.0.0
+ */
+export const SessionAuthor = Schema.Literals(["owner", "assistant", "automation"])
+
+/**
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export type SessionAuthor = typeof SessionAuthor.Type
+
+/**
+ * One entry of an agent's history: a set of policies you locked (or are locking) for it, and how long it lasts.
+ *
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export class AgentSession extends Schema.Class<AgentSession>("@bluechip/domain/agents/Agent/AgentSession")({
+  id: SessionId,
+  status: SessionStatus,
+  spec: AgentSpec,
+  createdBy: SessionAuthor,
+  validUntil: Schema.NullOr(Schema.DateTimeUtc),
+  createdAt: Schema.DateTimeUtc,
+  installedAt: Schema.NullOr(Schema.DateTimeUtc),
+  endedAt: Schema.NullOr(Schema.DateTimeUtc)
+}) {}
+
+/**
+ * An agent as the user sees it: the policies in force (or, for a draft, the ones it will lock), a change on its way,
+ * whether bluechip has paused it, and until when its session lasts.
  *
  * @stability unstable
  * @category models
@@ -131,21 +200,22 @@ export const AgentName = Schema.Trimmed.check(Schema.isMinLength(1), Schema.isMa
 export class Agent extends Schema.Class<Agent>("@bluechip/domain/agents/Agent/Agent")({
   id: AgentId,
   name: AgentName,
-  template: Template,
+  /** The template it started from: a built-in's id or a saved template's, `null` when built from scratch. */
+  template: Schema.NullOr(Schema.String),
   status: AgentStatus,
   /** Paused by you: bluechip sends none of its trades. Its session stays locked onchain. */
   paused: Schema.Boolean,
-  limits: Limits,
-  /** The limits a change on its way will lock (while `updating`). */
-  pendingLimits: Schema.NullOr(Limits),
-  /** When its session ends: 90 days after it was locked. */
+  spec: AgentSpec,
+  /** The policies a change or renewal on its way will lock (while `updating`). */
+  pendingSpec: Schema.NullOr(AgentSpec),
+  /** When its session ends: 90 days after it was locked or renewed. */
   lockedUntil: Schema.NullOr(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc
 }) {}
 
 /**
- * A lock, change or removal prepared for the user's passkey: the WebAuthn request (its challenge is the owner
- * operation's hash), and the agent as it will be.
+ * A lock, change, renewal or removal prepared for the user's passkey: the WebAuthn request (its challenge is the
+ * owner operation's hash), and the agent as it will be.
  *
  * @stability unstable
  * @category models
@@ -162,15 +232,27 @@ export class AgentRequest extends Schema.Class<AgentRequest>("@bluechip/domain/a
 }) {}
 
 /**
- * What an agent has used, read from its session onchain: USDC put into buys and operations sent this UTC day, and
- * value lost to prices over the last 7 days.
+ * What one policy has counted onchain: dollars put into buys today, dollars lost to prices this week, trades today, or
+ * gas today, against its limit when the limit is in the same unit.
+ *
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export class PolicyUsage extends Schema.Class<PolicyUsage>("@bluechip/domain/agents/Agent/PolicyUsage")({
+  policy: PolicyId,
+  unit: FieldUnit,
+  used: Schema.BigInt,
+  limit: Schema.NullOr(Schema.BigInt)
+}) {}
+
+/**
+ * What an agent has used, read from its session onchain, policy by policy.
  *
  * @stability unstable
  * @category models
  * @since 0.0.0
  */
 export class AgentUsage extends Schema.Class<AgentUsage>("@bluechip/domain/agents/Agent/AgentUsage")({
-  spentToday: Usdc,
-  tradesToday: Schema.Int,
-  slippageThisWeek: Usdc
+  policies: Schema.Array(PolicyUsage)
 }) {}

@@ -3,7 +3,7 @@ import { assert, describe, it } from "@effect/vitest"
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
 
-const sent = (action: "lock" | "update" | "remove"): AgentEvent => ({ _tag: "Sent", action })
+const sent = (action: "lock" | "update" | "renew" | "remove"): AgentEvent => ({ _tag: "Sent", action })
 
 describe("transition", () => {
   it.each<{ name: string; status: AgentStatus; event: AgentEvent; expected: Result.Result<AgentStatus, string> }>([
@@ -43,6 +43,18 @@ describe("transition", () => {
       status: "active",
       event: sent("update"),
       expected: Result.succeed("updating")
+    },
+    {
+      name: "active, renewal sent: updating",
+      status: "active",
+      event: sent("renew"),
+      expected: Result.succeed("updating")
+    },
+    {
+      name: "updating, renewal sent",
+      status: "updating",
+      event: sent("renew"),
+      expected: Result.fail("a updating agent can't renew")
     },
     {
       name: "active, removal sent: removing",
