@@ -8,9 +8,9 @@ import { Spinner } from "@bluechip/ui/components/spinner"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
-import { DecisionLine } from "../../../../../intents/DecisionLine.tsx"
-import { nothingMoved, STATUS } from "../../../../../intents/intentText.ts"
-import { useApproveIntent } from "../../../../../intents/useApproveIntent.ts"
+import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
+import { nothingMoved, STATUS } from "../../model/intentText.ts"
+import { DecisionLine } from "../DecisionLine.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
 
 // What an ended intent that sent nothing says.

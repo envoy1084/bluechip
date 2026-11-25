@@ -12,10 +12,11 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useMemo, useState } from "react"
-import { activityAt, ActivityLine, localTimeZone } from "../../../activity/ActivityLine.tsx"
+import { activityAt, ActivityLine } from "../../../activity/ActivityLine.tsx"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { activityAtom } from "../../../atoms/trading.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { localTimeZone } from "../../../lib/localTime.ts"
 import { ActivityDetails } from "./-components/ActivityDetails.tsx"
 
 export const Route = createFileRoute("/_app/activity/")({ component: ActivityPage })

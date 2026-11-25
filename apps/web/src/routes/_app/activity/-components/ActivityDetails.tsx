@@ -12,8 +12,9 @@ import {
 } from "@bluechip/ui/components/sheet"
 import { formatDate, formatMoney, formatShares } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
-import { activityAt, describeActivity, localTimeZone } from "../../../../activity/ActivityLine.tsx"
+import { activityAt, describeActivity } from "../../../../activity/ActivityLine.tsx"
 import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
+import { localTimeZone } from "../../../../lib/localTime.ts"
 
 const STATUS = {
   sending: "Sending",

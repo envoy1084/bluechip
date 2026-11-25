@@ -2,8 +2,8 @@ import type { Intent } from "@bluechip/domain/intents/Intent"
 import { Button } from "@bluechip/ui/components/button"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
-import { cancelIntentAtom } from "../../../../../atoms/intents.ts"
-import { intentProblem } from "../../../../../intents/intentText.ts"
+import { cancelIntentAtom } from "../../atoms/intents.ts"
+import { intentProblem } from "../../model/intentText.ts"
 
 /** Stops a trade that hasn't been sent yet; it then moves on through live `IntentChanged` events. */
 export function CancelIntentButton({ intent }: Readonly<{ intent: Intent }>) {

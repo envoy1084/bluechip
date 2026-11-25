@@ -3,8 +3,8 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as Schema from "effect/Schema"
 import { AgentNotFound } from "../../../features/agents/components/detail/AgentNotFound.tsx"
 import { AgentScreen } from "../../../features/agents/screens/AgentScreen.tsx"
-import { AgentActivity } from "./-components/detail/AgentActivity.tsx"
-import { TradeWithAgent } from "./-components/detail/TradeWithAgent.tsx"
+import { AgentActivity } from "../../../features/intents/components/agent/AgentActivity.tsx"
+import { TradeWithAgent } from "../../../features/intents/components/agent/TradeWithAgent.tsx"
 
 export const Route = createFileRoute("/_app/agents/$agentId")({ component: AgentPage })
 

@@ -6,16 +6,10 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
-import { agentsAtom } from "../atoms/agents.ts"
-import { approvalsAtom } from "../atoms/intents.ts"
-import { useStockLookup } from "../hooks/useStockLookup.ts"
+import { agentsAtom } from "../../../../atoms/agents.ts"
+import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
+import { approvalsAtom } from "../../atoms/intents.ts"
 import { ApprovalRequest } from "./ApprovalRequest.tsx"
-
-/** The approvals waiting for you: a count for badges, 0 until they load. */
-export function useApprovalCount(): number {
-  const approvals = useAtomValue(approvalsAtom)
-  return AsyncResult.isSuccess(approvals) ? approvals.value.length : 0
-}
 
 // "Expires in 14 min" stays right while the list is open.
 function useMinuteClock(): Date {

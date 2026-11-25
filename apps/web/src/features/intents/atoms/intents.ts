@@ -1,8 +1,8 @@
 import type { AgentId, IntentId, SigningRequestId } from "@bluechip/domain/Ids"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
-import { BluechipApiClient, intentsReactivityKey, liveReactivityKey } from "../lib/api/client.ts"
-import { signWithPasskey } from "../lib/passkey.ts"
+import { BluechipApiClient, intentsReactivityKey, liveReactivityKey } from "../../../lib/api/client.ts"
+import { signWithPasskey } from "../../../lib/passkey.ts"
 
 const reactivityKeys = [intentsReactivityKey, liveReactivityKey]
 

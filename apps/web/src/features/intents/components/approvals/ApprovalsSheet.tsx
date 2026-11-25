@@ -11,11 +11,9 @@ import {
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
-import { ApprovalsList, useApprovalCount } from "./ApprovalsList.tsx"
-
-/** "2 trades waiting for you", or that nothing is. */
-export const waitingText = (count: number) =>
-  count === 0 ? "Nothing waiting for you" : count === 1 ? "1 trade waiting for you" : `${count} trades waiting for you`
+import { useApprovalCount } from "../../hooks/useApprovalCount.ts"
+import { waitingText } from "../../model/intentText.ts"
+import { ApprovalsList } from "./ApprovalsList.tsx"
 
 /** The bell with how many trades wait for you; it opens the approvals in a sheet. */
 export function ApprovalsBell() {

@@ -2,7 +2,7 @@ import { describeDecision } from "@bluechip/domain/intents/Describe"
 import type { Decision } from "@bluechip/domain/intents/Intent"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
-import { clockTime } from "./intentText.ts"
+import { clockTime } from "../model/intentText.ts"
 
 const LOOK: Readonly<Record<Decision["_tag"], { readonly icon: IconName; readonly tone: string }>> = {
   Passes: { icon: "check-circle", tone: "text-gain" },

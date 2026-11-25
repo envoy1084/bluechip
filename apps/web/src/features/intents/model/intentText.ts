@@ -1,10 +1,11 @@
-// How an intent reads on screen: its status as a pill, the time it waits until, and why a request didn't go.
+// How an intent reads on screen: its status as a pill, the time it waits until, why a request didn't go, and how many
+// wait for you.
 import { Conflict, Unavailable } from "@bluechip/domain/Errors"
 import type { Intent, IntentStatus } from "@bluechip/domain/intents/Intent"
 import { formatRelative, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
-import { localTimeZone } from "../activity/ActivityLine.tsx"
-import { tradeProblem } from "../market/useTrade.ts"
+import { localTimeZone } from "../../../lib/localTime.ts"
+import { tradeProblem } from "../../../lib/tradeProblem.ts"
 
 export const STATUS: Readonly<Record<IntentStatus, { readonly label: string; readonly tone: string }>> = {
   proposed: { label: "Asked", tone: "bg-g-100 text-g-600" },
@@ -52,3 +53,7 @@ export const intentProblem = (error: unknown, side: "buy" | "sell"): string => {
   if (error instanceof Unavailable) return "We couldn't reach Base just now. Nothing changed, so try again in a moment."
   return tradeProblem(error, side)
 }
+
+/** "2 trades waiting for you", or that nothing is. */
+export const waitingText = (count: number) =>
+  count === 0 ? "Nothing waiting for you" : count === 1 ? "1 trade waiting for you" : `${count} trades waiting for you`

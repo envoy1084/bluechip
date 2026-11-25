@@ -8,7 +8,7 @@ import * as Exit from "effect/Exit"
 import * as Option from "effect/Option"
 import { useEffect, useState } from "react"
 import { previewIntentAtom } from "../atoms/intents.ts"
-import { intentProblem } from "./intentText.ts"
+import { intentProblem } from "../model/intentText.ts"
 
 export type PreviewState =
   | { readonly status: "idle" }

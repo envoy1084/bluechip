@@ -5,9 +5,7 @@ import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
 import { formatMoney, formatShares, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { priceDollars, shareCount, usdcDollars } from "../lib/amounts.ts"
-
-/** The viewer's own time zone: activity is read as "when did I do this", not in market time. */
-export const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+import { localTimeZone } from "../lib/localTime.ts"
 
 /** When an item happened. */
 export const activityAt = (item: Activity) => item._tag === "Trade" ? item.trade.createdAt : item.transfer.createdAt

@@ -3,7 +3,7 @@ import type { Intent } from "@bluechip/domain/intents/Intent"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
 import { approveIntentAtom, confirmIntentAtom, declineIntentAtom } from "../atoms/intents.ts"
-import { intentProblem } from "./intentText.ts"
+import { intentProblem } from "../model/intentText.ts"
 import { useLatestIntent } from "./useLatestIntent.ts"
 
 export type ApprovalFlow =
