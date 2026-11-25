@@ -213,9 +213,19 @@ export const compareStocks = (before: ReadonlyArray<string>, after: ReadonlyArra
   return before.some((symbol) => !after.includes(symbol)) ? "tighter" : "same"
 }
 
+/**
+ * How the trade mode changed: narrowing "buy and sell" to one direction (or to rebalancing) is tighter; any other
+ * change lets the agent make trades it couldn't before.
+ */
+export const compareMode = (before: AgentTradeMode, after: AgentTradeMode): LimitChange => {
+  if (before === after) return "same"
+  return before === "buy-and-sell" ? "tighter" : "looser"
+}
+
 /** The change as a whole: looser if any part is looser, so it needs Face ID. */
 export const compareLimits = (before: AgentLimits, after: AgentLimits): LimitChange => {
   const changes = [
+    compareMode(before.mode, after.mode),
     compareStocks(before.stocks, after.stocks),
     ...LIMIT_FIELDS.map((spec) => compareField(spec, before[spec.field], after[spec.field]))
   ]

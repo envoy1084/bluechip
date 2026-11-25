@@ -94,6 +94,7 @@ export function LimitEditor({
   const [own, setOwn] = useState<AgentLimits>(defaultValue ?? locked)
   const [locking, setLocking] = useState(false)
   const [justLocked, setJustLocked] = useState(false)
+  const [lockFailed, setLockFailed] = useState(false)
   const limits = value ?? own
   const errors = limitErrors(limits)
   const firstError = Object.values(errors)[0]
@@ -105,14 +106,20 @@ export function LimitEditor({
     if (landed !== undefined && landed !== matchPreset(limits)) haptic("tap")
     setOwn(next)
     setJustLocked(false)
+    setLockFailed(false)
     onValueChange?.(next)
   }
   const lock = async () => {
     setLocking(true)
+    setLockFailed(false)
     try {
       await onLock?.(limits)
       haptic("success")
       playMoment(() => setJustLocked(true))
+    } catch {
+      // Face ID cancelled or the lock didn't land: nothing changed, and the footer says so.
+      haptic("error")
+      setLockFailed(true)
     } finally {
       setLocking(false)
     }
@@ -185,7 +192,7 @@ export function LimitEditor({
               justLocked && change === "same" && "text-gain"
             )}
           >
-            {footerMessage({ firstError, change, justLocked, lockedUntil })}
+            {footerMessage({ firstError, change, justLocked, lockFailed, lockedUntil })}
           </p>
           <div className="ml-auto flex gap-2">
             {change !== "same" && (
@@ -220,10 +227,11 @@ export function LimitEditor({
   )
 }
 
-function footerMessage({ firstError, change, justLocked, lockedUntil }: {
+function footerMessage({ firstError, change, justLocked, lockFailed, lockedUntil }: {
   readonly firstError: string | undefined
   readonly change: LimitChange
   readonly justLocked: boolean
+  readonly lockFailed: boolean
   readonly lockedUntil: string | undefined
 }): ReactNode {
   const line = (icon: IconName, text: string) => (
@@ -233,6 +241,7 @@ function footerMessage({ firstError, change, justLocked, lockedUntil }: {
     </>
   )
   if (firstError) return line("error", firstError)
+  if (lockFailed) return line("error", "The limits weren't locked, so nothing changed. Try Face ID again.")
   if (change === "looser") return line("info", "These limits give the agent more room, so they need Face ID.")
   if (change === "tighter") return line("shield", "Tighter limits apply right away. No Face ID needed.")
   if (justLocked) return line("check-circle", "Locked with Face ID. New limits are live.")

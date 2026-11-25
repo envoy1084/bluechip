@@ -115,12 +115,20 @@ describe("compareLimits", () => {
     expect(compareLimits(LOCKED, { ...LOCKED, dailySpend: 200, approveAbove: 200 })).toBe("looser")
   })
 
-  it("a sell-only agent allowed to buy, today", () => {
-    expect(compareLimits({ ...LOCKED, mode: "sell" }, LOCKED)).toBe("same")
+  it("a sell-only agent allowed to buy too", () => {
+    expect(compareLimits({ ...LOCKED, mode: "sell" }, { ...LOCKED, mode: "buy-and-sell" })).toBe("looser")
   })
 
-  it.skip("a sell-only agent allowed to buy (bug: a looser trade mode compares as the same limits)", () => {
-    expect(compareLimits({ ...LOCKED, mode: "sell" }, LOCKED)).toBe("looser")
+  it("a buy-only agent switched to selling", () => {
+    expect(compareLimits({ ...LOCKED, mode: "buy" }, { ...LOCKED, mode: "sell" })).toBe("looser")
+  })
+
+  it("an agent that buys and sells narrowed to rebalancing", () => {
+    expect(compareLimits({ ...LOCKED, mode: "buy-and-sell" }, { ...LOCKED, mode: "rebalance" })).toBe("tighter")
+  })
+
+  it("a Rebalancer allowed to trade freely", () => {
+    expect(compareLimits({ ...LOCKED, mode: "rebalance" }, { ...LOCKED, mode: "buy-and-sell" })).toBe("looser")
   })
 })
 
@@ -183,6 +191,15 @@ describe("LimitEditor", () => {
     await userEvent.fill(dailySpend(screen), "300")
     await userEvent.click(screen.getByRole("button", { name: "Lock with Face ID" }))
     await expect.element(screen.getByRole("button", { name: "Waiting for Face ID…" })).toBeDisabled()
+  })
+
+  it("says nothing changed when the lock fails, and lets you try again", async () => {
+    const screen = await render(<LimitEditor locked={LOCKED} onLock={() => Promise.reject(new Error("cancelled"))} />)
+    await userEvent.fill(dailySpend(screen), "300")
+    await userEvent.click(screen.getByRole("button", { name: "Lock with Face ID" }))
+    await expect.element(screen.getByText("The limits weren't locked, so nothing changed. Try Face ID again."))
+      .toBeVisible()
+    await expect.element(screen.getByRole("button", { name: "Lock with Face ID" })).toBeEnabled()
   })
 
   it("says the new limits are live once locked", async () => {
