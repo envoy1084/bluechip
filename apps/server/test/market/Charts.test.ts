@@ -2,7 +2,7 @@ import { PricePoint } from "@bluechip/domain/market/Market"
 import { Price } from "@bluechip/domain/market/Units"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
-import { thin } from "../../src/market/Charts.ts"
+import { pastDay, thin } from "../../src/market/Charts.ts"
 
 const series = (prices: ReadonlyArray<number>) =>
   prices.map((price, index) =>
@@ -28,5 +28,30 @@ describe("thin", () => {
     assert.isTrue(thinned.some((point) => point.price === BigInt(1)))
     const times = thinned.map((point) => DateTime.toEpochMillis(point.at))
     assert.deepStrictEqual(times, [...times].sort((a, b) => a - b))
+  })
+})
+
+describe("pastDay", () => {
+  const at = (iso: string) => new PricePoint({ at: DateTime.makeUnsafe(iso), price: Price.make(BigInt(1)) })
+  const times = (points: ReadonlyArray<PricePoint>) => points.map((point) => DateTime.formatIso(point.at))
+
+  it("before the opening bell, keeps the last trading day and today's pre-market", () => {
+    const points = [
+      at("2026-11-23T20:30:00.000Z"),
+      at("2026-11-24T14:30:00.000Z"),
+      at("2026-11-24T22:00:00.000Z"),
+      at("2026-11-25T13:00:00.000Z")
+    ]
+    assert.deepStrictEqual(times(pastDay(points)), times(points.slice(1)))
+  })
+
+  it("once the market opens, keeps only today", () => {
+    const points = [at("2026-11-24T20:00:00.000Z"), at("2026-11-25T13:00:00.000Z"), at("2026-11-25T14:35:00.000Z")]
+    assert.deepStrictEqual(times(pastDay(points)), times(points.slice(1)))
+  })
+
+  it("on a Monday morning, reaches back to Friday", () => {
+    const points = [at("2026-11-20T18:00:00.000Z"), at("2026-11-23T12:00:00.000Z")]
+    assert.deepStrictEqual(times(pastDay(points)), times(points))
   })
 })

@@ -7,11 +7,12 @@ import type * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Alpaca, type BarTimeframe } from "./alpaca/Alpaca.ts"
+import { marketStatus } from "./Calendar.ts"
 import { MarketPrices, toTokenPrice } from "./MarketPrices.ts"
 
 interface RangeBars {
   readonly timeframe: BarTimeframe
-  /** How far back to ask; 1D asks for several days and keeps the latest session. */
+  /** How far back to ask; 1D asks for several days and keeps only the past day (see `pastDay`). */
   readonly days: number
   readonly cacheFor: Duration.Input
 }
@@ -26,6 +27,18 @@ const RANGES: Readonly<Record<HistoryRange, RangeBars>> = {
 
 const NEW_YORK = DateTime.zoneMakeNamedUnsafe("America/New_York")
 const newYorkDate = (at: DateTime.Utc) => DateTime.formatIsoDate(DateTime.setZone(at, NEW_YORK))
+
+/**
+ * The past day of a 5-minute series: from the start of the latest day that had a regular session, so before the
+ * opening bell (or over a weekend) the chart still shows the last full trading day, followed by any extended hours.
+ */
+export const pastDay = (points: ReadonlyArray<PricePoint>): ReadonlyArray<PricePoint> => {
+  const lastRegular = points.findLast((point) => marketStatus(point.at).session === "regular")
+  if (lastRegular === undefined) return points
+
+  const day = newYorkDate(lastRegular.at)
+  return points.filter((point) => newYorkDate(point.at) >= day)
+}
 
 // A chart is a few hundred pixels wide: more points only cost bytes and rendering time.
 const MAX_POINTS = 300
@@ -79,10 +92,7 @@ export class Charts extends Context.Service<Charts, {
             price: toTokenPrice(bar.close, multiplier ?? multiplierScale)
           })
         )
-        if (range !== "1D" || points.length === 0) return thin(points)
-
-        const lastSession = newYorkDate(points.at(-1)!.at)
-        return thin(points.filter((point) => newYorkDate(point.at) === lastSession))
+        return thin(range === "1D" ? pastDay(points) : points)
       })
 
       // Keyed "NVDA 1D": a failed load is cached briefly too, so a down Alpaca isn't asked on every view.
