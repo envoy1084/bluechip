@@ -178,3 +178,12 @@ export const replaceCard = (entries: ReadonlyArray<Entry>, card: Card): Array<En
       { ...entry, cards: entry.cards.map((shown) => shown.card.id === card.id ? { ...shown, card } : shown) } :
       entry
   )
+
+/**
+ * The thread after a dropped connection, once read again: the stored one when it has caught up (it answers your last
+ * message, the round kept as far as it got), otherwise the one on screen, while the server is still storing it.
+ */
+export const resumeEntries = (shown: ReadonlyArray<Entry>, stored: ReadonlyArray<Entry>): ReadonlyArray<Entry> => {
+  const yours = (entries: ReadonlyArray<Entry>) => entries.filter((entry) => entry._tag === "You").length
+  return stored.at(-1)?._tag === "Bluechip" && yours(stored) >= yours(shown) ? stored : shown
+}

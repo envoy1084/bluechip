@@ -1,5 +1,5 @@
 import type { Card } from "@bluechip/domain/assistant/Card"
-import { Icon } from "@bluechip/ui/icons/icon"
+import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { ApprovalCard } from "./ApprovalCard.tsx"
 import { CardFrame } from "./CardFrame.tsx"
@@ -48,17 +48,29 @@ function ResearchCard({ card }: Readonly<{ card: Extract<Card, { _tag: "Research
   )
 }
 
+// Stopping early because you did (cancelled, or the connection to you dropped) is quiet; the rest is a warning.
+const ERROR_LOOK: Readonly<
+  Record<Extract<Card, { _tag: "Error" }>["reason"], { readonly icon: IconName; readonly quiet: boolean }>
+> = {
+  cancelled: { icon: "stop", quiet: true },
+  interrupted: { icon: "bolt-off", quiet: true },
+  budget: { icon: "warning", quiet: false },
+  rounds: { icon: "warning", quiet: false },
+  unavailable: { icon: "warning", quiet: false }
+}
+
 function ErrorCard({ card }: Readonly<{ card: Extract<Card, { _tag: "Error" }> }>) {
+  const look = ERROR_LOOK[card.reason]
   return (
     <p
       className={cn(
         "inline-flex items-start gap-1.5 justify-self-start rounded-[10px] py-2 pr-3 pl-2.5 text-[13.5px]",
-        card.reason === "cancelled" ?
+        look.quiet ?
           "bg-g-50 text-g-600 shadow-[inset_0_0_0_1px_var(--color-g-100)]" :
           "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]"
       )}
     >
-      <Icon name={card.reason === "cancelled" ? "stop" : "warning"} size={14} className="mt-[3px] shrink-0" />
+      <Icon name={look.icon} size={14} className="mt-[3px] shrink-0" />
       {card.message}
     </p>
   )

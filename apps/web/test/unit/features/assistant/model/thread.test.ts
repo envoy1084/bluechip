@@ -4,7 +4,9 @@ import {
   type BluechipTurn,
   emptyTurn,
   entriesOf,
-  replaceCard
+  type Entry,
+  replaceCard,
+  resumeEntries
 } from "../../../../../src/features/assistant/model/thread.ts"
 import { budgetCard, CARD_ID, message } from "../../../../fixtures/Messages.ts"
 
@@ -168,6 +170,28 @@ describe("entriesOf", () => {
       cards: [],
       status: "error",
       error: "The model can't answer right now."
+    }])
+  })
+
+  it("a round cut off by a dropped connection: its text so far, then the interrupted card", () => {
+    const interrupted = {
+      _tag: "Error",
+      id: CARD_ID,
+      reason: "interrupted",
+      message: "The connection dropped, so the answer stopped here."
+    } as const
+    const round = message("w2", "assistant", [
+      { type: "text", text: "Nvidia is up 2% to" },
+      { type: "card", toolCallId: null, card: interrupted }
+    ])
+    assert.deepStrictEqual(entriesOf([round]), [{
+      _tag: "Bluechip",
+      id: round.id,
+      tools: [],
+      text: "Nvidia is up 2% to",
+      cards: [{ toolCallId: null, card: interrupted }],
+      status: "done",
+      error: null
     }])
   })
 
@@ -351,5 +375,33 @@ describe("replaceCard", () => {
       other,
       turn({ id: "with", cards: [{ toolCallId: "call-1", card: budgetCard("Out until midnight.") }] })
     ])
+  })
+})
+
+describe("resumeEntries", () => {
+  const you = (id: string): Entry => ({ _tag: "You", id, text: "How's Nvidia?" })
+  const dropped = turn({ id: "local", status: "error", error: "The connection dropped." })
+  const kept = turn({ id: "stored", text: "Nvidia is up", status: "done" })
+
+  it("the stored thread answers your last message: the stored thread", () => {
+    assert.deepStrictEqual(resumeEntries([you("a"), dropped], [you("a"), kept]), [you("a"), kept])
+  })
+
+  it("the stored thread has your message but no answer yet: the one on screen", () => {
+    assert.deepStrictEqual(resumeEntries([you("a"), dropped], [you("a")]), [you("a"), dropped])
+  })
+
+  it("the stored thread is a message behind: the one on screen", () => {
+    const earlier = turn({ id: "earlier", text: "Hello", status: "done" })
+    assert.deepStrictEqual(resumeEntries([you("a"), earlier, you("b"), dropped], [you("a"), earlier]), [
+      you("a"),
+      earlier,
+      you("b"),
+      dropped
+    ])
+  })
+
+  it("nothing stored: the one on screen", () => {
+    assert.deepStrictEqual(resumeEntries([you("a"), dropped], []), [you("a"), dropped])
   })
 })
