@@ -41,7 +41,7 @@ Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's
 `apps/web`; never committed), `docker compose --profile chain up -d` (Postgres, an Anvil fork of Base
 mainnet on 8545 and the Alto bundler on 4337; plain `docker compose up -d` starts Postgres only), then
 `pnpm --filter @bluechip/server db:migrate` and `pnpm --filter @bluechip/server dev`. Fork money:
-`pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Fork tests skip when the fork is down.
+`pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1`. Fork tests skip when the fork is down; server tests use their own `bluechip_test` database.
 
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 
