@@ -22,7 +22,8 @@
     "test:watch": "vitest",
     "typecheck": "effect-tsgo tsrs -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "typecheck:tsc": "tsc -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
-    "devnet:capture": "node --env-file=.env.local scripts/bin.ts devnet capture"
+    "devnet:capture": "node --env-file=.env.local scripts/bin.ts devnet capture",
+    "test:fork": "BLUECHIP_FORK_TESTS=1 vitest run --project fork"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",

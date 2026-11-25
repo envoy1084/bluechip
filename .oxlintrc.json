@@ -43,7 +43,7 @@
   "overrides": [
     {
       "files": [
-        "**/{test,typetest,scripts,scratchpad}/**",
+        "**/{test,test-fork,typetest,scripts,scratchpad}/**",
         "**/vitest.*.ts"
       ],
       "rules": {
@@ -54,7 +54,7 @@
     },
     {
       "files": [
-        "**/test/**"
+        "**/{test,test-fork}/**"
       ],
       "rules": {
         "no-restricted-imports": [

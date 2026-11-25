@@ -37,6 +37,10 @@ export default defineConfig({
       project("devnet", "packages/devnet", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
       project("chain", "packages/chain", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
       project("server", "apps/server", { test: { globalSetup: ["test/setup/devnet.ts"] } }),
+      // Real-chain facts on a fork of Base: only with `pnpm test:fork`.
+      ...(process.env["BLUECHIP_FORK_TESTS"] === "1"
+        ? [project("fork", "packages/chain", { test: { include: ["test-fork/**/*.test.ts"] } })]
+        : []),
       // Components run in real Chromium: real focus, keyboard and layout, no DOM fakes.
       project("ui", "packages/ui", {
         // Pre-bundle the UI libraries up front; discovering them mid-run reloads Vite and breaks React hooks.

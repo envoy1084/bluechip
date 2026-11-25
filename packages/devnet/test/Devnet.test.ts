@@ -3,10 +3,10 @@ import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks, usdc } from "@bluechip/chain/Contracts"
 import { metaquoter, metaquoterAbi } from "@bluechip/chain/market/Aerodrome"
 import { Devnet } from "@bluechip/devnet/Devnet"
+import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { erc20Abi } from "viem"
-import { DevnetLayer } from "./support/devnet.ts"
 
 const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
 
@@ -18,7 +18,7 @@ const feedRound = Effect.fnUntraced(function*(feed: `0x${string}`) {
   )
 })
 
-layer(DevnetLayer)("Devnet", (it) => {
+layer(DevnetTest.layer)("Devnet", (it) => {
   describe("installed state", () => {
     it.effect("every stock is a B20 at its real address, with a pool that trades near its feed's price", () =>
       Effect.gen(function*() {

@@ -1,84 +1,72 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks, usdc } from "@bluechip/chain/Contracts"
 import { DevChain } from "@bluechip/chain/DevChain"
-import { factory, factoryAbi } from "@bluechip/chain/market/Aerodrome"
 import { readPrices } from "@bluechip/chain/market/Prices"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
-import { fillOf, swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
-import { assert, describe, layer } from "@effect/vitest"
+import { fillOf, type Swap, swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
+import { Devnet } from "@bluechip/devnet/Devnet"
+import * as DevnetTest from "@bluechip/devnet/DevnetTest"
+import { assert, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
-import * as Layer from "effect/Layer"
 import { createTestClient, createWalletClient, http, parseEther } from "viem"
 import { base } from "viem/chains"
-import { forkAvailable, ForkChainClient, forkUrl } from "../support/fork.ts"
 
 const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
 
-describe.skipIf(!forkAvailable)("market on the local fork", () => {
-  layer(Layer.provideMerge(DevChain.layer, ForkChainClient))((it) => {
-    it.effect("every pinned pool is the factory's USDC pool for that stock", () =>
-      Effect.gen(function*() {
-        const chain = yield* ChainClient
-        const tradable = stocks.filter((stock) => stock.pool !== null)
-        const found = yield* chain.use("getPool", (client) =>
-          Promise.all(tradable.map((stock) =>
-            client.readContract({
-              address: factory,
-              abi: factoryAbi,
-              functionName: "getPool",
-              args: [usdc, stock.token, stock.pool!.tickSpacing]
-            })
-          )))
-        assert.deepStrictEqual(
-          found.map((pool) => pool.toLowerCase()),
-          tradable.map((stock) => stock.pool!.address.toLowerCase())
-        )
-      }))
+layer(DevnetTest.layer)("readPrices", (it) => {
+  it.effect("a stock's price and when its feed last updated", () =>
+    Effect.gen(function*() {
+      yield* (yield* Devnet).setPrice("AAPL", BigInt(27_512_000_000), { ageSeconds: 3600 })
 
-    it.effect("reads every stock's reference price with the chain's time", () =>
-      Effect.gen(function*() {
-        const { asOf, prices } = yield* readPrices(yield* ChainClient)
-        assert.strictEqual(prices.length, stocks.length)
-        for (const price of prices) assert.isTrue(price.updatedAt.getTime() <= asOf.getTime(), price.stock.symbol)
-      }))
+      const { prices } = yield* readPrices(yield* ChainClient)
 
-    it.effect("a quote is what the swap's calls actually fill", () =>
-      Effect.gen(function*() {
-        const chain = yield* ChainClient
-        const dev = yield* DevChain
-        const trader = "0x00000000000000000000000000000000000be1a5" as const
-        const amountIn = BigInt(250_000_000)
-        yield* dev.setEthBalance(trader, parseEther("1"))
-        yield* dev.setUsdcBalance(trader, amountIn)
+      const aapl = prices.find((price) => price.stock.symbol === "AAPL")!
+      assert.strictEqual(aapl.price, BigInt(27_512_000_000))
+      assert.isAtMost(Math.abs(aapl.updatedAt.getTime() - (Date.now() - 3_600_000)), 2000)
+    }))
 
-        const quoted = yield* quoteExactIn(chain, { pool: nvda.pool!.address, tokenIn: usdc, amountIn })
-        const swap = {
-          stock: nvda,
-          side: "buy",
-          amountIn,
-          minimumOut: BigInt(0),
-          recipient: trader,
-          deadline: BigInt(2) ** BigInt(64)
-        } as const
+  it.effect("a feed answering zero is left out", () =>
+    Effect.gen(function*() {
+      yield* (yield* Devnet).setPrice("INTC", BigInt(0))
 
-        const logs = yield* chain.use("swap", async (client) => {
-          const anvil = createTestClient({ chain: base, mode: "anvil", transport: http(forkUrl) })
-          const wallet = createWalletClient({ chain: base, account: trader, transport: http(forkUrl) })
-          await anvil.impersonateAccount({ address: trader })
-          const found = []
-          for (const call of swapCalls(swap)) {
-            const hash = await wallet.sendTransaction({ to: call.to, data: call.data, gas: swapCallGas })
-            found.push(...(await client.waitForTransactionReceipt({ hash })).logs)
-          }
-          return found
-        })
+      const { prices } = yield* readPrices(yield* ChainClient)
 
-        const fill = fillOf(logs, swap, trader)
-        assert.isDefined(fill)
-        assert.strictEqual(fill!.amountIn, amountIn)
-        // Within 1 basis point: the quote simulates the same pool state the swap meets.
-        const gap = quoted > fill!.amountOut ? quoted - fill!.amountOut : fill!.amountOut - quoted
-        assert.isTrue(gap * BigInt(10_000) <= quoted, `quoted ${quoted}, filled ${fill!.amountOut}`)
-      }))
-  })
+      assert.deepStrictEqual(prices.map((price) => price.stock.symbol).includes("INTC"), false)
+      assert.strictEqual(prices.length, stocks.length - 1)
+    }))
+})
+
+layer(DevnetTest.layer)("quoteExactIn", (it) => {
+  it.effect("the quote is exactly what the swap's calls then fill", () =>
+    Effect.gen(function*() {
+      const chain = yield* ChainClient
+      const dev = yield* DevChain
+      const trader = "0x00000000000000000000000000000000000be1a5" as const
+      const amountIn = BigInt(250_000_000)
+      yield* dev.setEthBalance(trader, parseEther("1"))
+      yield* dev.setUsdcBalance(trader, amountIn)
+
+      const quoted = yield* quoteExactIn(chain, { pool: nvda.pool!.address, tokenIn: usdc, amountIn })
+      const swap: Swap = {
+        stock: nvda,
+        side: "buy",
+        amountIn,
+        minimumOut: BigInt(0),
+        recipient: trader,
+        deadline: BigInt(2) ** BigInt(64)
+      }
+      const logs = yield* chain.use("swap", async (client) => {
+        const anvil = createTestClient({ chain: base, mode: "anvil", transport: http(chain.rpcUrl) })
+        const wallet = createWalletClient({ chain: base, account: trader, transport: http(chain.rpcUrl) })
+        await anvil.impersonateAccount({ address: trader })
+        const found = []
+        for (const call of swapCalls(swap)) {
+          const hash = await wallet.sendTransaction({ to: call.to, data: call.data, gas: swapCallGas })
+          found.push(...(await client.waitForTransactionReceipt({ hash })).logs)
+        }
+        return found
+      })
+
+      assert.deepStrictEqual(fillOf(logs, swap, trader), { amountIn, amountOut: quoted })
+    }))
 })

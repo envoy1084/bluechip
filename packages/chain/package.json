@@ -15,6 +15,7 @@
     "viem": "catalog:"
   },
   "devDependencies": {
+    "@bluechip/devnet": "workspace:*",
     "effect": "catalog:",
     "viem": "catalog:"
   }
