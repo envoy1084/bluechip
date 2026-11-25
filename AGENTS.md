@@ -139,8 +139,26 @@ Code is organized so a maintainer can find and review any change quickly.
 - Keep every source and test file around 500 lines or less. When one grows past that, split it along logical lines
   (one feature, screen section or concern per file), never at an arbitrary line.
 - Group files into folders by feature or domain, not by kind: `apps/server/src/auth/`, `accounts/`, `api/`;
-  `apps/web/src/routes/welcome/`, `shell/`, `atoms/`; a large page's sections in `apps/uikit/src/pages/<page>/`.
+  `apps/web/src/features/agents/`, `features/stocks/`; a large page's sections in `apps/uikit/src/pages/<page>/`.
 - Tests are split by tier, each mirroring the source tree (see [Test layout](#test-layout)).
+
+#### Web app layout
+
+`apps/web/src` is feature-first (after Bulletproof React):
+
+- `routes/`: TanStack Router's route files only: `createFileRoute`, params and search validation, loaders, and a
+  component that renders a feature's screen. No screen bodies and no `-components` folders (TanStack allows them; we
+  keep one place per feature so routes stay thin).
+- `features/<feature>/`: everything one feature owns: `screens/` (what routes render), `components/`, `hooks/`,
+  `atoms/` (its queries and mutations) and `model/` (pure logic and wording, no React).
+- Shared, for what two or more features use: `components/` (`layout/` holds the page frames), `hooks/`, `atoms/`
+  (queries several features read: the user, stocks, portfolio, agents, activity), `lib/` (the API client and live
+  events, passkey signing, amounts, wallet config) and `providers/`.
+
+Imports flow one way: shared → `features` → `routes`. Features never import each other or routes, and shared code
+never imports features. When a screen shows another feature's piece, its route composes them, passing the piece in
+as a prop (the agent page's trade and activity sections, the home page's approvals bell, the app frame's sidebar).
+Import modules directly; no `index.ts` barrels.
 
 ### Effect conventions
 
