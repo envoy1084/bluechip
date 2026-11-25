@@ -167,7 +167,7 @@ export const aerodromeTradePolicyAbi = [
  * @category contracts
  * @since 0.0.0
  */
-export const tradeGuard: Address = "0x729544A9D8899E7314502E0830D59f3C8b241A32"
+export const tradeGuard: Address = "0x9246C1e5448Cc76685a21BD4e9f56a449E9b9BdD"
 
 /**
  * `TradeGuard`'s ABI.

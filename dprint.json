@@ -28,7 +28,8 @@
     "**/.next",
     "**/.output",
     "**/routeTree.gen.ts",
-    "apps/server/drizzle"
+    "apps/server/drizzle",
+    "contracts/snapshots"
   ],
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.93.4.wasm",
