@@ -93,21 +93,18 @@ export const fillOf = (
   let amountOut = BigInt(0)
 
   for (const log of logs) {
-    const transfer = decodeTransfer(log)
-    if (transfer === undefined) continue
+    let event
+    try {
+      event = decodeEventLog({ abi: erc20Abi, data: log.data, topics: log.topics })
+    } catch {
+      continue
+    }
+    if (event.eventName !== "Transfer") continue
+    const transfer = event.args
 
     if (isAddressEqual(log.address, tokenIn) && isAddressEqual(transfer.from, account)) amountIn += transfer.value
     if (isAddressEqual(log.address, tokenOut) && isAddressEqual(transfer.to, account)) amountOut += transfer.value
   }
 
   return amountIn > BigInt(0) && amountOut > BigInt(0) ? { amountIn, amountOut } : undefined
-}
-
-const decodeTransfer = (log: Log) => {
-  try {
-    const event = decodeEventLog({ abi: erc20Abi, data: log.data, topics: log.topics })
-    return event.eventName === "Transfer" ? event.args : undefined
-  } catch {
-    return undefined
-  }
 }

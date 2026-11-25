@@ -3,6 +3,7 @@
  *
  * @since 0.0.0
  */
+import * as Arr from "effect/Array"
 import * as Effect from "effect/Effect"
 import { type Address, type ContractFunctionParameters, erc20Abi, parseAbi } from "viem"
 import type { ChainClient } from "../ChainClient.ts"
@@ -47,9 +48,6 @@ const multicall3Abi = parseAbi([
   "function getCurrentBlockTimestamp() view returns (uint256)"
 ])
 
-// 200 accounts × 14 tokens is ~2,800 `balanceOf` calls, ~15M gas: well inside every provider's `eth_call` gas cap.
-const ACCOUNTS_PER_CALL = 200
-
 /**
  * Every account's balance of every asset token, all at the same block, with that block's number and time. One
  * `eth_call` per 200 accounts: the first also asks Multicall3 for the block, the rest read at that block.
@@ -70,7 +68,8 @@ export const readBalances = (chain: ChainClient["Service"], accounts: ReadonlyAr
           args: [owner]
         }))
       )
-    const [first, ...rest] = chunksOf(accounts, ACCOUNTS_PER_CALL)
+    // 200 accounts × 14 tokens is ~2,800 `balanceOf` calls, ~15M gas: well inside every provider's `eth_call` gas cap.
+    const [first, ...rest] = Arr.chunksOf(accounts, 200)
     const [blockNumber, timestamp, ...firstBalances] = await client.multicall({
       contracts: [
         { address: multicall3, abi: multicall3Abi, functionName: "getBlockNumber" },
@@ -92,6 +91,3 @@ export const readBalances = (chain: ChainClient["Service"], accounts: ReadonlyAr
     ]))
     return { blockNumber, timestamp: new Date(Number(timestamp) * 1000), balances }
   }).pipe(Effect.withSpan("chain.readBalances", { attributes: { accounts: accounts.length } }))
-
-const chunksOf = <A>(items: ReadonlyArray<A>, size: number): Array<ReadonlyArray<A>> =>
-  Array.from({ length: Math.ceil(items.length / size) }, (_, index) => items.slice(index * size, (index + 1) * size))

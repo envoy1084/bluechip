@@ -12,8 +12,6 @@ import { stocks } from "../Contracts.ts"
 import { required, RULES } from "./Rules.ts"
 import { MODES } from "./Trade.ts"
 
-const ALLOWED = BigInt(1) << BigInt(160)
-
 /**
  * `TradeGuard.packMarkets` for every stock: two words each, the token (with whether the agent may trade it at bit
  * 160), then its feed.
@@ -24,7 +22,7 @@ const ALLOWED = BigInt(1) << BigInt(160)
  */
 export const packMarkets = (allowed: ReadonlyArray<string>): ReadonlyArray<bigint> =>
   stocks.flatMap((stock) => [
-    BigInt(stock.token) | (allowed.includes(stock.symbol) ? ALLOWED : BigInt(0)),
+    BigInt(stock.token) | (allowed.includes(stock.symbol) ? BigInt(1) << BigInt(160) : BigInt(0)),
     BigInt(stock.feed)
   ])
 

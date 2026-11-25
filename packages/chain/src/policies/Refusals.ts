@@ -28,22 +28,6 @@ export interface Refusal {
   readonly message: string
 }
 
-// Smart Sessions refusing a session's policy, and SessionHook wrapping an execution policy's revert.
-const sessionErrors = parseAbi([
-  "error PolicyViolation(bytes32 permissionId, address policy)",
-  "error ExecutionPolicyViolation(bytes32 permissionId, address policy, bytes reason)"
-])
-
-const VALIDATION: ReadonlyArray<{ readonly address: Address; readonly policy: PolicyId; readonly message: string }> = [
-  {
-    address: aerodromeTradePolicy,
-    policy: "trade",
-    message: "Not a trade it may make: another stock, the other direction, or over its budget or largest buy."
-  },
-  { address: RateLimitPolicy.addressV1, policy: "tradesPerDay", message: "It has made all of today's trades." },
-  { address: GasPolicy.addressV1, policy: "gasBudget", message: "It has used today's gas." }
-]
-
 // TradeGuard's own checks: what moved belongs to the trade policy, the prices to the fair-price policy.
 const HOST: Readonly<Record<string, { readonly policy: PolicyId; readonly message: (stock: string) => string }>> = {
   SequencerDown: {
@@ -68,7 +52,44 @@ const decode = (abi: Abi, data: Hex) => {
 const stockNamed = (value: unknown) =>
   stocks.find((stock) => typeof value === "string" && isAddressEqual(stock.token, value as Address))?.symbol ?? null
 
-const executionRefusal = (reason: Hex): Refusal | undefined => {
+/**
+ * Why a policy refused an operation, from revert data; `undefined` when something else reverted.
+ *
+ * @stability unstable
+ * @category decoding
+ * @since 0.0.0
+ */
+export const refusalOf = (data: Hex): Refusal | undefined => {
+  // Smart Sessions refusing a session's policy, and SessionHook wrapping an execution policy's revert.
+  const session = decode(
+    parseAbi([
+      "error PolicyViolation(bytes32 permissionId, address policy)",
+      "error ExecutionPolicyViolation(bytes32 permissionId, address policy, bytes reason)"
+    ]) as Abi,
+    data
+  )
+  if (session === undefined) return undefined
+
+  const [, policy, reason] = session.args as unknown as readonly [Hex, Address, Hex | undefined]
+  if (session.errorName === "PolicyViolation") {
+    const validation: ReadonlyArray<
+      { readonly address: Address; readonly policy: PolicyId; readonly message: string }
+    > = [
+      {
+        address: aerodromeTradePolicy,
+        policy: "trade",
+        message: "Not a trade it may make: another stock, the other direction, or over its budget or largest buy."
+      },
+      { address: RateLimitPolicy.addressV1, policy: "tradesPerDay", message: "It has made all of today's trades." },
+      { address: GasPolicy.addressV1, policy: "gasBudget", message: "It has used today's gas." }
+    ]
+    const refused = validation.find((candidate) => isAddressEqual(candidate.address, policy))
+    return refused === undefined
+      ? undefined
+      : { policy: refused.policy, error: null, stock: null, message: refused.message }
+  }
+  if (!isAddressEqual(policy, tradeGuard) || reason === undefined) return undefined
+
   const host = decode(tradeGuardAbi, reason)
   if (host !== undefined && HOST[host.errorName] !== undefined) {
     const stock = stockNamed(host.args?.[0])
@@ -87,30 +108,6 @@ const executionRefusal = (reason: Hex): Refusal | undefined => {
 }
 
 /**
- * Why a policy refused an operation, from revert data; `undefined` when something else reverted.
- *
- * @stability unstable
- * @category decoding
- * @since 0.0.0
- */
-export const refusalOf = (data: Hex): Refusal | undefined => {
-  const session = decode(sessionErrors as Abi, data)
-  if (session === undefined) return undefined
-
-  const [, policy, reason] = session.args as unknown as readonly [Hex, Address, Hex | undefined]
-  if (session.errorName === "PolicyViolation") {
-    const refused = VALIDATION.find((candidate) => isAddressEqual(candidate.address, policy))
-    return refused === undefined
-      ? undefined
-      : { policy: refused.policy, error: null, stock: null, message: refused.message }
-  }
-  if (!isAddressEqual(policy, tradeGuard) || reason === undefined) return undefined
-  return executionRefusal(reason)
-}
-
-const REVERT = /0x(?:3b577361|ee276506)[0-9a-fA-F]*/
-
-/**
  * Why a policy refused an operation, from what the bundler or a receipt said: the first session refusal found in an
  * error's messages (and its causes'), or in a receipt's revert reason.
  *
@@ -121,7 +118,8 @@ const REVERT = /0x(?:3b577361|ee276506)[0-9a-fA-F]*/
 export const refusalFrom = (failure: unknown): Refusal | undefined => {
   for (let at: unknown = failure; at !== undefined && at !== null; at = (at as { cause?: unknown }).cause) {
     const text = typeof at === "string" ? at : String((at as { message?: unknown }).message ?? "")
-    const found = REVERT.exec(text)?.[0]
+    // `PolicyViolation` and `ExecutionPolicyViolation`'s selectors, with their arguments.
+    const found = /0x(?:3b577361|ee276506)[0-9a-fA-F]*/.exec(text)?.[0]
     if (found !== undefined) return refusalOf(found as Hex)
     if (typeof at === "string") return undefined
   }

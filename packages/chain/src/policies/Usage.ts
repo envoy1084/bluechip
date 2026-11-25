@@ -14,7 +14,7 @@ import * as SessionHook from "@namera-ai/contracts/SessionHook"
 import * as SmartSession from "@namera-ai/contracts/SmartSession"
 import * as Grant from "@namera-ai/sdk/Grant"
 import * as Effect from "effect/Effect"
-import { type Address, encodeAbiParameters, encodePacked, type Hex, keccak256 } from "viem"
+import { type Address, encodeAbiParameters, encodePacked, keccak256 } from "viem"
 import { ChainClient } from "../ChainClient.ts"
 import {
   aerodromeTradePolicy,
@@ -24,21 +24,6 @@ import {
   tradeGuard
 } from "./Deployed.ts"
 import { required } from "./Rules.ts"
-
-// Policies are keyed by the account's id of the session's policies (Smart Sessions' and SessionHook's `configId`);
-// TradeGuard, the session's first execution policy, keys its rules' state by its own config id under SessionHook.
-const sessionKeys = (account: Address, permissionId: Hex) => {
-  const sessionConfigId = keccak256(encodePacked(["address", "bytes32"], [account, permissionId]))
-  const guardConfigId = keccak256(encodeAbiParameters([{ type: "bytes32" }, { type: "uint256" }], [
-    sessionConfigId,
-    BigInt(0)
-  ]))
-  const ruleKey = keccak256(encodeAbiParameters([{ type: "bytes32" }, { type: "address" }], [
-    guardConfigId,
-    SessionHook.addressV1
-  ]))
-  return { sessionConfigId, ruleKey }
-}
 
 /**
  * What each counting policy of `spec` has used at `now` (Unix seconds), for the session `grant` on `account`.
@@ -54,7 +39,18 @@ export const readUsage = Effect.fnUntraced(function*(options: {
   readonly now: number
 }) {
   const chain = yield* ChainClient
-  const { ruleKey, sessionConfigId } = sessionKeys(options.account, options.grant.id)
+
+  // Policies are keyed by the account's id of the session's policies (Smart Sessions' and SessionHook's `configId`);
+  // TradeGuard, the session's first execution policy, keys its rules' state by its own config id under SessionHook.
+  const sessionConfigId = keccak256(encodePacked(["address", "bytes32"], [options.account, options.grant.id]))
+  const guardConfigId = keccak256(encodeAbiParameters([{ type: "bytes32" }, { type: "uint256" }], [
+    sessionConfigId,
+    BigInt(0)
+  ]))
+  const ruleKey = keccak256(encodeAbiParameters([{ type: "bytes32" }, { type: "address" }], [
+    guardConfigId,
+    SessionHook.addressV1
+  ]))
   const carries = (id: string) => options.spec.policies.some((entry) => entry.id === id)
 
   const [spent, ledger, status] = yield* chain.use("agent usage", (client) =>

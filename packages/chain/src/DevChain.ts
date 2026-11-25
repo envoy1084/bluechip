@@ -25,9 +25,6 @@ import { usdc } from "./Contracts.ts"
 // Where test USDC comes from: an address with no code, whose balance is minted on the spot and sent on.
 const faucet: Address = "0x0000000000000000000000000000000000fa0ce7"
 
-// FiatTokenV2_2 keeps balances in `balanceAndBlacklistStates`, storage slot 9; the balance is the low 255 bits.
-const usdcBalancesSlot = BigInt(9)
-
 /**
  * Anvil cheatcodes. Only available when `NETWORK` is `local`: building the layer for another network is a defect, so
  * a misconfigured server can never try to mint money.
@@ -61,9 +58,9 @@ export class DevChain extends Context.Service<DevChain, {
         use("anvil_setStorageAt", () =>
           anvil.setStorageAt({
             address: usdc,
-            index: keccak256(
-              encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [account, usdcBalancesSlot])
-            ),
+            // FiatTokenV2_2 keeps balances in `balanceAndBlacklistStates`, storage slot 9; the balance is the low
+            // 255 bits.
+            index: keccak256(encodeAbiParameters([{ type: "address" }, { type: "uint256" }], [account, BigInt(9)])),
             value: numberToHex(units, { size: 32 })
           }))
 
