@@ -4,10 +4,16 @@ import { expect, type Page } from "@playwright/test"
 import { urls } from "../stack/Stack.ts"
 
 export interface User {
+  readonly id: string
   /** The account's address on Base. */
   readonly address: `0x${string}`
   /** Adds $1,000 of test USDC and ETH for gas (`POST /api/dev/fund`, the Add cash screen's test money button). */
   readonly fund: (page: Page) => Promise<void>
+  /**
+   * Runs the agents' expiry cron for this person as if the server's clock read `at` (`POST /e2e/expire` on the suite's
+   * server): an agent whose session ended by then is expired.
+   */
+  readonly expireAgents: (page: Page, at: Date) => Promise<void>
 }
 
 /** Headers the web app sends with every API call: its contract version and its origin. */
@@ -26,11 +32,19 @@ export const signUp = async (page: Page): Promise<User> => {
   await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 
   const me = await (await page.request.get("/api/account", { headers: apiHeaders })).json() as {
+    readonly user: { readonly id: string }
     readonly account: { readonly address: `0x${string}` }
   }
 
   return {
+    id: me.user.id,
     address: me.account.address,
+    expireAgents: async (on, at) => {
+      const response = await on.request.post(`${urls.server}/e2e/expire`, {
+        data: { userId: me.user.id, at: at.toISOString() }
+      })
+      expect(response.status(), "POST /e2e/expire").toBe(204)
+    },
     fund: async (on) => {
       const response = await on.request.post("/api/dev/fund", { headers: apiHeaders, data: {} })
       expect(response.status(), "POST /api/dev/fund").toBe(204)

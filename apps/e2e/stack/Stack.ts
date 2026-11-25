@@ -1,13 +1,19 @@
 // The suite's own bluechip: a fresh database, a devnet (Anvil from the captured state, and Alto), the server and the
 // web app, each on a port of its own, so a run never touches `pnpm dev`'s database, chain or ports and needs no RPC.
-import { BASE_FEE_WEI, BUNDLER_KEYS, rpc } from "@bluechip/devnet/Controls"
+import { stocks } from "@bluechip/chain/Contracts"
+import { BASE_FEE_WEI, BUNDLER_KEYS, movePool, rpc, setFeed } from "@bluechip/devnet/Controls"
 import { type ChildProcess, execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import { gunzipSync } from "node:zlib"
-import { syncPrices } from "scripts/devnet/sync.ts"
 import { createServer, type ViteDevServer } from "vite"
+
+/** A stock as `GET /api/market/stocks` answers it: the market's token price (USD, 8 decimals), if there is one. */
+interface ListedStock {
+  readonly symbol: string
+  readonly price: { readonly price: string } | null
+}
 
 const root = path.resolve(import.meta.dirname, "../../..")
 
@@ -42,6 +48,9 @@ const assertFree = (port: number) => {
   if (pids !== "") throw new Error(`e2e: port ${port} is in use (pid ${pids}); stop what runs there first`)
 }
 
+// Set once the stack stops, so processes ending on its signal aren't reported as crashes.
+let stopping = false
+
 const start = (name: string, command: string, args: ReadonlyArray<string>, env: Record<string, string> = {}) => {
   const log = fs.openSync(path.join(dataDir, `${name}.log`), "w")
   const child = spawn(command, args, {
@@ -50,7 +59,7 @@ const start = (name: string, command: string, args: ReadonlyArray<string>, env: 
     stdio: ["ignore", log, log]
   })
   child.on("exit", (code) => {
-    if (code !== null && code !== 0) {
+    if (!stopping && code !== null && code !== 0) {
       process.stderr.write(`e2e: ${name} exited with ${code}, see ${dataDir}/${name}.log\n`)
     }
   })
@@ -89,6 +98,7 @@ export const startStack = async (): Promise<Stack> => {
   const children: Array<ChildProcess> = []
   let web: ViteDevServer | undefined
   const stop = async () => {
+    stopping = true
     await web?.close()
     for (const child of children) child.kill("SIGTERM")
     await Promise.all(children.map((child) =>
@@ -126,8 +136,13 @@ export const startStack = async (): Promise<Stack> => {
     ]))
     await waitFor("anvil", answersRpc(urls.anvil, "eth_chainId"))
 
-    // Loading the state brings back the capture's clock and base fee: mine a block at Base's fee, so it reads now.
+    // Loading the state brings back the capture's clock and base fee: run at Base's fee, at a time prices are live
+    // (`marketTime.ts`: now, or the next market open on a weekend or holiday).
     const anvil = rpc(urls.anvil)
+    const chainTime = new Date(
+      execFileSync("node", ["apps/server/test/stack/marketTime.ts"], { cwd: root, encoding: "utf8" })
+    )
+    await anvil("anvil_setTime", [Math.floor(chainTime.getTime() / 1000)])
     await anvil("anvil_setNextBlockBaseFeePerGas", [`0x${BASE_FEE_WEI.toString(16)}`])
     await anvil("anvil_mine", ["0x1"])
 
@@ -173,8 +188,15 @@ export const startStack = async (): Promise<Stack> => {
     }))
     await waitFor("server", async () => (await fetch(`${urls.server}/health`)).ok)
 
-    // The devnet's feeds and pools at the market data's prices, as `pnpm dev` keeps them.
-    await syncPrices({ apiUrl: urls.server, rpcUrl: urls.anvil })
+    // The devnet's feeds and pools at the market data's prices, as `pnpm dev` keeps them, updated at the chain's time.
+    const listed = await (await fetch(`${urls.server}/api/market/stocks`)).json() as ReadonlyArray<ListedStock>
+    const block = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: string }
+    for (const stock of stocks) {
+      const price = listed.find((candidate) => candidate.symbol === stock.symbol)?.price
+      if (price == null) continue
+      await setFeed(anvil, stock.feed, BigInt(price.price), Number(block.timestamp))
+      await movePool(anvil, stock, BigInt(price.price))
+    }
 
     // The web app reads these through Vite, ahead of its own `.env.local`.
     process.env["SERVER_ORIGIN"] = urls.server

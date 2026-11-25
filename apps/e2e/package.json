@@ -16,7 +16,6 @@
     "@bluechip/domain": "workspace:*",
     "@playwright/test": "1.65.1",
     "@types/node": "catalog:",
-    "scripts": "workspace:*",
     "typescript": "catalog:",
     "viem": "catalog:",
     "vite": "8.3.8"

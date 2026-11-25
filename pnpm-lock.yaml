@@ -289,9 +289,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.6
-      scripts:
-        specifier: workspace:*
-        version: link:../../scripts
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
