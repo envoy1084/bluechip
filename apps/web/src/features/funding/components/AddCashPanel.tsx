@@ -4,9 +4,10 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
-import { devFundAtom, fetchedPortfolioAtom } from "../atoms/portfolio.ts"
-import { usdcDollars } from "../lib/amounts.ts"
-import { network } from "../lib/wallet.ts"
+import { fetchedPortfolioAtom } from "../../../atoms/portfolio.ts"
+import { usdcDollars } from "../../../lib/amounts.ts"
+import { network } from "../../../lib/wallet.ts"
+import { devFundAtom } from "../atoms/funding.ts"
 
 // While this screen is open, balances are read this often: deposits aren't watched in the background, so the
 // "cash arrived" moment only plays for someone who is looking.

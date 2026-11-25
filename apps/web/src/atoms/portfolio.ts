@@ -1,13 +1,10 @@
-import type { SigningRequestId } from "@bluechip/domain/Ids"
 import type { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
 import { Bps, bpsBetween, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { Holding, Portfolio } from "@bluechip/domain/portfolio/Portfolio"
-import * as Effect from "effect/Effect"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../lib/api/client.ts"
 import { livePricesAtom } from "../lib/api/events.ts"
-import { signWithPasskey } from "../lib/passkey.ts"
 
 const reactivityKeys = [portfolioReactivityKey, liveReactivityKey]
 
@@ -64,23 +61,3 @@ export const withdrawalsAtom = BluechipApiClient.query("transfers", "list", {
   query: { pageSize: 10 },
   reactivityKeys
 })
-
-/** Prepares a withdrawal: the server builds it and returns what the passkey signs. */
-export const prepareWithdrawalAtom = BluechipApiClient.mutation("transfers", "prepareWithdrawal")
-
-/** Signs a prepared withdrawal with the account's passkey (Face ID) and sends it. */
-export const confirmWithdrawalAtom = BluechipApiClient.runtime.fn(
-  Effect.fnUntraced(function*(request: { readonly id: SigningRequestId; readonly options: Record<string, unknown> }) {
-    const client = yield* BluechipApiClient
-    const credential = yield* signWithPasskey(request.options)
-
-    return yield* client.transfers.confirmWithdrawal({
-      params: { id: request.id },
-      payload: { credential }
-    })
-  }),
-  { reactivityKeys }
-)
-
-/** Local development: test USDC and ETH for the signed-in account. */
-export const devFundAtom = BluechipApiClient.mutation("dev", "fund")

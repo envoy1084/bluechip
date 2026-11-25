@@ -8,10 +8,10 @@ import {
 } from "@bluechip/ui/components/dialog"
 import { useAtom, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { meAtom } from "../atoms/account.ts"
-import { portfolioAtom } from "../atoms/portfolio.ts"
+import { meAtom } from "../../../atoms/account.ts"
+import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
+import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AddCashPanel } from "./AddCashPanel.tsx"
-import { cashDialogAtom } from "./cashDialog.ts"
 import { WithdrawDialog } from "./WithdrawDialog.tsx"
 
 /** The Add cash and Withdraw dialogs, mounted once for every signed-in page; `cashDialogAtom` opens them. */

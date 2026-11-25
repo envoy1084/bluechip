@@ -7,8 +7,8 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { accountReactivityKey, setEligibilityAtom } from "../../atoms/account.ts"
-import { SignedIn } from "../../auth/SignedIn.tsx"
 import { OnboardingFrame, OnboardingTitle } from "../../components/layout/OnboardingFrame.tsx"
+import { SignedIn } from "../../components/SignedIn.tsx"
 
 export const Route = createFileRoute("/welcome/eligibility")({ ssr: false, component: Eligibility })
 

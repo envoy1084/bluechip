@@ -3,8 +3,8 @@ import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { useAtomSet } from "@effect/atom-react/Hooks"
-import { cashDialogAtom } from "../../../../funding/cashDialog.ts"
-import { usdcDollars } from "../../../../lib/amounts.ts"
+import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
+import { usdcDollars } from "../../../lib/amounts.ts"
 
 /** Cash ready to invest, with the ways to add more or take it out. */
 export function CashCard({ cash }: Readonly<{ cash: bigint }>) {

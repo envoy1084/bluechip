@@ -21,8 +21,9 @@ import { formatMoney } from "@bluechip/ui/lib/format"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
-import { confirmWithdrawalAtom, prepareWithdrawalAtom, withdrawalsAtom } from "../atoms/portfolio.ts"
-import { parseUsdc, usdcDollars } from "../lib/amounts.ts"
+import { withdrawalsAtom } from "../../../atoms/portfolio.ts"
+import { parseUsdc, usdcDollars } from "../../../lib/amounts.ts"
+import { confirmWithdrawalAtom, prepareWithdrawalAtom } from "../atoms/funding.ts"
 
 type Step =
   | { readonly _tag: "Form" }

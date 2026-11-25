@@ -16,10 +16,10 @@ import {
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomMount } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
-import { SignedIn } from "../auth/SignedIn.tsx"
+import { SignedIn } from "../components/SignedIn.tsx"
 import { SidebarAgents, SidebarPauseAll } from "../features/agents/components/SidebarAgents.tsx"
+import { CashDialogs } from "../features/funding/components/CashDialogs.tsx"
 import { useApprovalCount } from "../features/intents/hooks/useApprovalCount.ts"
-import { CashDialogs } from "../funding/CashDialogs.tsx"
 import { liveEventAtom } from "../lib/api/events.ts"
 
 // Signed-in pages render in the browser: they need the session cookie and the live stream.

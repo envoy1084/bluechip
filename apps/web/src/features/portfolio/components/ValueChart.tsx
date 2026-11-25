@@ -3,8 +3,8 @@ import { formatDate } from "@bluechip/ui/lib/format"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { portfolioHistoryAtom } from "../../../../atoms/portfolio.ts"
-import { usdcDollars } from "../../../../lib/amounts.ts"
+import { portfolioHistoryAtom } from "../../../atoms/portfolio.ts"
+import { usdcDollars } from "../../../lib/amounts.ts"
 
 /** The portfolio's value over the last 30 days: a snapshot every 4 hours, ending now. */
 export function ValueChart() {

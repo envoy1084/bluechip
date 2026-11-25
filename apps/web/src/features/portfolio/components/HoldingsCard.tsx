@@ -5,8 +5,8 @@ import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
-import { cashDialogAtom } from "../../../../funding/cashDialog.ts"
-import { bpsPercent, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
+import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
+import { bpsPercent, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 
 type Sort = "value" | "today" | "name"
 

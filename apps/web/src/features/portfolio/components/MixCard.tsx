@@ -1,7 +1,7 @@
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { Portfolio } from "@bluechip/domain/portfolio/Portfolio"
 import { AllocationDonut } from "@bluechip/ui/bluechip/allocation-donut"
-import { bpsPercent } from "../../../../lib/amounts.ts"
+import { bpsPercent } from "../../../lib/amounts.ts"
 
 /** How your money is split between stocks and cash. Targets join when an agent keeps a mix for you. */
 export function MixCard(
