@@ -273,6 +273,11 @@ Every package's `test/` folder is split by tier; each tier mirrors `src/`:
 | `test/utils/`       | Test layers and harness services (`TestServer`, `TestUsers`, `TestEvents`, `EngineTest`) | –                                                                |
 | `test/setup/`       | Vitest `globalSetup` files                                                               | –                                                                |
 
+`apps/web` (project `web`) has a unit tier: `test/unit/` mirrors `src/` (`features/<feature>/model/`, `lib/`) and runs
+in Node with the viewer's time zone set to UTC; its fixtures (agents, intents, messages) are in `test/fixtures/`.
+Hooks and components that need a DOM get an integration tier in Vitest browser mode, like `packages/ui`, only where a
+unit test of their model can't prove the behaviour.
+
 Tests are Effect code, like the code they test:
 
 - `it.effect` and `layer(...)` from `@effect/vitest`; `TestClock` for time; `layer(..., { excludeTestServices: true })`

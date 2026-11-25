@@ -33,6 +33,9 @@ export default defineConfig({
     projects: [
       project("scripts", "scripts"),
       project("domain", "packages/domain"),
+      // The web app's pure logic (thread building, wording, amounts) needs no DOM. The viewer's own time zone is UTC
+      // here, so times said in it read the same on every machine.
+      project("web", "apps/web", { test: { include: ["test/unit/**/*.test.ts"], env: { TZ: "UTC" } } }),
       // Chain tests run on the devnet: one Anvil and Alto per worker, from the captured state. Each worker is three busy
       // processes (Anvil, Alto and the tests), so these projects run as their own group, after the browser and pure
       // tests, with a few workers each: sharing the machine with Chromium, bundler round trips slowed past the timeout.
