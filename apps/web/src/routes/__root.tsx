@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { AtomProvider } from "../providers/AtomProvider.tsx"
+import { WalletProvider } from "../providers/WalletProvider.tsx"
 import styles from "../styles.css?url"
 
 export const Route = createRootRoute({
@@ -20,7 +21,9 @@ function RootComponent() {
   return (
     <RootDocument>
       <AtomProvider>
-        <Outlet />
+        <WalletProvider>
+          <Outlet />
+        </WalletProvider>
       </AtomProvider>
     </RootDocument>
   )

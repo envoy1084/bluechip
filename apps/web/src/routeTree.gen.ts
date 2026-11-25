@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevChainRoute = DevChainRouteImport.update({
+  id: '/dev/chain',
+  path: '/dev/chain',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevConnectionRoute = DevConnectionRouteImport.update({
@@ -25,27 +31,31 @@ const DevConnectionRoute = DevConnectionRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dev/connection'
+  fullPaths: '/' | '/dev/chain' | '/dev/connection'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/connection'
-  id: '__root__' | '/' | '/dev/connection'
+  to: '/' | '/dev/chain' | '/dev/connection'
+  id: '__root__' | '/' | '/dev/chain' | '/dev/connection'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/chain': {
+      id: '/dev/chain'
+      path: '/dev/chain'
+      fullPath: '/dev/chain'
+      preLoaderRoute: typeof DevChainRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/connection': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,
 }
 export const routeTree = rootRouteImport
