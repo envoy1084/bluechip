@@ -1,0 +1,21 @@
+{
+  "name": "@bluechip/chain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "bluechip's view of Base: a typed chain client, contract addresses and ABIs, and local-fork helpers.",
+  "sideEffects": [],
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": "./src/*.ts"
+  },
+  "peerDependencies": {
+    "effect": "catalog:",
+    "viem": "catalog:"
+  },
+  "devDependencies": {
+    "effect": "catalog:",
+    "viem": "catalog:"
+  }
+}

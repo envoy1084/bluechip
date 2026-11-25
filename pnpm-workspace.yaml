@@ -15,6 +15,7 @@ catalog:
   react: "19.3.1"
   react-dom: "19.3.1"
   tailwindcss: "4.3.5"
+  viem: "2.58.6"
 
 engineStrict: true
 # Exact versions when adding dependencies; published libraries write their ranges by hand.
@@ -25,11 +26,13 @@ verifyDepsBeforeRun: error
 # A release must be a day old before it installs, so a compromised version is likely caught first.
 minimumReleaseAge: 1440
 # Effect ships the language service, test helpers and runtime together, and @effect-kit republishes
-# Effect's repository tools with provenance: take their releases at once.
+# Effect's repository tools with provenance: take their releases at once. Namera is our own SDK, released
+# alongside bluechip.
 minimumReleaseAgeExclude:
   - effect
   - "@effect/*"
   - "@effect-kit/*"
+  - "@namera-ai/*"
 
 # Dependency install scripts are denied unless listed as true.
 allowBuilds:
