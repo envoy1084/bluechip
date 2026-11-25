@@ -1,4 +1,5 @@
 import { aggregatorAbi } from "@bluechip/chain/Abis"
+import { guardedTradeCallGas } from "@bluechip/chain/agents/Policies"
 import { refusalFrom } from "@bluechip/chain/agents/Violations"
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { type Stock, stocks, usdc } from "@bluechip/chain/Contracts"
@@ -40,11 +41,27 @@ layer(DevnetTest.layer)("an agent's session", (it) => {
 
         const receipt = yield* Effect.promise(async () => {
           const calls = trade(nvda, "buy", amountIn, address, (quoted * BigInt(99)) / BigInt(100))
-          return agent.waitForUserOperationReceipt({ hash: await agent.sendUserOperation({ calls }) })
+          const hash = await agent.sendUserOperation({ calls, callGasLimit: guardedTradeCallGas })
+          return agent.waitForUserOperationReceipt({ hash })
         })
 
         assert.isTrue(receipt.success)
         assert.strictEqual(yield* balanceOf(nvda.token, address), quoted)
+      }))
+  })
+
+  describe("under the call gas floor", () => {
+    it.effect("a buy at the bundler's call gas estimate reverts in Aerodrome's swap hook", () =>
+      Effect.gen(function*() {
+        const { address, agent } = yield* agentOnNewAccount()
+
+        const receipt = yield* Effect.promise(async () => {
+          const hash = await agent.sendUserOperation({ calls: trade(nvda, "buy", BigInt(50_000_000), address) })
+          return agent.waitForUserOperationReceipt({ hash })
+        })
+
+        assert.isFalse(receipt.success)
+        assert.strictEqual(yield* balanceOf(nvda.token, address), BigInt(0))
       }))
   })
 

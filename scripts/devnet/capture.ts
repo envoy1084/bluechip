@@ -45,6 +45,8 @@ const POOL_WIDTH_TICKS = 4000
 const abi = parseAbi([
   "function createPool(address tokenA, address tokenB, int24 tickSpacing, uint160 sqrtPriceX96) returns (address)",
   "function getPool(address tokenA, address tokenB, int24 tickSpacing) view returns (address)",
+  "function getPoolSwapHook(address pool) view returns (address)",
+  "function clPoolTape() view returns (address)",
   "function exactInputSingle((address tokenIn, address tokenOut, int24 tickSpacing, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) returns (uint256)",
   "function quoteExactInputSingleV3(address pool, address tokenIn, uint256 amountIn, uint160 sqrtPriceLimitX96) returns (uint256, uint160, uint32)",
   "function approve(address spender, uint256 amount) returns (bool)",
@@ -65,7 +67,8 @@ const abi = parseAbi([
 ])
 
 type Call = { readonly to: Address; readonly data: Hex; readonly value?: Hex; readonly from?: Address }
-type Sample = { readonly call: Call; readonly codeOnly: boolean }
+// Which accounts' storage a sample's reads are copied with; the code of every account it touched is copied.
+type Sample = { readonly call: Call; readonly keepStorage: (address: string) => boolean }
 type Prestate = Record<string, { readonly code?: Hex; readonly storage?: Record<Hex, Hex> }>
 
 const node = (url: string) => {
@@ -138,9 +141,9 @@ const isInfrastructure = (address: string, account: Prestate[string]) => {
 }
 
 /**
- * Copies what `calls` read on the fork into the bare chain. A sample marked `codeOnly` runs against one of
- * mainnet's pools, so the storage it reads (the factory's and pool registry's records of that pool) would make the
- * devnet's own `createPool` revert: only its code is taken.
+ * Copies what `calls` read on the fork into the bare chain, with the storage each sample keeps. A sample on one of
+ * mainnet's pools leaves out the factory's and the pool tape's records of that pool, which would make the devnet's
+ * own `createPool` revert (`TargetAlreadyRecorded`).
  */
 const copyPrestate = async (fork: Node, bare: Node, samples: ReadonlyArray<Sample>) => {
   const accounts = new Map<string, { code: Hex; storage: Record<Hex, Hex> }>()
@@ -149,7 +152,7 @@ const copyPrestate = async (fork: Node, bare: Node, samples: ReadonlyArray<Sampl
     for (const [address, account] of Object.entries(await fork.prestate(sample.call))) {
       if (!isInfrastructure(address, account)) continue
       const known = accounts.get(address) ?? { code: account.code!, storage: {} }
-      const storage = sample.codeOnly ? {} : account.storage
+      const storage = sample.keepStorage(address) ? account.storage : {}
       accounts.set(address, { code: known.code, storage: { ...known.storage, ...storage } })
     }
   }
@@ -333,13 +336,20 @@ const installPools = async (bare: Node, poolSeeder: Hex) => {
 }
 
 /**
- * The calls whose reads the devnet needs on Base: making a pool and moving USDC (code and storage), and swapping and
- * quoting on NVDA's pool (code only, see `copyPrestate`).
+ * The calls whose reads the devnet needs on Base: making a pool and moving USDC; the factory's swap hook, which every
+ * pool calls around a swap and which records the swap only with enough gas left (so estimates come in short, as on
+ * Base); a swap on NVDA's pool, with the storage of the hook and what it reads but not the pool's records (see
+ * `copyPrestate`); and a quote (code only).
  */
-const samples = (): ReadonlyArray<Sample> => {
+const samples = (tape: Address): ReadonlyArray<Sample> => {
   const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
   const amount = BigInt(10_000_000)
-  const sample = (to: Address, data: Hex, codeOnly = false): Sample => ({ call: { to, data }, codeOnly })
+  const all = () => true
+  const sample = (to: Address, data: Hex, keepStorage: Sample["keepStorage"] = all): Sample => ({
+    call: { to, data },
+    keepStorage
+  })
+  const poolRecords = new Set([factory.toLowerCase(), tape.toLowerCase()])
 
   return [
     sample(
@@ -352,6 +362,7 @@ const samples = (): ReadonlyArray<Sample> => {
     ),
     sample(usdc, encodeFunctionData({ abi, functionName: "transfer", args: [POOL_SEEDER, amount] })),
     sample(usdc, encodeFunctionData({ abi, functionName: "approve", args: [POOL_SEEDER, amount] })),
+    sample(factory, encodeFunctionData({ abi, functionName: "getPoolSwapHook", args: [nvda.pool!.address] })),
     sample(
       swapRouter,
       encodeFunctionData({
@@ -368,7 +379,7 @@ const samples = (): ReadonlyArray<Sample> => {
           sqrtPriceLimitX96: BigInt(0)
         }]
       }),
-      true
+      (address) => !poolRecords.has(address)
     ),
     sample(
       metaquoter,
@@ -377,7 +388,7 @@ const samples = (): ReadonlyArray<Sample> => {
         functionName: "quoteExactInputSingleV3",
         args: [nvda.pool!.address, usdc, amount, BigInt(0)]
       }),
-      true
+      () => false
     )
   ]
 }
@@ -459,7 +470,12 @@ export const captureDevnet = async (options: {
     })
 
     options.log("copying Aerodrome and USDC")
-    const copied = await copyPrestate(fork, bare, samples())
+    const tape = decodeFunctionResult({
+      abi,
+      functionName: "clPoolTape",
+      data: await fork.read({ to: factory, data: encodeFunctionData({ abi, functionName: "clPoolTape" }) })
+    })
+    const copied = await copyPrestate(fork, bare, samples(tape))
     options.log(`  ${copied.length} contracts with the storage they read`)
 
     options.log("copying EntryPoint 0.7, Kernel 3.3, Namera and Multicall3")

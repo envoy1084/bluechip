@@ -114,8 +114,8 @@ export const rpc = (url: string): Rpc => async (method, params = []) => {
 }
 
 // Sends a transaction from the admin and waits for it: Anvil answers before automine has the block.
-const transact = async (node: Rpc, to: Address, data: Hex) => {
-  const hash = await node("eth_sendTransaction", [{ from: DEVNET_ADMIN, to, data }])
+const transact = async (node: Rpc, to: Address, data: Hex, gas?: bigint) => {
+  const hash = await node("eth_sendTransaction", [{ from: DEVNET_ADMIN, to, data, gas: gas && toHex(gas) }])
   for (;;) {
     const receipt = await node("eth_getTransactionReceipt", [hash]) as { status: Hex } | null
     if (receipt !== null) {
@@ -212,6 +212,8 @@ export const movePool = async (node: Rpc, stock: Stock, price: bigint) => {
         amountOutMinimum: BigInt(0),
         sqrtPriceLimitX96: target
       }]
-    })
+    }),
+    // Aerodrome's swap hook records a swap only with enough gas left, so Anvil's estimate comes in short.
+    BigInt(3_000_000)
   )
 }
