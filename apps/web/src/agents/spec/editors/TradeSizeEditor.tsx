@@ -1,7 +1,7 @@
 import { configOf } from "@bluechip/domain/policies/Policy"
+import { withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
-import { withConfig } from "../specEdits.ts"
 import type { EditorProps } from "./editorProps.ts"
 
 /** The largest trade it makes on its own (bigger ones wait for Face ID), and the smallest it bothers with. */

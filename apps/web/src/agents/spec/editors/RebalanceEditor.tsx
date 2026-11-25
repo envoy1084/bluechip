@@ -1,8 +1,8 @@
 import { formatPercent } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { rebalance } from "@bluechip/domain/policies/Rebalance"
+import { withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
-import { withConfig } from "../specEdits.ts"
 import type { EditorProps } from "./editorProps.ts"
 
 /** The target mix it trades toward, and how far the portfolio drifts before it starts. */

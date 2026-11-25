@@ -1,7 +1,7 @@
 import { configOf } from "@bluechip/domain/policies/Policy"
+import { withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
-import { withConfig } from "../specEdits.ts"
 import type { EditorProps } from "./editorProps.ts"
 
 /** How many trades it may send in a day. */

@@ -1,10 +1,17 @@
 import type { AgentSpec, PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
+import {
+  addPolicy,
+  cantAdd,
+  cantRemove,
+  hasPolicy,
+  removePolicy,
+  VISIBLE_POLICIES
+} from "@bluechip/domain/policies/SpecEdits"
 import { Switch } from "@bluechip/ui/components/switch"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useId } from "react"
 import { type ChangeKind, ChangeMark, PolicySection } from "./fields/PolicySection.tsx"
-import { addPolicy, cantAdd, cantRemove, hasPolicy, removePolicy, VISIBLE_POLICIES } from "./specEdits.ts"
 
 const joined = (words: ReadonlyArray<string>): string =>
   words.length <= 1 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`

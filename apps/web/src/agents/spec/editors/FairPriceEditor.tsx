@@ -1,9 +1,9 @@
 import { fairPrice } from "@bluechip/domain/policies/FairPrice"
 import { formatPercent } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
+import { withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
-import { withConfig } from "../specEdits.ts"
 import type { EditorProps } from "./editorProps.ts"
 
 const COLLARS: Readonly<Record<number, string>> = { 50: "Strict", 100: "Standard", 200: "Relaxed" }

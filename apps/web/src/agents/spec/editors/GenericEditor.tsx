@@ -1,7 +1,7 @@
 import { policyOf } from "@bluechip/domain/policies/Catalog"
 import type { Field } from "@bluechip/domain/policies/Policy"
+import { withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
-import { withConfig } from "../specEdits.ts"
 import type { EditorProps } from "./editorProps.ts"
 
 /** Any policy, one field after another, from the catalog's hints for each. */

@@ -1,8 +1,8 @@
 // Where a new agent starts: a built-in template (drafted from a preset), a template the user saved, or nothing.
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
+import { scratchSpec, templateSpec } from "@bluechip/domain/policies/SpecEdits"
 import { type SavedTemplate, type TemplateId, TEMPLATES } from "@bluechip/domain/policies/Templates"
-import { scratchSpec, templateSpec } from "../../../../../agents/spec/specEdits.ts"
 
 export type Origin =
   | { readonly kind: "builtIn"; readonly template: TemplateId }

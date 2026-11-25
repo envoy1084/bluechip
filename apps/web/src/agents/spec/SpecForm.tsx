@@ -3,6 +3,7 @@ import type { AgentSpec, PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import { cashReserve } from "@bluechip/domain/policies/CashReserve"
 import { checkSpec, compareSpecs, policyOf } from "@bluechip/domain/policies/Catalog"
 import { configOf } from "@bluechip/domain/policies/Policy"
+import { applyPreset, presetOf } from "@bluechip/domain/policies/SpecEdits"
 import { stockCap } from "@bluechip/domain/policies/StockCap"
 import { Preset, type TemplateId } from "@bluechip/domain/policies/Templates"
 import { trade } from "@bluechip/domain/policies/Trade"
@@ -14,7 +15,6 @@ import { PolicyEditor } from "./editors/PolicyEditor.tsx"
 import type { FieldContext } from "./fields/FieldEditor.tsx"
 import { PolicySection } from "./fields/PolicySection.tsx"
 import { PolicyPicker } from "./PolicyPicker.tsx"
-import { applyPreset, presetOf } from "./specEdits.ts"
 
 // Settings most people leave as they are, folded away unless one of them blocks locking.
 const ADVANCED: ReadonlyArray<PolicyId> = ["fairPrice", "slippageBudget", "tradesPerDay"]

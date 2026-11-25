@@ -1,9 +1,9 @@
 import { configOf } from "@bluechip/domain/policies/Policy"
+import { setDirection, setStocks, withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { DirectionField } from "../fields/DirectionField.tsx"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
 import { StockField } from "../fields/StockField.tsx"
-import { setDirection, setStocks, withConfig } from "../specEdits.ts"
 import type { EditorProps } from "./editorProps.ts"
 
 /** The stocks it trades, which way, and what it may spend a day. */
