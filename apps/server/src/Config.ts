@@ -9,6 +9,8 @@ export class AppConfig extends Context.Service<AppConfig, {
   readonly env: "development" | "test" | "production"
   readonly port: number
   readonly publicOrigin: string
+  /** The WebAuthn relying party: passkeys are bound to this domain for good. */
+  readonly rpId: string
   readonly databaseUrl: Redacted.Redacted
 }>()("@bluechip/server/AppConfig") {
   static readonly layer = Layer.effect(
@@ -20,6 +22,7 @@ export class AppConfig extends Context.Service<AppConfig, {
         ),
         port: yield* Config.Port("PORT").pipe(Config.withDefault(4000)),
         publicOrigin: yield* Config.String("PUBLIC_ORIGIN").pipe(Config.withDefault("http://localhost:3000")),
+        rpId: yield* Config.String("RP_ID").pipe(Config.withDefault("localhost")),
         databaseUrl: yield* Config.Redacted("DATABASE_URL")
       }
     })

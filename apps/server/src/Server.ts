@@ -8,23 +8,25 @@ import { ApiRoutes } from "./api/Api.ts"
 import { AppConfig } from "./Config.ts"
 import { Database } from "./db/Database.ts"
 import { HealthRoutes } from "./http/Health.ts"
+import { OriginCheckMiddleware } from "./http/OriginCheck.ts"
 import { RequestIdMiddleware } from "./http/RequestId.ts"
 import { LoggingLive } from "./Logging.ts"
 import { Namera } from "./Namera.ts"
 
-/** Every HTTP route the server answers: health, the API under `/api`; auth (`/auth/*`) joins in phase 006. */
-export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware)
+/** Every HTTP route the server answers: health and the API under `/api` (passkey auth included). */
+export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware, OriginCheckMiddleware)
 
 /** The server: routes, Node HTTP on `PORT`, the database, the chain, Namera, config and logging. */
 export const ServerLive = HttpRouter.serve(Routes).pipe(
-  // Built at startup even before a route needs it, so a bundler and paymaster that cannot work together stop boot.
-  Layer.merge(Namera.layer.pipe(Layer.provide(ChainClient.layer))),
   Layer.provide(NodeHttpServer.layerConfig(createServer, {
     port: Config.Port("PORT").pipe(Config.withDefault(4000)),
     // Live streams never finish on their own; cut them quickly on shutdown so clients reconnect to the next process.
     gracefulShutdownTimeout: Config.succeed("2 seconds")
   })),
+  // Namera checks at startup that the bundler and paymaster work together, and refuses to boot otherwise.
+  Layer.provide(Namera.layer),
   Layer.provide(Database.layer),
+  Layer.provide(ChainClient.layer),
   Layer.provide(AppConfig.layer),
   Layer.provide(LoggingLive)
 )
