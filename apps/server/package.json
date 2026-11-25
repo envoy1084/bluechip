@@ -17,6 +17,7 @@
   "dependencies": {
     "@bluechip/chain": "workspace:^",
     "@bluechip/domain": "workspace:^",
+    "@effect/ai-anthropic": "4.1.5",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "4.1.5",
     "@namera-ai/sdk": "catalog:",

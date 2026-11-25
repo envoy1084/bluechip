@@ -280,6 +280,9 @@ importers:
       '@bluechip/domain':
         specifier: workspace:^
         version: link:../../packages/domain
+      '@effect/ai-anthropic':
+        specifier: 4.1.5
+        version: 4.1.5(effect@4.1.5)
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.1.5(effect@4.1.5)(redis@6.3.1(@opentelemetry/api@1.9.1))
@@ -932,6 +935,11 @@ packages:
     engines: {node: '>=22.19.0'}
     peerDependencies:
       oxlint: ^1.94.0
+
+  '@effect/ai-anthropic@4.1.5':
+    resolution: {integrity: sha512-rLqL6hm/8J/CXJDNYhbF9g+isyZjiRNtiekL7iUxwflaEGLclXTP31/RxQwEzb6ihGeMMYmJz3yt6+besNaUzg==}
+    peerDependencies:
+      effect: ^4.1.5
 
   '@effect/atom-react@4.1.5':
     resolution: {integrity: sha512-7bFJUOa4hatIE4LD4EmuOSS7+jNniZxaltX3TRExBCYAFqMd6vjZs9G/Ez3u24oUaJnkschmjfG3EwVzzebgig==}
@@ -6265,6 +6273,10 @@ snapshots:
       '@oxlint/plugins': 1.94.0
       oxlint: 1.94.0
       typescript: 6.0.3
+
+  '@effect/ai-anthropic@4.1.5(effect@4.1.5)':
+    dependencies:
+      effect: 4.1.5
 
   '@effect/atom-react@4.1.5(effect@4.1.5)(react@19.3.1)(scheduler@0.28.0)':
     dependencies:
