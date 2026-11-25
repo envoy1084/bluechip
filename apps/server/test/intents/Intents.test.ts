@@ -1,3 +1,4 @@
+import { DevChain } from "@bluechip/chain/DevChain"
 import { Devnet } from "@bluechip/devnet/Devnet"
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { assert, describe, layer } from "@effect/vitest"
@@ -92,6 +93,22 @@ layer(DevnetTest.layer)("intents", (it) => {
         assert.deepStrictEqual([blocked.decision.policy, blocked.decision.error, blocked.tradeId], [
           "stockCap",
           "OverStockCap",
+          null
+        ])
+        yield* user.events.close
+      }))
+
+    it.effect("an account without ETH for gas waits instead of failing", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* lockedAgent()
+        yield* (yield* DevChain).setEthBalance(user.address, BigInt(0))
+
+        const created = yield* trade(user, agent.id, buy("NVDA", 50))
+        const waiting = yield* reaches(user, created.json.id, "waiting")
+
+        assert.deepStrictEqual([waiting.decision._tag, waiting.decision.reason, waiting.tradeId], [
+          "Wait",
+          "noGas",
           null
         ])
         yield* user.events.close
