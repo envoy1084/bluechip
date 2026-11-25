@@ -1,13 +1,14 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks, usdc } from "@bluechip/chain/Contracts"
 import { DevChain } from "@bluechip/chain/DevChain"
-import { factory, factoryAbi, swapRouter, swapRouterAbi } from "@bluechip/chain/market/Aerodrome"
+import { factory, factoryAbi } from "@bluechip/chain/market/Aerodrome"
 import { readPrices } from "@bluechip/chain/market/Prices"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
+import { fillOf, swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { createTestClient, createWalletClient, erc20Abi, http, parseEther } from "viem"
+import { createTestClient, createWalletClient, http, parseEther } from "viem"
 import { base } from "viem/chains"
 import { forkAvailable, ForkChainClient, forkUrl } from "../support/fork.ts"
 
@@ -41,7 +42,7 @@ describe.skipIf(!forkAvailable)("market on the local fork", () => {
         for (const price of prices) assert.isTrue(price.updatedAt.getTime() <= asOf.getTime(), price.stock.symbol)
       }))
 
-    it.effect("a quote is what the swap actually returns", () =>
+    it.effect("a quote is what the swap's calls actually fill", () =>
       Effect.gen(function*() {
         const chain = yield* ChainClient
         const dev = yield* DevChain
@@ -49,55 +50,35 @@ describe.skipIf(!forkAvailable)("market on the local fork", () => {
         const amountIn = BigInt(250_000_000)
         yield* dev.setEthBalance(trader, parseEther("1"))
         yield* dev.setUsdcBalance(trader, amountIn)
+
         const quoted = yield* quoteExactIn(chain, { pool: nvda.pool!.address, tokenIn: usdc, amountIn })
-        const received = yield* chain.use("swap", async (client) => {
+        const swap = {
+          stock: nvda,
+          side: "buy",
+          amountIn,
+          minimumOut: BigInt(0),
+          recipient: trader,
+          deadline: BigInt(2) ** BigInt(64)
+        } as const
+
+        const logs = yield* chain.use("swap", async (client) => {
           const anvil = createTestClient({ chain: base, mode: "anvil", transport: http(forkUrl) })
           const wallet = createWalletClient({ chain: base, account: trader, transport: http(forkUrl) })
           await anvil.impersonateAccount({ address: trader })
-          const before = await client.readContract({
-            address: nvda.token,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [trader]
-          })
-          await client.waitForTransactionReceipt({
-            hash: await wallet.writeContract({
-              address: usdc,
-              abi: erc20Abi,
-              functionName: "approve",
-              args: [swapRouter, amountIn]
-            })
-          })
-          await client.waitForTransactionReceipt({
-            hash: await wallet.writeContract({
-              address: swapRouter,
-              abi: swapRouterAbi,
-              functionName: "exactInputSingle",
-              // The fork's gas estimate undercounts the B20 precompiles (the swap uses ~376k; the estimate runs out).
-              gas: BigInt(1_000_000),
-              args: [{
-                tokenIn: usdc,
-                tokenOut: nvda.token,
-                tickSpacing: nvda.pool!.tickSpacing,
-                recipient: trader,
-                deadline: BigInt(2) ** BigInt(64),
-                amountIn,
-                amountOutMinimum: BigInt(0),
-                sqrtPriceLimitX96: BigInt(0)
-              }]
-            })
-          })
-          const after = await client.readContract({
-            address: nvda.token,
-            abi: erc20Abi,
-            functionName: "balanceOf",
-            args: [trader]
-          })
-          return after - before
+          const found = []
+          for (const call of swapCalls(swap)) {
+            const hash = await wallet.sendTransaction({ to: call.to, data: call.data, gas: swapCallGas })
+            found.push(...(await client.waitForTransactionReceipt({ hash })).logs)
+          }
+          return found
         })
+
+        const fill = fillOf(logs, swap, trader)
+        assert.isDefined(fill)
+        assert.strictEqual(fill!.amountIn, amountIn)
         // Within 1 basis point: the quote simulates the same pool state the swap meets.
-        const gap = quoted > received ? quoted - received : received - quoted
-        assert.isTrue(gap * BigInt(10_000) <= quoted, `quoted ${quoted}, received ${received}`)
+        const gap = quoted > fill!.amountOut ? quoted - fill!.amountOut : fill!.amountOut - quoted
+        assert.isTrue(gap * BigInt(10_000) <= quoted, `quoted ${quoted}, filled ${fill!.amountOut}`)
       }))
   })
 })
