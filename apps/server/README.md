@@ -37,6 +37,19 @@ Tasks live in `trigger/` and run their Effect programs with `JobsRuntime` (`src/
 once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` runs them on this machine;
 `jobs:deploy` deploys them. Each run writes a `job_runs` row.
 
+## Market
+
+- Prices are each stock's Chainlink feed, read in one multicall every `PRICE_POLL_SECONDS` and sent to signed-in
+  browsers as `PriceTick` events. Market status and price freshness use the latest block's time, so the fork behaves
+  like Base at its block.
+- The NYSE calendar (`src/market/Calendar.ts`) holds 2026-2028 holidays and early closes from NYSE's release; add
+  2029 when NYSE publishes it.
+- History lives in `price_points`: the `prices.snapshot` task adds each feed's latest answer every five minutes, and
+  `pnpm --filter @bluechip/server prices:backfill --rpc-url <your Base RPC>` loads every past answer once (a few
+  hundred calls read straight from Base; through the fork it would cost far more).
+- Quotes come from each stock's Aerodrome pool (pinned in `@bluechip/chain`'s `Contracts.ts`) via the MetaDEX
+  quoter.
+
 ## API
 
 1. Define endpoints in `packages/domain/src/api/<Feature>Api.ts` and add the group in `packages/domain/src/Api.ts`
@@ -70,3 +83,4 @@ once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` 
 | `ALCHEMY_API_KEY`       | —                       | Alchemy key (redacted), when `BUNDLER=alchemy`                   |
 | `ALCHEMY_GAS_POLICY_ID` | —                       | Gas Manager policy that pays sponsored gas                       |
 | `TRIGGER_PROJECT_REF`   | —                       | Trigger.dev project (`proj_…`)                                   |
+| `PRICE_POLL_SECONDS`    | `15`                    | How often the server reads the price feeds                       |
