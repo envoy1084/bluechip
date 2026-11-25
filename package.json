@@ -48,6 +48,6 @@
     "vitest-browser-react": "2.3.0"
   },
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=22.22.0"
   }
 }

@@ -60,6 +60,26 @@ jobs:
           cache: pnpm
       - run: pnpm build
 
+  contracts:
+    name: Contracts
+    needs: static
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: pnpm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.9.0
+      - run: pnpm contracts:test
+      # The addresses and ABIs the TypeScript side uses are generated from the build: they must be current.
+      - run: pnpm contracts:build
+      - run: git diff --exit-code packages/chain/src/agents/Deployed.ts
+
   test:
     name: Test (Node ${{ matrix.node || 'from .node-version' }})
     needs: static
@@ -68,8 +88,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Empty uses .node-version; 22.19.0 is the oldest Node the packages support (`engines`).
-        node: ["", "22.19.0"]
+        # Empty uses .node-version; 22.22.0 is the oldest Node the packages support (`engines`).
+        node: ["", "22.22.0"]
+    # The server's tests use their own database, as `docker/postgres-init.sql` creates it locally.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: bluechip
+          POSTGRES_PASSWORD: bluechip
+          POSTGRES_DB: bluechip_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bluechip -d bluechip_test"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v7
         with:
@@ -78,6 +113,14 @@ jobs:
         with:
           cache: pnpm
           node-version: ${{ matrix.node }}
+      # Anvil for the devnet (chain and server tests), on Base's hardforks, as `compose.yaml` pins it.
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.9.0
+      # Chromium for the UI tests (Vitest browser mode).
+      - run: pnpm exec playwright install --with-deps chromium
+      # The deploy test reads the contracts' build.
+      - run: pnpm contracts:build
       - run: pnpm test
 
   zizmor:

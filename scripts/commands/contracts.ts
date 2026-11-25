@@ -45,12 +45,21 @@ export const builtContracts = Effect.fn("contracts.builtContracts")(function*(ro
   )
 })
 
+/** Installs the Soldeer dependencies (`soldeer.lock` pins them) when a fresh checkout doesn't have them yet. */
+const installDependencies = Effect.gen(function*() {
+  const fs = yield* FileSystem.FileSystem
+  const path = yield* Path.Path
+  if (yield* fs.exists(path.join(process.cwd(), "contracts", "dependencies"))) return
+  yield* forge(["soldeer", "install"])
+}).pipe(Effect.orDie)
+
 const build = Command.make("build").pipe(
   Command.withDescription(`Build the contracts and write their addresses and ABIs to ${DEPLOYED_MODULE}`),
   Command.withHandler(() =>
     Effect.gen(function*() {
       const fs = yield* FileSystem.FileSystem
       const path = yield* Path.Path
+      yield* installDependencies
       yield* forge(["build", "--quiet"])
 
       const contracts = yield* builtContracts(process.cwd())
@@ -60,14 +69,6 @@ const build = Command.make("build").pipe(
     })
   )
 )
-
-/** Installs the Soldeer dependencies (`soldeer.lock` pins them) when a fresh checkout doesn't have them yet. */
-const installDependencies = Effect.gen(function*() {
-  const fs = yield* FileSystem.FileSystem
-  const path = yield* Path.Path
-  if (yield* fs.exists(path.join(process.cwd(), "contracts", "dependencies"))) return
-  yield* forge(["soldeer", "install"])
-}).pipe(Effect.orDie)
 
 const test = Command.make("test").pipe(
   Command.withDescription("Check the contracts' formatting and lints, then run their tests (unit, fuzz, vectors)"),
@@ -123,6 +124,7 @@ const deploy = Command.make("deploy", { rpcUrl }).pipe(
   Command.withDescription("Deploy the built contracts to a local Anvil chain, at their CREATE2 addresses"),
   Command.withHandler(({ rpcUrl }) =>
     Effect.gen(function*() {
+      yield* installDependencies
       yield* forge(["build", "--quiet"])
       const built = yield* builtContracts(process.cwd())
       yield* report(yield* onChain("deploy", (node) => deployContracts(node, built))(rpcUrl))
