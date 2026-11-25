@@ -137,6 +137,14 @@ sleeps (`TestClock`, or await a signal), no polling races, and no retries or rai
 Conventional Commits with kebab-case scopes (`feat(core): add retries`); commitlint checks commits
 and the `PR title` workflow checks PR titles, because PRs are squash-merged.
 
+## Subagents
+
+Pick a subagent's model by how hard the task is. Easy or mechanical work (moving or splitting files, renames,
+applying a known pattern, formatting, simple lookups) goes to a fresh subagent on Sonnet with a complete brief: the
+files, the pattern, how to verify, what to report. Use Opus subagents only for work that needs hard thinking
+(architecture, tricky debugging, security review, new design). Forks run on the parent's model, so don't fork easy
+tasks.
+
 ## Skills
 
 Installed globally (`npx skills add envoy1084/skills`); repository-specific skills go in
