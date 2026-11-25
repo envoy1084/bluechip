@@ -15,6 +15,7 @@ catalog:
   react: "19.3.1"
   react-dom: "19.3.1"
   tailwindcss: "4.3.5"
+  typescript: "7.0.2"
   viem: "2.58.6"
 
 engineStrict: true
@@ -36,6 +37,7 @@ minimumReleaseAgeExclude:
 
 # Dependency install scripts are denied unless listed as true.
 allowBuilds:
+  "@depot/cli": false
   dprint: false
   esbuild: false
   lefthook: true

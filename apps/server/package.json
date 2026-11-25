@@ -12,7 +12,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=../../.env src/bin/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "dev:fund": "node --env-file-if-exists=../../.env src/bin/dev-fund.ts"
+    "dev:fund": "node --env-file-if-exists=../../.env src/bin/dev-fund.ts",
+    "jobs:dev": "trigger.dev dev",
+    "jobs:deploy": "trigger.dev deploy"
   },
   "dependencies": {
     "@bluechip/chain": "workspace:^",
@@ -20,6 +22,7 @@
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "4.1.5",
     "@namera-ai/sdk": "2.0.0-rc.0",
+    "@trigger.dev/sdk": "4.8.10",
     "drizzle-orm": "1.0.0-rc.6",
     "effect": "catalog:",
     "typeid-js": "1.2.0",
@@ -28,6 +31,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "drizzle-kit": "1.0.0-rc.6",
-    "ox": "0.14.67"
+    "ox": "0.14.67",
+    "trigger.dev": "4.8.10",
+    "typescript": "catalog:"
   }
 }

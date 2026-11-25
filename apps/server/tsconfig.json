@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "include": ["src", "test", "drizzle.config.ts"],
+  "include": ["src", "test", "trigger", "drizzle.config.ts", "trigger.config.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2023"],
