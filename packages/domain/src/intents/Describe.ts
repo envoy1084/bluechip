@@ -56,6 +56,8 @@ export const describeDecision = (decision: Decision): string => {
         pricesPaused: "prices are paused and this agent doesn't trade on them",
         pricesStale: "Chainlink's price is too old to trade on",
         noGas: "your account needs a little ETH for gas",
+        gasPrice: "gas costs more right now than this agent's daily gas budget allows",
+        gasSpent: "this agent has used today's gas budget",
         dayEnding: "the UTC day is about to end",
         unavailable: "Base isn't answering"
       }

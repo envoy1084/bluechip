@@ -1,4 +1,6 @@
+import { ChainClient } from "@bluechip/chain/ChainClient"
 import { DevChain } from "@bluechip/chain/DevChain"
+import { BASE_FEE_WEI } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
 import { Conflict } from "@bluechip/domain/Errors"
 import { RequestId } from "@bluechip/domain/Ids"
@@ -124,6 +126,39 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
         assert.deepStrictEqual(
           waiting.decision?._tag === "Wait" ? [waiting.decision.reason, waiting.tradeId] : [],
           ["noGas", null]
+        )
+      }))
+
+    it.effect("a trade waits while gas costs more than the agent's daily gas budget allows", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const chain = yield* ChainClient
+        // 2 gwei: about 1.9M gas then costs ~4e15 wei, over the agent's 1e15 a day. Base's fee comes back afterwards.
+        const baseFee = (wei: bigint) =>
+          chain.use("set base fee", async (client) => {
+            await client.request({
+              method: "anvil_setNextBlockBaseFeePerGas" as never,
+              params: [`0x${wei.toString(16)}`] as never
+            })
+            await client.request({ method: "anvil_mine" as never, params: ["0x1"] as never })
+          })
+        yield* baseFee(BigInt(2_000_000_000))
+
+        const waiting = yield* Effect.gen(function*() {
+          const created = yield* user.api.intents.create({
+            payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("NVDA", 50) }
+          })
+          assert.instanceOf(created, Intent)
+          const { intent } = yield* user.events.next(
+            "IntentChanged",
+            ({ intent }) => intent.id === created.id && intent.status === "waiting"
+          )
+          return intent
+        }).pipe(Effect.ensuring(Effect.ignore(baseFee(BASE_FEE_WEI))))
+
+        assert.deepStrictEqual(
+          waiting.decision?._tag === "Wait" ? [waiting.decision.reason, waiting.tradeId] : [],
+          ["gasPrice", null]
         )
       }))
 

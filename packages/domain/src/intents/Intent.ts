@@ -69,14 +69,23 @@ export type Leg = typeof Leg.Type
 
 /**
  * Why an intent waits instead of going ahead: prices paused (and the agent doesn't trade on them) or too old, no ETH
- * for gas, the last minute of a UTC day (bundlers refuse an operation whose daily limits roll over), or Base not
- * answering.
+ * for gas, gas costing more right now than the agent's daily gas budget allows (`gasPrice`) or that budget spent for
+ * today (`gasSpent`), the last minute of a UTC day (bundlers refuse an operation whose daily limits roll over), or
+ * Base not answering.
  *
  * @stability unstable
  * @category schemas
  * @since 0.0.0
  */
-export const WaitReason = Schema.Literals(["pricesPaused", "pricesStale", "noGas", "dayEnding", "unavailable"])
+export const WaitReason = Schema.Literals([
+  "pricesPaused",
+  "pricesStale",
+  "noGas",
+  "gasPrice",
+  "gasSpent",
+  "dayEnding",
+  "unavailable"
+])
 
 /**
  * @stability unstable

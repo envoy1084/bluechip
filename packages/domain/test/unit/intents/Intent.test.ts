@@ -207,6 +207,16 @@ describe("describeDecision", () => {
       name: "waiting for prices",
       decision: WAIT,
       expected: "Waiting: prices are paused and this agent doesn't trade on them."
+    },
+    {
+      name: "waiting for gas to cost less",
+      decision: { _tag: "Wait", reason: "gasPrice", until: DateTime.makeUnsafe("2026-11-30T14:30:00Z") } as const,
+      expected: "Waiting: gas costs more right now than this agent's daily gas budget allows."
+    },
+    {
+      name: "waiting for tomorrow's gas budget",
+      decision: { _tag: "Wait", reason: "gasSpent", until: DateTime.makeUnsafe("2026-12-01T00:00:00Z") } as const,
+      expected: "Waiting: this agent has used today's gas budget."
     }
   ])("$name", ({ decision, expected }) => {
     assert.strictEqual(describeDecision(decision), expected)

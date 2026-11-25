@@ -26,6 +26,7 @@ const RETRY = {
   pricesPaused: Duration.minutes(15),
   pricesStale: Duration.minutes(15),
   noGas: Duration.minutes(10),
+  gasPrice: Duration.minutes(10),
   unavailable: Duration.minutes(1)
 } as const
 
@@ -97,24 +98,24 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
       const sessions = yield* AgentSessions
 
       // The agent's account, signing with its session key: a bundler client for its user operations.
+      // Twice the latest base fee plus a small tip, as Base prices blocks. Namera's gas policy charges an operation's
+      // maximum cost (gas × the most per gas) against the agent's daily gas budget, so a bundler's generous default
+      // would spend it in one trade.
+      const agentFees = async () => {
+        const block = await chain.client.getBlock()
+        return {
+          maxFeePerGas: (block.baseFeePerGas ?? BigInt(0)) * BigInt(2) + AGENT_TIP,
+          maxPriorityFeePerGas: AGENT_TIP
+        }
+      }
+
       const agentClient = Effect.fnUntraced(function*(agentId: string, session: SessionRow) {
         const signer = yield* sessions.signer(agentId, session)
         const account = yield* chain.use(
           "agent account",
           () => Grant.toAccount(chain.client, { grant: Grant.parse(session.grant!), signer, check: false })
         )
-        return namera.bundlerClient(account as never, {
-          // Twice the latest base fee plus a small tip, as Base prices blocks. Namera's gas policy charges an
-          // operation's maximum cost (gas × the most per gas) against the agent's daily gas budget, so a bundler's
-          // generous default would spend it in one trade.
-          estimateFeesPerGas: async () => {
-            const block = await chain.client.getBlock()
-            return {
-              maxFeePerGas: (block.baseFeePerGas ?? BigInt(0)) * BigInt(2) + AGENT_TIP,
-              maxPriorityFeePerGas: AGENT_TIP
-            }
-          }
-        })
+        return namera.bundlerClient(account as never, { estimateFeesPerGas: agentFees })
       })
 
       const receiptOf = (client: Effect.Success<ReturnType<typeof agentClient>>, hash: Hex) =>
@@ -137,7 +138,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         const now = yield* DateTime.now
         const spec = options.session.spec
         const { leg } = options
-        const waitFor = (reason: keyof typeof RETRY | "dayEnding", until: DateTime.Utc): Decided => ({
+        const waitFor = (reason: keyof typeof RETRY | "dayEnding" | "gasSpent", until: DateTime.Utc): Decided => ({
           decision: { _tag: "Wait", reason, until }
         })
 
@@ -187,18 +188,31 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         const client = yield* agentClient(options.agentId, options.session)
         const simulated = yield* simulateAsAgent(client as never, calls)
         switch (simulated._tag) {
-          case "Passes":
-            return {
-              decision: { _tag: "Passes", callGasLimit: simulated.callGasLimit },
-              quote,
-              calls,
-              gas: {
-                callGasLimit: simulated.callGasLimit,
-                verificationGasLimit: simulated.verificationGasLimit,
-                // Base's share of the L1 data fee moves with fees between the simulation and the send: a tenth more.
-                preVerificationGas: simulated.preVerificationGas + simulated.preVerificationGas / BigInt(10)
-              }
-            } satisfies Decided
+          case "Passes": {
+            const gas = {
+              callGasLimit: simulated.callGasLimit,
+              verificationGasLimit: simulated.verificationGasLimit,
+              // Base's share of the L1 data fee moves with fees between the simulation and the send: a tenth more.
+              preVerificationGas: simulated.preVerificationGas + simulated.preVerificationGas / BigInt(10)
+            }
+
+            // The simulation doesn't price gas, but the gas policy charges the operation's maximum cost: when that
+            // is more than the agent's gas budget has left, the trade waits instead of failing at the bundler.
+            const fees = yield* chain.use("agent fees", agentFees)
+            const maxCost = (gas.callGasLimit + gas.verificationGasLimit + gas.preVerificationGas) * fees.maxFeePerGas
+            const status = yield* chain.use(
+              "agent gas budget",
+              (client) => Grant.getStatus(client, { grant: Grant.parse(options.session.grant!) })
+            )
+            const budget = status.limits.find((limit) => limit.kind === "gas")
+            if (budget !== undefined && maxCost > budget.remaining) {
+              return maxCost > budget.budget || budget.resetsAt === undefined
+                ? waitFor("gasPrice", DateTime.addDuration(now, RETRY.gasPrice))
+                : waitFor("gasSpent", DateTime.makeUnsafe(budget.resetsAt * 1000))
+            }
+
+            return { decision: { _tag: "Passes", callGasLimit: gas.callGasLimit }, quote, calls, gas } satisfies Decided
+          }
           case "Refused":
             return { decision: { _tag: "Refused", ...simulated.refusal } } satisfies Decided
           case "Retry":
