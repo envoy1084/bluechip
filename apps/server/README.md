@@ -33,7 +33,7 @@ The fork keeps Base's chain id (8453), so contracts, Namera and signatures behav
 
 ## Jobs
 
-Tasks live in `trigger/` and run their Effect programs with `JobsRuntime` (`src/Jobs.ts`). `npx trigger.dev login`
+Tasks live in `trigger/` and run their Effect programs with `JobsRuntime` (`src/Jobs.ts`). `pnpm --filter @bluechip/server jobs:login`
 once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` runs them on this machine;
 `jobs:deploy` deploys them. Each run writes a `job_runs` row.
 
