@@ -187,10 +187,15 @@ const up = Effect.fn("dev.up")(
     // deploy whatever is missing, keeping the rest of its state.
     if (chain !== undefined) {
       yield* Effect.gen(function*() {
+        // Loading the kept state brings back its base fee; run at Base's, so agents' gas budgets behave as on Base.
+        const anvil = rpc(`http://localhost:${CHAIN_PORTS.anvil}`)
+        yield* Effect.tryPromise(async () => {
+          await anvil("anvil_setNextBlockBaseFeePerGas", [`0x${BASE_FEE_WEI.toString(16)}`])
+          await anvil("anvil_mine", ["0x1"])
+        })
+
         const contracts = yield* builtContracts(process.cwd())
-        const deployed = yield* Effect.tryPromise(() =>
-          deployContracts(rpc(`http://localhost:${CHAIN_PORTS.anvil}`), contracts)
-        )
+        const deployed = yield* Effect.tryPromise(() => deployContracts(anvil, contracts))
         for (const { name, status } of deployed) {
           if (status === "deployed") yield* Console.log(`dev: deployed ${name}, missing from the local chain`)
         }
