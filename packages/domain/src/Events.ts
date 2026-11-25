@@ -8,6 +8,7 @@ import * as Duration from "effect/Duration"
 import * as Schema from "effect/Schema"
 import { MarketPrice } from "./market/Market.ts"
 import { Transfer } from "./portfolio/Transfer.ts"
+import { Trade } from "./trading/Trade.ts"
 
 /**
  * How often the server sends a `Heartbeat`. A client that hears nothing for a few intervals treats the connection as
@@ -33,6 +34,8 @@ export const LiveEvent = Schema.TaggedUnion({
   PriceTick: { prices: Schema.Array(MarketPrice) },
   /** One of the user's withdrawals changed status (only sent to its owner). */
   TransferUpdated: { transfer: Transfer },
+  /** One of the user's trades changed status (only sent to its owner). */
+  TradeUpdated: { trade: Trade },
   /** The user's balances changed: refetch the portfolio (only sent to its owner). */
   PortfolioChanged: {}
 }).annotate({ identifier: "@bluechip/domain/Events/LiveEvent" })

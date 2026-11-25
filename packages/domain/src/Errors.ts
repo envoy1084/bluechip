@@ -117,6 +117,35 @@ export class InsufficientCash extends Schema.TaggedError<InsufficientCash>("@blu
 ) {}
 
 /**
+ * Not enough shares of a stock for a sell.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class InsufficientShares
+  extends Schema.TaggedError<InsufficientShares>("@bluechip/domain/Errors/InsufficientShares")(
+    "InsufficientShares",
+    { symbol: Schema.String, available: Schema.BigInt },
+    { httpApiStatus: 422 }
+  )
+{}
+
+/**
+ * The fair-price check refused a trade: the pool's price is further from Chainlink's than the limit allows
+ * (`gap`), or Chainlink's price missed its heartbeat, so there is nothing trustworthy to compare with (`stale`).
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class PriceCheckFailed extends Schema.TaggedError<PriceCheckFailed>("@bluechip/domain/Errors/PriceCheckFailed")(
+  "PriceCheckFailed",
+  { symbol: Schema.String, reason: Schema.Literals(["gap", "stale"]), gapBps: Schema.Int, limitBps: Schema.Int },
+  { httpApiStatus: 422 }
+) {}
+
+/**
  * The client was built against another contract version; it should reload.
  *
  * @stability unstable

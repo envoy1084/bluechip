@@ -144,3 +144,20 @@ export const SigningRequestId = typeId("signing").pipe(
  * @since 0.0.0
  */
 export type SigningRequestId = typeof SigningRequestId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const TradeId = typeId("trade").pipe(
+  Schema.brand("TradeId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/TradeId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type TradeId = typeof TradeId.Type
