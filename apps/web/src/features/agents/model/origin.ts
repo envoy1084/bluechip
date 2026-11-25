@@ -1,8 +1,10 @@
 // Where a new agent starts: a built-in template (drafted from a preset), a template the user saved, or nothing.
+import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { scratchSpec, templateSpec } from "@bluechip/domain/policies/SpecEdits"
 import { type SavedTemplate, type TemplateId, TEMPLATES } from "@bluechip/domain/policies/Templates"
+import { isTemplateId } from "./templateLabel.ts"
 
 export type Origin =
   | { readonly kind: "builtIn"; readonly template: TemplateId }
@@ -33,4 +35,11 @@ export const originPresets = (origin: Origin): TemplateId | null => origin.kind 
 export const originSpec = (origin: Origin, stocks: ReadonlyArray<StockSymbol>): AgentSpec => {
   if (origin.kind === "builtIn") return templateSpec(origin.template, "balanced", stocks)
   return origin.kind === "saved" ? origin.template.spec : scratchSpec()
+}
+
+/** Where a draft started: its built-in template, the saved template it names, or scratch (that template since deleted). */
+export const originOf = (draft: Agent, saved: ReadonlyArray<SavedTemplate>): Origin => {
+  if (isTemplateId(draft.template)) return { kind: "builtIn", template: draft.template }
+  const template = saved.find((candidate) => candidate.id === draft.template)
+  return template === undefined ? { kind: "scratch" } : { kind: "saved", template }
 }

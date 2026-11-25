@@ -4,12 +4,13 @@ import {
   type Origin,
   originKey,
   originLabel,
+  originOf,
   originPresets,
   originSpec,
   originTemplate,
   SCRATCH
 } from "../../../../../src/features/agents/model/origin.ts"
-import { PICKER, SAVED, TEMPLATE_ID } from "../../../../fixtures/Agents.ts"
+import { agent, PICKER, SAVED, TEMPLATE_ID } from "../../../../fixtures/Agents.ts"
 
 const BUILT_IN: Origin = { kind: "builtIn", template: "weeklyBuyer" }
 const FROM_SAVED: Origin = { kind: "saved", template: SAVED }
@@ -66,5 +67,29 @@ describe("originSpec", () => {
 
   it("scratch: the empty spec", () => {
     assert.deepStrictEqual(originSpec(FROM_SCRATCH, ["NVDA"]), scratchSpec())
+  })
+})
+
+describe("originOf", () => {
+  it("a draft from a built-in template", () => {
+    assert.deepStrictEqual(originOf(agent("draft", { template: "weeklyBuyer" }), [SAVED]), {
+      kind: "builtIn",
+      template: "weeklyBuyer"
+    })
+  })
+
+  it("a draft from a saved template: that template", () => {
+    assert.deepStrictEqual(originOf(agent("draft", { template: TEMPLATE_ID }), [SAVED]), {
+      kind: "saved",
+      template: SAVED
+    })
+  })
+
+  it("a draft from a saved template since deleted: scratch", () => {
+    assert.deepStrictEqual(originOf(agent("draft", { template: TEMPLATE_ID }), []), { kind: "scratch" })
+  })
+
+  it("a draft from scratch", () => {
+    assert.deepStrictEqual(originOf(agent("draft", { template: null }), [SAVED]), { kind: "scratch" })
   })
 })

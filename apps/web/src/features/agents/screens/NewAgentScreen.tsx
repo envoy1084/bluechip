@@ -2,23 +2,22 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { AgentId, RequestId } from "@bluechip/domain/Ids"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import { configOf } from "@bluechip/domain/policies/Policy"
-import { TemplateId } from "@bluechip/domain/policies/Templates"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import * as Schema from "effect/Schema"
 import { useState } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { agentAtom, removeAgentAtom } from "../atoms/agents.ts"
+import { templatesAtom } from "../atoms/policies.ts"
 import { LockStep } from "../components/new/LockStep.tsx"
 import { NewAgentShell } from "../components/new/NewAgentShell.tsx"
 import { PoliciesStep } from "../components/new/PoliciesStep.tsx"
 import { ReviewStep } from "../components/new/ReviewStep.tsx"
 import { TemplateStep } from "../components/new/TemplateStep.tsx"
-import { type Origin, originLabel, originPresets, originSpec } from "../model/origin.ts"
+import { type Origin, originLabel, originOf, originPresets, originSpec } from "../model/origin.ts"
 
 const newRequestId = () => crypto.randomUUID() as RequestId
 
@@ -59,31 +58,41 @@ export function NewAgentScreen({ draftId }: Readonly<{ draftId?: AgentId | undef
   )
 }
 
-/** The flow over a draft, once it loads; a draft that's gone or already locked starts the flow afresh. */
+/**
+ * The flow over a draft, once it and the saved templates load (a draft from a saved template starts from it); a
+ * draft that's gone or already locked starts the flow afresh.
+ */
 function FromDraft({ id, stocks }: Readonly<{ id: AgentId; stocks: ReadonlyArray<Stock> }>) {
   const agent = useAtomValue(agentAtom(id))
-  if (AsyncResult.isInitial(agent)) return <Loading />
+  const templates = useAtomValue(templatesAtom)
+  if (AsyncResult.isInitial(agent) || AsyncResult.isInitial(templates)) return <Loading />
 
   const draft = AsyncResult.isSuccess(agent) && agent.value.status === "draft" ? agent.value : null
-  return <NewAgentFlow stocks={stocks} start={draft} />
+  const saved = AsyncResult.isSuccess(templates) ? templates.value.saved : []
+  return (
+    <NewAgentFlow
+      stocks={stocks}
+      start={draft === null ? null : { draft, origin: originOf(draft, saved) }}
+    />
+  )
 }
-
-const isTemplateId = Schema.is(TemplateId)
-
-const originOf = (draft: Agent): Origin =>
-  isTemplateId(draft.template) ? { kind: "builtIn", template: draft.template } : { kind: "scratch" }
 
 /**
  * Template, rules, review, then Face ID: nothing is saved until the review's Face ID, which saves a draft and locks
  * it. Once the lock is sent the page follows it to Base until the agent is live.
  */
-function NewAgentFlow({ stocks, start }: Readonly<{ stocks: ReadonlyArray<Stock>; start: Agent | null }>) {
+function NewAgentFlow(
+  { stocks, start }: Readonly<{
+    stocks: ReadonlyArray<Stock>
+    start: { readonly draft: Agent; readonly origin: Origin } | null
+  }>
+) {
   const remove = useAtomSet(removeAgentAtom, { mode: "promise" })
   const [step, setStep] = useState<"template" | "rules" | "review">(start === null ? "template" : "rules")
-  const [origin, setOrigin] = useState<Origin>(() => start === null ? FIRST : originOf(start))
-  const [name, setName] = useState(() => start === null ? originLabel(FIRST) : start.name)
-  const [spec, setSpec] = useState(() => start === null ? originSpec(FIRST, []) : start.spec)
-  const [draft, setDraft] = useState<Agent | null>(start)
+  const [origin, setOrigin] = useState<Origin>(() => start === null ? FIRST : start.origin)
+  const [name, setName] = useState(() => start === null ? originLabel(FIRST) : start.draft.name)
+  const [spec, setSpec] = useState(() => start === null ? originSpec(FIRST, []) : start.draft.spec)
+  const [draft, setDraft] = useState<Agent | null>(start === null ? null : start.draft)
   const [requestId, setRequestId] = useState(newRequestId)
   const [editProblem, setEditProblem] = useState<string | null>(null)
   const [sent, setSent] = useState<{ readonly agent: Agent; readonly attempt: number } | null>(null)
