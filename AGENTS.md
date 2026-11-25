@@ -107,6 +107,22 @@ Load the `effect-conventions` skill before writing or reviewing code.
   examples as `**Example** (Title)` sections with a `ts import.meta.vitest` fence.
 - Comments explain why, not what.
 
+### Files and folders
+
+Code is organized so a maintainer can find and review any change quickly.
+
+- Keep every source and test file around 500 lines or less. When one grows past that, split it along logical lines
+  (one feature, screen section or concern per file), never at an arbitrary line.
+- Group files into folders by feature or domain, not by kind: `apps/server/src/auth/`, `accounts/`, `api/`;
+  `apps/web/src/routes/welcome/`, `shell/`, `atoms/`; a large page's sections in `apps/uikit/src/pages/<page>/`.
+- Tests mirror the source tree (`test/api/` for `src/api/`), with shared test helpers in `test/support/`.
+
+### Screens
+
+The brand kit artifact (`kit/views/screens.js` and `screens.css`) is the reference for every screen: follow its
+layout and copy with the components of `@bluechip/ui`. Never ship its example scaffolding (`Example` flags,
+example patterns, simulated actions or fake data); show real data or an honest empty state.
+
 ## Tests
 
 Tests live in each package's `test/` folder and use `@effect/vitest` (`it.effect`, `assert`), never

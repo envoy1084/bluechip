@@ -7,8 +7,8 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { encodeFunctionData, erc20Abi, parseEther } from "viem"
 import { Namera } from "../src/Namera.ts"
-import { chainAvailable, ForkLayer } from "./fork.ts"
-import { softwarePasskey } from "./passkey.ts"
+import { chainAvailable, ForkLayer } from "./support/fork.ts"
+import { softwarePasskey } from "./support/passkey.ts"
 
 const recipient = "0x000000000000000000000000000000000000dEaD"
 

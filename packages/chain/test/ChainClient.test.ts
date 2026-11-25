@@ -6,7 +6,7 @@ import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { erc20Abi } from "viem"
-import { forkAvailable, ForkChainClient } from "./fork.ts"
+import { forkAvailable, ForkChainClient } from "./support/fork.ts"
 
 const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
 
