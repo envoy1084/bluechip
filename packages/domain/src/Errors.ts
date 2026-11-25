@@ -104,6 +104,19 @@ export class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>("@blu
 ) {}
 
 /**
+ * Not enough cash for a withdrawal or a buy.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class InsufficientCash extends Schema.TaggedError<InsufficientCash>("@bluechip/domain/Errors/InsufficientCash")(
+  "InsufficientCash",
+  { available: Schema.BigInt },
+  { httpApiStatus: 422 }
+) {}
+
+/**
  * The client was built against another contract version; it should reload.
  *
  * @stability unstable

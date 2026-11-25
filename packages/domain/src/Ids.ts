@@ -89,3 +89,58 @@ export const Address = Schema.String.check(Schema.isPattern(/^0x[0-9a-fA-F]{40}$
  * @since 0.0.0
  */
 export type Address = typeof Address.Type
+
+/**
+ * A transaction hash on Base (`0x` and 64 hex digits).
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const TxHash = Schema.String.check(Schema.isPattern(/^0x[0-9a-fA-F]{64}$/)).pipe(
+  Schema.brand("TxHash"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/TxHash" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type TxHash = typeof TxHash.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const TransferId = typeId("transfer").pipe(
+  Schema.brand("TransferId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/TransferId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type TransferId = typeof TransferId.Type
+
+/**
+ * A prepared owner operation waiting for the user's passkey.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const SigningRequestId = typeId("signing").pipe(
+  Schema.brand("SigningRequestId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/SigningRequestId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type SigningRequestId = typeof SigningRequestId.Type
