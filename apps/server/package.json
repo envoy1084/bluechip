@@ -34,7 +34,7 @@
     "@bluechip/devnet": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "1.0.0-rc.6",
-    "ox": "0.14.67",
+    "ox": "1.8.21",
     "trigger.dev": "4.8.10",
     "typescript": "catalog:"
   }
