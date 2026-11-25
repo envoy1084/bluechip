@@ -56,8 +56,14 @@ export class AssistantModels extends Context.Service<AssistantModels, {
       Layer.provide(FetchHttpClient.layer)
     )
 
+    // Tool parameters aren't strict: Anthropic allows 20 strict tools and 16 nullable or union parameters across them
+    // in a request, and the toolkit has more. Parameters are decoded against their schemas either way, and a call that
+    // doesn't decode goes back to the model as a failure.
     const model = (id: string, config: Omit<typeof AnthropicLanguageModel.Config.Service, "model">) =>
-      AnthropicLanguageModel.layer({ model: id, config }).pipe(Layer.provide(client), Layer.orDie)
+      AnthropicLanguageModel.layer({ model: id, config: { ...config, strictJsonSchema: false } }).pipe(
+        Layer.provide(client),
+        Layer.orDie
+      )
 
     return Layer.succeed(
       AssistantModels,
@@ -72,11 +78,8 @@ export class AssistantModels extends Context.Service<AssistantModels, {
         },
         small: {
           id: small,
-          layer: model(small, {
-            max_tokens: 2000,
-            cache_control: { type: "ephemeral" },
-            output_config: { effort: "low" }
-          })
+          // Notes come back through a forced JSON tool: Haiku's native structured output didn't hold the schema.
+          layer: model(small, { max_tokens: 2000, cache_control: { type: "ephemeral" }, structuredOutputs: false })
         }
       })
     )
