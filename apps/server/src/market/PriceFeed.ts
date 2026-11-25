@@ -12,7 +12,7 @@ import * as Layer from "effect/Layer"
 import * as Ref from "effect/Ref"
 import * as Schedule from "effect/Schedule"
 import { LiveEvents } from "../live/LiveEvents.ts"
-import { marketStatus, priceStatus } from "./Calendar.ts"
+import { feedsPaused, marketStatus, priceStatus } from "./Calendar.ts"
 
 /** The latest reference prices and market status, as of the chain's latest block. */
 export interface PriceSnapshot {
@@ -45,8 +45,8 @@ const changed = (before: ReferencePrice | undefined, after: ReferencePrice) =>
   !DateTime.Equivalence(before.updatedAt, after.updatedAt)
 
 /**
- * Reference prices for every stock, kept fresh by polling the feeds (`PRICE_POLL_SECONDS`, 15 by default) and
- * announced as `PriceTick` live events when they change. One multicall per poll.
+ * Reference prices for every stock, kept fresh by polling the feeds (`PRICE_POLL_SECONDS`, 15 by default, not on
+ * weekends and holidays) and announced as `PriceTick` live events when they change. One multicall per poll.
  */
 export class PriceFeed extends Context.Service<PriceFeed, {
   readonly snapshot: Effect.Effect<PriceSnapshot>
@@ -72,9 +72,13 @@ export class PriceFeed extends Context.Service<PriceFeed, {
         return next
       })
       const poll = refresh.pipe(Effect.catch((error) => Effect.logWarning("Could not read prices", error)))
+      // The feeds pause on weekends and holidays, so polling then only spends RPC calls on the last close.
+      const pollWhileTrading = Effect.gen(function*() {
+        if (!feedsPaused(yield* DateTime.now)) yield* poll
+      })
 
       yield* poll
-      yield* Effect.forkScoped(poll.pipe(Effect.repeat(Schedule.spaced(`${every} seconds`))))
+      yield* Effect.forkScoped(pollWhileTrading.pipe(Effect.repeat(Schedule.spaced(`${every} seconds`))))
       return { snapshot: Ref.get(current), refresh }
     })
   )

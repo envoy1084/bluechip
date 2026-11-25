@@ -32,5 +32,7 @@ export const passkeys = pgTable("passkeys", {
 export const accounts = pgTable("accounts", {
   userId: typeId("user")("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   address: text("address").notNull().unique(),
-  createdAt: dateTimeUtc("created_at").notNull()
+  createdAt: dateTimeUtc("created_at").notNull(),
+  /** When bluechip first saw the account's code on chain. Deployment can't be undone, so this is never asked again. */
+  deployedAt: dateTimeUtc("deployed_at")
 })

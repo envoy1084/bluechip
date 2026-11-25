@@ -104,7 +104,15 @@ export const findMe = Effect.fn("Accounts.me")(function*(userId: UserId) {
     .pipe(Effect.orDie)
   if (row === undefined) return yield* Effect.die(new Error(`no account for ${userId}`))
   const address = row.accounts.address as Address
-  return new Me({ user: toUser(row.users), account: new Account({ address, deployed: yield* isDeployed(address) }) })
+  if (row.accounts.deployedAt !== null) {
+    return new Me({ user: toUser(row.users), account: new Account({ address, deployed: true }) })
+  }
+  const deployed = yield* isDeployed(address)
+  if (deployed === true) {
+    yield* db.update(accounts).set({ deployedAt: yield* DateTime.now }).where(eq(accounts.userId, row.accounts.userId))
+      .pipe(Effect.orDie)
+  }
+  return new Me({ user: toUser(row.users), account: new Account({ address, deployed }) })
 })
 
 export const setEligibility = Effect.fn("Accounts.setEligibility")(function*(userId: UserId, eligibility: Eligibility) {

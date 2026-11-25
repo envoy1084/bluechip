@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
-import { marketStatus, priceStatus } from "../../src/market/Calendar.ts"
+import { feedsPaused, marketStatus, priceStatus } from "../../src/market/Calendar.ts"
 
 const at = (iso: string) => DateTime.makeUnsafe(iso)
 const iso = (time: DateTime.Utc | null) => (time === null ? null : DateTime.formatIso(time))
@@ -68,5 +68,14 @@ describe("priceStatus", () => {
 
   it("is the last close on weekends and holidays", () => {
     assert.strictEqual(priceStatus(marketStatus(at("2026-11-28T16:00:00Z")), at("2026-11-20T21:00:00Z")), "closed")
+  })
+})
+
+describe("feedsPaused", () => {
+  it("pauses polling on weekends and holidays only", () => {
+    assert.isTrue(feedsPaused(at("2026-11-28T16:00:00Z"))) // Saturday
+    assert.isTrue(feedsPaused(at("2026-11-26T16:00:00Z"))) // Thanksgiving
+    assert.isFalse(feedsPaused(at("2026-11-25T05:00:00Z"))) // Wednesday overnight: the feeds run 24/5
+    assert.isFalse(feedsPaused(at("2026-11-24T15:00:00Z"))) // Tuesday, market open
   })
 })

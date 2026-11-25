@@ -105,6 +105,15 @@ export const marketStatus = (now: DateTime.Utc): MarketStatus => {
   })
 }
 
+/**
+ * Whether the price feeds are paused at `now`: weekends and NYSE holidays (New York days), when reading them would
+ * only return the last close again.
+ */
+export const feedsPaused = (now: DateTime.Utc): boolean => {
+  const { reason } = marketStatus(now)
+  return reason === "weekend" || reason === "holiday"
+}
+
 // Coinbase's stock feeds run 24/5 (extended and overnight sessions on weekdays) and update on a 0.5% move or at
 // least every 24 hours.
 const HEARTBEAT = Duration.hours(24)
