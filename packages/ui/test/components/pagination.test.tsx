@@ -43,11 +43,7 @@ describe("paginationRange", () => {
     assert.deepStrictEqual(paginationRange(5, 9, 0), [1, "ellipsis", 5, "ellipsis", 9])
   })
 
-  it("zero pages lists page 0 and page 1 (today's behaviour)", () => {
-    assert.deepStrictEqual(paginationRange(1, 0), [0, 1])
-  })
-
-  it.skip("zero pages lists no pages (bug: lists a page 0 and a page 1 that don't exist)", () => {
+  it("zero pages lists no pages", () => {
     assert.deepStrictEqual(paginationRange(1, 0), [])
   })
 })

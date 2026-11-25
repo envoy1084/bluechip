@@ -9,6 +9,8 @@ import { Button, type ButtonProps } from "./button.tsx"
  * `"ellipsis"` where pages are skipped. `paginationRange(3, 12)` is `[1, 2, 3, 4, "ellipsis", 12]`.
  */
 export function paginationRange(page: number, total: number, siblings = 1): Array<number | "ellipsis"> {
+  if (total < 1) return []
+
   const shown = new Set([1, total])
   for (let n = page - siblings; n <= page + siblings; n++) {
     if (n >= 1 && n <= total) shown.add(n)
