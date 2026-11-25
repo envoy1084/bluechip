@@ -1,8 +1,9 @@
 import { cva } from "class-variance-authority"
 import type { ComponentProps } from "react"
+import { Popover, PopoverContent, PopoverDescription, PopoverTitle, PopoverTrigger } from "../components/popover.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
-import { formatMarketTime, formatTime, MARKET_TIME_ZONE } from "../lib/format.ts"
+import { formatDate, MARKET_TIME_ZONE } from "../lib/format.ts"
 
 /**
  * Whether US stocks trade right now. `extended` is pre-market, after-hours or overnight trading (prices still move),
@@ -12,7 +13,7 @@ import { formatMarketTime, formatTime, MARKET_TIME_ZONE } from "../lib/format.ts
 export type MarketState = "open" | "extended" | "paused" | "closed" | "weekend" | "halted"
 
 export const marketStatusVariants = cva(
-  "inline-flex max-w-full flex-wrap items-center gap-x-[7px] rounded-[13px] py-1 pr-[11px] pl-[9px] text-label-sm font-semibold [&>span]:whitespace-nowrap",
+  "inline-flex max-w-full cursor-pointer items-center gap-x-[7px] rounded-[13px] py-1 pr-[11px] pl-[9px] text-label-sm font-semibold whitespace-nowrap transition-[filter] duration-fast ease-brand hover:brightness-[.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue",
   {
     variants: {
       state: {
@@ -27,7 +28,7 @@ export const marketStatusVariants = cva(
   }
 )
 
-export interface MarketStatusProps extends Omit<ComponentProps<"span">, "children"> {
+export interface MarketStatusProps extends Omit<ComponentProps<"button">, "children"> {
   readonly state: MarketState
   /** Open: when it closes today. */
   readonly closesAt?: Date | number
@@ -43,48 +44,105 @@ export interface MarketStatusProps extends Omit<ComponentProps<"span">, "childre
   readonly resumesAt?: Date | number
 }
 
-const nyTime = (date: Date | number) => formatTime(date, { timeZone: MARKET_TIME_ZONE, zone: true })
+type Times = { readonly [K in "closesAt" | "opensAt" | "lastClose" | "resumesAt"]: Date | number | undefined }
 
-/** Whether US stocks are trading right now, and when that changes. Open pulses gently; halted is per stock. */
+interface Explainer {
+  readonly label: string
+  /** What the time is, like "Regular trading opens". */
+  readonly moment?: string
+  readonly at?: Date | number | undefined
+  readonly note?: string
+}
+
+const explainer = (
+  state: MarketState,
+  { closesAt, lastClose, opensAt, resumesAt }: Times,
+  symbol: string | undefined,
+  session: string | undefined
+): Explainer => {
+  switch (state) {
+    case "open":
+      return { label: "US market open", moment: "Regular trading closes", at: closesAt }
+    case "extended":
+      return {
+        label: session ?? "Extended hours",
+        moment: "Regular trading opens",
+        at: opensAt,
+        note: "Prices still move outside regular hours, with less trading behind them."
+      }
+    case "paused":
+      return {
+        label: "Prices paused",
+        moment: "Prices move again",
+        at: resumesAt,
+        note: "Stock tokens still trade, with no live price to compare against."
+      }
+    case "closed":
+      return { label: "Market closed", moment: "Regular trading opens", at: opensAt }
+    case "weekend":
+      return { label: "Closed for the weekend", moment: "Last close", at: lastClose }
+    case "halted":
+      return {
+        label: symbol === undefined ? "Trading halted" : `${symbol} halted`,
+        note: "Its exchange paused trading in this stock."
+      }
+  }
+}
+
+const localTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+
+/**
+ * Whether US stocks are trading right now, as one chip. Open pulses gently; halted is per stock. Pressing it explains
+ * the state and when it changes, in New York time and the viewer's own.
+ */
 export function MarketStatus(
   { state, closesAt, opensAt, lastClose, symbol, session, resumesAt, className, ...props }: MarketStatusProps
 ) {
-  const [label, detail] = {
-    open: ["US market open", closesAt === undefined ? undefined : `closes ${nyTime(closesAt)}`],
-    extended: [
-      session ?? "Extended hours",
-      opensAt === undefined ? undefined : `market opens ${formatMarketTime(opensAt)}`
-    ],
-    paused: ["Prices paused", resumesAt === undefined ? undefined : `back ${formatMarketTime(resumesAt)}`],
-    closed: ["Market closed", opensAt === undefined ? undefined : `opens ${nyTime(opensAt)}`],
-    weekend: [
-      "Closed for the weekend",
-      lastClose === undefined ? undefined : `last close ${formatMarketTime(lastClose)}`
-    ],
-    halted: [symbol === undefined ? "Trading halted" : `${symbol} halted`, "by exchange"]
-  }[state]
+  const { at, label, moment, note } = explainer(state, { closesAt, lastClose, opensAt, resumesAt }, symbol, session)
+  const timeZone = localTimeZone()
+
   return (
-    <span
-      data-slot="market-status"
-      data-state={state}
-      className={cn(marketStatusVariants({ state }), className)}
-      {...props}
-    >
-      {state === "open" ?
-        (
-          <i aria-hidden className="relative size-[7px] rounded-full bg-green">
-            <i className="absolute -inset-1 animate-ping rounded-full bg-green opacity-40 [animation-duration:2.4s] motion-reduce:hidden" />
-          </i>
-        ) :
-        (
-          <Icon
-            name={state === "halted" || state === "paused" ? "pause" : "moon"}
-            size={13}
-            className={state === "closed" || state === "weekend" ? "text-[#5b4fd6]" : ""}
-          />
+    <Popover>
+      <PopoverTrigger
+        data-slot="market-status"
+        data-state={state}
+        className={cn(marketStatusVariants({ state }), className)}
+        {...props}
+      >
+        {state === "open" ?
+          (
+            <i aria-hidden className="relative size-[7px] rounded-full bg-green">
+              <i className="absolute -inset-1 animate-ping rounded-full bg-green opacity-40 [animation-duration:2.4s] motion-reduce:hidden" />
+            </i>
+          ) :
+          (
+            <Icon
+              name={state === "halted" || state === "paused" ? "pause" : "moon"}
+              size={13}
+              className={state === "closed" || state === "weekend" ? "text-[#5b4fd6]" : ""}
+            />
+          )}
+        {label}
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[280px] gap-2.5">
+        <PopoverTitle>{label}</PopoverTitle>
+        {moment === undefined || at === undefined ? null : (
+          <div className="grid gap-1.5">
+            <span className="text-label-sm text-g-500">{moment}</span>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-label">
+              <dt className="text-g-500">New York</dt>
+              <dd className="text-right font-[550] tabular-nums">{formatDate(at, { timeZone: MARKET_TIME_ZONE })}</dd>
+              {timeZone === MARKET_TIME_ZONE ? null : (
+                <>
+                  <dt className="text-g-500">Your time</dt>
+                  <dd className="text-right font-[550] tabular-nums">{formatDate(at, { timeZone })}</dd>
+                </>
+              )}
+            </dl>
+          </div>
         )}
-      <span>{label}</span>
-      {detail && <span className="font-medium opacity-75">· {detail}</span>}
-    </span>
+        {note === undefined ? null : <PopoverDescription>{note}</PopoverDescription>}
+      </PopoverContent>
+    </Popover>
   )
 }

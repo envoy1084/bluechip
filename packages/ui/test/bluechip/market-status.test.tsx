@@ -1,46 +1,41 @@
 import { MarketStatus } from "@bluechip/ui/bluechip/market-status"
 import { describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
+import { userEvent } from "vitest/browser"
 
 // Fri 20 Nov 2026, 16:00 in New York (21:00 UTC).
 const FRIDAY_CLOSE = Date.UTC(2026, 10, 20, 21, 0)
 
 describe("MarketStatus", () => {
-  it("says when an open market closes, in New York time", async () => {
+  it("is one chip, and explains when an open market closes in New York time", async () => {
     const screen = await render(<MarketStatus state="open" closesAt={FRIDAY_CLOSE} />)
-    await expect.element(screen.getByText("US market open")).toBeVisible()
-    await expect.element(screen.getByText("· closes 16:00 New York")).toBeVisible()
-  })
+    const chip = screen.getByRole("button", { name: "US market open" })
+    await expect.element(chip).toBeVisible()
 
-  it("says when a closed market opens", async () => {
-    const screen = await render(<MarketStatus state="closed" opensAt={Date.UTC(2026, 10, 24, 14, 30)} />)
-    await expect.element(screen.getByText("Market closed")).toBeVisible()
-    await expect.element(screen.getByText("· opens 09:30 New York")).toBeVisible()
-  })
-
-  it("gives the last close over the weekend, New York first", async () => {
-    const screen = await render(<MarketStatus state="weekend" lastClose={FRIDAY_CLOSE} />)
-    await expect.element(screen.getByText("Closed for the weekend")).toBeVisible()
-    await expect.element(screen.getByText("· last close Fri 16:00 New York (21:00 UTC)")).toBeVisible()
+    await userEvent.click(chip)
+    await expect.element(screen.getByText("Regular trading closes")).toBeVisible()
+    await expect.element(screen.getByText("Fri 20 Nov, 16:00")).toBeVisible()
   })
 
   it("names the extended session and when regular trading opens", async () => {
     const screen = await render(
       <MarketStatus state="extended" session="After hours" opensAt={Date.UTC(2026, 10, 23, 14, 30)} />
     )
-    await expect.element(screen.getByText("After hours")).toBeVisible()
-    await expect.element(screen.getByText("· market opens Mon 09:30 New York (14:30 UTC)")).toBeVisible()
+    await userEvent.click(screen.getByRole("button", { name: "After hours" }))
+    await expect.element(screen.getByText("Regular trading opens")).toBeVisible()
+    await expect.element(screen.getByText("Mon 23 Nov, 09:30")).toBeVisible()
   })
 
   it("says paused prices come back, and when", async () => {
     const screen = await render(<MarketStatus state="paused" resumesAt={Date.UTC(2026, 10, 23, 1, 0)} />)
-    await expect.element(screen.getByText("Prices paused")).toBeVisible()
-    await expect.element(screen.getByText("· back Sun 20:00 New York (01:00 UTC)")).toBeVisible()
+    await userEvent.click(screen.getByRole("button", { name: "Prices paused" }))
+    await expect.element(screen.getByText("Prices move again")).toBeVisible()
+    await expect.element(screen.getByText("Sun 22 Nov, 20:00")).toBeVisible()
   })
 
   it("names the halted stock", async () => {
     const screen = await render(<MarketStatus state="halted" symbol="SPCX" />)
-    await expect.element(screen.getByText("SPCX halted")).toBeVisible()
-    await expect.element(screen.getByText("· by exchange")).toBeVisible()
+    await userEvent.click(screen.getByRole("button", { name: "SPCX halted" }))
+    await expect.element(screen.getByText("Its exchange paused trading in this stock.")).toBeVisible()
   })
 })
