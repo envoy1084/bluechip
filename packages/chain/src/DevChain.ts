@@ -40,6 +40,11 @@ export class DevChain extends Context.Service<DevChain, {
   readonly sendUsdc: (account: Address, units: bigint) => Effect.Effect<void, ChainError>
   readonly mine: (blocks: number) => Effect.Effect<void, ChainError>
   readonly increaseTime: (seconds: number) => Effect.Effect<void, ChainError>
+  /**
+   * Moves the chain's clock to `at`, earlier or later, and mines a block there; later blocks count on from it. Set it
+   * back to now afterwards: the chain is shared, and its prices and sessions are dated by the real clock.
+   */
+  readonly setTime: (at: Date) => Effect.Effect<void, ChainError>
 }>()("@bluechip/chain/DevChain") {
   /**
    * @since 0.0.0
@@ -87,7 +92,15 @@ export class DevChain extends Context.Service<DevChain, {
         setUsdcBalance,
         sendUsdc,
         mine: (blocks) => use("anvil_mine", () => anvil.mine({ blocks })),
-        increaseTime: (seconds) => use("evm_increaseTime", () => anvil.increaseTime({ seconds }))
+        increaseTime: (seconds) => use("evm_increaseTime", () => anvil.increaseTime({ seconds })),
+        setTime: (at) =>
+          use("anvil_setTime", async () => {
+            await anvil.request({
+              method: "anvil_setTime" as never,
+              params: [Math.floor(at.getTime() / 1000)] as never
+            })
+            await anvil.mine({ blocks: 1 })
+          })
       }
     })
   )

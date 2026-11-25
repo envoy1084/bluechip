@@ -28,7 +28,6 @@ import { IntentStore } from "./modules/intents/IntentStore.ts"
 import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
-import { ReferencePrices } from "./modules/market/ReferencePrices.ts"
 import { Stocks } from "./modules/market/Stocks.ts"
 import { SavedTemplates } from "./modules/policies/SavedTemplates.ts"
 import { AccountBalances } from "./modules/portfolio/AccountBalances.ts"
@@ -44,8 +43,9 @@ import { Namera } from "./platform/namera/Namera.ts"
 /**
  * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (`DevChain`
  * only answers on a local chain; the dev endpoints check the network first). Each line
- * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, `Alpaca`,
- * the assistant's models (`AssistantModels`) and the durable engine.
+ * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, the
+ * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`) and the
+ * durable engine.
  */
 export const ServicesLive = Layer.mergeAll(DeskLive, ExpireIntentsCron, PortfolioSnapshotCron, Assistant.layer).pipe(
   Layer.provideMerge(Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer)),
@@ -79,6 +79,6 @@ export const ServicesLive = Layer.mergeAll(DeskLive, ExpireIntentsCron, Portfoli
     )
   ),
   Layer.provideMerge(
-    Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, ReferencePrices.layer, DevChain.layer)
+    Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, DevChain.layer)
   )
 )

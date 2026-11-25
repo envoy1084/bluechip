@@ -6,6 +6,7 @@ import { Price } from "@bluechip/domain/market/Units"
 import * as Cache from "effect/Cache"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
+import type * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { marketStatus, priceStatus } from "./Calendar.ts"
@@ -18,32 +19,34 @@ import { marketStatus, priceStatus } from "./Calendar.ts"
 export class ReferencePrices extends Context.Service<ReferencePrices, {
   readonly all: Effect.Effect<ReadonlyMap<StockSymbol, ReferencePrice>, ChainError>
 }>()("@bluechip/server/ReferencePrices") {
-  static readonly layer = Layer.effect(
-    ReferencePrices,
-    Effect.gen(function*() {
-      const chain = yield* ChainClient
+  static readonly make = Effect.fnUntraced(function*(options: { readonly timeToLive: Duration.Input }) {
+    const chain = yield* ChainClient
 
-      const read = Effect.gen(function*() {
-        const { asOf, prices } = yield* readPrices(chain)
-        const status = marketStatus(DateTime.makeUnsafe(asOf))
+    const read = Effect.gen(function*() {
+      const { asOf, prices } = yield* readPrices(chain)
+      const status = marketStatus(DateTime.makeUnsafe(asOf))
 
-        return new Map(prices.map((feed) => {
-          const updatedAt = DateTime.makeUnsafe(feed.updatedAt)
-          const symbol = feed.stock.symbol as StockSymbol
-          return [
+      return new Map(prices.map((feed) => {
+        const updatedAt = DateTime.makeUnsafe(feed.updatedAt)
+        const symbol = feed.stock.symbol as StockSymbol
+        return [
+          symbol,
+          new ReferencePrice({
             symbol,
-            new ReferencePrice({
-              symbol,
-              price: Price.make(feed.price),
-              updatedAt,
-              status: priceStatus(status, updatedAt)
-            })
-          ]
-        }))
-      })
-
-      const cache = yield* Cache.make({ lookup: (_: "all") => read, capacity: 1, timeToLive: "15 seconds" })
-      return { all: Cache.get(cache, "all") }
+            price: Price.make(feed.price),
+            updatedAt,
+            status: priceStatus(status, updatedAt)
+          })
+        ]
+      }))
     })
-  )
+
+    const cache = yield* Cache.make({ lookup: (_: "all") => read, capacity: 1, timeToLive: options.timeToLive })
+    return ReferencePrices.of({ all: Cache.get(cache, "all") })
+  })
+
+  static readonly layer = Layer.effect(ReferencePrices, ReferencePrices.make({ timeToLive: "15 seconds" }))
+
+  /** Every read from the chain, for tests that move its clock or prices and read them back at once. */
+  static readonly layerUncached = Layer.effect(ReferencePrices, ReferencePrices.make({ timeToLive: 0 }))
 }

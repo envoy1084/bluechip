@@ -9,6 +9,7 @@ import { AppConfig } from "./config/AppConfig.ts"
 import { LoggingLive } from "./config/Logging.ts"
 import { AssistantModels } from "./modules/assistant/AssistantModels.ts"
 import { Alpaca } from "./modules/market/alpaca/Alpaca.ts"
+import { ReferencePrices } from "./modules/market/ReferencePrices.ts"
 import { Database } from "./platform/db/Database.ts"
 import { EngineLive } from "./platform/engine/Engine.ts"
 import { HealthRoutes } from "./platform/http/Health.ts"
@@ -31,6 +32,7 @@ export const ServerLive = HttpRouter.serve(Routes).pipe(
     gracefulShutdownTimeout: Config.succeed("2 seconds")
   })),
   Layer.provideMerge(ServicesLive),
+  Layer.provide(ReferencePrices.layer),
   Layer.provide(Alpaca.layer),
   Layer.provide(AssistantModels.layer),
   Layer.provide(EngineLive),
