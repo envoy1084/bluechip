@@ -5,6 +5,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
+import { SavedTemplateId } from "../Ids.ts"
 import { StockSymbol } from "../market/Market.ts"
 import { type AgentSpec, PolicyId, PolicyProblem } from "../policies/AgentSpec.ts"
 import { checkSpec, complete, policyOf } from "../policies/Catalog.ts"
@@ -76,16 +77,23 @@ export const SpecPatch = Schema.Struct({
 export type SpecPatch = typeof SpecPatch.Type
 
 /**
- * A new agent as the model drafts it: a template and preset to start from, its stocks, and changes on top.
+ * A new agent as the model drafts it: a template to start from (built in, with a preset, or one the user saved), its
+ * stocks, and changes on top.
  *
  * @stability unstable
  * @category schemas
  * @since 0.0.0
  */
 export const SpecDraft = Schema.Struct({
-  template: TemplateId.annotate({ description: "The template it starts from (see listTemplates)." }),
-  preset: Preset.annotate({ description: "How much it may do: conservative, balanced or active." }),
-  stocks: Schema.Array(StockSymbol).annotate({ description: "The stocks it may trade." }),
+  template: Schema.Union([TemplateId, SavedTemplateId]).annotate({
+    description: "The template it starts from (see listTemplates): a built-in one's id, or a saved one's (template_…)."
+  }),
+  preset: Preset.annotate({
+    description: "How much it may do: conservative, balanced or active. A saved template keeps its own amounts."
+  }),
+  stocks: Schema.Array(StockSymbol).annotate({
+    description: "The stocks it may trade. For a saved template, empty keeps the template's stocks."
+  }),
   changes: Schema.optionalKey(SpecPatch)
 })
 
@@ -190,11 +198,17 @@ export const applyPatch = (spec: AgentSpec, patch: SpecPatch): PatchedSpec => {
 }
 
 /**
- * Drafts a new agent's spec: the template with the preset and stocks, then the draft's changes.
+ * Drafts a new agent's spec, then applies the draft's changes: a built-in template with the preset and stocks, or a
+ * saved template's spec (`saved`, which the caller reads for the draft's saved template id) with the draft's stocks
+ * when it names any.
  *
  * @stability unstable
  * @category specs
  * @since 0.0.0
  */
-export const draftAgentSpec = (draft: SpecDraft): PatchedSpec =>
-  applyPatch(templateSpec(draft.template, draft.preset, draft.stocks), draft.changes ?? {})
+export const draftAgentSpec = (draft: SpecDraft, saved?: AgentSpec): PatchedSpec => {
+  const start = saved !== undefined ?
+    (draft.stocks.length === 0 ? saved : setStocks(saved, draft.stocks)) :
+    templateSpec(draft.template as TemplateId, draft.preset, draft.stocks)
+  return applyPatch(start, draft.changes ?? {})
+}

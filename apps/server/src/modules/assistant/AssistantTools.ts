@@ -1,7 +1,7 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import { AgentRequest } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
-import type { Address, AgentId } from "@bluechip/domain/Ids"
+import { type Address, type AgentId, SavedTemplateId } from "@bluechip/domain/Ids"
 import { describeDecision } from "@bluechip/domain/intents/Describe"
 import { type Intent, IntentRequest, type Leg } from "@bluechip/domain/intents/Intent"
 import { rebalanceLegs } from "@bluechip/domain/intents/RebalanceLegs"
@@ -13,12 +13,13 @@ import { formatDollars } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { rebalance } from "@bluechip/domain/policies/Rebalance"
 import { Caller, ToolProblem } from "@bluechip/domain/tools/Caller"
-import { applyPatch, draftAgentSpec, type PatchedSpec } from "@bluechip/domain/tools/SpecPatch"
+import { applyPatch, draftAgentSpec, type PatchedSpec, type SpecDraft } from "@bluechip/domain/tools/SpecPatch"
 import { BluechipToolkit } from "@bluechip/domain/tools/Toolkit"
 import * as AnthropicTool from "@effect/ai-anthropic/AnthropicTool"
 import * as Toolkit from "effect/ai/Toolkit"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { randomUUID } from "node:crypto"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
@@ -180,6 +181,13 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     return yield* card({ _tag: "Trade", intent })
   }, Effect.scoped)
 
+  // A draft's spec, from a built-in template or one of the user's saved ones.
+  const draftedSpec = Effect.fnUntraced(function*(draft: SpecDraft) {
+    if (!Schema.is(SavedTemplateId)(draft.template)) return draftAgentSpec(draft)
+    const saved = yield* templates.find(yield* Caller, draft.template)
+    return draftAgentSpec(draft, saved.spec)
+  })
+
   const asProblem = Effect.mapError(problemOf)
 
   return BluechipToolkit.of({
@@ -241,7 +249,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     checkAgentSpec: Effect.fn("AssistantTools.checkAgentSpec")(function*({ agentId, changes, draft }) {
       if (agentId === null) {
         if (draft === null) return yield* problem("Give a draft for a new agent, or an agent to change.")
-        const { problems, spec } = draftAgentSpec(draft)
+        const { problems, spec } = yield* draftedSpec(draft)
         return new SpecCheck({ problems, description: describeSpec(spec, nameOf), changes: null })
       }
       const current = yield* agentSpec(agentId)
@@ -305,7 +313,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
       const source = agentId !== null ?
         yield* Effect.map(agentSpec(agentId), ({ agent, spec }) => ({ basedOn: agent.template, spec })) :
         draft !== null ?
-        { basedOn: draft.template as string, spec: yield* fromPatch(draftAgentSpec(draft)) } :
+        { basedOn: draft.template as string, spec: yield* fromPatch(yield* draftedSpec(draft)) } :
         yield* problem("Give an agent or a draft to save.")
       return yield* card({
         _tag: "SaveTemplate",
@@ -319,7 +327,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     }, asProblem),
 
     draftAgent: Effect.fn("AssistantTools.draftAgent")(function*({ draft, name }) {
-      const spec = yield* fromPatch(draftAgentSpec(draft))
+      const spec = yield* fromPatch(yield* draftedSpec(draft))
       const request = yield* requests.create(yield* Caller, {
         requestId: randomUUID(),
         name,

@@ -1,3 +1,4 @@
+import { SavedTemplateId } from "@bluechip/domain/Ids"
 import { PolicyProblem } from "@bluechip/domain/policies/AgentSpec"
 import { fairPrice } from "@bluechip/domain/policies/FairPrice"
 import { configOf } from "@bluechip/domain/policies/Policy"
@@ -9,6 +10,8 @@ import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { applyPatch, draftAgentSpec } from "@bluechip/domain/tools/SpecPatch"
 import { assert, describe, it } from "@effect/vitest"
 import { PICKER, REBALANCER } from "../../fixtures/Specs.ts"
+
+const SAVED = SavedTemplateId.make("template_01jd8v4t5m6n7p8q9r0s1t2v3w")
 
 describe("applyPatch", () => {
   it("no changes keep the spec, with no problems", () => {
@@ -162,6 +165,18 @@ describe("draftAgentSpec", () => {
     })
 
     assert.deepStrictEqual([configOf(spec.policies, trade)?.dailyBudget, problems], [200_000_000n, []])
+  })
+
+  it("a saved template keeps its own spec and amounts when the draft names no stocks", () => {
+    const result = draftAgentSpec({ template: SAVED, preset: "active", stocks: [] }, PICKER)
+
+    assert.deepStrictEqual(result, { spec: PICKER, problems: [] })
+  })
+
+  it("a saved template takes the draft's stocks", () => {
+    const { problems, spec } = draftAgentSpec({ template: SAVED, preset: "balanced", stocks: ["AAPL"] }, PICKER)
+
+    assert.deepStrictEqual([configOf(spec.policies, trade)?.stocks, problems], [["AAPL"], []])
   })
 
   it("a picker with no stocks has the catalog's problem", () => {

@@ -48,6 +48,8 @@ export class SavedTemplates extends Context.Service<SavedTemplates, {
   readonly remove: (owner: Owner, id: SavedTemplateId) => Effect.Effect<void, NotFound>
   /** Fails unless `template` is a built-in template's id or one of the owner's saved templates. */
   readonly requireExists: (owner: Owner, template: string) => Effect.Effect<void, NotFound>
+  /** One of the owner's saved templates. */
+  readonly find: (owner: Owner, id: string) => Effect.Effect<SavedTemplate, NotFound>
 }>()("@bluechip/server/SavedTemplates") {
   static readonly layer = Layer.effect(
     SavedTemplates,
@@ -96,7 +98,15 @@ export class SavedTemplates extends Context.Service<SavedTemplates, {
         if (row === undefined) return yield* new NotFound({ resource: "template", id: template })
       })
 
-      return { list, save, remove, requireExists }
+      const find = Effect.fn("SavedTemplates.find")(function*(owner: Owner, id: string) {
+        const [row] = isSavedId(id) ?
+          yield* db.select().from(agentTemplates).where(ownedBy(owner, id)).pipe(Effect.orDie) :
+          []
+        if (row === undefined) return yield* new NotFound({ resource: "template", id })
+        return toTemplate(row)
+      })
+
+      return { list, save, remove, requireExists, find }
     })
   )
 }

@@ -2,6 +2,7 @@ import { checkSpec } from "@bluechip/domain/policies/Catalog"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import { changed, PICKER } from "../../fixtures/Specs.ts"
 import { RecordedModel } from "../../utils/RecordedModel.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 import { TestAssistant } from "../../utils/TestAssistant.ts"
@@ -91,6 +92,65 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           const conversation = yield* assistant.start(user)
 
           const run = yield* assistant.ask(user, conversation.id, "Draft an agent with no stocks")
+          const agents = yield* user.api.agents.list()
+
+          assert.deepStrictEqual([run.cards, agents], [[], []])
+        }))
+
+      it.effect("drafts an agent from the user's saved template, with its policies and the draft's stocks", () =>
+        Effect.gen(function*() {
+          const user = yield* (yield* TestUsers).funded
+          const assistant = yield* TestAssistant
+          const saved = yield* user.api.policies.saveTemplate({
+            payload: { name: "My picker", basedOn: "stockPicker", spec: PICKER }
+          })
+          yield* (yield* RecordedModel).record({
+            to: "Make an Apple agent from my saved picker",
+            rounds: [
+              [{
+                call: "draftAgent",
+                params: {
+                  name: "Apple picker",
+                  draft: { template: saved.id, preset: "active", stocks: ["AAPL"] }
+                }
+              }],
+              [{ text: "Approve it on the card." }]
+            ]
+          })
+          const conversation = yield* assistant.start(user)
+
+          const run = yield* assistant.ask(user, conversation.id, "Make an Apple agent from my saved picker")
+          const [card] = run.cards
+          assert(card?._tag === "DraftAgent")
+
+          assert.deepStrictEqual(
+            [card.agent.template, card.agent.spec],
+            [saved.id, changed(PICKER, { id: "trade", config: { stocks: ["AAPL"] } })]
+          )
+        }))
+
+      it.effect("another user's saved template makes no agent", () =>
+        Effect.gen(function*() {
+          const users = yield* TestUsers
+          const owner = yield* users.funded
+          const user = yield* users.funded
+          const assistant = yield* TestAssistant
+          const theirs = yield* owner.api.policies.saveTemplate({
+            payload: { name: "Their picker", basedOn: "stockPicker", spec: PICKER }
+          })
+          yield* (yield* RecordedModel).record({
+            to: "Draft from template " + theirs.id,
+            rounds: [
+              [{
+                call: "draftAgent",
+                params: { name: "Copy", draft: { template: theirs.id, preset: "balanced", stocks: [] } }
+              }],
+              [{ text: "That template isn't yours." }]
+            ]
+          })
+          const conversation = yield* assistant.start(user)
+
+          const run = yield* assistant.ask(user, conversation.id, "Draft from template " + theirs.id)
           const agents = yield* user.api.agents.list()
 
           assert.deepStrictEqual([run.cards, agents], [[], []])
