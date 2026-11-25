@@ -22,8 +22,11 @@ import { SignedIn } from "../auth/SignedIn.tsx"
 export const Route = createFileRoute("/_app")({ ssr: false, component: AppLayout })
 
 // Portfolio, Stocks, Agents, Activity and Approvals join as their phases land.
-const NAV: ReadonlyArray<{ readonly to: "/home" | "/settings"; readonly label: string; readonly icon: IconName }> = [
+const NAV: ReadonlyArray<
+  { readonly to: "/home" | "/stocks" | "/settings"; readonly label: string; readonly icon: IconName }
+> = [
   { to: "/home", label: "Home", icon: "home" },
+  { to: "/stocks", label: "Stocks", icon: "stocks" },
   { to: "/settings", label: "Settings", icon: "settings" }
 ]
 
