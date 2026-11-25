@@ -1,0 +1,27 @@
+{
+  "name": "@bluechip/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "bluechip API server.",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env --watch src/main.ts",
+    "start": "node src/main.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node --env-file-if-exists=../../.env src/bin/migrate.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/sql-pg": "4.1.5",
+    "drizzle-orm": "1.0.0-rc.6",
+    "effect": "catalog:",
+    "typeid-js": "1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "drizzle-kit": "1.0.0-rc.6"
+  }
+}
