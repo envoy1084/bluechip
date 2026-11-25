@@ -200,8 +200,19 @@ export function PortfolioChart(
             (
               <div className="grid justify-items-start gap-1 py-10">
                 <Icon name="chart-line" size={18} className="mb-1 text-g-400" />
-                <b className="text-[13.5px] font-semibold">Your chart starts with your first deposit</b>
-                <span className="text-label-sm text-g-500">Add cash to see how your money moves.</span>
+                {rows.length === 1 && rows[0]!.value > 0 ?
+                  (
+                    <>
+                      <b className="text-[13.5px] font-semibold">Your chart starts building today</b>
+                      <span className="text-label-sm text-g-500">A new point lands every few hours.</span>
+                    </>
+                  ) :
+                  (
+                    <>
+                      <b className="text-[13.5px] font-semibold">Your chart starts with your first deposit</b>
+                      <span className="text-label-sm text-g-500">Add cash to see how your money moves.</span>
+                    </>
+                  )}
               </div>
             ) :
             (

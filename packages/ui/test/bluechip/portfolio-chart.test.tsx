@@ -121,6 +121,13 @@ describe("PortfolioChart", () => {
     await expect.element(screen.getByText("Your chart starts with your first deposit")).toBeVisible()
   })
 
+  it("says the chart is starting when there is one point of money so far", async () => {
+    const screen = await render(
+      <PortfolioChart ranges={[{ id: "All", description: "All time", points: [{ value: 1000, label: "Today" }] }]} />
+    )
+    await expect.element(screen.getByText("Your chart starts building today")).toBeVisible()
+  })
+
   it("shows a placeholder while loading", async () => {
     const screen = await render(<PortfolioChart ranges={RANGES} loading />)
     await expect.element(screen.getByRole("img", { name: "Portfolio value" })).not.toBeInTheDocument()
