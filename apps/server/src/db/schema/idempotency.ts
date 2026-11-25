@@ -7,9 +7,9 @@ import { dateTimeUtc } from "../columns.ts"
  */
 export const idempotencyKeys = pgTable("idempotency_keys", {
   userId: text("user_id").notNull(),
-  rpc: text("rpc").notNull(),
+  endpoint: text("endpoint").notNull(),
   requestId: text("request_id").notNull(),
   fingerprint: text("fingerprint").notNull(),
   response: jsonb("response"),
   createdAt: dateTimeUtc("created_at").notNull()
-}, (table) => [primaryKey({ columns: [table.userId, table.rpc, table.requestId] })])
+}, (table) => [primaryKey({ columns: [table.userId, table.endpoint, table.requestId] })])

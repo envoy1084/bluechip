@@ -3,8 +3,7 @@ import * as Effect from "effect/Effect"
 import * as HttpRouter from "effect/http/HttpRouter"
 import * as HttpServerResponse from "effect/http/HttpServerResponse"
 import { Database } from "../db/Database.ts"
-
-const version = process.env.npm_package_version ?? "0.0.0"
+import { release } from "../Release.ts"
 
 /** `GET /health`: process and database state, for load balancers and humans. */
 export const HealthRoutes = HttpRouter.add(
@@ -24,7 +23,7 @@ export const HealthRoutes = HttpRouter.add(
       )
     )
     return HttpServerResponse.jsonUnsafe(
-      { status: database.ok ? "ok" : "degraded", version, database },
+      { status: database.ok ? "ok" : "degraded", version: release, database },
       { status: database.ok ? 200 : 503 }
     )
   })

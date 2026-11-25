@@ -2,7 +2,7 @@
   "type": "base",
   "version": "10",
   "dialect": "postgres",
-  "id": "57a48f05-1f46-4ec4-8622-9c201cd1ebb2",
+  "id": "ba324dc6-157c-4a94-80cb-08efd7f8e59d",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -50,7 +50,7 @@
     {
       "schema": "public",
       "table": "idempotency_keys",
-      "name": "rpc",
+      "name": "endpoint",
       "type": "text",
       "typeSchema": null,
       "notNull": true,
@@ -118,7 +118,7 @@
       "name": "idempotency_keys_pkey",
       "columns": [
         "user_id",
-        "rpc",
+        "endpoint",
         "request_id"
       ],
       "nameExplicit": false,
