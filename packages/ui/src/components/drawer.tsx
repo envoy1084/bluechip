@@ -21,12 +21,12 @@ export function DrawerContent({ className, children, ...props }: BaseDrawer.Popu
       <BaseDrawer.Backdrop
         data-slot="drawer-backdrop"
         className={cn(
-          "fixed inset-0 bg-ink backdrop-blur-[2px] opacity-[calc(.32*(1-var(--drawer-swipe-progress,0)))]",
+          "fixed inset-0 z-50 bg-ink backdrop-blur-[2px] opacity-[calc(.32*(1-var(--drawer-swipe-progress,0)))]",
           "transition-opacity duration-slow ease-brand data-swiping:duration-0",
           "data-starting-style:opacity-0 data-ending-style:opacity-0 data-ending-style:duration-[calc(var(--drawer-swipe-strength,1)*320ms)]"
         )}
       />
-      <BaseDrawer.Viewport data-slot="drawer-viewport" className="fixed inset-0 flex items-end justify-center">
+      <BaseDrawer.Viewport data-slot="drawer-viewport" className="fixed inset-0 z-50 flex items-end justify-center">
         <BaseDrawer.Popup
           data-slot="drawer-content"
           className={cn(

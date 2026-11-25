@@ -17,8 +17,20 @@ export interface AllocationSlice {
 export const offTarget = (slices: ReadonlyArray<AllocationSlice>): number =>
   slices.reduce((sum, s) => sum + Math.abs(s.current - (s.target ?? s.current)), 0) / 2
 
+// Written out in full: Tailwind only emits the theme variables it finds in the source.
+const SERIES = [
+  "var(--color-series-1)",
+  "var(--color-series-2)",
+  "var(--color-series-3)",
+  "var(--color-series-4)",
+  "var(--color-series-5)",
+  "var(--color-series-6)",
+  "var(--color-series-7)",
+  "var(--color-series-8)"
+]
+
 const colorOf = (slice: AllocationSlice, index: number) =>
-  slice.id === "cash" ? "var(--color-series-cash)" : `var(--color-series-${(index % 8) + 1})`
+  slice.id === "cash" ? "var(--color-series-cash)" : SERIES[index % SERIES.length]!
 
 const SIZE = 200
 

@@ -21,7 +21,10 @@ export function AlertDialogContent({ className, ...props }: BaseAlertDialog.Popu
   return (
     <BaseAlertDialog.Portal>
       <BaseAlertDialog.Backdrop data-slot="alert-dialog-backdrop" className={overlayBackdropClassName} />
-      <BaseAlertDialog.Viewport data-slot="alert-dialog-viewport" className="fixed inset-0 grid place-items-center p-4">
+      <BaseAlertDialog.Viewport
+        data-slot="alert-dialog-viewport"
+        className="fixed inset-0 z-50 grid place-items-center p-4"
+      >
         <BaseAlertDialog.Popup
           data-slot="alert-dialog-content"
           className={cn(

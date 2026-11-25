@@ -213,7 +213,7 @@ export function CommandDialogContent(
   return (
     <BaseDialog.Portal>
       <BaseDialog.Backdrop data-slot="command-dialog-backdrop" className={overlayBackdropClassName} />
-      <BaseDialog.Viewport className="fixed inset-0 flex justify-center px-3 pt-[14vh]">
+      <BaseDialog.Viewport className="fixed inset-0 z-50 flex justify-center px-3 pt-[14vh]">
         <BaseDialog.Popup
           data-slot="command-dialog-content"
           className={cn(

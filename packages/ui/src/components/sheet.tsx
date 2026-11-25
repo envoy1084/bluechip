@@ -8,7 +8,7 @@ import { overlayBackdropClassName } from "./dialog.tsx"
 
 export const sheetVariants = cva(
   [
-    "fixed flex flex-col bg-white shadow-e4 outline-none",
+    "fixed z-50 flex flex-col bg-white shadow-e4 outline-none",
     "transition-transform duration-slow ease-brand data-ending-style:duration-[180ms] data-ending-style:ease-brand-in"
   ],
   {

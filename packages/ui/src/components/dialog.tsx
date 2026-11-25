@@ -6,7 +6,8 @@ import { Button } from "./button.tsx"
 
 /** The dimmed, lightly blurred layer under every modal (dialog, alert dialog, sheet). */
 export const overlayBackdropClassName = cn(
-  "fixed inset-0 bg-ink/32 backdrop-blur-[2px]",
+  // Above sticky page headers (z-10) and anything else a page layers.
+  "fixed inset-0 z-50 bg-ink/32 backdrop-blur-[2px]",
   "transition-opacity duration-base ease-brand",
   "data-starting-style:opacity-0 data-ending-style:opacity-0 data-ending-style:duration-fast data-ending-style:ease-brand-in"
 )
@@ -33,7 +34,7 @@ export function DialogContent({ className, children, showCloseButton = true, ...
   return (
     <BaseDialog.Portal>
       <BaseDialog.Backdrop data-slot="dialog-backdrop" className={overlayBackdropClassName} />
-      <BaseDialog.Viewport data-slot="dialog-viewport" className="fixed inset-0 grid place-items-center p-4">
+      <BaseDialog.Viewport data-slot="dialog-viewport" className="fixed inset-0 z-50 grid place-items-center p-4">
         <BaseDialog.Popup
           data-slot="dialog-content"
           className={cn(
