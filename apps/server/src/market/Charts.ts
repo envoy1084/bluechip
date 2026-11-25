@@ -27,6 +27,33 @@ const RANGES: Readonly<Record<HistoryRange, RangeBars>> = {
 const NEW_YORK = DateTime.zoneMakeNamedUnsafe("America/New_York")
 const newYorkDate = (at: DateTime.Utc) => DateTime.formatIsoDate(DateTime.setZone(at, NEW_YORK))
 
+// A chart is a few hundred pixels wide: more points only cost bytes and rendering time.
+const MAX_POINTS = 300
+
+/**
+ * At most 300 points that keep a chart's shape: the range is cut into equal slices of points, and each slice keeps
+ * its lowest and highest price (in time order), so no peak or dip disappears. First and last points always stay.
+ */
+export const thin = (points: ReadonlyArray<PricePoint>): ReadonlyArray<PricePoint> => {
+  if (points.length <= MAX_POINTS) return points
+
+  const slices = MAX_POINTS / 2 - 1
+  const size = (points.length - 2) / slices
+  const kept: Array<PricePoint> = [points[0]!]
+
+  for (let slice = 0; slice < slices; slice++) {
+    const members = points.slice(1 + Math.floor(slice * size), 1 + Math.floor((slice + 1) * size))
+    if (members.length === 0) continue
+
+    const low = members.reduce((min, point) => (point.price < min.price ? point : min))
+    const high = members.reduce((max, point) => (point.price > max.price ? point : max))
+    kept.push(...(low === high ? [low] : members.indexOf(low) < members.indexOf(high) ? [low, high] : [high, low]))
+  }
+
+  kept.push(points.at(-1)!)
+  return kept
+}
+
 /**
  * Price charts from Alpaca's bars, as token prices. Each stock and range is fetched once per cache window and shared
  * by every viewer, so requests to Alpaca don't grow with users.
@@ -52,10 +79,10 @@ export class Charts extends Context.Service<Charts, {
             price: toTokenPrice(bar.close, multiplier ?? multiplierScale)
           })
         )
-        if (range !== "1D" || points.length === 0) return points
+        if (range !== "1D" || points.length === 0) return thin(points)
 
         const lastSession = newYorkDate(points.at(-1)!.at)
-        return points.filter((point) => newYorkDate(point.at) === lastSession)
+        return thin(points.filter((point) => newYorkDate(point.at) === lastSession))
       })
 
       // Keyed "NVDA 1D": a failed load is cached briefly too, so a down Alpaca isn't asked on every view.
