@@ -10,11 +10,23 @@ export type TransactionState = "sending" | "confirming" | "filled" | "failed"
 /** The step a failed trade stopped at. */
 export type TransactionStep = "sending" | "confirming"
 
-const STEPS = [
+interface Step {
+  readonly id: Exclude<TransactionState, "failed">
+  readonly title: string
+  readonly text: string
+}
+
+const STEPS: ReadonlyArray<Step> = [
   { id: "sending", title: "Sending", text: "Your trade is on its way" },
   { id: "confirming", title: "Confirming", text: "Base is confirming it" },
   { id: "filled", title: "Filled", text: "Done. It's in your portfolio" }
-] as const
+]
+
+const WITHDRAWAL_STEPS: ReadonlyArray<Step> = [
+  { id: "sending", title: "Sending", text: "Your withdrawal is on its way" },
+  { id: "confirming", title: "Confirming", text: "Base is confirming it" },
+  { id: "filled", title: "Sent", text: "Done. The USDC is at the address" }
+]
 
 type StepState = "done" | "now" | "todo" | "fail"
 
@@ -41,6 +53,8 @@ export interface TransactionStatusProps extends Omit<ComponentProps<"ol">, "chil
   readonly failureReason?: string
   /** `auto` lays the steps out in a row from 560 px wide, stacked below that. */
   readonly orientation?: "auto" | "vertical"
+  /** What moves: a trade (the default) or a withdrawal, which ends with "Sent". */
+  readonly kind?: "trade" | "withdrawal"
 }
 
 /**
@@ -52,10 +66,12 @@ export function TransactionStatus({
   failedAt = "confirming",
   failureReason = "The price moved more than 1%. Nothing was bought.",
   orientation = "auto",
+  kind = "trade",
   className,
   ...props
 }: TransactionStatusProps) {
   const states = stepStates(state, failedAt)
+  const steps = kind === "withdrawal" ? WITHDRAWAL_STEPS : STEPS
   const row = orientation === "auto"
   return (
     <div className={cn("w-full", row && "@container")}>
@@ -65,7 +81,7 @@ export function TransactionStatus({
         className={cn("grid w-full max-w-[620px]", row && "@[560px]:grid-cols-3", className)}
         {...props}
       >
-        {STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const s = states[i] ?? "todo"
           const failed = s === "fail"
           return (

@@ -18,6 +18,12 @@ describe("TransactionStatus", () => {
     expect(screen.container.querySelector("[aria-current]")).toBeNull()
   })
 
+  it("ends a withdrawal with Sent", async () => {
+    const screen = await render(<TransactionStatus kind="withdrawal" state="filled" />)
+    await expect.element(screen.getByText("Sent")).toBeVisible()
+    await expect.element(screen.getByText("Done. The USDC is at the address")).toBeVisible()
+  })
+
   it("names the reason at the step that failed", async () => {
     const screen = await render(
       <TransactionStatus state="failed" failedAt="confirming" failureReason="The price moved more than 1%." />
