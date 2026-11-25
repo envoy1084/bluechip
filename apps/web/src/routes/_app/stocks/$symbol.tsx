@@ -9,8 +9,8 @@ import * as Schema from "effect/Schema"
 import { stockAtom } from "../../../atoms/market.ts"
 import { MarketPill } from "../../../market/MarketPill.tsx"
 import { AppPage } from "../../../shell/AppPage.tsx"
-import { MarketClosedBanner } from "./-components/MarketClosedBanner.tsx"
 import { PriceHistoryChart } from "./-components/PriceHistoryChart.tsx"
+import { PricesPausedBanner } from "./-components/PricesPausedBanner.tsx"
 import { QuoteBox } from "./-components/QuoteBox.tsx"
 import { StockHeader } from "./-components/StockHeader.tsx"
 
@@ -73,7 +73,7 @@ function StockContent({ stock }: Readonly<{ stock: Stock }>) {
       width="wide"
     >
       <div className="grid gap-4">
-        <MarketClosedBanner />
+        <PricesPausedBanner />
         <StockHeader stock={stock} />
         <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <PriceHistoryChart symbol={stock.symbol} />

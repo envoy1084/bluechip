@@ -7,7 +7,8 @@ import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { bpsPercent, priceDollars } from "../../../../market/amounts.ts"
 import { dayHistoryAtom } from "../../../../market/historyAtoms.ts"
-import { PriceStatusNote } from "../../../../market/PriceStatusNote.tsx"
+import { ReferenceGap } from "../../../../market/ReferenceGap.tsx"
+import { SessionNote } from "../../../../market/SessionNote.tsx"
 
 /** The stock's past day as a sparkline; an empty slot of the same size until it loads or when there is too little. */
 function DaySparkline({ stock }: Readonly<{ stock: Stock }>) {
@@ -17,7 +18,10 @@ function DaySparkline({ stock }: Readonly<{ stock: Stock }>) {
   return <Sparkline values={values} width={88} height={28} className="hidden sm:block" label="Past day" />
 }
 
-/** One stock in the list: who it is, whether it trades now, its day, its price and change, and a link to its page. */
+/**
+ * One stock in the list: who it is, whether it trades now, how far Chainlink's price is, its day, its price and change,
+ * and a link to its page.
+ */
 export function StockListRow({ stock }: Readonly<{ stock: Stock }>) {
   return (
     <Link
@@ -28,7 +32,10 @@ export function StockListRow({ stock }: Readonly<{ stock: Stock }>) {
       <TickerChip symbol={stock.symbol} className="justify-self-start" />
       <span className="grid min-w-0 gap-px">
         <b className="truncate text-body-sm font-[550]">{stock.name}</b>
-        {stock.price === null ? null : <PriceStatusNote status={stock.price.status} />}
+        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-px">
+          {stock.price === null ? null : <SessionNote price={stock.price} />}
+          <ReferenceGap stock={stock} />
+        </span>
       </span>
       <DaySparkline stock={stock} />
       <span className="flex justify-end">

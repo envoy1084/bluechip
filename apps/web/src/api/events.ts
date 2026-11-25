@@ -1,6 +1,6 @@
 import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import { heartbeatInterval, type LiveEvent } from "@bluechip/domain/Events"
-import type { ReferencePrice, StockSymbol } from "@bluechip/domain/market/Market"
+import type { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
 import * as Data from "effect/Data"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
@@ -10,7 +10,7 @@ import * as Atom from "effect/reactivity/Atom"
 import * as Reactivity from "effect/reactivity/Reactivity"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
-import { BluechipApiClient, liveReactivityKey } from "./client.ts"
+import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "./client.ts"
 
 /**
  * The state of the live stream, for the connection banner. `outdated` means this build must reload; `signedOut` means
@@ -20,8 +20,8 @@ export type Connection = "connecting" | "live" | "reconnecting" | "outdated" | "
 
 export const connectionAtom = Atom.make<Connection>("connecting")
 
-/** Reference prices from `PriceTick` events, by stock: newer than any fetched list while the stream is live. */
-export const livePricesAtom = Atom.make<ReadonlyMap<StockSymbol, ReferencePrice>>(new Map())
+/** Market prices from `PriceTick` events, by stock: newer than any fetched list while the stream is live. */
+export const livePricesAtom = Atom.make<ReadonlyMap<StockSymbol, MarketPrice>>(new Map())
 
 /** The stream ended or went silent (a deploy, a restart, a dead proxy); treated like a dropped connection. */
 class StreamClosed extends Data.TaggedError("StreamClosed") {}
@@ -45,11 +45,16 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
         reconnecting
           ? Effect.andThen(setConnection("live"), Reactivity.invalidate([liveReactivityKey]))
           : setConnection("live"),
-        Effect.sync(() => {
-          if (event._tag !== "PriceTick") return
+        Effect.suspend(() => {
+          if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
+            return Reactivity.invalidate([portfolioReactivityKey])
+          }
+          if (event._tag !== "PriceTick") return Effect.void
+
           const prices = new Map(get(livePricesAtom))
           for (const price of event.prices) prices.set(price.symbol, price)
           get.set(livePricesAtom, prices)
+          return Effect.void
         })
       )
     ),

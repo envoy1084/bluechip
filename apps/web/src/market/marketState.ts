@@ -1,29 +1,34 @@
-import type { MarketStatus } from "@bluechip/domain/market/Market"
-import type { MarketState } from "@bluechip/ui/bluechip/market-status"
+import type { MarketSession, MarketStatus } from "@bluechip/domain/market/Market"
+import type { MarketStatusProps } from "@bluechip/ui/bluechip/market-status"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { marketStatusAtom } from "../atoms/market.ts"
 
-const toDate = (date: DateTime.Utc | null) => date === null ? undefined : DateTime.toDateUtc(date)
+/** How each session outside regular hours is named. */
+export const SESSION_LABEL: Readonly<Record<Exclude<MarketSession, "regular" | "paused">, string>> = {
+  preMarket: "Pre-market",
+  afterHours: "After hours",
+  overnight: "Overnight"
+}
 
 /** The props of the UI's market pill for the server's market status. */
-export const marketPillProps = (status: MarketStatus) => {
-  const state: MarketState = status.state === "open" ? "open" : status.reason === "weekend" ? "weekend" : "closed"
-  const closesAt = toDate(status.closesAt)
-  const opensAt = toDate(status.opensAt)
-  return {
-    state,
-    ...(closesAt === undefined ? {} : { closesAt }),
-    ...(opensAt === undefined ? {} : { opensAt })
+export const marketPillProps = (status: MarketStatus): MarketStatusProps => {
+  switch (status.session) {
+    case "regular":
+      return {
+        state: "open",
+        ...(status.closesAt === null ? {} : { closesAt: DateTime.toDateUtc(status.closesAt) })
+      }
+    case "paused":
+      return { state: "paused", resumesAt: DateTime.toDateUtc(status.changesAt) }
+    default:
+      return { state: "extended", session: SESSION_LABEL[status.session], opensAt: DateTime.toDateUtc(status.opensAt) }
   }
 }
 
-/**
- * Whether a fresh price is coming from outside regular hours: Coinbase's feeds run 24/5, so prices keep moving
- * overnight on weekdays while the market itself is closed.
- */
-export const useAfterHours = (): boolean => {
+/** The market's session, once known. */
+export const useMarketStatus = (): MarketStatus | undefined => {
   const status = useAtomValue(marketStatusAtom)
-  return AsyncResult.isSuccess(status) && status.value.state === "closed"
+  return AsyncResult.isSuccess(status) ? status.value : undefined
 }

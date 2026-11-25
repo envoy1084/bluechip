@@ -17,3 +17,6 @@ export class BluechipApiClient extends AtomHttpApi.Service<BluechipApiClient>()(
 
 /** Queries tagged with this key refetch after the live stream reconnects, so missed events never leave stale data. */
 export const liveReactivityKey = "live"
+
+/** The user's portfolio and withdrawals refetch when this key is invalidated (live `PortfolioChanged` events). */
+export const portfolioReactivityKey = "portfolio"
