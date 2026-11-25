@@ -6,6 +6,7 @@ import { type ChildProcess, execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
+import { parseEnv } from "node:util"
 import { gunzipSync } from "node:zlib"
 import { createServer, type ViteDevServer } from "vite"
 
@@ -84,6 +85,26 @@ const answersRpc = (url: string, method: string) => async () => {
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params: [] })
   })
   return response.ok
+}
+
+/**
+ * With `BLUECHIP_E2E_LIVE=1`, the server's assistant on Anthropic's models: the key (and model ids, if set) from
+ * `apps/server/.env.local`, handed to the server process only.
+ */
+const liveAssistant = (): Record<string, string> => {
+  if (process.env["BLUECHIP_E2E_LIVE"] !== "1") return {}
+  const file = path.join(root, "apps/server/.env.local")
+  const env = fs.existsSync(file) ? parseEnv(fs.readFileSync(file, "utf8")) : {}
+  const key = env["ANTHROPIC_API_KEY"] ?? process.env["ANTHROPIC_API_KEY"]
+  if (key === undefined || key === "") {
+    throw new Error("e2e: BLUECHIP_E2E_LIVE=1 needs ANTHROPIC_API_KEY in apps/server/.env.local")
+  }
+  return {
+    BLUECHIP_E2E_LIVE: "1",
+    ANTHROPIC_API_KEY: key,
+    ...(env["ASSISTANT_MODEL"] === undefined ? {} : { ASSISTANT_MODEL: env["ASSISTANT_MODEL"] }),
+    ...(env["ASSISTANT_SMALL_MODEL"] === undefined ? {} : { ASSISTANT_SMALL_MODEL: env["ASSISTANT_SMALL_MODEL"] })
+  }
 }
 
 /** A running stack; `stop` ends every process it started. */
@@ -184,7 +205,8 @@ export const startStack = async (): Promise<Stack> => {
       BUNDLER: "local",
       BUNDLER_URL: urls.alto,
       GAS_SPONSORSHIP: "none",
-      ASSISTANT_DAILY_BUDGET: "1"
+      ASSISTANT_DAILY_BUDGET: "1",
+      ...liveAssistant()
     }))
     await waitFor("server", async () => (await fetch(`${urls.server}/health`)).ok)
 
