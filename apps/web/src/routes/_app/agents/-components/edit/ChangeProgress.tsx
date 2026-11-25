@@ -1,7 +1,7 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import type { Limits } from "@bluechip/domain/agents/Limits"
-import { compare } from "@bluechip/domain/agents/Rules"
 import type { RequestId } from "@bluechip/domain/Ids"
+import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
+import { compareSpecs } from "@bluechip/domain/policies/Catalog"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
@@ -11,7 +11,7 @@ import { useEffect } from "react"
 import { LandingCard } from "../../../../../agents/LandingCard.tsx"
 import { useAgentSigning } from "../../../../../agents/useAgentSigning.ts"
 import { useLanding } from "../../../../../agents/useLanding.ts"
-import { changeLimitsAtom } from "../../../../../atoms/agents.ts"
+import { changeAgentAtom } from "../../../../../atoms/agents.ts"
 
 function BackToAgent({ agent }: Readonly<{ agent: Agent }>) {
   return (
@@ -21,11 +21,11 @@ function BackToAgent({ agent }: Readonly<{ agent: Agent }>) {
   )
 }
 
-/** A change that didn't land: the old limits still apply, and Face ID can send it again. */
+/** A change that didn't land: the old rules still apply, and Face ID can send it again. */
 function ChangeAgain(
-  { agent, limits, onSent }: Readonly<{ agent: Agent; limits: Limits; onSent: (agent: Agent) => void }>
+  { agent, spec, onSent }: Readonly<{ agent: Agent; spec: AgentSpec; onSent: (agent: Agent) => void }>
 ) {
-  const changeLimits = useAtomSet(changeLimitsAtom, { mode: "promise" })
+  const change = useAtomSet(changeAgentAtom, { mode: "promise" })
   const { signing, sign } = useAgentSigning()
 
   if (agent.status !== "active") {
@@ -40,7 +40,7 @@ function ChangeAgain(
   return (
     <>
       <p className="max-w-[40ch] text-body-sm text-g-600">
-        Base didn't take the change, so {agent.name}'s old limits still apply.
+        Base didn't take the change, so {agent.name}'s old rules still apply.
       </p>
       {signing.status === "failed" && (
         <Alert variant="destructive" className="w-full text-left">
@@ -53,10 +53,7 @@ function ChangeAgain(
         onAuthenticate={async () =>
           onSent(
             await sign(() =>
-              changeLimits({
-                params: { id: agent.id },
-                payload: { requestId: crypto.randomUUID() as RequestId, limits }
-              })
+              change({ params: { id: agent.id }, payload: { requestId: crypto.randomUUID() as RequestId, spec } })
             )
           )}
         className="w-full"
@@ -69,16 +66,16 @@ function ChangeAgain(
 }
 
 /**
- * A change on its way to Base, followed through the live agent; once its new limits are in force, back to the
+ * A change on its way to Base, followed through the live agent; once its new rules are in force, back to the
  * agent. Mount it once per send (a new `key`), so a retry follows its own change.
  */
 export function ChangeProgress(
-  { sent, limits, onSent }: Readonly<{ sent: Agent; limits: Limits; onSent: (agent: Agent) => void }>
+  { sent, spec, onSent }: Readonly<{ sent: Agent; spec: AgentSpec; onSent: (agent: Agent) => void }>
 ) {
   const navigate = useNavigate()
   const { agent, landing } = useLanding(
     sent,
-    (candidate) => candidate.status === "active" && compare(candidate.limits, limits).overall === "same"
+    (candidate) => candidate.status === "active" && compareSpecs(candidate.spec, spec).policies.length === 0
   )
 
   useEffect(() => {
@@ -87,16 +84,16 @@ export function ChangeProgress(
 
   if (landing === "failed") {
     return (
-      <LandingCard landing="failed" title={`${agent.name}'s new limits weren't locked`}>
-        <ChangeAgain agent={agent} limits={limits} onSent={onSent} />
+      <LandingCard landing="failed" title={`${agent.name}'s new rules weren't locked`}>
+        <ChangeAgain agent={agent} spec={spec} onSent={onSent} />
       </LandingCard>
     )
   }
 
   return (
-    <LandingCard landing="sending" title={`Locking ${agent.name}'s new limits`}>
+    <LandingCard landing="sending" title={`Locking ${agent.name}'s new rules`}>
       <p className="max-w-[40ch] text-body-sm text-g-600">
-        Its old limits apply until the new ones land on Base. This takes a few seconds.
+        Its old rules apply until the new ones land on Base. This takes a few seconds.
       </p>
     </LandingCard>
   )

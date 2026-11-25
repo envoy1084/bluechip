@@ -1,0 +1,22 @@
+import { configOf } from "@bluechip/domain/policies/Policy"
+import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import { FieldEditor } from "../fields/FieldEditor.tsx"
+import { withConfig } from "../specEdits.ts"
+import type { EditorProps } from "./editorProps.ts"
+
+/** How many trades it may send in a day. */
+export function TradesPerDayEditor({ context, problemOf, onSpecChange }: EditorProps) {
+  const config = configOf(context.spec.policies, tradesPerDay)
+  if (config === undefined) return null
+
+  return (
+    <FieldEditor
+      field={tradesPerDay.fields.count}
+      value={config.count}
+      context={context}
+      help="The most trades it sends in a day. Resets at midnight UTC."
+      problem={problemOf("count")}
+      onChange={(count) => onSpecChange(withConfig(context.spec, "tradesPerDay", { count }))}
+    />
+  )
+}

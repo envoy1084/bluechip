@@ -17,7 +17,7 @@ import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../shell/AppPage.tsx"
 import { ChangeProgress } from "./-components/edit/ChangeProgress.tsx"
 import { ChangeReview } from "./-components/edit/ChangeReview.tsx"
-import { EditLimitsStep } from "./-components/edit/EditLimitsStep.tsx"
+import { EditRulesStep } from "./-components/edit/EditRulesStep.tsx"
 import { NotChangeable } from "./-components/edit/NotChangeable.tsx"
 
 export const Route = createFileRoute("/_app/agents/$agentId_/edit")({ component: EditAgentPage })
@@ -26,7 +26,7 @@ const isAgentId = Schema.is(AgentId)
 
 function NotFound() {
   return (
-    <AppPage title="Edit limits">
+    <AppPage title="Edit rules">
       <Empty>
         <EmptyTitle>We don't have that agent</EmptyTitle>
         <EmptyDescription>Check the link, or pick one from your agents.</EmptyDescription>
@@ -54,7 +54,7 @@ function KnownAgent({ agentId }: Readonly<{ agentId: AgentId }>) {
 
   const failed = AsyncResult.isFailure(agent) || AsyncResult.isFailure(stocks)
   return (
-    <AppPage title="Edit limits">
+    <AppPage title="Edit rules">
       {failed ?
         (
           <div className="grid justify-items-center gap-3 py-10 text-center">
@@ -81,19 +81,19 @@ function KnownAgent({ agentId }: Readonly<{ agentId: AgentId }>) {
 }
 
 /**
- * The agent's limits, changed and reviewed against the ones in force, then locked with Face ID; once the change lands
- * the page goes back to the agent. Only an active agent's limits can change.
+ * The agent's rules, changed and reviewed against the ones in force, then locked with Face ID as a new session; once
+ * the change lands the page goes back to the agent. Only an active agent's rules can change.
  */
 function EditFlow({ agent, stocks }: Readonly<{ agent: Agent; stocks: ReadonlyArray<Stock> }>) {
-  const [step, setStep] = useState<"limits" | "review">("limits")
-  const [limits, setLimits] = useState(agent.limits)
+  const [step, setStep] = useState<"rules" | "review">("rules")
+  const [spec, setSpec] = useState(agent.spec)
   const [sent, setSent] = useState<{ readonly agent: Agent; readonly attempt: number } | null>(null)
 
   const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
   const send = (next: Agent) => setSent((last) => ({ agent: next, attempt: (last?.attempt ?? 0) + 1 }))
   const page = (children: ReactNode, wide = false) => (
     <AppPage
-      title="Edit limits"
+      title="Edit rules"
       icon={<AgentAvatar agentId={agent.id} size="md" />}
       sub={
         <>
@@ -107,22 +107,22 @@ function EditFlow({ agent, stocks }: Readonly<{ agent: Agent; stocks: ReadonlyAr
     </AppPage>
   )
 
-  if (sent !== null) return page(<ChangeProgress key={sent.attempt} sent={sent.agent} limits={limits} onSent={send} />)
+  if (sent !== null) return page(<ChangeProgress key={sent.attempt} sent={sent.agent} spec={spec} onSent={send} />)
   if (agent.status !== "active") return page(<NotChangeable agent={agent} status={agent.status} />)
 
   if (step === "review") {
     return page(
-      <ChangeReview agent={agent} limits={limits} nameOf={nameOf} onBack={() => setStep("limits")} onSent={send} />
+      <ChangeReview agent={agent} spec={spec} nameOf={nameOf} onBack={() => setStep("rules")} onSent={send} />
     )
   }
 
   return page(
-    <EditLimitsStep
+    <EditRulesStep
       agent={agent}
-      limits={limits}
+      spec={spec}
       stocks={stocks}
       nameOf={nameOf}
-      onChange={setLimits}
+      onChange={setSpec}
       onReview={() => setStep("review")}
     />,
     true

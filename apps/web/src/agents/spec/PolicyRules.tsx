@@ -1,6 +1,4 @@
-import type { Limits } from "@bluechip/domain/agents/Limits"
-import { describe } from "@bluechip/domain/agents/Rules"
-import type { StockSymbol } from "@bluechip/domain/market/Market"
+import type { Description } from "@bluechip/domain/policies/Policy"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
@@ -28,22 +26,21 @@ function RuleList(
 }
 
 /**
- * What limits let an agent do and what it can never do, in bluechip's own words for them (the permission card's
- * layout, with the domain's sentences, so it names every setting the lock enforces). Without `lockedUntil` it reads
- * as a draft.
+ * What an agent's policies let it do and what it can never do, in the catalog's sentences (`describeSpec`), in the
+ * permission card's layout. Without `lockedUntil` it reads as a draft; `lockLine` says something else there (removed).
  */
-export function LimitsRules(
-  { limits, nameOf, lockedUntil, footer, className }: Readonly<{
-    limits: Limits
-    nameOf: (symbol: StockSymbol) => string
+export function PolicyRules(
+  { description, lockedUntil, lockLine, footer, className }: Readonly<{
+    description: Description
     /** "21 Feb": the day the Face ID lock runs out. */
-    lockedUntil?: string
-    /** Beside the lock line, like an "Edit limits" button. */
+    lockedUntil?: string | undefined
+    lockLine?: string | undefined
+    /** Beside the lock line, like an "Edit policies" button. */
     footer?: ReactNode
     className?: string
   }>
 ) {
-  const { can, never } = describe(limits, nameOf)
+  const { can, never } = description
   const locked = lockedUntil !== undefined
 
   return (
@@ -62,7 +59,7 @@ export function LimitsRules(
       <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-g-100 py-[11px] pr-3.5 pl-[18px]">
         <span className="inline-flex items-center gap-1.5 text-label-sm text-g-500">
           <Icon name="lock" size={14} />
-          {locked ? `Locked with Face ID until ${lockedUntil}` : "Not locked yet"}
+          {lockLine ?? (locked ? `Locked with Face ID until ${lockedUntil}` : "Not locked yet")}
         </span>
         {footer}
       </div>

@@ -6,10 +6,10 @@ import { Link } from "@tanstack/react-router"
 const WHY: Readonly<Record<Exclude<AgentStatus, "active">, { readonly title: string; readonly say: string }>> = {
   draft: {
     title: "It isn't locked yet",
-    say: "A draft has no limits in force. Lock it with Face ID first, then you can change them."
+    say: "A draft has no rules in force. Lock it with Face ID first, then you can change them."
   },
   locking: {
-    title: "Its limits are being locked",
+    title: "Its rules are being locked",
     say: "They're on their way to Base. You can change them once they land."
   },
   updating: {
@@ -18,15 +18,15 @@ const WHY: Readonly<Record<Exclude<AgentStatus, "active">, { readonly title: str
   },
   removing: {
     title: "It's being removed",
-    say: "Its limits can't change while it's being removed."
+    say: "Its rules can't change while it's being removed."
   },
   removed: {
     title: "It was removed",
-    say: "A removed agent has no limits to change."
+    say: "A removed agent has no rules to change."
   }
 }
 
-/** Why an agent's limits can't be changed right now: only an active agent's can. */
+/** Why an agent's rules can't be changed right now: only an active agent's can. */
 export function NotChangeable(
   { agent, status }: Readonly<{ agent: Agent; status: Exclude<AgentStatus, "active"> }>
 ) {

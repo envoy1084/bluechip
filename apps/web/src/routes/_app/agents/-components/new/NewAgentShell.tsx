@@ -3,7 +3,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
 import { AppPage } from "../../../../../shell/AppPage.tsx"
 
-export const NEW_AGENT_STEPS = ["Template", "Limits", "Review", "Face ID", "Done"] as const
+export const NEW_AGENT_STEPS = ["Template", "Rules", "Review", "Face ID", "Done"] as const
 
 export type NewAgentStep = (typeof NEW_AGENT_STEPS)[number]
 

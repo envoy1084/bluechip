@@ -1,6 +1,5 @@
 import type { Agent, AgentUsage } from "@bluechip/domain/agents/Agent"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
-import { AGENT_TEMPLATES } from "@bluechip/ui/bluechip/template-picker"
 import { UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
@@ -10,15 +9,15 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentDot, agentState, hasSession } from "../../../../../agents/agentState.ts"
 import { AgentStatePill } from "../../../../../agents/AgentStatePill.tsx"
-import { lockedUntilLabel, uiTemplate } from "../../../../../agents/limits.ts"
+import { dayLabel, toDollars } from "../../../../../agents/spec/fieldText.ts"
+import { useTemplateLabel } from "../../../../../agents/templateLabel.ts"
 import { agentUsageAtom } from "../../../../../atoms/agents.ts"
-
-const dollars = (amount: bigint) => Number(amount) / 1_000_000
 
 function Card({ agent, usage }: Readonly<{ agent: Agent; usage: AgentUsage | undefined }>) {
   const [now] = useState(() => new Date())
   const state = agentState(agent, now, usage)
-  const template = AGENT_TEMPLATES.find((candidate) => candidate.name === uiTemplate(agent.template))
+  const templateLabel = useTemplateLabel(agent)
+  const spent = usage?.policies.find((counted) => counted.policy === "trade")
 
   return (
     <Link
@@ -30,24 +29,18 @@ function Card({ agent, usage }: Readonly<{ agent: Agent; usage: AgentUsage | und
         <AgentAvatar agentId={agent.id} size="lg" status={agentDot(state)} />
         <span className="grid min-w-0 flex-1">
           <b className="truncate text-[15px] font-semibold tracking-[-0.01em]">{agent.name}</b>
-          <span className="truncate text-label text-g-500">{template?.label}</span>
+          <span className="truncate text-label text-g-500">{templateLabel}</span>
         </span>
         <AgentStatePill state={state} />
       </div>
-      {usage !== undefined && agent.limits.dailyBudget > BigInt(0) ?
-        (
-          <UsageMeter
-            used={dollars(usage.spentToday)}
-            limit={dollars(agent.limits.dailyBudget)}
-            resetsAt="midnight UTC"
-          />
-        ) :
+      {spent !== undefined && spent.limit !== null && spent.limit > BigInt(0) ?
+        <UsageMeter used={toDollars(spent.used)} limit={toDollars(spent.limit)} resetsAt="midnight UTC" /> :
         null}
       <span className="inline-flex items-center gap-1.5 text-label-sm text-g-500">
         <Icon name="lock" size={14} />
         {agent.lockedUntil === null ?
           "Not locked yet" :
-          `Locked until ${lockedUntilLabel(DateTime.toDateUtc(agent.lockedUntil))}`}
+          `Locked until ${dayLabel(DateTime.toDateUtc(agent.lockedUntil))}`}
       </span>
     </Link>
   )

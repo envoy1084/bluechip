@@ -72,15 +72,15 @@ export function LockStep({ sent, onSent }: Readonly<{ sent: Agent; onSent: (agen
     <NewAgentShell step="Face ID">
       {landing === "sending" ?
         (
-          <LandingCard landing="sending" title={`Locking ${agent.name}'s limits`}>
+          <LandingCard landing="sending" title={`Locking ${agent.name}'s rules`}>
             <p className="max-w-[40ch] text-body-sm text-g-600">
-              Face ID is the only way limits can be set or loosened. Once locked, every trade is checked against them on
-              Base.
+              Face ID is the only way its rules can be set or loosened. Once locked, every trade is checked against them
+              on Base.
             </p>
           </LandingCard>
         ) :
         (
-          <LandingCard landing="failed" title={`${agent.name}'s limits weren't locked`}>
+          <LandingCard landing="failed" title={`${agent.name}'s rules weren't locked`}>
             <LockAgain agent={agent} onSent={onSent} />
           </LandingCard>
         )}

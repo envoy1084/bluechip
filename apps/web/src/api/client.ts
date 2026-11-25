@@ -23,3 +23,6 @@ export const portfolioReactivityKey = "portfolio"
 
 /** The user's agents refetch when this key is invalidated (live `AgentChanged` events). */
 export const agentsReactivityKey = "agents"
+
+/** Saved templates refetch when this key is invalidated (after saving or deleting one). */
+export const templatesReactivityKey = "templates"

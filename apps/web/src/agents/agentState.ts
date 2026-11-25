@@ -15,9 +15,9 @@ export const hasSession = (agent: Agent): boolean =>
 /** Whether bluechip can pause it: anything locked or on its way to be, not a draft or a removed agent. */
 export const isPausable = (agent: Agent): boolean => agent.status !== "draft" && agent.status !== "removed"
 
-const limitReached = (agent: Agent, usage: AgentUsage): boolean =>
-  usage.tradesToday >= agent.limits.tradesPerDay ||
-  (agent.limits.dailyBudget > BigInt(0) && usage.spentToday >= agent.limits.dailyBudget)
+// Any counted policy at its limit stops the agent for the day; a sell-only agent's daily budget of 0 never counts.
+const limitReached = (usage: AgentUsage): boolean =>
+  usage.policies.some((counted) => counted.limit !== null && counted.limit > BigInt(0) && counted.used >= counted.limit)
 
 /** What the agent is doing now; with its usage, whether today's limit stopped it. */
 export const agentState = (agent: Agent, now: Date, usage?: AgentUsage): AgentDisplayState => {
@@ -26,7 +26,7 @@ export const agentState = (agent: Agent, now: Date, usage?: AgentUsage): AgentDi
   if (agent.status !== "active") return "sending"
   if (agent.paused) return "paused"
   if (agent.lockedUntil !== null && DateTime.toEpochMillis(agent.lockedUntil) <= now.getTime()) return "expired"
-  if (usage !== undefined && limitReached(agent, usage)) return "stopped"
+  if (usage !== undefined && limitReached(usage)) return "stopped"
   return "active"
 }
 

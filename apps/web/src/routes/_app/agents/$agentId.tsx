@@ -1,6 +1,7 @@
 import type { Agent, AgentUsage } from "@bluechip/domain/agents/Agent"
 import { NotFound as NotFoundError } from "@bluechip/domain/Errors"
 import { AgentId } from "@bluechip/domain/Ids"
+import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { Button } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
@@ -13,11 +14,13 @@ import * as Schema from "effect/Schema"
 import { useState } from "react"
 import { agentState, hasSession } from "../../../agents/agentState.ts"
 import { agentAtom, agentUsageAtom } from "../../../atoms/agents.ts"
+import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../shell/AppPage.tsx"
 import { AgentAlerts } from "./-components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "./-components/detail/AgentHeader.tsx"
-import { LimitsSection } from "./-components/detail/LimitsSection.tsx"
+import { PoliciesSection } from "./-components/detail/PoliciesSection.tsx"
 import { RemoveConfirm } from "./-components/detail/RemoveConfirm.tsx"
+import { SessionHistory } from "./-components/detail/SessionHistory.tsx"
 import { UsageCard } from "./-components/detail/UsageCard.tsx"
 import { useRemoveAgent } from "./-components/detail/useRemoveAgent.ts"
 
@@ -83,6 +86,9 @@ function AgentContent({ agent }: Readonly<{ agent: Agent }>) {
   const [confirming, setConfirming] = useState(false)
   const [now] = useState(() => new Date())
   const removal = useRemoveAgent(agent)
+  const stocks = useAtomValue(stocksAtom)
+  const nameOf = (symbol: StockSymbol) =>
+    (AsyncResult.isSuccess(stocks) ? stocks.value.find((stock) => stock.symbol === symbol)?.name : undefined) ?? symbol
   const state = agentState(
     agent,
     now,
@@ -106,7 +112,7 @@ function AgentContent({ agent }: Readonly<{ agent: Agent }>) {
       width="wide"
     >
       <div className="grid gap-4">
-        <AgentAlerts agent={agent} />
+        <AgentAlerts agent={agent} now={now} />
         <AgentHeader agent={agent} state={state} onRemove={() => setConfirming(true)} />
         {confirming && removable && removal.signing.status !== "sent" ?
           (
@@ -119,12 +125,15 @@ function AgentContent({ agent }: Readonly<{ agent: Agent }>) {
           ) :
           null}
         <div
-          className={usage === undefined ?
+          className={agent.status === "draft" ?
             "grid" :
             "grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"}
         >
-          <LimitsSection agent={agent} />
-          {usage === undefined ? null : <UsageCard agent={agent} usage={usage} />}
+          <PoliciesSection agent={agent} nameOf={nameOf} />
+          <div className="grid content-start gap-4">
+            {usage === undefined ? null : <UsageCard agent={agent} usage={usage} />}
+            {agent.status === "draft" ? null : <SessionHistory agent={agent} nameOf={nameOf} />}
+          </div>
         </div>
       </div>
     </AppPage>

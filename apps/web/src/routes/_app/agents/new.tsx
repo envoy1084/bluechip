@@ -1,23 +1,21 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import { Limits } from "@bluechip/domain/agents/Limits"
-import { draftLimits, type Template } from "@bluechip/domain/agents/Templates"
 import type { RequestId } from "@bluechip/domain/Ids"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
-import { AGENT_TEMPLATES } from "@bluechip/ui/bluechip/template-picker"
+import { configOf } from "@bluechip/domain/policies/Policy"
+import { trade } from "@bluechip/domain/policies/Trade"
 import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { createFileRoute } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
-import { uiTemplate } from "../../../agents/limits.ts"
-import { evenTargets } from "../../../agents/LimitsFormMix.tsx"
 import { removeAgentAtom } from "../../../atoms/agents.ts"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../shell/AppPage.tsx"
-import { LimitsStep } from "./-components/new/LimitsStep.tsx"
 import { LockStep } from "./-components/new/LockStep.tsx"
 import { NewAgentShell } from "./-components/new/NewAgentShell.tsx"
+import { type Origin, originLabel, originPresets, originSpec } from "./-components/new/origin.ts"
+import { PoliciesStep } from "./-components/new/PoliciesStep.tsx"
 import { ReviewStep } from "./-components/new/ReviewStep.tsx"
 import { TemplateStep } from "./-components/new/TemplateStep.tsx"
 
@@ -25,14 +23,7 @@ export const Route = createFileRoute("/_app/agents/new")({ component: NewAgentPa
 
 const newRequestId = () => crypto.randomUUID() as RequestId
 
-const labelOf = (template: Template) =>
-  AGENT_TEMPLATES.find((candidate) => candidate.name === uiTemplate(template))!.label
-
-/** A template's balanced starting limits, keeping the stocks already picked (and an even mix for a Rebalancer). */
-const startingLimits = (template: Template, stocks: ReadonlyArray<StockSymbol>): Limits => {
-  const limits = draftLimits({ template, preset: "balanced", stocks, targets: [] })
-  return limits.mode === "rebalance" ? new Limits({ ...limits, targets: evenTargets(stocks, limits) }) : limits
-}
+const FIRST: Origin = { kind: "builtIn", template: "rebalancer" }
 
 function NewAgentPage() {
   const stocks = useAtomValue(stocksAtom)
@@ -59,15 +50,15 @@ function NewAgentPage() {
 }
 
 /**
- * Template, limits, review, then Face ID: nothing is saved until the review's Face ID, which saves a draft and locks
+ * Template, rules, review, then Face ID: nothing is saved until the review's Face ID, which saves a draft and locks
  * it. Once the lock is sent the page follows it to Base until the agent is live.
  */
 function NewAgentFlow({ stocks }: Readonly<{ stocks: ReadonlyArray<Stock> }>) {
   const remove = useAtomSet(removeAgentAtom, { mode: "promise" })
-  const [step, setStep] = useState<"template" | "limits" | "review">("template")
-  const [template, setTemplate] = useState<Template>("rebalancer")
-  const [name, setName] = useState(() => labelOf("rebalancer"))
-  const [limits, setLimits] = useState(() => startingLimits("rebalancer", []))
+  const [step, setStep] = useState<"template" | "rules" | "review">("template")
+  const [origin, setOrigin] = useState<Origin>(FIRST)
+  const [name, setName] = useState(() => originLabel(FIRST))
+  const [spec, setSpec] = useState(() => originSpec(FIRST, []))
   const [draft, setDraft] = useState<Agent | null>(null)
   const [requestId, setRequestId] = useState(newRequestId)
   const [editProblem, setEditProblem] = useState<string | null>(null)
@@ -78,47 +69,45 @@ function NewAgentFlow({ stocks }: Readonly<{ stocks: ReadonlyArray<Stock> }>) {
 
   if (sent !== null) return <LockStep key={sent.attempt} sent={sent.agent} onSent={send} />
 
-  const pickTemplate = (picked: Template) => {
-    if (name.trim() === "" || name === labelOf(template)) setName(labelOf(picked))
-    setTemplate(picked)
-    setLimits(startingLimits(picked, limits.stocks))
+  const pickOrigin = (picked: Origin) => {
+    if (name.trim() === "" || name === originLabel(origin)) setName(originLabel(picked))
+    setOrigin(picked)
+    setSpec(originSpec(picked, configOf(spec.policies, trade)?.stocks ?? []))
   }
 
-  // A draft saved by a Face ID that didn't finish holds the old limits, so changing them sets it aside first.
-  const backToLimits = async () => {
+  // A draft saved by a Face ID that didn't finish holds the old rules, so changing them sets it aside first.
+  const backToRules = async () => {
     if (draft !== null) {
       try {
         await remove({ params: { id: draft.id }, payload: { requestId: newRequestId() } })
       } catch {
-        setEditProblem("We couldn't set the saved draft aside, so the limits can't change yet. Try again.")
+        setEditProblem("We couldn't set the saved draft aside, so the rules can't change yet. Try again.")
         return
       }
       setDraft(null)
     }
     setEditProblem(null)
     setRequestId(newRequestId())
-    setStep("limits")
+    setStep("rules")
   }
 
   if (step === "template") {
     return (
       <NewAgentShell step="Template">
-        <TemplateStep template={template} onPick={pickTemplate} onContinue={() => setStep("limits")} />
+        <TemplateStep origin={origin} onPick={pickOrigin} onContinue={() => setStep("rules")} />
       </NewAgentShell>
     )
   }
 
-  if (step === "limits") {
+  if (step === "rules") {
     return (
-      <NewAgentShell step="Limits" wide>
-        <LimitsStep
-          template={template}
-          name={name}
-          limits={limits}
+      <NewAgentShell step="Rules" wide>
+        <PoliciesStep
+          spec={spec}
+          template={originPresets(origin)}
           stocks={stocks}
           nameOf={nameOf}
-          onNameChange={setName}
-          onLimitsChange={setLimits}
+          onChange={setSpec}
           onBack={() => setStep("template")}
           onReview={() => setStep("review")}
         />
@@ -129,15 +118,16 @@ function NewAgentFlow({ stocks }: Readonly<{ stocks: ReadonlyArray<Stock> }>) {
   return (
     <NewAgentShell step="Review" wide>
       <ReviewStep
-        template={template}
+        origin={origin}
+        spec={spec}
         name={name}
-        limits={limits}
+        onNameChange={setName}
         nameOf={nameOf}
         draft={draft}
         requestId={requestId}
         onDraft={setDraft}
         onSent={send}
-        onEdit={() => void backToLimits()}
+        onEdit={() => void backToRules()}
         editProblem={editProblem}
       />
     </NewAgentShell>
