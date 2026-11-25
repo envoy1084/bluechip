@@ -1,81 +1,85 @@
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
-import { feedsPaused, marketStatus, priceStatus } from "../../src/market/Calendar.ts"
+import { marketStatus, priceStatus } from "../../src/market/Calendar.ts"
 
 const at = (iso: string) => DateTime.makeUnsafe(iso)
 const iso = (time: DateTime.Utc | null) => (time === null ? null : DateTime.formatIso(time))
 
+const sessionAt = (time: string) => {
+  const status = marketStatus(at(time))
+  return { session: status.session, changesAt: iso(status.changesAt), pausedFor: status.pausedFor }
+}
+
 describe("marketStatus", () => {
-  it("is open during a regular session (winter, New York is UTC-5)", () => {
-    const status = marketStatus(at("2026-11-24T15:00:00Z")) // Tuesday 10:00 ET
-    assert.strictEqual(status.state, "open")
-    assert.strictEqual(iso(status.closesAt), "2026-11-24T21:00:00.000Z")
+  it("walks a winter trading day through its sessions (New York is UTC-5)", () => {
+    assert.deepStrictEqual(sessionAt("2026-11-24T08:00:00Z"), {
+      session: "overnight",
+      changesAt: "2026-11-24T09:00:00.000Z",
+      pausedFor: null
+    })
+    assert.strictEqual(sessionAt("2026-11-24T10:00:00Z").session, "preMarket")
+    assert.strictEqual(sessionAt("2026-11-24T15:00:00Z").session, "regular")
+    assert.deepStrictEqual(sessionAt("2026-11-24T21:30:00Z"), {
+      session: "afterHours",
+      changesAt: "2026-11-25T01:00:00.000Z",
+      pausedFor: null
+    })
+    assert.strictEqual(sessionAt("2026-11-25T02:00:00Z").session, "overnight")
   })
 
-  it("opens at 9:30 and closes at 16:00 New York time", () => {
-    const before = marketStatus(at("2026-11-24T14:00:00Z"))
-    assert.strictEqual(before.reason, "beforeOpen")
-    assert.strictEqual(iso(before.opensAt), "2026-11-24T14:30:00.000Z")
-    const after = marketStatus(at("2026-11-24T21:30:00Z"))
-    assert.strictEqual(after.reason, "afterClose")
-    assert.strictEqual(iso(after.opensAt), "2026-11-25T14:30:00.000Z")
+  it("knows today's close while regular trading is on, and the next open otherwise", () => {
+    const regular = marketStatus(at("2026-11-24T15:00:00Z"))
+    assert.strictEqual(iso(regular.opensAt), "2026-11-24T14:30:00.000Z")
+    assert.strictEqual(iso(regular.closesAt), "2026-11-24T21:00:00.000Z")
+    const evening = marketStatus(at("2026-11-24T22:00:00Z"))
+    assert.strictEqual(iso(evening.opensAt), "2026-11-25T14:30:00.000Z")
+    assert.isNull(evening.closesAt)
   })
 
-  it("is closed on Thanksgiving and closes at 1:00 pm the day after", () => {
-    const thanksgiving = marketStatus(at("2026-11-26T15:00:00Z"))
-    assert.strictEqual(thanksgiving.reason, "holiday")
-    assert.strictEqual(iso(thanksgiving.opensAt), "2026-11-27T14:30:00.000Z")
-    const halfDay = marketStatus(at("2026-11-27T17:30:00Z"))
-    assert.strictEqual(halfDay.state, "open")
-    assert.strictEqual(iso(halfDay.closesAt), "2026-11-27T18:00:00.000Z")
-    const closed = marketStatus(at("2026-11-27T18:30:00Z"))
-    assert.strictEqual(closed.reason, "afterClose")
-    assert.strictEqual(iso(closed.opensAt), "2026-11-30T14:30:00.000Z")
+  it("pauses for Thanksgiving, then trades a half day that ends at 1 pm with after-hours until 5 pm", () => {
+    assert.deepStrictEqual(sessionAt("2026-11-26T02:00:00Z"), {
+      session: "paused",
+      changesAt: "2026-11-27T01:00:00.000Z",
+      pausedFor: "holiday"
+    })
+    assert.strictEqual(sessionAt("2026-11-27T02:00:00Z").session, "overnight")
+    assert.deepStrictEqual(sessionAt("2026-11-27T18:30:00Z"), {
+      session: "afterHours",
+      changesAt: "2026-11-27T22:00:00.000Z",
+      pausedFor: null
+    })
   })
 
-  it("is closed on weekends until Monday's open", () => {
-    const saturday = marketStatus(at("2026-11-28T16:00:00Z"))
-    assert.strictEqual(saturday.reason, "weekend")
-    assert.strictEqual(iso(saturday.opensAt), "2026-11-30T14:30:00.000Z")
+  it("pauses from Friday 8 pm until Sunday 8 pm", () => {
+    assert.deepStrictEqual(sessionAt("2026-11-28T16:00:00Z"), {
+      session: "paused",
+      changesAt: "2026-11-30T01:00:00.000Z",
+      pausedFor: "weekend"
+    })
+    assert.deepStrictEqual(sessionAt("2026-12-05T02:00:00Z"), {
+      session: "paused",
+      changesAt: "2026-12-07T01:00:00.000Z",
+      pausedFor: "weekend"
+    })
   })
 
   it("follows daylight saving time and observed holidays (summer, UTC-4)", () => {
-    const open = marketStatus(at("2026-07-01T13:45:00Z")) // Wednesday 9:45 EDT
-    assert.strictEqual(open.state, "open")
-    assert.strictEqual(iso(open.closesAt), "2026-07-01T20:00:00.000Z")
-    const observed = marketStatus(at("2026-07-03T15:00:00Z")) // Independence Day observed on Friday
-    assert.strictEqual(observed.reason, "holiday")
-    assert.strictEqual(iso(observed.opensAt), "2026-07-06T13:30:00.000Z")
+    const regular = marketStatus(at("2026-07-01T13:45:00Z"))
+    assert.strictEqual(regular.session, "regular")
+    assert.strictEqual(iso(regular.closesAt), "2026-07-01T20:00:00.000Z")
+    assert.strictEqual(sessionAt("2026-07-03T15:00:00Z").pausedFor, "holiday")
   })
 })
 
 describe("priceStatus", () => {
-  const open = marketStatus(at("2026-11-24T15:00:00Z"))
+  const regular = marketStatus(at("2026-11-24T15:00:00Z"))
 
-  it("is live while the market is open and the feed keeps its heartbeat", () => {
-    assert.strictEqual(priceStatus(open, at("2026-11-24T14:00:00Z")), "live")
+  it("is live while the feed keeps its 24-hour heartbeat, stale once it misses it", () => {
+    assert.strictEqual(priceStatus(regular, at("2026-11-24T14:00:00Z")), "live")
+    assert.strictEqual(priceStatus(regular, at("2026-11-23T14:00:00Z")), "stale")
   })
 
-  it("is stale when the market is open but the feed missed its 24-hour heartbeat", () => {
-    assert.strictEqual(priceStatus(open, at("2026-11-23T14:00:00Z")), "stale")
-  })
-
-  it("stays live outside regular hours on weekdays, as the feeds run 24/5", () => {
-    const overnight = marketStatus(at("2026-11-25T05:00:00Z")) // Wednesday 0:00 ET
-    assert.strictEqual(overnight.state, "closed")
-    assert.strictEqual(priceStatus(overnight, at("2026-11-25T04:45:00Z")), "live")
-  })
-
-  it("is the last close on weekends and holidays", () => {
-    assert.strictEqual(priceStatus(marketStatus(at("2026-11-28T16:00:00Z")), at("2026-11-20T21:00:00Z")), "closed")
-  })
-})
-
-describe("feedsPaused", () => {
-  it("pauses polling on weekends and holidays only", () => {
-    assert.isTrue(feedsPaused(at("2026-11-28T16:00:00Z"))) // Saturday
-    assert.isTrue(feedsPaused(at("2026-11-26T16:00:00Z"))) // Thanksgiving
-    assert.isFalse(feedsPaused(at("2026-11-25T05:00:00Z"))) // Wednesday overnight: the feeds run 24/5
-    assert.isFalse(feedsPaused(at("2026-11-24T15:00:00Z"))) // Tuesday, market open
+  it("is paused while prices are, whatever the feed's age", () => {
+    assert.strictEqual(priceStatus(marketStatus(at("2026-11-28T16:00:00Z")), at("2026-11-21T00:00:00Z")), "paused")
   })
 })

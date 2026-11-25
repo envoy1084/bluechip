@@ -7,7 +7,7 @@ import { Quote, type StockSymbol } from "@bluechip/domain/market/Market"
 import { bpsBetween, lessBps, priceOf, Shares, Usdc } from "@bluechip/domain/market/Units"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
-import { PriceFeed } from "./PriceFeed.ts"
+import { ReferencePrices } from "./ReferencePrices.ts"
 
 // The default slippage tolerance: the trade may return up to 0.5% less than quoted.
 const SLIPPAGE_BPS = 50
@@ -26,10 +26,14 @@ export const quote = Effect.fn("Quoter.quote")(function*(request: QuoteRequest) 
   const stock = stocks.find((candidate) => candidate.symbol === request.symbol)
   if (stock?.pool == null) return yield* new NotTradable({ symbol: request.symbol })
   const pool = stock.pool
-  const feed = yield* PriceFeed
-  const { prices } = yield* feed.snapshot
-  const reference = prices.get(request.symbol)
+
+  const references = yield* ReferencePrices
+  const reference = yield* references.all.pipe(
+    Effect.map((prices) => prices.get(request.symbol)),
+    Effect.orElseSucceed(() => undefined)
+  )
   if (reference === undefined) return yield* new QuoteUnavailable({ symbol: request.symbol, reason: "noPrice" })
+
   const amountIn = request.side === "buy" ? request.usdc : request.shares
   if (amountIn <= BigInt(0)) return yield* new QuoteUnavailable({ symbol: request.symbol, reason: "tooSmall" })
 

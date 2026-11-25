@@ -21,6 +21,7 @@ export const EventsHandlers = HttpApiBuilder.group(
             Effect.map(DateTime.now, (at): LiveEvent => LiveEvent.cases.Heartbeat.make({ at, sequence }))
           )
         )
-        return Stream.merge(heartbeats, Stream.unwrap(live.subscribe(user.id)))
+        // Subscribed before the first heartbeat: a client that has heard one misses no event published after it.
+        return Stream.unwrap(Effect.map(live.subscribe(user.id), (events) => Stream.merge(heartbeats, events)))
       }))
 )

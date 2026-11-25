@@ -6,12 +6,24 @@ import { AuthenticationLive } from "../auth/Authentication.ts"
 import { AccountHandlers } from "./Account.ts"
 import { AuthHandlers } from "./Auth.ts"
 import { ContractCheckLive, DefectReportingLive } from "./Contract.ts"
+import { DevHandlers } from "./Dev.ts"
 import { EventsHandlers } from "./Events.ts"
 import { MarketHandlers } from "./Market.ts"
+import { PortfolioHandlers } from "./Portfolio.ts"
 import { SystemHandlers } from "./System.ts"
+import { TransfersHandlers } from "./Transfers.ts"
 
 /** Every group's handlers with the contract middleware; tests serve these in memory. */
-export const ApiHandlers = Layer.mergeAll(SystemHandlers, EventsHandlers, AuthHandlers, AccountHandlers, MarketHandlers)
+export const ApiHandlers = Layer.mergeAll(
+  SystemHandlers,
+  EventsHandlers,
+  AuthHandlers,
+  AccountHandlers,
+  MarketHandlers,
+  PortfolioHandlers,
+  TransfersHandlers,
+  DevHandlers
+)
   .pipe(
     Layer.provideMerge(Layer.mergeAll(ContractCheckLive, DefectReportingLive, AuthenticationLive))
   )

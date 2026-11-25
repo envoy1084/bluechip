@@ -6,26 +6,26 @@ import { bpsBetween } from "@bluechip/domain/market/Units"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
-import { pricesAt, readHistory } from "../market/History.ts"
-import { PriceFeed } from "../market/PriceFeed.ts"
+import { marketStatus } from "../market/Calendar.ts"
+import { Charts } from "../market/Charts.ts"
+import { MarketPrices } from "../market/MarketPrices.ts"
 import { quote } from "../market/Quoter.ts"
+import { ReferencePrices } from "../market/ReferencePrices.ts"
 
 export const MarketHandlers = HttpApiBuilder.group(BluechipApi, "market", (handlers) =>
   handlers
-    .handle("status", () =>
-      Effect.gen(function*() {
-        const feed = yield* PriceFeed
-        return (yield* feed.snapshot).status
-      }))
+    .handle("status", () => Effect.map(DateTime.now, marketStatus))
     .handle("stocks", () =>
       Effect.gen(function*() {
-        const feed = yield* PriceFeed
-        const snapshot = yield* feed.snapshot
-        const dayAgo = yield* pricesAt(DateTime.subtract(snapshot.status.asOf, { hours: 24 }))
+        const market = yield* MarketPrices
+        const prices = yield* market.prices
+        // The list still works when the chain doesn't answer; only the reference line goes missing.
+        const references = yield* (yield* ReferencePrices).all.pipe(Effect.orElseSucceed(() => new Map()))
+
         return stocks.map((stock) => {
           const symbol = stock.symbol as StockSymbol
-          const price = snapshot.prices.get(symbol) ?? null
-          const before = dayAgo.get(symbol)
+          const price = prices.get(symbol) ?? null
+
           return new Stock({
             symbol,
             name: stock.name,
@@ -33,15 +33,15 @@ export const MarketHandlers = HttpApiBuilder.group(BluechipApi, "market", (handl
             tradable: stock.pool !== null,
             logoUrl: stock.logoUrl,
             price,
-            change24h: price === null || before === undefined ? null : bpsBetween(price.price, before)
+            reference: references.get(symbol) ?? null,
+            change24h: price?.previousClose == null ? null : bpsBetween(price.price, price.previousClose)
           })
         })
       }))
     .handle("history", ({ params, query }) =>
       Effect.gen(function*() {
-        const feed = yield* PriceFeed
-        const { status } = yield* feed.snapshot
-        return yield* readHistory(params.symbol, query.range, status.asOf)
+        const charts = yield* Charts
+        return yield* charts.history(params.symbol, query.range)
       }))
     .handle("quote", ({ payload }) =>
       quote(
