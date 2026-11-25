@@ -1,12 +1,14 @@
-import { BASE_FEE_WEI, BUNDLER_KEYS } from "@bluechip/devnet/Controls"
+import { BASE_FEE_WEI, BUNDLER_KEYS, rpc } from "@bluechip/devnet/Controls"
 import { Array as Arr, Console, Effect, FileSystem, Path, Schedule, Stream } from "effect"
 import { Command, Flag } from "effect/cli"
 import { ChildProcess, ChildProcessSpawner } from "effect/process"
 import { gunzipSync } from "node:zlib"
 
+import { deployContracts } from "../contracts/deploy.ts"
 import { syncPrices } from "../devnet/sync.ts"
 import { ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
+import { builtContracts } from "./contracts.ts"
 import { DEVNET_STATE } from "./devnet.ts"
 
 /** Where each app listens in development. The apps' own defaults match these. */
@@ -179,6 +181,26 @@ const up = Effect.fn("dev.up")(
     if (chain !== undefined) yield* Effect.forkScoped(runProcess(chain.alto, width))
     if (options.chain !== "none") {
       yield* waitForRpc("alto", `http://localhost:${CHAIN_PORTS.alto}`, "eth_supportedEntryPoints")
+    }
+
+    // A local chain kept from an earlier run can predate today's contracts (new ones get new CREATE2 addresses):
+    // deploy whatever is missing, keeping the rest of its state.
+    if (chain !== undefined) {
+      yield* Effect.gen(function*() {
+        const contracts = yield* builtContracts(process.cwd())
+        const deployed = yield* Effect.tryPromise(() =>
+          deployContracts(rpc(`http://localhost:${CHAIN_PORTS.anvil}`), contracts)
+        )
+        for (const { name, status } of deployed) {
+          if (status === "deployed") yield* Console.log(`dev: deployed ${name}, missing from the local chain`)
+        }
+      }).pipe(
+        Effect.catch((error) =>
+          Console.log(
+            `dev: couldn't check bluechip's contracts on the local chain (${error}); pnpm dev --reset-chain starts it fresh`
+          )
+        )
+      )
     }
 
     yield* tools.run("pnpm", ["--silent", "--filter", "@bluechip/server", "db:migrate"], { inherit: true })
