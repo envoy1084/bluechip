@@ -1,5 +1,6 @@
 // An agent locked onto a new account, as bluechip locks one, on the devnet or a fork of Base.
 import { sessionPolicies } from "@bluechip/chain/agents/Policies"
+import { lockCalls, lockedGrant } from "@bluechip/chain/agents/Sessions"
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import type { ChainError } from "@bluechip/chain/ChainError"
 import type { Stock } from "@bluechip/chain/Contracts"
@@ -63,13 +64,13 @@ export const agentOnNewAccount: (options: {
     policies: sessionPolicies(options.config ?? policyConfig(LIMITS))
   })
 
-  // The owner deploys the account and enables the session in one operation, as locking an agent does; the agent's
-  // trades then validate without carrying the session.
+  // The owner deploys the account and locks the session in one operation, as bluechip does; the agent's trades
+  // then use the enabled session.
   const owned = bundler(account)
   yield* Effect.promise(async () =>
-    owned.waitForUserOperationReceipt({ hash: await Grant.install(owned, { session }) })
+    owned.waitForUserOperationReceipt({ hash: await owned.sendUserOperation({ calls: [...lockCalls(session)] }) })
   )
-  const grant = yield* Effect.promise(() => Grant.create({ account, session }))
+  const grant = yield* lockedGrant(account, session)
   const agentAccount = yield* Effect.promise(() =>
     Grant.toAccount(chain.client, { grant, signer: agent, check: false })
   )
