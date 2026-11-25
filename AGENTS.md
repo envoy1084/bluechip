@@ -49,8 +49,8 @@ Dependencies point inward: apps depend on packages, packages never depend on app
 | `pnpm build`           | `tsc -b`, then each package's build                                 |
 | `pnpm circular`        | Fail on import cycles between modules                               |
 
-Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's fork RPC; `apps/server`,
-`apps/web`; never committed), then `pnpm dev`: Postgres, the local chain (the devnet on Anvil, 8545, no RPC; its
+Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's fork RPC; `apps/server`, with
+`AGENT_KEY_ENCRYPTION_KEY` from `openssl rand -base64 32`; `apps/web`; never committed), then `pnpm dev`: Postgres, the local chain (the devnet on Anvil, 8545, no RPC; its
 feeds and pools follow the server's market prices every 15 s, and its state carries over between runs in
 `.data/devnet/`), the Alto bundler (4337), migrations, then the server (8080), the web app (3000), the component
 kit (4000) and the Trigger.dev job runner, in one terminal. Ctrl+C stops everything; `pnpm dev:stop` stops anything
