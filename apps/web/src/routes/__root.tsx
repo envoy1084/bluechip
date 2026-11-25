@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+import { AtomProvider } from "../providers/AtomProvider.tsx"
 import styles from "../styles.css?url"
 
 export const Route = createRootRoute({
@@ -18,7 +19,9 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <AtomProvider>
+        <Outlet />
+      </AtomProvider>
     </RootDocument>
   )
 }

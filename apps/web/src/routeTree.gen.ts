@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as KitRouteRouteImport } from './routes/kit/route'
+import { Route as DevConnectionRouteImport } from './routes/dev/connection'
 import { Route as KitIndexRouteImport } from './routes/kit/index'
 import { Route as KitAgentsRouteImport } from './routes/kit/agents'
 import { Route as KitBluechipRouteImport } from './routes/kit/bluechip'
@@ -30,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const KitRouteRoute = KitRouteRouteImport.update({
   id: '/kit',
   path: '/kit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevConnectionRoute = DevConnectionRouteImport.update({
+  id: '/dev/connection',
+  path: '/dev/connection',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KitIndexRoute = KitIndexRouteImport.update({
@@ -86,6 +92,7 @@ const KitOverlaysRoute = KitOverlaysRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/kit': typeof KitRouteRouteWithChildren
+  '/dev/connection': typeof DevConnectionRoute
   '/kit/agents': typeof KitAgentsRoute
   '/kit/bluechip': typeof KitBluechipRoute
   '/kit/display': typeof KitDisplayRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/connection': typeof DevConnectionRoute
   '/kit/agents': typeof KitAgentsRoute
   '/kit/bluechip': typeof KitBluechipRoute
   '/kit/display': typeof KitDisplayRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/kit': typeof KitRouteRouteWithChildren
+  '/dev/connection': typeof DevConnectionRoute
   '/kit/agents': typeof KitAgentsRoute
   '/kit/bluechip': typeof KitBluechipRoute
   '/kit/display': typeof KitDisplayRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/kit'
+    | '/dev/connection'
     | '/kit/agents'
     | '/kit/bluechip'
     | '/kit/display'
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dev/connection'
     | '/kit/agents'
     | '/kit/bluechip'
     | '/kit/display'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/kit'
+    | '/dev/connection'
     | '/kit/agents'
     | '/kit/bluechip'
     | '/kit/display'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   KitRouteRoute: typeof KitRouteRouteWithChildren
+  DevConnectionRoute: typeof DevConnectionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/kit'
       fullPath: '/kit'
       preLoaderRoute: typeof KitRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/connection': {
+      id: '/dev/connection'
+      path: '/dev/connection'
+      fullPath: '/dev/connection'
+      preLoaderRoute: typeof DevConnectionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kit/': {
@@ -296,6 +316,7 @@ const KitRouteRouteWithChildren = KitRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   KitRouteRoute: KitRouteRouteWithChildren,
+  DevConnectionRoute: DevConnectionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

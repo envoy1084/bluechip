@@ -287,15 +287,24 @@ importers:
 
   apps/web:
     dependencies:
+      '@bluechip/domain':
+        specifier: workspace:^
+        version: link:../../packages/domain
       '@bluechip/ui':
         specifier: workspace:^
         version: link:../../packages/ui
+      '@effect/atom-react':
+        specifier: 4.1.5
+        version: 4.1.5(effect@4.1.5)(react@19.3.1)(scheduler@0.28.0)
       '@tanstack/react-router':
         specifier: 1.170.46
         version: 1.170.46(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tanstack/react-start':
         specifier: 1.169.7
         version: 1.169.7(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(rolldown@1.2.19)(supports-color@7.2.0)(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
+      effect:
+        specifier: 'catalog:'
+        version: 4.1.5
       react:
         specifier: 'catalog:'
         version: 19.3.1
@@ -749,6 +758,13 @@ packages:
     engines: {node: '>=22.19.0'}
     peerDependencies:
       oxlint: ^1.94.0
+
+  '@effect/atom-react@4.1.5':
+    resolution: {integrity: sha512-7bFJUOa4hatIE4LD4EmuOSS7+jNniZxaltX3TRExBCYAFqMd6vjZs9G/Ez3u24oUaJnkschmjfG3EwVzzebgig==}
+    peerDependencies:
+      effect: ^4.1.5
+      react: '>=19.0.0 <20.0.0'
+      scheduler: '>=0.25.0 <0.29.0'
 
   '@effect/platform-node-shared@4.1.5':
     resolution: {integrity: sha512-JzlrYe4uKaBFTWihBRXo2pDjkUVB39kQpKdGfXdbp7Co5sKT8hbcjOmdB5pg/WOYESdGTddd3fxD4lwlZELbZQ==}
@@ -3805,6 +3821,12 @@ snapshots:
       '@oxlint/plugins': 1.94.0
       oxlint: 1.94.0
       typescript: 6.0.3
+
+  '@effect/atom-react@4.1.5(effect@4.1.5)(react@19.3.1)(scheduler@0.28.0)':
+    dependencies:
+      effect: 4.1.5
+      react: 19.3.1
+      scheduler: 0.28.0
 
   '@effect/platform-node-shared@4.1.5(effect@4.1.5)':
     dependencies:
