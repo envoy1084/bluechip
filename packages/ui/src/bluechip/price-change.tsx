@@ -11,8 +11,9 @@ export type PriceDirection = "up" | "down" | "flat"
 
 /** The direction of a change, after rounding to the two decimals people see. */
 export const priceDirection = (change: number): PriceDirection => {
-  const rounded = Math.round(change * 100)
-  return rounded > 0 ? "up" : rounded < 0 ? "down" : "flat"
+  // The same rounding as the label, so "−0.01%" is never shown as flat.
+  const shown = Number(change.toFixed(2))
+  return shown > 0 ? "up" : shown < 0 ? "down" : "flat"
 }
 
 const ARROW: Readonly<Record<PriceDirection, IconName>> = {

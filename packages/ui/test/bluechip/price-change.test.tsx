@@ -25,12 +25,12 @@ describe("priceDirection", () => {
     expect(priceDirection(-0.004)).toBe("flat")
   })
 
-  it("a fall that shows as −0.01%, today", () => {
-    expect(priceDirection(-0.005)).toBe("flat")
+  it("a fall that shows as −0.01%", () => {
+    expect(priceDirection(-0.005)).toBe("down")
   })
 
-  it.skip("a fall that shows as −0.01% (bug: Math.round rounds −0.5 toward zero, so it reads flat)", () => {
-    expect(priceDirection(-0.005)).toBe("down")
+  it("a rise that shows as +0.01%", () => {
+    expect(priceDirection(0.005)).toBe("up")
   })
 })
 
@@ -53,10 +53,10 @@ describe("PriceChange", () => {
     expect(screen.container.querySelector("[data-slot=price-change]")?.getAttribute("data-direction")).toBe("flat")
   })
 
-  it("shows a fall of −0.005 as −0.01% but marks it flat, today", async () => {
+  it("shows a fall of −0.005 as −0.01%, marked down", async () => {
     const screen = await render(<PriceChange value={-0.005} />)
     expect(textOf(screen.container, "price-change")).toBe("−0.01%")
-    expect(screen.container.querySelector("[data-slot=price-change]")?.getAttribute("data-direction")).toBe("flat")
+    expect(screen.container.querySelector("[data-slot=price-change]")?.getAttribute("data-direction")).toBe("down")
   })
 
   it("puts the amount before the percent", async () => {
