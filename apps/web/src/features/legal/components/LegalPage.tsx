@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { OnboardingFrame } from "../components/layout/OnboardingFrame.tsx"
+import { OnboardingFrame } from "../../../components/layout/OnboardingFrame.tsx"
 
 /** A legal page: the onboarding frame with one readable column of headed sections. */
 export function LegalPage(

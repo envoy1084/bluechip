@@ -15,6 +15,9 @@ export class BluechipApiClient extends AtomHttpApi.Service<BluechipApiClient>()(
   transformClient: HttpClient.mapRequest(HttpClientRequest.setHeader(contractVersionHeader, String(ContractVersion)))
 }) {}
 
+/** Queries about the signed-in user refetch when this key is invalidated (sign-in, sign-out, eligibility). */
+export const accountReactivityKey = "account"
+
 /** Queries tagged with this key refetch after the live stream reconnects, so missed events never leave stale data. */
 export const liveReactivityKey = "live"
 
