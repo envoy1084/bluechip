@@ -50,6 +50,11 @@ export interface ActivityItemProps extends Omit<ComponentProps<"li">, "title"> {
   readonly time: ReactNode
   /** Buttons under the text, like "Review and approve". */
   readonly actions?: ReactNode
+  /**
+   * Opens its details from anywhere on the row; the title becomes its button for the keyboard, and `actions` stay
+   * pressable on their own.
+   */
+  readonly onOpen?: () => void
 }
 
 /**
@@ -57,13 +62,21 @@ export interface ActivityItemProps extends Omit<ComponentProps<"li">, "title"> {
  * never missed; trades waiting for you get a blue one.
  */
 export function ActivityItem(
-  { kind, agentId, icon, title, time, actions, className, children, ...props }: ActivityItemProps
+  { kind, agentId, icon, title, time, actions, onOpen, className, children, ...props }: ActivityItemProps
 ) {
   return (
+    // The title is the keyboard's button; its click bubbles here, so a press anywhere on the row opens it once.
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <li
       data-slot="activity-item"
       data-kind={kind}
-      className={cn(activityItemVariants({ kind }), className)}
+      className={cn(
+        activityItemVariants({ kind }),
+        onOpen !== undefined &&
+          "cursor-pointer transition-colors duration-fast ease-brand hover:bg-[#fafbfc] has-[[data-slot=activity-title]:focus-visible]:shadow-[inset_0_0_0_2px_var(--color-blue)]",
+        className
+      )}
+      onClick={onOpen}
       {...props}
     >
       {agentId === undefined ?
@@ -79,9 +92,23 @@ export function ActivityItem(
         ) :
         <AgentAvatar agentId={agentId} />}
       <div className="grid min-w-0 gap-0.5">
-        <b data-slot="activity-title" className="text-body-sm font-semibold">{title}</b>
+        {onOpen === undefined ?
+          <b data-slot="activity-title" className="text-body-sm font-semibold">{title}</b> :
+          (
+            <button
+              type="button"
+              data-slot="activity-title"
+              className="text-left text-body-sm font-semibold outline-none"
+            >
+              {title}
+            </button>
+          )}
         {children && <span className="text-[13.5px] text-g-600">{children}</span>}
-        {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
+        {actions && (
+          // Actions do their own thing, not open the details.
+          // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+          <div className="mt-2 flex flex-wrap gap-2" onClick={(event) => event.stopPropagation()}>{actions}</div>
+        )}
       </div>
       <time className="pt-0.5 text-caption whitespace-nowrap text-g-500">{time}</time>
     </li>
