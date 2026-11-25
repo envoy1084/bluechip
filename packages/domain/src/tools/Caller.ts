@@ -32,6 +32,7 @@ export class Caller extends Context.Service<Caller, {
  * @category models
  * @since 0.0.0
  */
-export class ToolProblem extends Schema.Class<ToolProblem>("@bluechip/domain/tools/Caller/ToolProblem")({
-  problem: Schema.String
-}) {}
+export class ToolProblem extends Schema.TaggedError<ToolProblem>("@bluechip/domain/tools/Caller/ToolProblem")(
+  "ToolProblem",
+  { problem: Schema.String }
+) {}
