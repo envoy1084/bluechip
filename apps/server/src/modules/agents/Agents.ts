@@ -1,13 +1,14 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { readUsage } from "@bluechip/chain/policies/Usage"
-import { type Agent, type AgentSession, AgentUsage } from "@bluechip/domain/agents/Agent"
+import { type Agent, type AgentSession, AgentUsage, transition } from "@bluechip/domain/agents/Agent"
 import { Conflict, type NotFound, Unavailable } from "@bluechip/domain/Errors"
-import type { AgentId } from "@bluechip/domain/Ids"
+import type { AgentId, UserId } from "@bluechip/domain/Ids"
 import * as Grant from "@namera-ai/sdk/Grant"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as Result from "effect/Result"
 import type { Address } from "viem"
 import { IntentStore } from "../intents/IntentStore.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
@@ -15,8 +16,9 @@ import { AgentSessions, toSession } from "./AgentSessions.ts"
 import { AgentStore } from "./AgentStore.ts"
 
 /**
- * The owner's agents: what they are, what they have used of their limits, and pausing them. Pausing only stops
- * bluechip sending an agent's trades (and cancels those not sent yet); its policies stay locked onchain.
+ * The owner's agents: what they are, what they have used of their limits, pausing them, and marking those whose
+ * session ended. Pausing only stops bluechip sending an agent's trades (and cancels those not sent yet); its policies
+ * stay locked onchain. An expired agent trades no more until you renew it.
  */
 export class Agents extends Context.Service<Agents, {
   readonly list: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
@@ -29,6 +31,11 @@ export class Agents extends Context.Service<Agents, {
   readonly resume: (owner: Owner, id: AgentId) => Effect.Effect<Agent, NotFound | Conflict>
   readonly pauseAll: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
   readonly resumeAll: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
+  /**
+   * Marks active agents whose session has ended `expired` (everyone's, the cron; or one user's) and cancels their
+   * trades not sent yet.
+   */
+  readonly expire: (options?: { readonly userId?: UserId | undefined }) => Effect.Effect<void>
 }>()("@bluechip/server/Agents") {
   static readonly layer = Layer.effect(
     Agents,
@@ -88,7 +95,20 @@ export class Agents extends Context.Service<Agents, {
           return yield* store.list(owner)
         })
 
+      const expire = Effect.fn("Agents.expire")(function*(options: { readonly userId?: UserId | undefined } = {}) {
+        const now = yield* DateTime.now
+        for (const row of yield* store.pastEnd(now, options.userId)) {
+          const next = transition(row.status, { _tag: "Expired" })
+          if (Result.isFailure(next)) continue
+
+          yield* agentSessions.save(row.currentSessionId!, { status: "expired", endedAt: now })
+          yield* intents.cancelAgentIntents(row.id)
+          yield* store.save(row, { status: next.success })
+        }
+      })
+
       return Agents.of({
+        expire,
         list: store.list,
         find,
         sessions,

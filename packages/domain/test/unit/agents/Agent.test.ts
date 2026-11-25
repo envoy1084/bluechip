@@ -124,6 +124,48 @@ describe("transition", () => {
       status: "removed",
       event: { _tag: "Failed" },
       expected: Result.fail("a removed agent has nothing to fail")
+    },
+    {
+      name: "active, its session ended: expired",
+      status: "active",
+      event: { _tag: "Expired" },
+      expected: Result.succeed("expired")
+    },
+    {
+      name: "updating, its session ended: the change decides",
+      status: "updating",
+      event: { _tag: "Expired" },
+      expected: Result.fail("a updating agent can't expire")
+    },
+    {
+      name: "expired, ended again",
+      status: "expired",
+      event: { _tag: "Expired" },
+      expected: Result.fail("a expired agent can't expire")
+    },
+    {
+      name: "expired, renewal sent: updating",
+      status: "expired",
+      event: { _tag: "Sent", action: "renew" },
+      expected: Result.succeed("updating")
+    },
+    {
+      name: "expired, removal sent: removing",
+      status: "expired",
+      event: { _tag: "Sent", action: "remove" },
+      expected: Result.succeed("removing")
+    },
+    {
+      name: "expired, change sent: renew it first",
+      status: "expired",
+      event: { _tag: "Sent", action: "update" },
+      expected: Result.fail("a expired agent can't update")
+    },
+    {
+      name: "removed, renewal sent",
+      status: "removed",
+      event: { _tag: "Sent", action: "renew" },
+      expected: Result.fail("a removed agent can't renew")
     }
   ])("$name", ({ event, expected, status }) => {
     assert.deepStrictEqual(transition(status, event), expected)

@@ -162,12 +162,20 @@ export class AgentRequests extends Context.Service<AgentRequests, {
 
         const now = yield* DateTime.now
         if (!landed) {
+          // A renewal or removal of an expired agent that failed leaves it expired: its session is still past its end.
+          const current = row.currentSessionId === null ? undefined : yield* sessions.get(row.currentSessionId)
+          const ended = current?.validUntil != null && DateTime.isLessThan(current.validUntil, now)
           yield* sessions.save(sending.id, {
-            status: row.status === "locking" ? "draft" : row.status === "removing" ? "active" : "failed",
+            status: row.status === "locking"
+              ? "draft"
+              : row.status === "removing"
+              ? (ended ? "expired" : "active")
+              : "failed",
             userOpHash: null
           })
+          const back = ended ? transition(next.success, { _tag: "Expired" }) : next
           return yield* store.save(row, {
-            status: next.success,
+            status: Result.getOrElse(back, () => next.success),
             ...(row.status === "updating" ? { pendingSessionId: null } : {})
           })
         }
@@ -193,7 +201,10 @@ export class AgentRequests extends Context.Service<AgentRequests, {
           installedAt: now,
           userOpHash: null
         })
-        if (current !== undefined) yield* sessions.save(current.id, { status: "replaced", endedAt: now })
+        // A renewed expired session keeps its status and end in the history.
+        if (current !== undefined && current.status !== "expired") {
+          yield* sessions.save(current.id, { status: "replaced", endedAt: now })
+        }
         return yield* store.save(row, { status: next.success, currentSessionId: sending.id, pendingSessionId: null })
       }, Effect.catchTag("ChainError", (error) => Effect.logWarning("Agent settle failed", error)))
 
@@ -268,7 +279,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         const row = yield* store.owned(owner, id)
         const existing = yield* prepared(owner, requestId, row, "renew")
         if (Option.isSome(existing)) return existing.value
-        if (row.status !== "active") return yield* new Conflict({ reason: "agentBusy" })
+        if (row.status !== "active" && row.status !== "expired") return yield* new Conflict({ reason: "agentBusy" })
 
         const current = yield* sessions.get(row.currentSessionId)
         const now = yield* DateTime.now
@@ -303,7 +314,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         }
         const existing = yield* prepared(owner, requestId, row, "remove")
         if (Option.isSome(existing)) return existing.value
-        if (row.status !== "active") return yield* new Conflict({ reason: "agentBusy" })
+        if (row.status !== "active" && row.status !== "expired") return yield* new Conflict({ reason: "agentBusy" })
 
         const current = yield* sessions.get(row.currentSessionId)
         return yield* prepare(owner, row, {

@@ -3,7 +3,7 @@ import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, UserId } from "@bluechip/domain/Ids"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
-import { and, asc, eq, inArray, ne } from "drizzle-orm"
+import { and, asc, eq, inArray, lt, ne } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -13,7 +13,7 @@ import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { AgentSessions, type SessionRow } from "./AgentSessions.ts"
-import { agents } from "./tables.ts"
+import { agents, agentSessions } from "./tables.ts"
 
 export type AgentRow = typeof agents.$inferSelect
 
@@ -59,6 +59,8 @@ export class AgentStore extends Context.Service<AgentStore, {
   readonly list: (owner: Owner) => Effect.Effect<ReadonlyArray<Agent>>
   /** The owner's agents that can trade (or are on their way to), paused or not. */
   readonly running: (owner: Owner, paused: boolean) => Effect.Effect<ReadonlyArray<AgentRow>>
+  /** Active agents whose session ended before `now`: everyone's, or one user's. */
+  readonly pastEnd: (now: DateTime.Utc, userId?: UserId | undefined) => Effect.Effect<ReadonlyArray<AgentRow>>
   /** Agents with an owner operation on its way, to follow after a restart. */
   readonly inFlight: Effect.Effect<ReadonlyArray<AgentRow>>
   readonly toAgent: (row: AgentRow) => Effect.Effect<Agent>
@@ -142,6 +144,17 @@ export class AgentStore extends Context.Service<AgentStore, {
         )).pipe(Effect.orDie)
       })
 
+      const pastEnd = Effect.fn("AgentStore.pastEnd")(function*(now: DateTime.Utc, userId?: UserId | undefined) {
+        const rows = yield* db.select({ agent: agents }).from(agents)
+          .innerJoin(agentSessions, eq(agentSessions.id, agents.currentSessionId))
+          .where(and(
+            eq(agents.status, "active"),
+            lt(agentSessions.validUntil, now),
+            userId === undefined ? undefined : eq(agents.userId, userId as `user_${string}`)
+          )).pipe(Effect.orDie)
+        return rows.map(({ agent }) => agent)
+      })
+
       const inFlight = db.select().from(agents).where(inArray(agents.status, ["locking", "updating", "removing"])).pipe(
         Effect.orDie
       )
@@ -158,7 +171,18 @@ export class AgentStore extends Context.Service<AgentStore, {
         return agent
       })
 
-      return AgentStore.of({ create, owned, get, tradingState, list, running, inFlight, toAgent: agentOf, save })
+      return AgentStore.of({
+        create,
+        owned,
+        get,
+        tradingState,
+        list,
+        running,
+        pastEnd,
+        inFlight,
+        toAgent: agentOf,
+        save
+      })
     })
   )
 }

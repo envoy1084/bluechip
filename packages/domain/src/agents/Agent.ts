@@ -14,13 +14,21 @@ import { CeremonyOptions } from "../WebAuthn.ts"
 
 /**
  * Where an agent's session stands: not locked yet (`draft`), its lock, change or removal on its way to Base, locked
- * (`active`), or removed for good.
+ * (`active`), past its end (`expired`: it can't trade until you renew it), or removed for good.
  *
  * @stability unstable
  * @category schemas
  * @since 0.0.0
  */
-export const AgentStatus = Schema.Literals(["draft", "locking", "active", "updating", "removing", "removed"])
+export const AgentStatus = Schema.Literals([
+  "draft",
+  "locking",
+  "active",
+  "updating",
+  "removing",
+  "expired",
+  "removed"
+])
 
 /**
  * @stability unstable
@@ -31,7 +39,7 @@ export type AgentStatus = typeof AgentStatus.Type
 
 /**
  * What happens to an agent's session: an owner operation sent (to lock, change, renew or remove it), the operation landed
- * or failed, or a draft discarded before anything was sent.
+ * or failed, a draft discarded before anything was sent, or the session reaching its end.
  *
  * @stability unstable
  * @category models
@@ -42,6 +50,7 @@ export type AgentEvent =
   | { readonly _tag: "Landed" }
   | { readonly _tag: "Failed" }
   | { readonly _tag: "Discarded" }
+  | { readonly _tag: "Expired" }
 
 /**
  * What an owner operation does to an agent's session.
@@ -60,8 +69,10 @@ export const AgentAction = Schema.Literals(["lock", "update", "renew", "remove"]
 export type AgentAction = typeof AgentAction.Type
 
 /**
- * The next status after `event`, or why it can't happen. One operation at a time: a lock only from a draft, a change,
- * renewal or removal only while active; a failed operation leaves the session as it was, and a removed agent never changes.
+ * The next status after `event`, or why it can't happen. One operation at a time: a lock only from a draft, a change
+ * only while active, a renewal or removal while active or expired; a failed operation leaves the agent active (an
+ * expired one expires again, its session still past its end), only an active agent expires, and a removed agent never
+ * changes.
  *
  * **Example** (Locking an agent)
  *
@@ -80,14 +91,18 @@ export type AgentAction = typeof AgentAction.Type
 export const transition = (status: AgentStatus, event: AgentEvent): Result.Result<AgentStatus, string> => {
   switch (event._tag) {
     case "Sent": {
-      const sends: Readonly<Record<AgentAction, { readonly from: AgentStatus; readonly to: AgentStatus }>> = {
-        lock: { from: "draft", to: "locking" },
-        update: { from: "active", to: "updating" },
-        renew: { from: "active", to: "updating" },
-        remove: { from: "active", to: "removing" }
+      const sends: Readonly<
+        Record<AgentAction, { readonly from: ReadonlyArray<AgentStatus>; readonly to: AgentStatus }>
+      > = {
+        lock: { from: ["draft"], to: "locking" },
+        update: { from: ["active"], to: "updating" },
+        renew: { from: ["active", "expired"], to: "updating" },
+        remove: { from: ["active", "expired"], to: "removing" }
       }
       const step = sends[event.action]
-      return status === step.from ? Result.succeed(step.to) : Result.fail(`a ${status} agent can't ${event.action}`)
+      return step.from.includes(status) ?
+        Result.succeed(step.to) :
+        Result.fail(`a ${status} agent can't ${event.action}`)
     }
     case "Landed":
       if (status === "locking" || status === "updating") return Result.succeed("active")
@@ -99,6 +114,8 @@ export const transition = (status: AgentStatus, event: AgentEvent): Result.Resul
         : Result.fail(`a ${status} agent has nothing to fail`)
     case "Discarded":
       return status === "draft" ? Result.succeed("removed") : Result.fail(`a ${status} agent can't be discarded`)
+    case "Expired":
+      return status === "active" ? Result.succeed("expired") : Result.fail(`a ${status} agent can't expire`)
   }
 }
 

@@ -6,6 +6,7 @@ import { AgentRequests } from "./modules/agents/AgentRequests.ts"
 import { Agents } from "./modules/agents/Agents.ts"
 import { AgentSessions } from "./modules/agents/AgentSessions.ts"
 import { AgentStore } from "./modules/agents/AgentStore.ts"
+import { ExpireAgentsCron } from "./modules/agents/ExpireCron.ts"
 import { Assistant } from "./modules/assistant/Assistant.ts"
 import { AssistantToolsLive } from "./modules/assistant/AssistantTools.ts"
 import { Budgets } from "./modules/assistant/Budgets.ts"
@@ -47,7 +48,13 @@ import { Namera } from "./platform/namera/Namera.ts"
  * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`) and the
  * durable engine.
  */
-export const ServicesLive = Layer.mergeAll(DeskLive, ExpireIntentsCron, PortfolioSnapshotCron, Assistant.layer).pipe(
+export const ServicesLive = Layer.mergeAll(
+  DeskLive,
+  ExpireIntentsCron,
+  ExpireAgentsCron,
+  PortfolioSnapshotCron,
+  Assistant.layer
+).pipe(
   Layer.provideMerge(Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer)),
   Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),

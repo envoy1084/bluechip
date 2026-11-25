@@ -3,7 +3,7 @@ import { boolean, index, integer, pgTable, primaryKey, text } from "drizzle-orm/
 import { dateTimeUtc, jsonbSchema, typeId } from "../../platform/db/columns.ts"
 import { users } from "../accounts/tables.ts"
 
-const AGENT_STATUSES = ["draft", "locking", "active", "updating", "removing", "removed"] as const
+const AGENT_STATUSES = ["draft", "locking", "active", "updating", "removing", "expired", "removed"] as const
 const SESSION_STATUSES = ["draft", "locking", "active", "replaced", "revoked", "expired", "failed"] as const
 
 /**
