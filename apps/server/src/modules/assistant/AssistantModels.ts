@@ -11,9 +11,15 @@ import * as Predicate from "effect/Predicate"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 
-// A failure worth another try: overloaded, rate limited, or the network. Invalid requests fail at once.
-const retryable = (error: unknown): boolean =>
-  Predicate.isTagged(error, "AiError") && (error as AiError.AiError).isRetryable
+// A failure worth another try: overloaded, rate limited, or the network. Invalid requests fail at once. Also a
+// response @effect/ai-anthropic can't decode because Anthropic left `stop_details.fallback_credit_token` out of it
+// (seen once on Sonnet, to report upstream): the next try answers.
+const retryable = (error: unknown): boolean => {
+  if (!Predicate.isTagged(error, "AiError")) return false
+  const { reason } = error as AiError.AiError
+  return reason.isRetryable ||
+    (reason._tag === "InvalidResponseError" && reason.description.includes("fallback_credit_token"))
+}
 
 // Three tries in all, about half a second then a second apart, spread so retries from many runs don't line up.
 const retries = Schedule.exponential("500 millis").pipe(Schedule.jittered, Schedule.upTo({ times: 2 }))

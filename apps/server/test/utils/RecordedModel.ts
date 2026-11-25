@@ -36,6 +36,8 @@ export interface Reply {
   readonly conversationFails?: boolean
   /** The conversation model is rate limited this many times before it answers. */
   readonly rateLimited?: number
+  /** The provider's answer can't be decoded this many times before it answers, the way Anthropic's sometimes misses `stop_details.fallback_credit_token`. */
+  readonly undecodable?: number
   /**
    * The notes after the turn: the memories the conversation model notes, and the title the small model gives a new
    * conversation (the message's first words when `null` or absent).
@@ -68,6 +70,7 @@ export class RecordedModel extends Context.Service<RecordedModel, {
     const replies = new Map<string, Reply>()
     const sent = new Map<string, Array<Prompt.Prompt>>()
     const limits = new Map<string, number>()
+    const undecoded = new Map<string, number>()
     const hangs = new Map<string, Deferred.Deferred<void>>()
     const hangOf = (to: string) => {
       const known = hangs.get(to)
@@ -184,6 +187,17 @@ export class RecordedModel extends Context.Service<RecordedModel, {
               return Stream.fail(
                 AiError.make({ module: "RecordedModel", method: "streamText", reason: new AiError.RateLimitError({}) })
               )
+            }
+            const failedDecodes = undecoded.get(user) ?? 0
+            if (modelId === CONVERSATION_MODEL && failedDecodes < (reply.undecodable ?? 0)) {
+              undecoded.set(user, failedDecodes + 1)
+              return Stream.fail(AiError.make({
+                module: "AnthropicClient",
+                method: "createMessageStream",
+                reason: new AiError.InvalidResponseError({
+                  description: "Missing key\n  at [\"stop_details\"][\"fallback_credit_token\"]"
+                })
+              }))
             }
             sent.set(user, [...(sent.get(user) ?? []), options.prompt])
             const steps = reply.rounds[round]

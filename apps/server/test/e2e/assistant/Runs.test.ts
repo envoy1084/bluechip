@@ -104,6 +104,18 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
         )
       }))
 
+    it.effect("an answer the provider package can't decode for a missing fallback_credit_token is tried again", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        yield* (yield* RecordedModel).record({ to: "Still there?", undecodable: 1, rounds: [[{ text: "Yes." }]] })
+        const conversation = yield* assistant.start(user)
+
+        const run = yield* assistant.ask(user, conversation.id, "Still there?")
+
+        assert.deepStrictEqual([run.events.at(-1)?.type, run.cards], ["RUN_FINISHED", []])
+      }))
+
     it.effect("a conversation model that can't answer ends the run with an unavailable card, then RUN_ERROR", () =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).signUp
