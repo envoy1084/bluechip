@@ -1,5 +1,6 @@
 import { NotFound, NotTradable, QuoteUnavailable } from "@bluechip/domain/Errors"
 import type { Quote, StockSymbol } from "@bluechip/domain/market/Market"
+import type { Shares, Usdc } from "@bluechip/domain/market/Units"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import * as Cause from "effect/Cause"
 import * as DateTime from "effect/DateTime"
@@ -7,7 +8,6 @@ import * as Exit from "effect/Exit"
 import * as Option from "effect/Option"
 import { useEffect, useState } from "react"
 import { quoteAtom } from "../atoms/market.ts"
-import { parseShares, parseUsdc } from "./amounts.ts"
 
 export type QuoteSide = "buy" | "sell"
 
@@ -34,16 +34,16 @@ const failureMessage = (error: unknown): string => {
 }
 
 /**
- * Quotes what a trade would do for the amount someone typed, once they pause typing. A quote is only good for a few
+ * Quotes what a trade would do for an amount (USDC to spend, or shares to sell), once someone pauses typing. A quote is only good for a few
  * seconds, so a shown one is requested again when it expires.
  */
-export function useQuote(symbol: StockSymbol, side: QuoteSide, amountText: string): QuoteState {
+export function useQuote(symbol: StockSymbol, side: QuoteSide, amount: Usdc | Shares | null): QuoteState {
   const requestQuote = useAtomSet(quoteAtom, { mode: "promiseExit" })
   const [state, setState] = useState<QuoteState>({ status: "idle" })
   const [renewals, setRenewals] = useState(0)
   const isBuy = side === "buy"
-  const usdc = isBuy ? parseUsdc(amountText) : null
-  const shares = isBuy ? null : parseShares(amountText)
+  const usdc = isBuy && amount !== null && amount > BigInt(0) ? amount as Usdc : null
+  const shares = !isBuy && amount !== null && amount > BigInt(0) ? amount as Shares : null
   const hasAmount = usdc !== null || shares !== null
 
   // Anything that changes the question makes the shown answer wrong straight away.

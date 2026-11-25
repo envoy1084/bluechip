@@ -1,13 +1,10 @@
 import type { Stock } from "@bluechip/domain/market/Market"
-import { Shares } from "@bluechip/domain/market/Units"
-import { MoneyInput } from "@bluechip/ui/bluechip/money-input"
+import { Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
-import { InputGroup, InputGroupInput, InputGroupText } from "@bluechip/ui/components/input-group"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatMoney, formatShares, formatTokenAmount } from "@bluechip/ui/lib/format"
-import { UsdcLogo } from "@bluechip/ui/logos/usdc"
+import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
@@ -17,66 +14,19 @@ import { useMarketStatus } from "../../../../market/marketState.ts"
 import { referenceGap } from "../../../../market/ReferenceGap.tsx"
 import { type QuoteSide, type QuoteState, useQuote } from "../../../../market/useQuote.ts"
 import { useTrade } from "../../../../market/useTrade.ts"
+import { AmountInput, type AmountUnit } from "./AmountInput.tsx"
 import { QuoteSummary, QuoteSummarySkeleton } from "./QuoteSummary.tsx"
 import { TradeProgress } from "./TradeProgress.tsx"
 
-const sharesText = (text: string) => {
-  const [whole = "", ...rest] = text.replace(/[^\d.]/g, "").split(".")
-  return rest.length === 0 ? whole : `${whole}.${rest.join("").slice(0, 8)}`
-}
-
-/** What the typed amount gets, in a sentence under the field, once there is a quote for it. */
+/** What the quote gets back, in a sentence under the field: shares for a buy, USDC for a sell. */
 const quoteHint = (quote: QuoteState) => {
   if (quote.status === "loading") return "Getting a price…"
   if (quote.status !== "ready") return null
 
   const { side, shares, usdc } = quote.quote
   return side === "buy" ?
-    `About ${shareCount(shares).toFixed(3)} shares.` :
-    `About ${formatTokenAmount(usdc, "USDC", { decimals: 6 })}.`
-}
-
-function SharesInput(
-  { symbol, held, hint, text, onChange }: Readonly<{
-    symbol: string
-    held: bigint
-    hint: string | null
-    text: string
-    onChange: (text: string) => void
-  }>
-) {
-  return (
-    <div className="grid gap-1.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor="sell-shares" className="text-[13.5px] font-semibold">Sell {symbol}</label>
-        <span className="text-caption text-g-500">{formatShares(shareCount(held))} shares available</span>
-      </div>
-      <InputGroup className="h-auto rounded-[10px] bg-g-50 py-1.5 pr-1.5 pl-2.5 focus-within:bg-white">
-        <InputGroupInput
-          id="sell-shares"
-          value={text}
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="0"
-          aria-describedby="sell-shares-hint"
-          onChange={(event) => onChange(sharesText(event.currentTarget.value))}
-          className="text-[18px] font-semibold tracking-[-0.02em] tabular-nums placeholder:text-g-300"
-        />
-        <InputGroupText className="font-semibold text-g-500">shares</InputGroupText>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={held === BigInt(0)}
-          onClick={() => onChange(String(shareCount(held)))}
-        >
-          Sell all
-        </Button>
-      </InputGroup>
-      <p id="sell-shares-hint" aria-live="polite" className="min-h-[1.4em] text-caption text-g-500">
-        {hint ?? (held === BigInt(0) ? `You don't own any ${symbol} yet.` : "Enter how many shares to sell.")}
-      </p>
-    </div>
-  )
+    `About ${formatShares(shareCount(shares))} shares for ${formatMoney(usdcDollars(usdc))}.` :
+    `About ${formatMoney(usdcDollars(usdc))} for ${formatShares(shareCount(shares))} shares.`
 }
 
 /** What to look at twice before signing: paused prices, or the stock market and Chainlink far apart. */
@@ -101,26 +51,75 @@ function TradeWarnings({ stock }: Readonly<{ stock: Stock }>) {
   )
 }
 
-/** Buy with cash or sell shares of one stock: amount, quote, the price check, then Face ID and where it stands. */
+/**
+ * Buy with cash or sell shares of one stock, typed in dollars or shares (the unit pill switches): amount, quote, the
+ * price check, then Face ID and where it stands. Buys always spend an exact USDC amount and sells sell exact shares;
+ * the other unit converts at the current price.
+ */
 export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
   const portfolio = useAtomValue(portfolioAtom)
   const [side, setSide] = useState<QuoteSide>("buy")
-  const [amountText, setAmountText] = useState("")
-  const quote = useQuote(stock.symbol, side, stock.tradable ? amountText : "")
+  const [unit, setUnit] = useState<AmountUnit>("usd")
+  const [text, setText] = useState("")
   const { flow, reset, start } = useTrade(stock.symbol)
 
   const cash = AsyncResult.isSuccess(portfolio) ? portfolio.value.cash : BigInt(0)
   const held = AsyncResult.isSuccess(portfolio) ?
     portfolio.value.holdings.find((holding) => holding.symbol === stock.symbol)?.shares ?? BigInt(0) :
     BigInt(0)
-  const usdc = side === "buy" ? parseUsdc(amountText) : null
-  const shares = side === "sell" ? parseShares(amountText) : null
+  const price = stock.price?.price ?? stock.reference?.price ?? null
+
+  // What the trade moves in its own unit: USDC spent for a buy, shares sold for a sell.
+  const typed = unit === "usd" ? parseUsdc(text) : parseShares(text)
+  const amount = typed === null || price === null ?
+    null :
+    side === "buy" ?
+    (unit === "usd" ? typed : valueOf(Shares.make(typed), price)) :
+    (unit === "shares" ? typed : sharesFor(Usdc.make(typed), price))
+  const over = amount !== null && amount > (side === "buy" ? cash : held)
+
+  const quote = useQuote(stock.symbol, side, stock.tradable && !over ? amount as Usdc | Shares | null : null)
   const busy = flow.status === "preparing" || flow.status === "signing"
-  const ready = quote.status === "ready" && (usdc !== null ? usdc <= cash : shares !== null && shares <= held)
+  const ready = quote.status === "ready" && amount !== null && !over
+
+  const available = side === "buy" ?
+    `${formatMoney(usdcDollars(cash))} cash available` :
+    `${formatShares(shareCount(held))} shares${
+      price === null ? "" : ` · ${formatMoney(usdcDollars(valueOf(Shares.make(held), price)))}`
+    }`
+  const hint = over ?
+    side === "buy" ? "That's more than your cash." : "That's more than you have." :
+    quoteHint(quote) ??
+      (side === "buy"
+        ? "Enter an amount. The smallest trade is $1."
+        : held === BigInt(0)
+        ? `You don't own any ${stock.symbol} yet.`
+        : "Enter how much to sell.")
+
+  // Max: all the cash for a buy, every share for a sell, in the unit shown.
+  const max = () => {
+    if (price === null) return
+    const all = side === "buy" ? cash : held
+    if (side === "buy") {
+      setText(unit === "usd" ? String(usdcDollars(all)) : String(shareCount(sharesFor(Usdc.make(all), price))))
+    } else setText(unit === "shares" ? String(shareCount(all)) : String(usdcDollars(valueOf(Shares.make(all), price))))
+  }
+
+  const switchUnit = (next: AmountUnit) => {
+    // Keep the same amount, said in the other unit.
+    if (typed !== null && price !== null) {
+      setText(
+        next === "shares"
+          ? String(shareCount(sharesFor(Usdc.make(typed), price)))
+          : usdcDollars(valueOf(Shares.make(typed), price)).toFixed(2)
+      )
+    }
+    setUnit(next)
+  }
 
   const trade = () => {
-    if (usdc !== null) void start("buy", { usdc })
-    else if (shares !== null) void start("sell", { shares: Shares.make(shares) })
+    if (amount === null) return
+    void start(side, side === "buy" ? { usdc: Usdc.make(amount) } : { shares: Shares.make(amount) })
   }
 
   if (flow.status === "sent") {
@@ -137,7 +136,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
           name={stock.name}
           onDone={() => {
             reset()
-            setAmountText("")
+            setText("")
           }}
         />
       </section>
@@ -154,7 +153,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
         value={side}
         onValueChange={(value) => {
           setSide(value as QuoteSide)
-          setAmountText("")
+          setText("")
           reset()
         }}
         className="justify-self-start"
@@ -174,36 +173,19 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
             <AlertDescription>{stock.name} can't be traded right now.</AlertDescription>
           </Alert>
         ) :
-        side === "buy" ?
         (
-          <MoneyInput
-            key="buy"
-            label={`Buy ${stock.name} with`}
-            description={
-              <span className="inline-flex items-center gap-1.5">
-                <UsdcLogo size={13} />
-                Cash (USDC) · {formatMoney(usdcDollars(cash))} available
-              </span>
-            }
-            currency="usdc"
-            size="md"
-            available={usdcDollars(cash)}
-            showMax={false}
-            quickAmounts={[50, 100, 150]}
-            hint={quoteHint(quote)}
-            emptyHint="Enter an amount. The smallest trade is $1."
-            onValueChange={(amount) => setAmountText(amount === null ? "" : String(amount))}
-            className="gap-1.5 [&_label]:text-[13.5px] [&>p]:min-h-[1.4em] [&>p]:text-caption"
-          />
-        ) :
-        (
-          <SharesInput
-            key="sell"
+          <AmountInput
+            label={side === "buy" ? `Buy ${stock.name}` : `Sell ${stock.name}`}
+            available={available}
+            unit={unit}
             symbol={stock.symbol}
-            held={held}
-            hint={shares !== null && shares > held ? "That's more than you have." : quoteHint(quote)}
-            text={amountText}
-            onChange={setAmountText}
+            text={text}
+            hint={hint}
+            invalid={over}
+            quickAmounts={side === "buy" ? [50, 100, 150] : []}
+            onMax={(side === "buy" ? cash : held) === BigInt(0) ? undefined : max}
+            onTextChange={setText}
+            onUnitChange={switchUnit}
           />
         )}
 
