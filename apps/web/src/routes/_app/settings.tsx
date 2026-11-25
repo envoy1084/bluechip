@@ -7,9 +7,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
-import { usePauseAll } from "../../agents/usePauseAll.ts"
 import { accountReactivityKey, meAtom, passkeysAtom, setDisplayNameAtom, signOutAtom } from "../../atoms/account.ts"
 import { AppPage } from "../../components/layout/AppPage.tsx"
+import { usePauseAll } from "../../hooks/usePauseAll.ts"
 
 export const Route = createFileRoute("/_app/settings")({ component: Settings })
 
