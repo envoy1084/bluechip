@@ -29,6 +29,22 @@ export class Forbidden extends Schema.TaggedError<Forbidden>("@bluechip/domain/E
 ) {}
 
 /**
+ * A passkey signature did not verify: a wrong or unknown passkey, a used or expired challenge, a counter that went
+ * backwards, or a ceremony the user cancelled.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class SignatureRejected
+  extends Schema.TaggedError<SignatureRejected>("@bluechip/domain/Errors/SignatureRejected")(
+    "SignatureRejected",
+    { reason: Schema.Literals(["unknownPasskey", "challenge", "invalid", "counter"]) },
+    { httpApiStatus: 403 }
+  )
+{}
+
+/**
  * @stability unstable
  * @category errors
  * @since 0.0.0

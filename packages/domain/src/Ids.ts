@@ -53,3 +53,39 @@ export const RequestId = Schema.String.check(Schema.isUUID()).pipe(
  * @since 0.0.0
  */
 export type RequestId = typeof RequestId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const PasskeyId = typeId("passkey").pipe(
+  Schema.brand("PasskeyId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/PasskeyId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type PasskeyId = typeof PasskeyId.Type
+
+/**
+ * An EVM address, checksummed or not (`0x` and 40 hex digits).
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const Address = Schema.String.check(Schema.isPattern(/^0x[0-9a-fA-F]{40}$/)).pipe(
+  Schema.brand("Address"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/Address" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type Address = typeof Address.Type
