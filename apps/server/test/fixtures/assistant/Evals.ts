@@ -1,6 +1,6 @@
 // Recorded conversations for the assistant's evals. The first model round of each was recorded from
 // `claude-sonnet-5-5` on 2026-11-26 with bluechip's system prompt and toolkit (a user with one "Tech picker" agent);
-// the memory notes from `claude-haiku-5-5`; later rounds, and the injected page, are written to drive the worst case
+// the memory notes from `claude-haiku-5-5` (the notes model then; `MemoryNotes.ts` holds Sonnet's); later rounds, and the injected page, are written to drive the worst case
 // through the pipeline. Agent ids are filled in per run.
 import type { AgentId } from "@bluechip/domain/Ids"
 import type { Reply } from "../../utils/RecordedModel.ts"
