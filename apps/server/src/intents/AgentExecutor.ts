@@ -61,8 +61,21 @@ export const agentClient = Effect.fnUntraced(function*(agentId: string, session:
     "agent account",
     () => Grant.toAccount(chain.client, { grant: Grant.parse(session.grant!), signer, check: false })
   )
-  return namera.bundlerClient(account as never)
+  return namera.bundlerClient(account as never, { estimateFeesPerGas: () => agentFees(chain) })
 })
+
+// The tip an agent's operation offers: 0.001 gwei, Base's usual.
+const AGENT_TIP = BigInt(1_000_000)
+
+/**
+ * An agent's fees: twice the latest base fee plus a small tip, as Base prices blocks. Namera's gas policy charges an
+ * operation's maximum cost (gas × the most per gas) against the agent's daily gas budget, so a bundler's generous
+ * default would spend it in one trade.
+ */
+const agentFees = async (chain: ChainClient["Service"]) => {
+  const block = await chain.client.getBlock()
+  return { maxFeePerGas: (block.baseFeePerGas ?? BigInt(0)) * BigInt(2) + AGENT_TIP, maxPriorityFeePerGas: AGENT_TIP }
+}
 
 const waitFor = (reason: keyof typeof RETRY | "dayEnding", until: DateTime.Utc): Decided => ({
   decision: { _tag: "Wait", reason, until }
@@ -165,9 +178,13 @@ export const signForAgent = Effect.fnUntraced(function*(
     userOperation: { ...prepared, signature } as never
   })
 
+  // Sent exactly as signed: given no account, viem doesn't prepare the operation again.
   const send = chain.use(
     "send agent operation",
-    () => client.sendUserOperation({ ...(prepared as object), account, signature } as never)
+    () =>
+      client.sendUserOperation(
+        { ...(prepared as object), account: null, signature, entryPointAddress: account.entryPoint.address } as never
+      )
   )
   const wait = chain.use(
     "agent operation receipt",

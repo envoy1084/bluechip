@@ -57,7 +57,15 @@ export class Namera extends Context.Service<Namera, {
   readonly kernelAccount: (
     owner: WebAuthnAccount
   ) => Effect.Effect<KernelAccount.KernelAccount, AccountError.AccountError | ChainError.ChainError>
-  readonly bundlerClient: (account: SmartAccount) => BundlerClient
+  /** A bundler client for `account`; `estimateFeesPerGas` replaces the bundler's own fee estimate. */
+  readonly bundlerClient: (
+    account: SmartAccount,
+    options?: {
+      readonly estimateFeesPerGas?:
+        | (() => Promise<{ readonly maxFeePerGas: bigint; readonly maxPriorityFeePerGas: bigint }>)
+        | undefined
+    }
+  ) => BundlerClient
 }>()("@bluechip/server/Namera") {
   static readonly layer = Layer.effect(
     Namera,
@@ -71,14 +79,18 @@ export class Namera extends Context.Service<Namera, {
       }
       return {
         kernelAccount: (owner) => KernelAccount.from({ client: chain.client, owner }),
-        bundlerClient: (account) =>
+        bundlerClient: (account, options) =>
           createBundlerClient({
             account,
             client: chain.client,
             // The local fork mines every second; production bundlers include in a block or two (2 s on Base).
             pollingInterval: chain.network === "local" ? 250 : 1000,
             ...setup.bundler,
-            ...(setup.paymaster === undefined ? {} : { paymaster: setup.paymaster })
+            ...(setup.paymaster === undefined ? {} : { paymaster: setup.paymaster }),
+            // After the bundler's settings, which carry its own fee estimate.
+            ...(options?.estimateFeesPerGas === undefined ? {} : {
+              userOperation: { estimateFeesPerGas: async () => ({ ...(await options.estimateFeesPerGas!()) }) }
+            })
           })
       }
     })

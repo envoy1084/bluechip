@@ -1,4 +1,5 @@
 import type { ChainClient } from "@bluechip/chain/ChainClient"
+import { refusalFrom } from "@bluechip/chain/policies/Refusals"
 import type { UserId } from "@bluechip/domain/Ids"
 import { isEnded } from "@bluechip/domain/intents/Intent"
 import { and, eq } from "drizzle-orm"
@@ -26,7 +27,7 @@ import type { Namera } from "../Namera.ts"
 import type { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { settleTrade } from "../trading/Settlement.ts"
 import { decide, signForAgent, waitForAgentOperation } from "./AgentExecutor.ts"
-import { advance, decodeLeg, type IntentRow, intentRow } from "./IntentStore.ts"
+import { advance, decodeLeg, encodeDecision, type IntentRow, intentRow } from "./IntentStore.ts"
 
 /** What one step of an intent left to do: nothing, or decide it again at `until`. */
 export const StepResult = Schema.TaggedUnion({
@@ -128,8 +129,17 @@ export const stepIntent = Effect.fnUntraced(function*(intentId: string) {
 
   const sent = yield* signed.send.pipe(Effect.result)
   if (sent._tag === "Failure") {
+    // Refused at the door (nothing was spent): said as the policy that refused it when one did.
+    const refusal = refusalFrom(sent.failure.cause)
+    yield* Effect.logWarning(`Intent ${row.id}: the bundler refused the agent's operation`, sent.failure)
     yield* settleTrade(trade!, address, undefined)
-    yield* advance(row, { _tag: "Failed" })
+    yield* advance(
+      row,
+      { _tag: "Failed" },
+      refusal === undefined ? {} : {
+        decision: encodeDecision({ _tag: "Refused", ...refusal })
+      }
+    )
     return done
   }
   row = yield* advance(row, { _tag: "Accepted" })
