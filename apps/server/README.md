@@ -89,8 +89,10 @@ excluded from drizzle-kit). Crons live with their feature and are wired in `src/
   desk decides, `configure` tools store a pending card applied by `POST /api/assistant/cards/:id/confirm` (or a
   `resume` entry on the next run), and `sign` tools prepare a signing request only the passkey completes. Cards stream
   as AG-UI `CUSTOM` events named `bluechip.card`.
-- A turn runs at most 8 model rounds on `ASSISTANT_MODEL`, falling back to `ASSISTANT_SMALL_MODEL` when it fails
-  before streaming; the small model then writes the conversation's title and memory notes. Requests cache the tools,
+- A turn runs at most 8 model rounds on `ASSISTANT_MODEL`. A round that fails before streaming anything is tried
+  three times in all (backoff with jitter) when the error is worth retrying (overloaded, rate limited, network); after
+  that the run ends with an `unavailable` card and `RUN_ERROR`. The same model then writes the turn's memory notes, and
+  `ASSISTANT_SMALL_MODEL` names a new conversation. Both use native structured output. Requests cache the tools,
   system prompt and history. Research is Anthropic's web search; its pages are untrusted text, shown as a card.
 - `usage_budgets` counts each user's tokens and cost per UTC day; a spent day stops the model with a card until
   midnight UTC, and cards can still be confirmed.
@@ -136,6 +138,6 @@ excluded from drizzle-kit). Crons live with their feature and are wired in `src/
 | `ALPACA_API_SECRET_KEY`  | required                | Its secret (redacted)                                            |
 | `ALPACA_FEED`            | `iex`                   | `iex` (free plan) or `sip` (Algo Trader Plus)                    |
 | `ANTHROPIC_API_KEY`      | —                       | Anthropic key (redacted) for the assistant                       |
-| `ASSISTANT_MODEL`        | `claude-sonnet-5-5`     | The assistant's conversation model                               |
-| `ASSISTANT_SMALL_MODEL`  | `claude-haiku-5-5`      | Titles, memory notes, and the conversation model's fallback      |
+| `ASSISTANT_MODEL`        | `claude-sonnet-5-5`     | The assistant's conversation model, and its memory notes         |
+| `ASSISTANT_SMALL_MODEL`  | `claude-haiku-5-5`      | Conversation titles                                              |
 | `ASSISTANT_DAILY_BUDGET` | `1`                     | Each user's assistant budget per UTC day, in dollars             |
