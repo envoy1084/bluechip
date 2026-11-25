@@ -6,9 +6,9 @@ import { useAtomValue } from "@effect/atom-react/Hooks"
 import { createFileRoute } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { type Connection, connectionAtom, heartbeatAtom } from "../../api/events.ts"
 import { versionAtom } from "../../atoms/system.ts"
-import { ConnectionBanner } from "../../shell/ConnectionBanner.tsx"
+import { ConnectionBanner } from "../../components/layout/ConnectionBanner.tsx"
+import { type Connection, connectionAtom, heartbeatAtom } from "../../lib/api/events.ts"
 
 // The API is reached through the browser's origin; nothing here renders on the server.
 export const Route = createFileRoute("/dev/connection")({ ssr: false, component: DevConnection })

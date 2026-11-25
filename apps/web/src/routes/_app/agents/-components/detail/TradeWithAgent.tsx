@@ -17,7 +17,7 @@ import { createIntentAtom } from "../../../../../atoms/intents.ts"
 import { DecisionLine } from "../../../../../intents/DecisionLine.tsx"
 import { intentProblem } from "../../../../../intents/intentText.ts"
 import { useIntentPreview } from "../../../../../intents/useIntentPreview.ts"
-import { parseShares, parseUsdc } from "../../../../../market/amounts.ts"
+import { parseShares, parseUsdc } from "../../../../../lib/amounts.ts"
 import { AgentTradeProgress } from "./AgentTradeProgress.tsx"
 
 type Side = "buy" | "sell"

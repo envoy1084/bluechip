@@ -10,7 +10,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { signInAtom, signUpAtom } from "../../atoms/account.ts"
-import { OnboardingFrame, OnboardingTitle } from "../../shell/OnboardingFrame.tsx"
+import { OnboardingFrame, OnboardingTitle } from "../../components/layout/OnboardingFrame.tsx"
 
 export const Route = createFileRoute("/welcome/")({ ssr: false, component: Welcome })
 

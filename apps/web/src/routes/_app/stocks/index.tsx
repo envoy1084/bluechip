@@ -8,8 +8,8 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
+import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MarketPill } from "../../../market/MarketPill.tsx"
-import { AppPage } from "../../../shell/AppPage.tsx"
 import { StockListRow } from "./-components/StockListRow.tsx"
 
 export const Route = createFileRoute("/_app/stocks/")({ component: Stocks })

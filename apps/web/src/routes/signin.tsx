@@ -6,7 +6,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { signInAtom } from "../atoms/account.ts"
-import { OnboardingFrame, OnboardingTitle } from "../shell/OnboardingFrame.tsx"
+import { OnboardingFrame, OnboardingTitle } from "../components/layout/OnboardingFrame.tsx"
 
 export const Route = createFileRoute("/signin")({ ssr: false, component: SignIn })
 

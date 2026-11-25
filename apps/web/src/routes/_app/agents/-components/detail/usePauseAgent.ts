@@ -1,8 +1,8 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
-import { agentsReactivityKey } from "../../../../../api/client.ts"
 import { pauseAgentAtom, resumeAgentAtom } from "../../../../../atoms/agents.ts"
+import { agentsReactivityKey } from "../../../../../lib/api/client.ts"
 
 /** Pausing or resuming one agent: instant and bluechip's alone, so neither asks for Face ID. */
 export function usePauseAgent(agent: Agent) {

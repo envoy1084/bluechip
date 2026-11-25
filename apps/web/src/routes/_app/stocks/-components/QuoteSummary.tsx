@@ -4,7 +4,7 @@ import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { formatMoney, formatShares, formatTokenAmount } from "@bluechip/ui/lib/format"
 import { UsdcLogo } from "@bluechip/ui/logos/usdc"
-import { bpsPercent, priceDollars, shareCount } from "../../../../market/amounts.ts"
+import { bpsPercent, priceDollars, shareCount } from "../../../../lib/amounts.ts"
 
 const usdc = (units: bigint) => (
   <>

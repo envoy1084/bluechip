@@ -7,8 +7,8 @@ import { startAuthentication } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
-import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../api/client.ts"
-import { livePricesAtom } from "../api/events.ts"
+import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../lib/api/client.ts"
+import { livePricesAtom } from "../lib/api/events.ts"
 import { asCredential, ceremonyOptions } from "./account.ts"
 
 const reactivityKeys = [portfolioReactivityKey, liveReactivityKey]

@@ -1,4 +1,4 @@
-import { BluechipApiClient, templatesReactivityKey } from "../api/client.ts"
+import { BluechipApiClient, templatesReactivityKey } from "../lib/api/client.ts"
 
 /** The built-in templates and the ones the user saved. */
 export const templatesAtom = BluechipApiClient.query("policies", "templates", {

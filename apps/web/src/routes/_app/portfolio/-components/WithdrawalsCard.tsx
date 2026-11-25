@@ -4,7 +4,7 @@ import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { withdrawalsAtom } from "../../../../atoms/portfolio.ts"
-import { usdcDollars } from "../../../../market/amounts.ts"
+import { usdcDollars } from "../../../../lib/amounts.ts"
 
 const STATUS_LABEL = { pending: "Sending", confirmed: "Sent", failed: "Failed" } as const
 

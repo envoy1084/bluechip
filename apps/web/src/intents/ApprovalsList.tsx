@@ -8,7 +8,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { agentsAtom } from "../atoms/agents.ts"
 import { approvalsAtom } from "../atoms/intents.ts"
-import { useStockLookup } from "../market/useStockLookup.ts"
+import { useStockLookup } from "../hooks/useStockLookup.ts"
 import { ApprovalRequest } from "./ApprovalRequest.tsx"
 
 /** The approvals waiting for you: a count for badges, 0 until they load. */

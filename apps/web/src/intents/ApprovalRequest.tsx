@@ -10,7 +10,7 @@ import { Spinner } from "@bluechip/ui/components/spinner"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
-import { priceDollars, shareCount, usdcDollars } from "../market/amounts.ts"
+import { priceDollars, shareCount, usdcDollars } from "../lib/amounts.ts"
 import { clockTime, expiresIn, nothingMoved } from "./intentText.ts"
 import { useApproveIntent } from "./useApproveIntent.ts"
 

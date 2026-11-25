@@ -1,7 +1,7 @@
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
-import { connectionAtom } from "../api/events.ts"
+import { connectionAtom } from "../../lib/api/events.ts"
 
 /** Says when live updates are down, and when this version of the app must reload. Hidden while connected. */
 export function ConnectionBanner() {

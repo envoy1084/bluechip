@@ -6,7 +6,7 @@ import * as DateTime from "effect/DateTime"
 import * as Option from "effect/Option"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useMemo } from "react"
-import { priceDollars } from "../../../../market/amounts.ts"
+import { priceDollars } from "../../../../lib/amounts.ts"
 import { historiesAtom, HISTORY_RANGES } from "../../../../market/historyAtoms.ts"
 
 const dayLabel = (at: DateTime.Utc) => formatTime(DateTime.toDateUtc(at), { timeZone: MARKET_TIME_ZONE })

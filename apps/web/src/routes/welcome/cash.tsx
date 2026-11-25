@@ -2,8 +2,8 @@ import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { SignedIn } from "../../auth/SignedIn.tsx"
+import { OnboardingFrame, OnboardingTitle } from "../../components/layout/OnboardingFrame.tsx"
 import { AddCashPanel } from "../../funding/AddCashPanel.tsx"
-import { OnboardingFrame, OnboardingTitle } from "../../shell/OnboardingFrame.tsx"
 
 export const Route = createFileRoute("/welcome/cash")({ ssr: false, component: AddCash })
 

@@ -1,8 +1,8 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
-import { agentsReactivityKey } from "../api/client.ts"
 import { agentsAtom, pauseAllAgentsAtom, resumeAllAgentsAtom } from "../atoms/agents.ts"
+import { agentsReactivityKey } from "../lib/api/client.ts"
 import { isPausable } from "./agentState.ts"
 
 /**

@@ -1,7 +1,7 @@
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
-import { AppPage } from "../../../../../shell/AppPage.tsx"
+import { AppPage } from "../../../../../components/layout/AppPage.tsx"
 
 export const NEW_AGENT_STEPS = ["Template", "Rules", "Review", "Face ID", "Done"] as const
 

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { AppPage } from "../../components/layout/AppPage.tsx"
 import { ApprovalsList, useApprovalCount } from "../../intents/ApprovalsList.tsx"
 import { waitingText } from "../../intents/ApprovalsSheet.tsx"
-import { AppPage } from "../../shell/AppPage.tsx"
 
 export const Route = createFileRoute("/_app/approvals")({ component: ApprovalsPage })
 

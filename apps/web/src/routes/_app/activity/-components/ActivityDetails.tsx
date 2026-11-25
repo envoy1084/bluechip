@@ -13,7 +13,7 @@ import {
 import { formatDate, formatMoney, formatShares } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { activityAt, describeActivity, localTimeZone } from "../../../../activity/ActivityLine.tsx"
-import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../../market/amounts.ts"
+import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
 
 const STATUS = {
   sending: "Sending",

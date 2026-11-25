@@ -1,7 +1,7 @@
 import type { Stock } from "@bluechip/domain/market/Market"
 import { bpsBetween } from "@bluechip/domain/market/Units"
 import { formatMoney } from "@bluechip/ui/lib/format"
-import { priceDollars } from "./amounts.ts"
+import { priceDollars } from "../lib/amounts.ts"
 
 /** How far the market price is from Chainlink's, in percent; `null` when either is missing. */
 export const referenceGap = (stock: Stock): number | null =>

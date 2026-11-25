@@ -6,8 +6,8 @@ import { Input } from "@bluechip/ui/components/input"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useId, useState } from "react"
-import { templatesReactivityKey } from "../api/client.ts"
 import { saveTemplateAtom } from "../atoms/policies.ts"
+import { templatesReactivityKey } from "../lib/api/client.ts"
 
 type Saving =
   | { readonly status: "closed" }

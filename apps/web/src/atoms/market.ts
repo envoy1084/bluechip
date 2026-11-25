@@ -3,8 +3,8 @@ import { bpsBetween } from "@bluechip/domain/market/Units"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
-import { BluechipApiClient, liveReactivityKey } from "../api/client.ts"
-import { livePricesAtom } from "../api/events.ts"
+import { BluechipApiClient, liveReactivityKey } from "../lib/api/client.ts"
+import { livePricesAtom } from "../lib/api/events.ts"
 
 /** The US market's session (regular, extended or paused), refetched after the live stream reconnects. */
 export const marketStatusAtom = BluechipApiClient.query("market", "status", { reactivityKeys: [liveReactivityKey] })

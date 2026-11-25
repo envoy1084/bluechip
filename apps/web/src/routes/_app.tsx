@@ -17,10 +17,10 @@ import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomMount } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
 import { SidebarAgents, SidebarPauseAll } from "../agents/SidebarAgents.tsx"
-import { liveEventAtom } from "../api/events.ts"
 import { SignedIn } from "../auth/SignedIn.tsx"
 import { CashDialogs } from "../funding/CashDialogs.tsx"
 import { useApprovalCount } from "../intents/ApprovalsList.tsx"
+import { liveEventAtom } from "../lib/api/events.ts"
 
 // Signed-in pages render in the browser: they need the session cookie and the live stream.
 export const Route = createFileRoute("/_app")({ ssr: false, component: AppLayout })

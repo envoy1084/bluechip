@@ -4,7 +4,7 @@ import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import { startAuthentication } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
-import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../api/client.ts"
+import { BluechipApiClient, liveReactivityKey, portfolioReactivityKey } from "../lib/api/client.ts"
 import { asCredential, ceremonyOptions } from "./account.ts"
 
 /** Quotes a trade on the server, checks it against Chainlink and returns what the passkey signs. */

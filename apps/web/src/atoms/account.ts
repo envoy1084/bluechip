@@ -1,7 +1,7 @@
 import type { AuthenticationCredential, RegistrationCredential } from "@bluechip/domain/WebAuthn"
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
-import { BluechipApiClient, liveReactivityKey } from "../api/client.ts"
+import { BluechipApiClient, liveReactivityKey } from "../lib/api/client.ts"
 
 /** Queries about the signed-in user refetch when this key is invalidated (sign-in, sign-out, eligibility). */
 export const accountReactivityKey = "account"

@@ -9,7 +9,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
 import { usePauseAll } from "../../agents/usePauseAll.ts"
 import { accountReactivityKey, meAtom, passkeysAtom, setDisplayNameAtom, signOutAtom } from "../../atoms/account.ts"
-import { AppPage } from "../../shell/AppPage.tsx"
+import { AppPage } from "../../components/layout/AppPage.tsx"
 
 export const Route = createFileRoute("/_app/settings")({ component: Settings })
 

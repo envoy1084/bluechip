@@ -6,7 +6,7 @@ import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { portfolioHistoryAtom } from "../../../atoms/portfolio.ts"
-import { usdcDollars } from "../../../market/amounts.ts"
+import { usdcDollars } from "../../../lib/amounts.ts"
 
 /** Your money at a glance: total value and today's move, cash, agents and the past 30 days as a sparkline. */
 export function BalanceCard({ portfolio }: Readonly<{ portfolio: Portfolio }>) {

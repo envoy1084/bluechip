@@ -6,7 +6,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { agentsAtom } from "../../../atoms/agents.ts"
-import { AppPage } from "../../../shell/AppPage.tsx"
+import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { AgentListCard } from "./-components/list/AgentListCard.tsx"
 
 export const Route = createFileRoute("/_app/agents/")({ component: AgentsPage })

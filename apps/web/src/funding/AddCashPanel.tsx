@@ -5,8 +5,8 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hoo
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { devFundAtom, fetchedPortfolioAtom } from "../atoms/portfolio.ts"
-import { usdcDollars } from "../market/amounts.ts"
-import { network } from "../wallet/config.ts"
+import { usdcDollars } from "../lib/amounts.ts"
+import { network } from "../lib/wallet.ts"
 
 // While this screen is open, balances are read this often: deposits aren't watched in the background, so the
 // "cash arrived" moment only plays for someone who is looking.
