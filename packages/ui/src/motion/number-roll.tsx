@@ -12,7 +12,8 @@ export interface NumberRollProps extends Omit<ComponentProps<"span">, "children"
   readonly flash?: boolean
 }
 
-interface FlowParts {
+/** Formatted text split into what NumberFlow animates (the digits) and what it keeps around them. */
+export interface FlowParts {
   readonly prefix: string
   readonly magnitude: number
   readonly suffix: string
@@ -21,9 +22,12 @@ interface FlowParts {
 
 const NUMBER = /^(.*?)(\d[\d,]*(?:\.\d+)?)(.*)$/u
 
-// NumberFlow formats with Intl itself, so formatted text is split back into the parts it can animate: the digits,
-// with the same decimals and grouping, between whatever the formatter put around them ("−$", " USDC", "M").
-const toFlow = (text: string): FlowParts | undefined => {
+/**
+ * NumberFlow formats with Intl itself, so formatted text is split back into the parts it can animate: the digits,
+ * with the same decimals and grouping, between whatever the formatter put around them ("−$", " USDC", "M").
+ * `undefined` when the text has no digits.
+ */
+export const toFlow = (text: string): FlowParts | undefined => {
   const match = NUMBER.exec(text)
   if (!match) return undefined
   const [, prefix = "", digits = "", suffix = ""] = match

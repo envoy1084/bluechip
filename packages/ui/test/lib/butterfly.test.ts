@@ -1,5 +1,6 @@
-import { butterflyPixels, hash } from "@bluechip/ui/lib/butterfly"
-import { describe, expect, it } from "@effect/vitest"
+import { butterflyPixels, hash, paintButterfly } from "@bluechip/ui/lib/butterfly"
+import { assert, describe, it } from "@effect/vitest"
+import * as Schema from "effect/Schema"
 
 const COLORS: Readonly<Record<string, string>> = {
   B: "#2a5bff",
@@ -38,27 +39,42 @@ const KIT: ReadonlyArray<readonly [id: string, hash: number, pixels: string]> = 
 const decode = (tokens: string) =>
   tokens.split(" ").map((token) => ({ x: Number(token[0]), y: Number(token[1]), color: COLORS[token[2] ?? ""] }))
 
-describe("butterflyPixels", () => {
-  for (const [id, expectedHash, pixels] of KIT) {
-    it(`matches the kit for ${JSON.stringify(id)}`, () => {
-      expect(hash(id)).toBe(expectedHash)
-      expect(butterflyPixels(id)).toEqual(decode(pixels))
-    })
-  }
-
-  it("is deterministic", () => {
-    expect(butterflyPixels("Dividend hunter")).toEqual(butterflyPixels("Dividend hunter"))
-  })
-
-  it("is mirrored around the body and stays on the 9 × 7 grid", () => {
-    const pixels = butterflyPixels("Stop-loss guard")
-    for (const { x, y, color } of pixels) {
-      expect(x >= 0 && x < 9 && y >= 0 && y < 7).toBe(true)
-      expect(pixels.some((p) => p.x === 8 - x && p.y === y && p.color === color)).toBe(true)
+describe("hash", () => {
+  it.each(KIT.map(([id, expected]) => ({ id: JSON.stringify(id), source: id, expected })))(
+    "matches the kit for $id",
+    ({ expected, source }) => {
+      assert.strictEqual(hash(source), expected)
     }
-  })
+  )
+})
 
-  it("gives different agents different butterflies", () => {
-    expect(butterflyPixels("Weekly buyer")).not.toEqual(butterflyPixels("Weekly buyer 2"))
+describe("butterflyPixels", () => {
+  it.each(KIT.map(([id, , pixels]) => ({ id: JSON.stringify(id), source: id, pixels })))(
+    "matches the kit for $id",
+    ({ pixels, source }) => {
+      assert.deepStrictEqual(butterflyPixels(source), decode(pixels))
+    }
+  )
+
+  it.prop("is mirrored around the body, on the 9 × 7 grid", { id: Schema.String }, ({ id }) => {
+    const pixels = butterflyPixels(id)
+    return pixels.every(({ color, x, y }) =>
+      x >= 0 && x < 9 && y >= 0 && y < 7 && pixels.some((p) => p.x === 8 - x && p.y === y && p.color === color)
+    )
+  })
+})
+
+describe("paintButterfly", () => {
+  it("paints one canvas pixel per grid cell", () => {
+    const canvas = document.createElement("canvas")
+
+    paintButterfly(canvas, "rebalancer")
+
+    // The kit's "rebalancer": nothing at 0,0, a light green wing at 0,1, the body's ink at 4,1.
+    const at = (x: number, y: number) => [...canvas.getContext("2d")!.getImageData(x, y, 1, 1).data]
+    assert.deepStrictEqual(
+      { width: canvas.width, height: canvas.height, empty: at(0, 0), wing: at(0, 1), body: at(4, 1) },
+      { width: 9, height: 7, empty: [0, 0, 0, 0], wing: [182, 245, 105, 255], body: [10, 11, 13, 255] }
+    )
   })
 })

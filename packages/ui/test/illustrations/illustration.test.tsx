@@ -1,29 +1,43 @@
 import { Illustration, ILLUSTRATION_NAMES, ILLUSTRATIONS } from "@bluechip/ui/illustrations/illustration"
-import { describe, expect, it } from "@effect/vitest"
+import { assert, describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
 
-describe("Illustration", () => {
-  it("has all 23 objects", () => {
-    expect(ILLUSTRATION_NAMES).toHaveLength(23)
+const nextFrames = (count: number) =>
+  new Promise<void>((resolve) => {
+    let left = count
+    const tick = () => (--left <= 0 ? resolve() : requestAnimationFrame(tick))
+    requestAnimationFrame(tick)
   })
 
-  for (const name of ILLUSTRATION_NAMES) {
-    it(`renders ${name} as a labelled canvas in both styles`, async () => {
-      const { label } = ILLUSTRATIONS[name]
-      const pixel = await render(<Illustration name={name} size={48} />)
-      const canvas = pixel.getByRole("img", { name: label })
-      await expect.element(canvas).toBeVisible()
-      // Pixel art paints at a whole-number scale with something on it.
-      const element = canvas.element() as HTMLCanvasElement
-      const data = element.getContext("2d")!.getImageData(0, 0, element.width, element.height).data
-      expect(data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true)
-      await pixel.unmount()
+const hasInk = (canvas: HTMLCanvasElement) =>
+  canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v > 0)
 
-      const halftone = await render(
-        <Illustration name={name} variant="halftone" size={160} label={`${label} halftone`} />
-      )
-      await expect.element(halftone.getByRole("img", { name: `${label} halftone` })).toBeVisible()
-      await halftone.unmount()
-    })
-  }
+describe("Illustration", () => {
+  it.each(ILLUSTRATION_NAMES.map((name) => ({ name })))(
+    "paints $name as pixel art, named by its label",
+    async ({ name }) => {
+      const screen = await render(<Illustration name={name} size={48} />)
+      const canvas = screen.getByRole("img", { name: ILLUSTRATIONS[name].label })
+
+      await expect.element(canvas).toBeVisible()
+
+      assert.isTrue(hasInk(canvas.element() as HTMLCanvasElement))
+    }
+  )
+
+  it.each(ILLUSTRATION_NAMES.map((name) => ({ name })))("paints $name as a still halftone", async ({ name }) => {
+    const screen = await render(<Illustration name={name} variant="halftone" size={160} />)
+    const canvas = screen.getByRole("img", { name: ILLUSTRATIONS[name].label })
+    await expect.element(canvas).toBeVisible()
+
+    await nextFrames(2)
+
+    assert.isTrue(hasInk(canvas.element() as HTMLCanvasElement))
+  })
+
+  it("is named by the label it is given over the object's", async () => {
+    const screen = await render(<Illustration name={ILLUSTRATION_NAMES[0]!} label="A custom label" />)
+
+    await expect.element(screen.getByRole("img", { name: "A custom label" })).toBeVisible()
+  })
 })
