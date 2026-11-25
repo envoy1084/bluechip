@@ -66,6 +66,18 @@ once, set `TRIGGER_PROJECT_REF`, then `pnpm --filter @bluechip/server jobs:dev` 
 - `POST /api/dev/fund` (local fork only) sends the signed-in account 1,000 test USDC as a real transfer, plus ETH
   for gas.
 
+## Trading
+
+- `POST /api/trades` reads the account's balances, quotes the stock's pool, checks the price against a fresh
+  Chainlink read and builds one user operation: `approve` then the Aerodrome swap, with a 0.5% slippage floor, a
+  3-minute deadline and at least `swapCallGas` call gas (Anvil underestimates swaps through B20 tokens).
+- The fair-price check refuses a trade more than 1% worse than Chainlink, 0.5% while prices are paused (weekends,
+  holidays; trading stays open for people and agents, with a warning), and any trade while Chainlink missed its
+  heartbeat.
+- Signing is shared with withdrawals (`src/signing/`): the passkey signs the operation's hash, `confirm` sends it,
+  and the trade is followed to its receipt, where its fill (exact USDC and shares) is read from the logs.
+- `GET /api/activity` lists trades and withdrawals together, newest first.
+
 ## API
 
 1. Define endpoints in `packages/domain/src/api/<Feature>Api.ts` and add the group in `packages/domain/src/Api.ts`
