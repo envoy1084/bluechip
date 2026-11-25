@@ -1,7 +1,8 @@
 import { type Card, isPending } from "@bluechip/domain/assistant/Card"
+import type { Memory } from "@bluechip/domain/assistant/Memory"
 import { Conflict, type InvalidSpec, NotFound } from "@bluechip/domain/Errors"
 import { CardId, type ConversationId } from "@bluechip/domain/Ids"
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -29,6 +30,11 @@ export class Cards extends Context.Service<Cards, {
   readonly find: (owner: Owner, id: string) => Effect.Effect<Card, NotFound>
   /** Applies a pending card; `Conflict` when it is no longer pending. */
   readonly confirm: (owner: Owner, id: string) => Effect.Effect<Card, NotFound | Conflict | InvalidSpec>
+  /**
+   * Confirms a memory from the memory page, and applies the cards still asking about it, so a conversation doesn't
+   * ask again.
+   */
+  readonly confirmMemory: (owner: Owner, memoryId: string) => Effect.Effect<Memory, NotFound>
   /** Dismisses a pending card: nothing is applied. */
   readonly dismiss: (owner: Owner, id: string) => Effect.Effect<Card, NotFound | Conflict>
 }>()("@bluechip/server/Cards") {
@@ -102,6 +108,19 @@ export class Cards extends Context.Service<Cards, {
         }
       })
 
+      const confirmMemory = Effect.fn("Cards.confirmMemory")(function*(owner: Owner, memoryId: string) {
+        const memory = yield* memories.confirm(owner, memoryId)
+
+        const rows = yield* db.select().from(assistantCards).where(and(
+          eq(assistantCards.userId, owner.id as `user_${string}`),
+          sql`${assistantCards.card}->>'_tag' = 'Memory' and ${assistantCards.card}->'memory'->>'id' = ${memory.id}`
+        )).pipe(Effect.orDie)
+        for (const { card } of rows) {
+          if (card._tag === "Memory" && isPending(card)) yield* save(owner, { ...card, status: "applied", memory })
+        }
+        return memory
+      })
+
       const dismiss = Effect.fn("Cards.dismiss")(function*(owner: Owner, id: string) {
         const card = yield* pending(owner, id)
         // An inferred memory the user turns down is not kept; one already deleted needs nothing more.
@@ -111,7 +130,7 @@ export class Cards extends Context.Service<Cards, {
         return yield* save(owner, { ...card, status: "dismissed" })
       })
 
-      return Cards.of({ create, find, confirm, dismiss })
+      return Cards.of({ create, find, confirm, confirmMemory, dismiss })
     })
   )
 }

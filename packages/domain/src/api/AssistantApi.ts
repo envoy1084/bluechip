@@ -64,6 +64,12 @@ export class AssistantApi extends HttpApiGroup.make("assistant").add(
   HttpApiEndpoint.get("memories", "/assistant/memories", {
     success: Schema.Array(Memory)
   }),
+  HttpApiEndpoint.post("confirmMemory", "/assistant/memories/:id/confirm", {
+    params: { id: MemoryId },
+    /** The memory, confirmed: prompts use it from now on. Confirming it again returns it unchanged. */
+    success: Memory,
+    error: NotFound
+  }),
   HttpApiEndpoint.delete("deleteMemory", "/assistant/memories/:id", {
     params: { id: MemoryId },
     success: Schema.Void,

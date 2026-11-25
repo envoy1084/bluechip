@@ -1,7 +1,7 @@
 import { Memory, type MemoryCandidate, type MemoryKind, planMemoryWrite } from "@bluechip/domain/assistant/Memory"
 import { NotFound } from "@bluechip/domain/Errors"
 import { type AgentId, MemoryId, type MessageId } from "@bluechip/domain/Ids"
-import { and, desc, eq, isNotNull } from "drizzle-orm"
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -49,6 +49,7 @@ export class Memories extends Context.Service<Memories, {
   readonly learn: (owner: Owner, candidate: MemoryCandidate, messageId: MessageId | null) => Effect.Effect<
     Memory | undefined
   >
+  /** Confirms a memory so prompts use it; one already confirmed is returned as it is. */
   readonly confirm: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
   /** Deletes a memory; returns it as it was. */
   readonly remove: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
@@ -112,10 +113,13 @@ export class Memories extends Context.Service<Memories, {
       })
 
       const confirm = Effect.fn("Memories.confirm")(function*(owner: Owner, id: string) {
-        const [row] = Schema.is(MemoryId)(id) ?
-          yield* db.update(memories).set({ confirmedAt: yield* DateTime.now }).where(byId(owner, id)).returning()
-            .pipe(Effect.orDie) :
-          []
+        if (!Schema.is(MemoryId)(id)) return yield* new NotFound({ resource: "memory", id })
+
+        const [confirmed] = yield* db.update(memories).set({ confirmedAt: yield* DateTime.now })
+          .where(and(byId(owner, id), isNull(memories.confirmedAt))).returning().pipe(Effect.orDie)
+        const [row] = confirmed === undefined ?
+          yield* db.select().from(memories).where(byId(owner, id)).pipe(Effect.orDie) :
+          [confirmed]
         if (row === undefined) return yield* new NotFound({ resource: "memory", id })
         return toMemory(row)
       })

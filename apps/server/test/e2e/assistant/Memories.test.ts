@@ -248,6 +248,84 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
       }))
   })
 
+  describe("POST /api/assistant/memories/:id/confirm", () => {
+    it.effect("a guess confirmed from the memory page reaches the next prompt, and its card stops asking", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        const recorded = yield* RecordedModel
+        yield* recorded.record(
+          {
+            to: "I'm a nurse, when do agents trade?",
+            rounds: [[{ text: "At any hour." }]],
+            notes: {
+              title: null,
+              memories: [{
+                kind: "fact",
+                text: "You are a nurse.",
+                source: "inferred",
+                confidence: 0.6,
+                replaces: null
+              }]
+            }
+          },
+          { to: "Good to know", rounds: [[{ text: "Any time." }]] }
+        )
+        const conversation = yield* assistant.start(user)
+        const run = yield* assistant.ask(user, conversation.id, "I'm a nurse, when do agents trade?")
+        const [card] = run.cards
+        assert(card?._tag === "Memory")
+
+        const memory = yield* user.api.assistant.confirmMemory({ params: { id: card.memory.id } })
+        const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
+        yield* assistant.ask(user, conversation.id, "Good to know")
+        const [prompt] = yield* recorded.prompts("Good to know")
+
+        assert.deepStrictEqual(
+          [
+            [memory.id, memory.text, memory.confirmedAt !== null],
+            thread.messages.flatMap((message) =>
+              message.parts.flatMap((part) =>
+                part.type === "card" && part.card._tag === "Memory" ? [part.card.status] : []
+              )
+            ),
+            (prompt!.content[0]!.content as string).includes("You are a nurse.")
+          ],
+          [[card.memory.id, "You are a nurse.", true], ["applied"], true]
+        )
+      }))
+
+    it.effect("confirming a memory again returns it unchanged", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        yield* (yield* RecordedModel).record({
+          to: "Remember I hold for years",
+          rounds: [
+            [{ call: "remember", params: { kind: "preference", text: "You hold for years.", agentId: null } }],
+            [{ text: "Noted." }]
+          ]
+        })
+        const conversation = yield* assistant.start(user)
+        yield* assistant.ask(user, conversation.id, "Remember I hold for years")
+        const [saved] = yield* user.api.assistant.memories()
+
+        const confirmed = yield* user.api.assistant.confirmMemory({ params: { id: saved!.id } })
+
+        assert.deepStrictEqual(confirmed, saved)
+      }))
+
+    it.effect("404: a memory that isn't the user's", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const id = MemoryId.make(typeid("memory").toString())
+
+        const error = yield* user.api.assistant.confirmMemory({ params: { id } }).pipe(Effect.flip)
+
+        assert.deepStrictEqual({ ...error }, { ...new NotFound({ resource: "memory", id }) })
+      }))
+  })
+
   describe("DELETE /api/assistant/memories/:id", () => {
     it.effect("404: a memory that isn't the user's", () =>
       Effect.gen(function*() {

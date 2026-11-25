@@ -31,6 +31,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
       confirmCard: ({ params }) => CurrentUser.use((user) => cards.confirm(user, params.id)),
       dismissCard: ({ params }) => CurrentUser.use((user) => cards.dismiss(user, params.id)),
       memories: () => CurrentUser.use((user) => memories.list(user)),
+      confirmMemory: ({ params }) => CurrentUser.use((user) => cards.confirmMemory(user, params.id)),
       deleteMemory: ({ params }) => CurrentUser.use((user) => Effect.asVoid(memories.remove(user, params.id))),
       deleteMemories: () => CurrentUser.use((user) => memories.removeAll(user)),
       budget: () => CurrentUser.use((user) => budgets.today(user))
