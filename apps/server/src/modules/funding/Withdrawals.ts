@@ -73,10 +73,11 @@ export class Withdrawals extends Context.Service<Withdrawals, {
       const track = Effect.fnUntraced(
         function*(transferId: string, owner: Owner, passkey: OwnerPasskey, userOpHash: Hex) {
           const outcome = yield* operations.wait(passkey, userOpHash).pipe(Effect.result)
+          const settledAt = yield* DateTime.now
           const [row] = yield* db.update(transfers).set(
             outcome._tag === "Success"
-              ? { status: outcome.success.success ? "confirmed" : "failed", txHash: outcome.success.txHash }
-              : { status: "failed" }
+              ? { status: outcome.success.success ? "confirmed" : "failed", txHash: outcome.success.txHash, settledAt }
+              : { status: "failed", settledAt }
           ).where(eq(transfers.id, transferId as `transfer_${string}`)).returning().pipe(Effect.orDie)
 
           // Fresh balances before the events, so a client that refetches on them already sees the money gone.

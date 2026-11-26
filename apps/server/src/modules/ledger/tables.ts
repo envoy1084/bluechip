@@ -82,3 +82,10 @@ export const pnlDaily = pgTable("pnl_daily", {
   unique("pnl_daily_user_day_symbol_agent_key").on(table.userId, table.day, table.symbol, table.agentId)
     .nullsNotDistinct()
 ])
+
+/** Where reconciliation got to for each account: the last block its balances were checked at. */
+export const reconciliationCursors = pgTable("reconciliation_cursors", {
+  userId: typeId("user")("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  blockNumber: units("block_number").notNull(),
+  checkedAt: dateTimeUtc("checked_at").notNull()
+})

@@ -45,6 +45,8 @@ import { Knowledge } from "./modules/knowledge/Knowledge.ts"
 import { KnowledgeRefreshCron } from "./modules/knowledge/RefreshCron.ts"
 import { Ledger } from "./modules/ledger/Ledger.ts"
 import { LedgerCron } from "./modules/ledger/LedgerCron.ts"
+import { ReconcileCron } from "./modules/ledger/ReconcileCron.ts"
+import { Reconciliation } from "./modules/ledger/Reconciliation.ts"
 import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
@@ -95,6 +97,7 @@ export const ServicesLive = Layer.mergeAll(
   ExpireAgentsCron,
   PortfolioSnapshotCron,
   LedgerCron,
+  ReconcileCron,
   Ledger.repairOnStart,
   RecallEmbedCron,
   MemoryDecayCron,
@@ -142,7 +145,8 @@ export const ServicesLive = Layer.mergeAll(
     AgentStore.layer,
     AgentExecutor.layer,
     TradeLedger.layer,
-    RecoveryOperations.layer
+    RecoveryOperations.layer,
+    Reconciliation.layer
   )),
   Layer.provideMerge(
     Layer.mergeAll(
