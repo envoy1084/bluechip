@@ -1,7 +1,6 @@
 // The suite's own bluechip: a fresh database, a devnet (Anvil from the captured state, and Alto), the server and the
 // web app, each on a port of its own, so a run never touches `pnpm dev`'s database, chain or ports and needs no RPC.
-import { stocks } from "@bluechip/chain/Contracts"
-import { BASE_FEE_WEI, BUNDLER_KEYS, movePool, rpc, setFeed } from "@bluechip/devnet/Controls"
+import { BASE_FEE_WEI, BUNDLER_KEYS, rpc } from "@bluechip/devnet/Controls"
 import { type ChildProcess, execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import * as fs from "node:fs"
@@ -9,12 +8,7 @@ import * as path from "node:path"
 import { parseEnv } from "node:util"
 import { gunzipSync } from "node:zlib"
 import { createServer, type ViteDevServer } from "vite"
-
-/** A stock as `GET /api/market/stocks` answers it: the market's token price (USD, 8 decimals), if there is one. */
-interface ListedStock {
-  readonly symbol: string
-  readonly price: { readonly price: string } | null
-}
+import { alignPrices } from "./prices.ts"
 
 const root = path.resolve(import.meta.dirname, "../../..")
 
@@ -166,6 +160,7 @@ export const startStack = async (): Promise<Stack> => {
     await anvil("anvil_setTime", [Math.floor(chainTime.getTime() / 1000)])
     await anvil("anvil_setNextBlockBaseFeePerGas", [`0x${BASE_FEE_WEI.toString(16)}`])
     await anvil("anvil_mine", ["0x1"])
+    await alignPrices(anvil, Math.floor(chainTime.getTime() / 1000))
 
     children.push(start("alto", path.join(root, "packages/devnet/node_modules/.bin/alto"), [
       "--rpc-url",
@@ -209,16 +204,6 @@ export const startStack = async (): Promise<Stack> => {
       ...liveAssistant()
     }))
     await waitFor("server", async () => (await fetch(`${urls.server}/health`)).ok)
-
-    // The devnet's feeds and pools at the market data's prices, as `pnpm dev` keeps them, updated at the chain's time.
-    const listed = await (await fetch(`${urls.server}/api/market/stocks`)).json() as ReadonlyArray<ListedStock>
-    const block = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: string }
-    for (const stock of stocks) {
-      const price = listed.find((candidate) => candidate.symbol === stock.symbol)?.price
-      if (price == null) continue
-      await setFeed(anvil, stock.feed, BigInt(price.price), Number(block.timestamp))
-      await movePool(anvil, stock, BigInt(price.price))
-    }
 
     // The web app reads these through Vite, ahead of its own `.env.local`.
     process.env["SERVER_ORIGIN"] = urls.server
