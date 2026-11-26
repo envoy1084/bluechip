@@ -54,6 +54,12 @@ describe("fieldText", () => {
       expected: "Nvidia 40%, Apple 30% and cash 30%"
     },
     {
+      name: "floors by name, cents only when a price has them",
+      field: new Field({ label: "Sell only at or under", unit: "floors" }),
+      value: [{ symbol: "NVDA", price: 15_000_000_000n }, { symbol: "AAPL", price: 18_050_000_000n }],
+      expected: "Nvidia at $150 and Apple at $180.50"
+    },
+    {
       name: "gas in gwei",
       field: new Field({ label: "Gas", unit: "wei" }),
       value: 2_500_000_000n,

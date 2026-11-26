@@ -1,8 +1,9 @@
-// How a policy's field reads on screen, from its unit: "$250", "30%", "Nvidia and Apple", "Buy only".
+// How a policy's field reads on screen, from its unit: "$250", "30%", "Nvidia and Apple", "Buy only", "Nvidia at $150".
 import type { StockSymbol } from "@bluechip/domain/market/Market"
-import { formatDollars, formatPercent, listNames } from "@bluechip/domain/policies/Format"
+import { formatDollars, formatPercent, formatPrice, listNames } from "@bluechip/domain/policies/Format"
 import type { Field } from "@bluechip/domain/policies/Policy"
 import type { Target } from "@bluechip/domain/policies/Rebalance"
+import type { Floor } from "@bluechip/domain/policies/StopLossFloor"
 import type { Direction } from "@bluechip/domain/policies/Trade"
 import * as DateTime from "effect/DateTime"
 
@@ -37,6 +38,11 @@ export const fieldText = (field: Field, value: unknown, nameOf: (symbol: StockSy
         (value as ReadonlyArray<Target>).map((target) =>
           `${target.asset === "USDC" ? "cash" : nameOf(target.asset)} ${formatPercent(target.weight)}`
         )
+      )
+    case "floors":
+      // "Nvidia at $150 and Apple at $180.50"
+      return listNames(
+        (value as ReadonlyArray<Floor>).map((floor) => `${nameOf(floor.symbol)} at ${formatPrice(floor.price)}`)
       )
     case "wei":
       return `${Number(value as bigint) / 1e9} gwei`

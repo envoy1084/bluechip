@@ -22,6 +22,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("policies", (it) => {
           "stockCap",
           "cashReserve",
           "rebalance",
+          "stopLossFloor",
           "slippageBudget",
           "tradesPerDay",
           "gasBudget",

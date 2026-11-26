@@ -136,6 +136,8 @@ export function FieldEditor(
           onChange={onChange}
         />
       )
+    // Shown, not edited: floors have no editor of their own yet.
+    case "floors":
     case "wei":
       return (
         <p className="flex justify-between gap-3 text-[13.5px] text-g-700">

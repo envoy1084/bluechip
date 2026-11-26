@@ -166,7 +166,7 @@ describe("toolSummary", () => {
       name: "the catalog: the policies people see",
       tool: "listPolicies",
       result: Schema.encodeSync(Schema.toCodecJson(ListPolicies.successSchema))(catalogInfo()),
-      expected: "8 policies"
+      expected: "9 policies"
     },
     {
       name: "templates: built-in and saved",
