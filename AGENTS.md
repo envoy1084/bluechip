@@ -86,6 +86,14 @@ state, and slows, hangs or breaks any area's requests. Only `client.tsx` loads i
 on any other import of `preview/`), so it never ships. Tests in `apps/web/test/unit/preview/` decode every mocked
 answer with the real API: a change to the API that the mock doesn't follow fails them.
 
+The software passkey, for driving the real app without Touch ID (an agent in a browser): in development, `?softPasskey`
+(kept in local storage until `?softPasskey=off`) answers every WebAuthn prompt with a real P-256 authenticator in the
+page (`apps/web/src/preview/softPasskey/`): none attestation, ES256 DER signatures with low S, counters, allow and
+exclude lists. Its keys ("Owner 1", "Recovery key 1") live in local storage, so the account outlives reloads; a
+discoverable sign-in with several keys asks which in a dialog (newest first), and the badge in the bottom-right corner
+lists them, forgets them or turns it off. The server and the chain's `WebAuthnValidator` verify its signatures as any
+passkey's. It loads like preview mode (only from `client.tsx`, in development, never with `?preview`).
+
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 
 ## Validation
