@@ -1,0 +1,1049 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "cceb58ff-298d-4af9-ac07-bf3f54c960c7",
+  "prevIds": [
+    "759fd91e-4fe8-4cbb-942d-0f64f45ba79f"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_keys"
+      ],
+      "writes": [
+        "s|tbl|public.recovery_keys",
+        "n|tbl|public.recovery_keys",
+        "e|tbl|public.recovery_keys",
+        "n|rel|public.recovery_keys",
+        "n|type|public.recovery_keys",
+        "n|rel|public.recovery_keys_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_requests"
+      ],
+      "writes": [
+        "s|tbl|public.recovery_requests",
+        "n|tbl|public.recovery_requests",
+        "e|tbl|public.recovery_requests",
+        "n|rel|public.recovery_requests",
+        "n|type|public.recovery_requests",
+        "n|rel|public.recovery_requests_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "audit_events",
+        "agent_id"
+      ],
+      "writes": [
+        "s|col|public.audit_events.agent_id",
+        "n|col|public.audit_events.agent_id",
+        "e|col|public.audit_events.agent_id"
+      ],
+      "reads": [
+        "n|tbl|public.audit_events",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "passkeys",
+        "role"
+      ],
+      "writes": [
+        "s|col|public.passkeys.role",
+        "n|col|public.passkeys.role",
+        "e|col|public.passkeys.role"
+      ],
+      "reads": [
+        "n|tbl|public.passkeys",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "passkeys",
+        "status"
+      ],
+      "writes": [
+        "s|col|public.passkeys.status",
+        "n|col|public.passkeys.status",
+        "e|col|public.passkeys.status"
+      ],
+      "reads": [
+        "n|tbl|public.passkeys",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "passkeys",
+        "user_op_hash"
+      ],
+      "writes": [
+        "s|col|public.passkeys.user_op_hash",
+        "n|col|public.passkeys.user_op_hash",
+        "e|col|public.passkeys.user_op_hash"
+      ],
+      "reads": [
+        "n|tbl|public.passkeys",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "passkeys",
+        "removed_at"
+      ],
+      "writes": [
+        "s|col|public.passkeys.removed_at",
+        "n|col|public.passkeys.removed_at",
+        "e|col|public.passkeys.removed_at"
+      ],
+      "reads": [
+        "n|tbl|public.passkeys",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "sessions",
+        "scope"
+      ],
+      "writes": [
+        "s|col|public.sessions.scope",
+        "n|col|public.sessions.scope",
+        "e|col|public.sessions.scope"
+      ],
+      "reads": [
+        "n|tbl|public.sessions",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "sessions",
+        "device"
+      ],
+      "writes": [
+        "s|col|public.sessions.device",
+        "n|col|public.sessions.device",
+        "e|col|public.sessions.device"
+      ],
+      "reads": [
+        "n|tbl|public.sessions",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "sessions",
+        "last_seen_at"
+      ],
+      "writes": [
+        "s|col|public.sessions.last_seen_at",
+        "n|col|public.sessions.last_seen_at",
+        "e|col|public.sessions.last_seen_at"
+      ],
+      "reads": [
+        "n|tbl|public.sessions",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "audit_events",
+        "audit_events_user_agent_idx"
+      ],
+      "writes": [
+        "s|idx|public.audit_events_user_agent_idx",
+        "n|idx|public.audit_events_user_agent_idx",
+        "e|idx|public.audit_events_user_agent_idx",
+        "n|rel|public.audit_events_user_agent_idx"
+      ],
+      "reads": [
+        "n|tbl|public.audit_events",
+        "n|sch|public",
+        "n|col|public.audit_events.user_id",
+        "n|col|public.audit_events.agent_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_keys"
+      ],
+      "writes": [
+        "s|fk|public.recovery_keys.recovery_keys_user_id_users_id_fkey",
+        "n|fk|public.recovery_keys.recovery_keys_user_id_users_id_fkey",
+        "e|fk|public.recovery_keys.recovery_keys_user_id_users_id_fkey",
+        "n|con|public.recovery_keys.recovery_keys_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_keys",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.recovery_keys.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_keys"
+      ],
+      "writes": [
+        "s|fk|public.recovery_keys.recovery_keys_passkey_id_passkeys_id_fkey",
+        "n|fk|public.recovery_keys.recovery_keys_passkey_id_passkeys_id_fkey",
+        "e|fk|public.recovery_keys.recovery_keys_passkey_id_passkeys_id_fkey",
+        "n|con|public.recovery_keys.recovery_keys_passkey_id_passkeys_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_keys",
+        "n|sch|public",
+        "n|tbl|public.passkeys",
+        "n|sch|public",
+        "n|col|public.recovery_keys.passkey_id",
+        "n|col|public.passkeys.id",
+        "e|uniqueness|public.passkeys.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_requests"
+      ],
+      "writes": [
+        "s|fk|public.recovery_requests.recovery_requests_user_id_users_id_fkey",
+        "n|fk|public.recovery_requests.recovery_requests_user_id_users_id_fkey",
+        "e|fk|public.recovery_requests.recovery_requests_user_id_users_id_fkey",
+        "n|con|public.recovery_requests.recovery_requests_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_requests",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.recovery_requests.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_requests"
+      ],
+      "writes": [
+        "s|fk|public.recovery_requests.recovery_requests_recovery_key_id_recovery_keys_id_fkey",
+        "n|fk|public.recovery_requests.recovery_requests_recovery_key_id_recovery_keys_id_fkey",
+        "e|fk|public.recovery_requests.recovery_requests_recovery_key_id_recovery_keys_id_fkey",
+        "n|con|public.recovery_requests.recovery_requests_recovery_key_id_recovery_keys_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_requests",
+        "n|sch|public",
+        "n|tbl|public.recovery_keys",
+        "n|sch|public",
+        "n|col|public.recovery_requests.recovery_key_id",
+        "n|col|public.recovery_keys.id",
+        "e|uniqueness|public.recovery_keys.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_requests"
+      ],
+      "writes": [
+        "s|fk|public.recovery_requests.recovery_requests_new_passkey_id_passkeys_id_fkey",
+        "n|fk|public.recovery_requests.recovery_requests_new_passkey_id_passkeys_id_fkey",
+        "e|fk|public.recovery_requests.recovery_requests_new_passkey_id_passkeys_id_fkey",
+        "n|con|public.recovery_requests.recovery_requests_new_passkey_id_passkeys_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_requests",
+        "n|sch|public",
+        "n|tbl|public.passkeys",
+        "n|sch|public",
+        "n|col|public.recovery_requests.new_passkey_id",
+        "n|col|public.passkeys.id",
+        "e|uniqueness|public.passkeys.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "recovery_keys",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "recovery_requests",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "audit_events",
+        "name": "agent_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "passkeys",
+        "name": "role",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'owner'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "passkeys",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "passkeys",
+        "name": "user_op_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "passkeys",
+        "name": "removed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "passkey_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "guard_address",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "guard_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "user_op_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "locked_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "removed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "recovery_key_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "new_passkey_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "calls",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "signing",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "user_operation",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "signing_expires_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "user_op_hash",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "requested_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "executable_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "cancelled_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "cancelled_from",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "executed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "sessions",
+        "name": "scope",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'account'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "sessions",
+        "name": "device",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'A browser'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "sessions",
+        "name": "last_seen_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "audit_events",
+        "name": "audit_events_user_agent_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "agent_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "recovery_keys_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "recovery_keys_passkey_id_passkeys_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "passkey_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "passkeys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "recovery_requests_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "recovery_requests_recovery_key_id_recovery_keys_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "recovery_key_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "recovery_keys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "recovery_requests_new_passkey_id_passkeys_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "new_passkey_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "passkeys",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_keys",
+        "name": "recovery_keys_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "recovery_requests_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

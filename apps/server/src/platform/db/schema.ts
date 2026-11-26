@@ -20,6 +20,7 @@ export {
 export { agentTemplates } from "../../modules/policies/tables.ts"
 export { portfolioSnapshots } from "../../modules/portfolio/tables.ts"
 export { pushSubscriptions } from "../../modules/push/tables.ts"
+export { recoveryKeys, recoveryRequests } from "../../modules/recovery/tables.ts"
 export { signingRequests } from "../../modules/signing/tables.ts"
 export { trades } from "../../modules/trading/tables.ts"
 export { jobRuns } from "../engine/tables.ts"

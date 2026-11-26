@@ -16,6 +16,7 @@ import * as Workflow from "effect/workflow/Workflow"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Cards } from "../assistant/Cards.ts"
+import { Recoveries } from "../recovery/Recoveries.ts"
 import { ChannelLinks } from "./ChannelLinks.ts"
 import { ChatBot, ChatMessageIn, type ChatOwner } from "./ChatBot.ts"
 import { chatContent } from "./ChatContent.ts"
@@ -60,7 +61,8 @@ export const ChatHandlerLive = ChatHandler.layer((event) => {
 /**
  * The bot's buttons and commands. A click or command counts only from the person who linked the chat; anyone else
  * gets how to link one. Confirm and Cancel answer the assistant's cards (the message then says what became of the
- * card), and Pause pauses an agent. Commands answer in the chat.
+ * card), Pause pauses an agent, Pause all pauses every agent, and Cancel recovery cancels a recovery waiting out its
+ * delay. Commands answer in the chat.
  */
 export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*() {
   const bot = yield* ChatBot
@@ -68,7 +70,23 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
   const cards = yield* Cards
   const agents = yield* Agents
   const links = yield* ChannelLinks
+  const recoveries = yield* Recoveries
   const { publicOrigin } = yield* AppConfig
+
+  const PAUSED_ALL = "Every agent is paused. Nothing was sold. Resume them in bluechip."
+
+  // Cancelling only takes power away, so a chat can do it: bluechip's guard key sends the cancel.
+  const cancelRecovery = (who: ChatOwner) =>
+    recoveries.cancel(who.owner.id, "telegram").pipe(
+      Effect.as(
+        "The recovery is cancelled. Your passkeys stay as they are. If you didn't ask for it, remove your " +
+          "recovery key in bluechip's Settings."
+      ),
+      Effect.catchTags({
+        Conflict: () => Effect.succeed("There's no recovery of your account waiting to be cancelled."),
+        Unavailable: () => Effect.succeed("Base didn't answer, so the recovery isn't cancelled yet. Try again now.")
+      })
+    )
 
   const respond = (markdown: string, actions?: ReadonlyArray<ChatUi.Action>) =>
     ChatInteraction.respond({ markdown, visibility: "public", ...(actions === undefined ? {} : { actions }) })
@@ -124,6 +142,24 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
       yield* edit(click.thread, click.messageId, said)
       return ChatInteraction.ack
     }),
+    pauseAll: Effect.fnUntraced(function*(click) {
+      const who = yield* bot.ownerOf(click.thread, click.userId)
+      if (who === undefined) return ChatInteraction.ack
+      yield* agents.pauseAll(who.owner)
+      yield* chat.post(click.thread, chatContent({ markdown: PAUSED_ALL, actions: [] }, publicOrigin)).pipe(
+        Effect.catch((error) => Effect.logWarning("A chat message couldn't be sent", error))
+      )
+      return ChatInteraction.ack
+    }),
+    cancelRecovery: Effect.fnUntraced(function*(click) {
+      const who = yield* bot.ownerOf(click.thread, click.userId)
+      if (who === undefined) return ChatInteraction.ack
+      const said = yield* cancelRecovery(who)
+      yield* chat.post(click.thread, chatContent({ markdown: said, actions: [] }, publicOrigin)).pipe(
+        Effect.catch((error) => Effect.logWarning("A chat message couldn't be sent", error))
+      )
+      return ChatInteraction.ack
+    }),
     start: Effect.fnUntraced(function*(event) {
       const code = event.text.trim()
       if (code.length > 0) {
@@ -157,12 +193,8 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
               trading.map((agent) => PauseAgent.of(agent.id, { label: agent.name }))
             )
         })),
-    pause_all: (event) =>
-      linked(event, (who) =>
-        Effect.map(
-          agents.pauseAll(who.owner),
-          () => respond("Every agent is paused. Nothing was sold. Resume them in bluechip.")
-        )),
+    pause_all: (event) => linked(event, (who) => Effect.map(agents.pauseAll(who.owner), () => respond(PAUSED_ALL))),
+    cancel_recovery: (event) => linked(event, (who) => Effect.map(cancelRecovery(who), (said) => respond(said))),
     unlink: (event) =>
       linked(
         event,

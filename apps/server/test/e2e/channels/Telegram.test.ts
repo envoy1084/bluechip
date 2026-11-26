@@ -5,11 +5,15 @@ import * as Layer from "effect/Layer"
 import { RecordedModel } from "../../utils/RecordedModel.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 import { TestNotifications } from "../../utils/TestNotifications.ts"
+import { TestRecovery } from "../../utils/TestRecovery.ts"
 import { TestTelegram } from "../../utils/TestTelegram.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
 
 // The server runs on the real clock (see `TestServer`). Telegram is the in-memory chat (`TelegramTest`).
-layer(Layer.mergeAll(TestTelegram.layer, TestAgents.layer, TestNotifications.layer), { excludeTestServices: true })(
+layer(
+  Layer.mergeAll(TestTelegram.layer, TestAgents.layer, TestNotifications.layer, TestRecovery.layer),
+  { excludeTestServices: true }
+)(
   "Telegram",
   (it) => {
     describe("a chat that isn't linked", () => {
@@ -394,6 +398,41 @@ layer(Layer.mergeAll(TestTelegram.layer, TestAgents.layer, TestNotifications.lay
             markdown: "Every agent is paused. Nothing was sold. Resume them in bluechip.",
             visibility: "public"
           }, true])
+        }))
+    })
+
+    describe("a recovery of the account", () => {
+      it.effect("/cancel_recovery: the recovery waiting out its delay is cancelled from the chat", () =>
+        Effect.gen(function*() {
+          const recoveries = yield* TestRecovery
+          const telegram = yield* TestTelegram
+          const user = yield* (yield* TestUsers).funded
+          yield* recoveries.request(user, yield* recoveries.setUp(user))
+          const chat = yield* telegram.linked(user)
+
+          const reply = yield* telegram.command(chat, "cancel_recovery")
+          const recovery = yield* user.api.accountRecovery.get()
+
+          assert.deepStrictEqual([reply, recovery.request?.cancelledFrom], [{
+            _tag: "Respond",
+            markdown: "The recovery is cancelled. Your passkeys stay as they are. If you didn't ask for it, remove " +
+              "your recovery key in bluechip's Settings.",
+            visibility: "public"
+          }, "telegram"])
+        }))
+
+      it.effect("/cancel_recovery with nothing under way", () =>
+        Effect.gen(function*() {
+          const telegram = yield* TestTelegram
+          const chat = yield* telegram.linked(yield* (yield* TestUsers).signUp)
+
+          const reply = yield* telegram.command(chat, "cancel_recovery")
+
+          assert.deepStrictEqual(reply, {
+            _tag: "Respond",
+            markdown: "There's no recovery of your account waiting to be cancelled.",
+            visibility: "public"
+          })
         }))
     })
   }

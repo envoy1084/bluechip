@@ -18,6 +18,20 @@ export const PauseAgent = ChatInteraction.button("pauseAgent", {
   value: Schema.String
 })
 
+/** Pauses every agent, from a notification of their trades: the kill switch in a chat. */
+export const PauseAll = ChatInteraction.button("pauseAll", {
+  label: "Pause all agents",
+  style: "danger",
+  value: Schema.String
+})
+
+/** Cancels the account's recovery waiting out its delay, from its notification. */
+export const CancelRecovery = ChatInteraction.button("cancelRecovery", {
+  label: "Cancel recovery",
+  style: "danger",
+  value: Schema.String
+})
+
 /** The bot's commands, as Telegram's menu lists them. */
 export const Commands = [
   ChatInteraction.command("start", { description: "Link this chat with the code from bluechip" }),
@@ -25,9 +39,17 @@ export const Commands = [
   ChatInteraction.command("agents", { description: "Your agents and how they stand" }),
   ChatInteraction.command("pause", { description: "Pause one agent" }),
   ChatInteraction.command("pause_all", { description: "Pause every agent at once" }),
+  ChatInteraction.command("cancel_recovery", { description: "Cancel a recovery of your account you didn't ask for" }),
   ChatInteraction.command("unlink", { description: "Unlink this chat from your account" }),
   ChatInteraction.command("help", { description: "What this bot can do" })
 ] as const
 
 /** Everything a chat can click or type to the bot. */
-export const BotInteractions = ChatInteraction.group(ConfirmCard, CancelCard, PauseAgent, ...Commands)
+export const BotInteractions = ChatInteraction.group(
+  ConfirmCard,
+  CancelCard,
+  PauseAgent,
+  PauseAll,
+  CancelRecovery,
+  ...Commands
+)

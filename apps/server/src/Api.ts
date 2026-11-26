@@ -6,7 +6,8 @@ import { AccountHandlers } from "./modules/accounts/http.ts"
 import { ActivityHandlers } from "./modules/activity/http.ts"
 import { AgentsHandlers } from "./modules/agents/http.ts"
 import { AssistantHandlers } from "./modules/assistant/http.ts"
-import { AuthenticationLive } from "./modules/auth/Authentication.ts"
+import { AuditHandlers } from "./modules/audit/http.ts"
+import { AuthenticationLive, RecoveryAuthenticationLive } from "./modules/auth/Authentication.ts"
 import { AuthHandlers } from "./modules/auth/http.ts"
 import { AutomationsHandlers } from "./modules/automations/http.ts"
 import { ChannelsHandlers } from "./modules/channels/http.ts"
@@ -19,6 +20,7 @@ import { NotificationsHandlers } from "./modules/notifications/http.ts"
 import { PoliciesHandlers } from "./modules/policies/http.ts"
 import { PortfolioHandlers } from "./modules/portfolio/http.ts"
 import { PushHandlers } from "./modules/push/http.ts"
+import { RecoveryApiHandlers } from "./modules/recovery/http.ts"
 import { SystemHandlers } from "./modules/system/http.ts"
 import { TradesHandlers } from "./modules/trading/http.ts"
 import { ContractCheckLive, DefectReportingLive } from "./platform/http/Contract.ts"
@@ -29,6 +31,7 @@ export const ApiHandlers = Layer.mergeAll(
   EventsHandlers,
   AuthHandlers,
   AccountHandlers,
+  RecoveryApiHandlers,
   MarketHandlers,
   PortfolioHandlers,
   TransfersHandlers,
@@ -38,6 +41,7 @@ export const ApiHandlers = Layer.mergeAll(
   IntentsHandlers,
   AutomationsHandlers,
   ActivityHandlers,
+  AuditHandlers,
   AssistantHandlers,
   NotificationsHandlers,
   PushHandlers,
@@ -45,7 +49,9 @@ export const ApiHandlers = Layer.mergeAll(
   DevHandlers
 )
   .pipe(
-    Layer.provideMerge(Layer.mergeAll(ContractCheckLive, DefectReportingLive, AuthenticationLive))
+    Layer.provideMerge(
+      Layer.mergeAll(ContractCheckLive, DefectReportingLive, AuthenticationLive, RecoveryAuthenticationLive)
+    )
   )
 
 /** `/api/*`, the OpenAPI document at `/api/openapi.json` and its docs page at `/api/docs`. */

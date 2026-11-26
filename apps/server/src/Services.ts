@@ -1,6 +1,7 @@
 import { DevChain } from "@bluechip/chain/DevChain"
 import * as Layer from "effect/Layer"
 import { Accounts } from "./modules/accounts/Accounts.ts"
+import { Passkeys } from "./modules/accounts/Passkeys.ts"
 import { Activity } from "./modules/activity/Activity.ts"
 import { AgentRequests } from "./modules/agents/AgentRequests.ts"
 import { Agents } from "./modules/agents/Agents.ts"
@@ -67,6 +68,10 @@ import { PortfolioSnapshotCron } from "./modules/portfolio/SnapshotCron.ts"
 import { PushConfig } from "./modules/push/PushConfig.ts"
 import { PushNotifier } from "./modules/push/PushNotifier.ts"
 import { PushSubscriptions } from "./modules/push/PushSubscriptions.ts"
+import { Recoveries } from "./modules/recovery/Recoveries.ts"
+import { RecoveryKeys } from "./modules/recovery/RecoveryKeys.ts"
+import { RecoveryOperations } from "./modules/recovery/RecoveryOperations.ts"
+import { RecoveryStore } from "./modules/recovery/RecoveryStore.ts"
 import { OwnerOperations } from "./modules/signing/OwnerOperations.ts"
 import { SigningRequests } from "./modules/signing/SigningRequests.ts"
 import { TradeLedger } from "./modules/trading/TradeLedger.ts"
@@ -123,13 +128,24 @@ export const ServicesLive = Layer.mergeAll(
   ),
   Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),
-  Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer, Automations.layer)),
-  Layer.provideMerge(Layer.mergeAll(Trades.layer, Withdrawals.layer, Agents.layer, AgentRequests.layer)),
-  Layer.provideMerge(Layer.mergeAll(SigningRequests.layer, AgentStore.layer, AgentExecutor.layer, TradeLedger.layer)),
+  Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer, Automations.layer, RecoveryKeys.layer)),
+  Layer.provideMerge(Recoveries.layer),
+  Layer.provideMerge(
+    Layer.mergeAll(Trades.layer, Withdrawals.layer, Agents.layer, AgentRequests.layer, Passkeys.layer)
+  ),
+  Layer.provideMerge(Layer.mergeAll(
+    SigningRequests.layer,
+    AgentStore.layer,
+    AgentExecutor.layer,
+    TradeLedger.layer,
+    RecoveryOperations.layer
+  )),
   Layer.provideMerge(
     Layer.mergeAll(
       Accounts.layer,
+      Sessions.layer,
       OwnerOperations.layer,
+      RecoveryStore.layer,
       AgentSessions.layer,
       IntentStore.layer,
       Quoter.layer,
@@ -145,7 +161,6 @@ export const ServicesLive = Layer.mergeAll(
       AuditLog.layer,
       WebAuthn.layer,
       Challenges.layer,
-      Sessions.layer,
       SavedTemplates.layer,
       Transfers.layer,
       Activity.layer,
