@@ -18,6 +18,7 @@
   "dependencies": {
     "@bluechip/chain": "workspace:*",
     "@pimlico/alto": "0.0.21",
+    "ox": "catalog:",
     "prool": "0.3.0"
   },
   "devDependencies": {

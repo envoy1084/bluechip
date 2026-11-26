@@ -1,3 +1,9 @@
+/**
+ * Passkeys without a browser for tests on the devnet: account owners and recovery keys that sign real WebAuthn
+ * assertions with a P-256 key.
+ *
+ * @since 0.0.0
+ */
 import * as Base64 from "ox/Base64"
 import * as Bytes from "ox/Bytes"
 import * as Hex from "ox/Hex"
@@ -10,6 +16,10 @@ import { toWebAuthnAccount, type WebAuthnAccount } from "viem/account-abstractio
 /**
  * A passkey without a browser (Namera's own test pattern): viem's WebAuthn account whose `getFn` answers like an
  * authenticator, signing the real WebAuthn payload with a P-256 key.
+ *
+ * @stability unstable
+ * @category constructors
+ * @since 0.0.0
  */
 export const softwarePasskey = (privateKey: Hex.Hex = P256.randomPrivateKey()): WebAuthnAccount => {
   const publicKey = PublicKey.toHex(P256.getPublicKey({ privateKey }))

@@ -5,13 +5,19 @@ import { DevChain } from "@bluechip/chain/DevChain"
 import { compileSession, lockCalls, lockedGrant } from "@bluechip/chain/policies/Session"
 import { BASE_FEES } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
+import { softwarePasskey } from "@bluechip/devnet/Passkeys"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { Grant, KernelAccount, type Policy, Session, SessionKey } from "@namera-ai/sdk"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { type Address, type Chain, type Hex, http, parseEther, type Transport } from "viem"
-import { type BundlerClient, createBundlerClient, type SmartAccount } from "viem/account-abstraction"
+import { type Address, type Chain, type Hex, http, type LocalAccount, parseEther, type Transport } from "viem"
+import {
+  type BundlerClient,
+  createBundlerClient,
+  type SmartAccount,
+  type WebAuthnAccount
+} from "viem/account-abstraction"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
 import { PICKER } from "../fixtures/Specs.ts"
 
@@ -21,24 +27,38 @@ type Calls = ReadonlyArray<
 
 type Bundler = BundlerClient<Transport, Chain | undefined, SmartAccount>
 
-/** An account, its agent sending operations through the bundler, its grant, and its owner sending calls. */
+/** An account owned by a passkey, its agent sending operations through the bundler, its grant, and its owner. */
 export interface Agent {
   readonly address: Address
+  /** The passkey that owns the account (on Namera's `WebAuthnValidator`, threshold 1). */
+  readonly owner: WebAuthnAccount
+  /** The account as its owner sends from it. */
+  readonly account: KernelAccount.KernelAccount
   readonly agent: Bundler
   readonly grant: Grant.Grant
   /** The agent sending operations with another grant of the same key. */
   readonly agentFor: (grant: Grant.Grant) => Effect.Effect<Bundler, ChainError>
   /** The owner's operation of `calls`, once it landed. */
   readonly send: (calls: Calls) => Effect.Effect<{ readonly success: boolean }, ChainError>
+  /** The operation of `calls` from `account` (another signer of the same account), once it landed. */
+  readonly sendAs: (
+    account: SmartAccount,
+    calls: Calls
+  ) => Effect.Effect<{ readonly success: boolean }, ChainError>
   /** The agent's operation of `calls`, once it landed. */
   readonly trade: (calls: Calls, callGasLimit?: bigint) => Effect.Effect<{ readonly success: boolean }, ChainError>
 }
 
 export class TestAgents extends Context.Service<TestAgents, {
   /**
-   * A new Kernel account (an ECDSA owner) with $1,000 and gas, and an agent locked onto it with `spec` (`PICKER` by
+   * A new Kernel account (a passkey owner) with $1,000 and gas, and an agent locked onto it with `spec` (`PICKER` by
    * default), or with `policies` compiled by the caller.
    */
+  /** Operations under `grant` signed by `signer` (a session key: a local key or a passkey), through the bundler. */
+  readonly sessionFor: (
+    grant: Grant.Grant,
+    signer: LocalAccount | WebAuthnAccount
+  ) => Effect.Effect<Bundler, ChainError>
   readonly lock: (options?: {
     readonly spec?: AgentSpec | undefined
     readonly policies?: ReadonlyArray<Policy.Policy> | undefined
@@ -75,7 +95,7 @@ export class TestAgents extends Context.Service<TestAgents, {
       readonly spec?: AgentSpec | undefined
       readonly policies?: ReadonlyArray<Policy.Policy> | undefined
     } = {}) {
-      const owner = privateKeyToAccount(generatePrivateKey())
+      const owner = softwarePasskey()
       const account = yield* chain.use("KernelAccount.from", (client) => KernelAccount.from({ client, owner }))
       yield* dev.setEthBalance(account.address, parseEther("1"))
       yield* dev.setUsdcBalance(account.address, BigInt(1_000_000_000))
@@ -100,10 +120,26 @@ export class TestAgents extends Context.Service<TestAgents, {
         )
       const agent = yield* agentFor(grant)
 
-      return { address: account.address, agent, grant, agentFor, send, trade: sendThrough(agent) }
+      return {
+        address: account.address,
+        owner,
+        account,
+        agent,
+        grant,
+        agentFor,
+        send,
+        sendAs: (from: SmartAccount, calls: Calls) => sendThrough(bundler(from))(calls),
+        trade: sendThrough(agent)
+      }
     })
 
-    return TestAgents.of({ lock })
+    const sessionFor = (grant: Grant.Grant, signer: LocalAccount | WebAuthnAccount) =>
+      chain.use(
+        "Grant.toAccount",
+        async (client) => bundler(await Grant.toAccount(client, { grant, signer, check: false }))
+      )
+
+    return TestAgents.of({ lock, sessionFor })
   })
 
   /** Agents on this worker's devnet, paying Base's base fee. */
