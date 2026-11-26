@@ -2,7 +2,7 @@ import { stocks } from "@bluechip/chain/Contracts"
 import { fillOf } from "@bluechip/chain/market/Swaps"
 import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
-import type { TradeId, TxHash, UserId } from "@bluechip/domain/Ids"
+import type { AgentId, TradeId, TxHash, UserId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { bpsBetween, Price, priceOf, Shares, Usdc } from "@bluechip/domain/market/Units"
 import { Trade, transition } from "@bluechip/domain/trading/Trade"
@@ -26,6 +26,7 @@ export type TradeRow = typeof trades.$inferSelect
 export const toTrade = (row: TradeRow) =>
   new Trade({
     id: row.id as TradeId,
+    agentId: row.agentId as AgentId | null,
     symbol: row.symbol as StockSymbol,
     side: row.side,
     status: row.status,

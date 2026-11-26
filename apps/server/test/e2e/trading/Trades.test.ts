@@ -79,7 +79,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("trades", (it) => {
         const { trade } = yield* user.events.next("TradeUpdated", ({ trade }) => trade.id === sent.id)
 
         assert.deepStrictEqual([prepared.deploysAccount, sent.status], [true, "confirming"])
-        assert.deepStrictEqual([trade.status, trade.usdc], ["filled", BigInt(100_000_000)])
+        assert.deepStrictEqual([trade.status, trade.usdc, trade.agentId], ["filled", BigInt(100_000_000), null])
         assert.isTrue(trade.shares >= prepared.quote.minimumOut)
       }))
 

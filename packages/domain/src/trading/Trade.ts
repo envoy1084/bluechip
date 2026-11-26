@@ -6,7 +6,7 @@
  */
 import * as Result from "effect/Result"
 import * as Schema from "effect/Schema"
-import { SigningRequestId, TradeId, TxHash } from "../Ids.ts"
+import { AgentId, SigningRequestId, TradeId, TxHash } from "../Ids.ts"
 import { PriceStatus, Quote, StockSymbol } from "../market/Market.ts"
 import { Price, Shares, Usdc } from "../market/Units.ts"
 import { CeremonyOptions } from "../WebAuthn.ts"
@@ -124,6 +124,8 @@ export class TradeRequest extends Schema.Class<TradeRequest>("@bluechip/domain/t
  */
 export class Trade extends Schema.Class<Trade>("@bluechip/domain/trading/Trade/Trade")({
   id: TradeId,
+  /** The agent it was sent for (by its key, or by your Face ID approving it); `null` for your own. */
+  agentId: Schema.NullOr(AgentId),
   symbol: StockSymbol,
   side: Schema.Literals(["buy", "sell"]),
   status: TradeStatus,

@@ -30,8 +30,8 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
         const fill = yield* user.api.trades.trade({ params: { id: filled.tradeId! } })
 
         assert.deepStrictEqual(
-          [created.status, created.executor, filled.decision?._tag, fill.status],
-          ["proposed", "agent", "Passes", "filled"]
+          [created.status, created.executor, filled.decision?._tag, fill.status, fill.agentId],
+          ["proposed", "agent", "Passes", "filled", agent.id]
         )
       }))
 
