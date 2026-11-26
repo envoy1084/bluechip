@@ -57,6 +57,7 @@ export function PasskeysCard() {
   return (
     <SettingsSection
       title="Passkeys"
+      illustration="passkey"
       description="Each passkey signs in and approves with Face ID or a fingerprint. Any one of them is enough."
     >
       {list.map((passkey) => (

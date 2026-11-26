@@ -1,7 +1,6 @@
 import type { Agent, AgentUsage } from "@bluechip/domain/agents/Agent"
 import { NotFound as NotFoundError } from "@bluechip/domain/Errors"
 import type { AgentId } from "@bluechip/domain/Ids"
-import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
@@ -9,47 +8,41 @@ import { Link } from "@tanstack/react-router"
 import * as Option from "effect/Option"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
-import { type ComponentType, useState } from "react"
+import { type ComponentType, type ReactNode, useState } from "react"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { agentAtom, agentUsageAtom } from "../atoms/agents.ts"
 import { AgentAlerts } from "../components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "../components/detail/AgentHeader.tsx"
-import { JournalSection } from "../components/detail/JournalSection.tsx"
-import { PoliciesSection } from "../components/detail/PoliciesSection.tsx"
 import { RemoveConfirm } from "../components/detail/RemoveConfirm.tsx"
-import { ResultsCard } from "../components/detail/ResultsCard.tsx"
-import { SessionHistory } from "../components/detail/SessionHistory.tsx"
-import { UsageCard } from "../components/detail/UsageCard.tsx"
 import { useRemoveAgent } from "../hooks/useRemoveAgent.ts"
 import { agentState, hasSession } from "../model/agentState.ts"
 
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { AgentNotFound } from "../components/detail/AgentNotFound.tsx"
+import { AgentPageContext } from "../components/detail/AgentPageContext.ts"
 
-/** A section of the page another feature draws, for an agent, with stock names. */
-type Section = ComponentType<{ agent: Agent; nameOf: (symbol: StockSymbol) => string }>
-
-interface Sections {
-  readonly Trade: Section
-  readonly Activity: Section
-  /** Its automations, from the automations feature. */
-  readonly Automations: ComponentType<{ agent: Agent }>
-  /** Opens a conversation with the assistant about the agent. */
-  readonly Ask: ComponentType<{ agent: Agent }>
-}
+/** The page's tabs: the overview first, then each part of the agent on a page of its own. */
+const TABS = [
+  { to: "/agents/$agentId", label: "Overview", exact: true },
+  { to: "/agents/$agentId/automations", label: "Automations", exact: false },
+  { to: "/agents/$agentId/journal", label: "Journal", exact: false },
+  { to: "/agents/$agentId/results", label: "Results", exact: false },
+  { to: "/agents/$agentId/usage", label: "Usage", exact: false },
+  { to: "/agents/$agentId/history", label: "History", exact: false }
+] as const
 
 /**
- * An agent's page: its alerts, header, policies, automations, usage and sessions. The trade and activity sections
- * come from the intents feature, its automations from the automations feature and the way to ask about it from the
- * assistant feature, so the route passes them in.
+ * An agent's page: its alerts and header, then tabs for its overview (rules and trading), automations, journal,
+ * results, usage and history. Each tab is a route of its own, drawn in `children`, reading the agent from
+ * {@link AgentPageContext}; the way to ask about it comes from the assistant feature, so the route passes it in.
  */
-export function AgentScreen({ id, Trade, Activity, Automations, Ask }: Readonly<{ id: AgentId } & Sections>) {
+export function AgentScreen(
+  { id, Ask, children }: Readonly<{ id: AgentId; Ask: ComponentType<{ agent: Agent }>; children: ReactNode }>
+) {
   const agent = useAtomValue(agentAtom(id))
   const refresh = useAtomRefresh(agentAtom(id))
 
-  if (AsyncResult.isSuccess(agent)) {
-    return <AgentContent agent={agent.value} Trade={Trade} Activity={Activity} Automations={Automations} Ask={Ask} />
-  }
+  if (AsyncResult.isSuccess(agent)) return <AgentContent agent={agent.value} Ask={Ask}>{children}</AgentContent>
   if (Option.getOrUndefined(AsyncResult.error(agent)) instanceof NotFoundError) return <AgentNotFound />
 
   return (
@@ -75,7 +68,9 @@ export function AgentScreen({ id, Trade, Activity, Automations, Ask }: Readonly<
 // its state (a removal in progress) as the agent moves between them.
 const noUsageAtom = Atom.make(AsyncResult.initial<AgentUsage, unknown>())
 
-function AgentContent({ agent, Trade, Activity, Automations, Ask }: Readonly<{ agent: Agent } & Sections>) {
+function AgentContent(
+  { agent, Ask, children }: Readonly<{ agent: Agent; Ask: ComponentType<{ agent: Agent }>; children: ReactNode }>
+) {
   const usageAtom: Atom.Atom<AsyncResult.AsyncResult<AgentUsage, unknown>> = hasSession(agent) ?
     agentUsageAtom(agent.id) :
     noUsageAtom
@@ -121,24 +116,27 @@ function AgentContent({ agent, Trade, Activity, Automations, Ask }: Readonly<{ a
             />
           ) :
           null}
-        <div
-          className={agent.status === "draft" ?
-            "grid" :
-            "grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"}
-        >
-          <div className="grid content-start gap-4">
-            <PoliciesSection agent={agent} nameOf={nameOf} />
-            {agent.status === "draft" ? null : <Automations agent={agent} />}
-            {agent.status === "draft" ? null : <Activity agent={agent} nameOf={nameOf} />}
-            {agent.status === "draft" ? null : <JournalSection agent={agent} />}
-          </div>
-          <div className="grid content-start gap-4">
-            {state === "active" || state === "stopped" ? <Trade agent={agent} nameOf={nameOf} /> : null}
-            {agent.status === "draft" ? null : <ResultsCard agent={agent} />}
-            {usage === undefined ? null : <UsageCard agent={agent} usage={usage} />}
-            {agent.status === "draft" ? null : <SessionHistory agent={agent} nameOf={nameOf} />}
-          </div>
-        </div>
+        {agent.status === "draft" ?
+          null :
+          (
+            <nav aria-label={`${agent.name}'s pages`} className="-mx-1 overflow-x-auto px-1">
+              <ul className="flex w-max gap-1 rounded-[12px] bg-g-100/80 p-1">
+                {TABS.map((tab) => (
+                  <li key={tab.to}>
+                    <Link
+                      to={tab.to}
+                      params={{ agentId: agent.id }}
+                      activeOptions={{ exact: tab.exact }}
+                      className="block rounded-[9px] px-3.5 py-1.5 text-label font-medium whitespace-nowrap text-g-600 transition-[background,color,box-shadow] duration-fast ease-brand hover:text-ink data-[status=active]:bg-white data-[status=active]:text-ink data-[status=active]:shadow-e1"
+                    >
+                      {tab.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        <AgentPageContext value={{ agent, usage, nameOf }}>{children}</AgentPageContext>
       </div>
     </AppPage>
   )

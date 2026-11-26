@@ -50,13 +50,17 @@ test.describe("settings", () => {
     await expect(page.getByText("In Asia/Tokyo time, your time zone in Settings.")).toBeVisible()
   })
 
-  test("the account shows its address and eligibility", async ({ page, user }) => {
+  test("the account shows its address", async ({ page, user }) => {
     await page.goto("/settings")
 
     await expect(page.getByText("Send USDC on Base here to add cash.")).toBeVisible()
     await expect(page.getByRole("main")).toContainText(`${user.address.slice(0, 6)}…${user.address.slice(-4)}`)
-    await expect(page.getByText("You confirmed you live outside the United States.")).toBeVisible()
-    await expect(page.getByText("Confirmed", { exact: true })).toBeVisible()
+  })
+
+  test("Settings stays highlighted in the sidebar on its pages", async ({ page, user: _user }) => {
+    await page.goto("/settings/security")
+
+    await expect(page.getByRole("link", { name: "Settings" })).toHaveAttribute("data-active", "true")
   })
 
   test("Security settings opens your passkeys, recovery and devices", async ({ page, user: _user }) => {

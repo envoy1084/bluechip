@@ -38,7 +38,7 @@ export interface MoneyLimits {
   readonly min?: number
   /** The largest amount allowed here, like an agent's max per trade. */
   readonly max?: number
-  /** Above this the amount is allowed but needs your OK with Face ID. */
+  /** Above this the amount is allowed but needs your approval. */
   readonly approvalAbove?: number
 }
 
@@ -57,7 +57,7 @@ export const checkMoneyInput = (amount: number | null, limits: MoneyLimits): Mon
     return { status: "error", message: `The most you can use here is ${formatMoney(limits.max)}.` }
   }
   if (limits.approvalAbove !== undefined && amount > limits.approvalAbove) {
-    return { status: "warning", message: `Over ${formatMoney(limits.approvalAbove)} needs your OK with Face ID.` }
+    return { status: "warning", message: `Over ${formatMoney(limits.approvalAbove)} needs your approval.` }
   }
   return { status: "valid" }
 }

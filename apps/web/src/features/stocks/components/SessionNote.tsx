@@ -13,11 +13,18 @@ const QUIET = Duration.minutes(30)
  * Where a stock's market price stands: trading now, in an extended session, from a last trade a while ago (the free
  * feed goes quiet overnight), or paused for the weekend or a holiday.
  */
-export function SessionNote({ price }: Readonly<{ price: MarketPrice }>) {
+export function SessionNote(
+  { price, showPaused = true }: Readonly<{
+    price: MarketPrice
+    /** Off where the page already says prices are paused (the stock page's banner and trade warning). */
+    showPaused?: boolean
+  }>
+) {
   const status = useMarketStatus()
   if (status === undefined) return null
 
   if (status.session === "paused") {
+    if (!showPaused) return null
     return (
       <span className="inline-flex items-center gap-[5px] text-caption text-warn">
         <Icon name="pause" size={12} />Price paused

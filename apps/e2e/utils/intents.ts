@@ -10,7 +10,7 @@ export const agentActivity = (page: Page) => page.getByRole("region", { name: "A
 
 /** Types an amount to spend on the agent page's trade card; its policies' answer follows below it. */
 export const typeBuy = async (page: Page, dollars: number) => {
-  await tradeCard(page).getByRole("textbox", { name: "How much to spend" }).fill(String(dollars))
+  await tradeCard(page).getByRole("textbox", { name: /^Buy / }).fill(String(dollars))
 }
 
 /** Asks the agent (on its page) to buy `dollars` of its first stock. */

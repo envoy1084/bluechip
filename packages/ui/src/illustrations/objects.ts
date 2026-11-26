@@ -1,4 +1,4 @@
-/* The 23 illustration objects. Each is ONE drawing: a list of shapes on the 20 × 20 grid, each with a material.
+/* The 30 illustration objects. Each is ONE drawing: a list of shapes on the 20 × 20 grid, each with a material.
    `pixel.ts` and `halftone.ts` both read it, so the two styles can never drift apart. Ported from the kit
    (illustrations.js); `draw(t)` takes seconds for the objects that move in halftone. */
 import type { Palette } from "../motion/halftone/engine.ts"
@@ -391,6 +391,106 @@ export const OBJECTS = {
         rect(2.5, 14.5, 15, 1.8, "Y", { r: 0.9, at })
       ]
     }
+  },
+  chat: {
+    label: "Chat",
+    usedFor: "The assistant, conversations, memory",
+    palette: BLUE,
+    tones: { S: 0.24, B: 0.82 },
+    draw: (t) => {
+      // In halftone the assistant's three dots take turns rising, as a typing indicator does.
+      const rise = (k: number) => Math.max(0, Math.sin(t * 4 - k * 0.9)) * 0.6
+      return [
+        rect(7, 2.5, 11, 8, "S", { r: 2.2 }),
+        poly([[14, 10], [16.8, 10], [17.2, 13]], "S"),
+        rect(2, 6.5, 13, 9, "B", { r: 2.4 }),
+        poly([[4, 15], [7.4, 15], [3, 18.6]], "B"),
+        disc(5.6, 11 - rise(0), 1.05, "w"),
+        disc(8.5, 11 - rise(1), 1.05, "w"),
+        disc(11.4, 11 - rise(2), 1.05, "w")
+      ]
+    }
+  },
+  devices: {
+    label: "Devices",
+    usedFor: "Devices signed in, sessions",
+    palette: BLUE,
+    tones: { D: 0.7, M: 0.4, C: 0.5 },
+    draw: () => [
+      rect(1.6, 3.6, 13, 9.4, "D", { r: 1.1 }),
+      rect(2.7, 4.7, 10.8, 7.2, "B", { r: 0.4 }),
+      rect(4.2, 6.4, 5.6, 1, "W", { r: 0.5 }),
+      rect(4.2, 8.6, 3.6, 1, "W", { r: 0.5 }),
+      poly([[0.6, 13], [15.6, 13], [16.4, 14.8], [-0.2, 14.8]], "M"),
+      rect(12.6, 7.2, 6.2, 11.2, "N", { r: 1.3 }),
+      rect(13.5, 8.6, 4.4, 8.2, "C", { r: 0.6 }),
+      rect(14.9, 7.75, 1.6, 0.5, "D", { r: 0.25 })
+    ]
+  },
+  plane: {
+    label: "Paper plane",
+    usedFor: "Telegram, messages sent to you",
+    palette: BLUE,
+    tones: { N: 0.9, C: 0.5 },
+    draw: () => [
+      poly([[1.5, 9.2], [18.5, 2.4], [13.6, 17.2]], "B"),
+      poly([[7.6, 11.2], [18.5, 2.4], [9.6, 16.6]], "N"),
+      poly([[7.6, 11.2], [9.6, 16.6], [9.8, 12.6]], "C")
+    ]
+  },
+  phone: {
+    label: "Phone",
+    usedFor: "Push notifications",
+    palette: BLUE,
+    tones: { W: 0.16, M: 0.4 },
+    draw: () => [
+      rect(5, 1.5, 10, 17, "N", { r: 2 }),
+      rect(6.2, 3, 7.6, 14, "C", { r: 1 }),
+      rect(3.6, 5.2, 12.8, 4, "W", { r: 1.3 }),
+      disc(5.8, 7.2, 1, "B"),
+      rect(7.6, 6.3, 6.4, 0.8, "M", { r: 0.4 }),
+      rect(7.6, 7.7, 4.2, 0.7, "M", { r: 0.35 }),
+      disc(15.2, 2.4, 1.6, "R")
+    ]
+  },
+  bolt: {
+    label: "Bolt",
+    usedFor: "Automations, triggers",
+    palette: COIN,
+    tones: { Y: 0.34, O: 0.55 },
+    draw: () => {
+      const pts: ReadonlyArray<Point> = [[11.6, 1.4], [4, 11.2], [9.2, 11.2], [8, 18.6], [16, 8.4], [10.8, 8.4]]
+      return [poly(pts, "Y"), poly(pts, "O", { clip: rect(10, 0, 10, 20) })]
+    }
+  },
+  notebook: {
+    label: "Notebook",
+    usedFor: "An agent's journal, what happened and why",
+    palette: BLUE,
+    tones: { W: 0.16, Y: 0.4 },
+    draw: () => [
+      rect(4, 2, 12.5, 16, "B", { r: 1.2 }),
+      rect(15, 3, 1.5, 14, "W", { r: 0.4 }),
+      rect(4, 2, 2.4, 16, "N", { r: 0.8 }),
+      rect(8.2, 6.2, 5.8, 1, "W", { r: 0.5 }),
+      rect(8.2, 8.8, 4.2, 1, "W", { r: 0.5 }),
+      rect(8.2, 11.4, 5, 1, "W", { r: 0.5 }),
+      poly([[11.6, 2], [13.8, 2], [13.8, 6.4], [12.7, 5.4], [11.6, 6.4]], "Y")
+    ]
+  },
+  chart: {
+    label: "Chart",
+    usedFor: "Results, profit over time",
+    palette: MEADOW,
+    tones: { C: 0.5, N: 0.9 },
+    draw: () => [
+      rect(2, 16.8, 16, 1.2, "D", { r: 0.6 }),
+      rect(3.6, 11.2, 3, 5.6, "C", { r: 0.6 }),
+      rect(8.5, 8.2, 3, 8.6, "B", { r: 0.6 }),
+      rect(13.4, 4.6, 3, 12.2, "N", { r: 0.6 }),
+      line([[4.2, 8.4], [9.6, 5.4], [15.2, 2.2]], 1.2, "G"),
+      disc(15.2, 2.2, 1.1, "G")
+    ]
   },
   wallet: {
     label: "Wallet",

@@ -527,12 +527,11 @@ test.describe("rules step: advanced", () => {
     await expect(neverRules(page)).toHaveText(NEVER.toSpliced(4, 0, "Trade while prices are paused"))
   })
 
-  test("a Rebalancer only trades while prices are live", async ({ page, user: _user }) => {
+  test("a Rebalancer may trade while prices are paused", async ({ page, user: _user }) => {
     await rebalancer(page)
     await page.getByRole("button", { name: "Advanced" }).click()
 
-    await expect(page.getByText("A Rebalancer only trades while prices are live.")).toBeVisible()
-    await expect(page.getByRole("switch", { name: "Trade while prices are paused" })).toBeDisabled()
+    await expect(page.getByRole("switch", { name: "Trade while prices are paused" })).toBeChecked()
   })
 
   test("a larger weekly slippage is its rule", async ({ page, user: _user }) => {

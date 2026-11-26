@@ -258,7 +258,7 @@ export function EmptySection() {
               <Icon name="approvals" size={18} />
             </EmptyMedia>
             <EmptyTitle>Nothing to approve</EmptyTitle>
-            <EmptyDescription>When an agent needs your OK, it'll wait here.</EmptyDescription>
+            <EmptyDescription>When an agent needs your approval, it'll wait here.</EmptyDescription>
           </Empty>
         </div>
       </div>

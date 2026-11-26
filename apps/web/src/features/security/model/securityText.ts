@@ -54,8 +54,7 @@ export const recoveryText = (recovery: AccountRecovery, timeZone: string): Recov
   if (key === null) {
     return {
       title: "No recovery key yet",
-      description: "If you lose every passkey, a recovery key on another device or a hardware key gets you back in, " +
-        "48 hours after it asks. You can cancel during the wait.",
+      description: "Keep one on another device or a hardware key. You can cancel during the wait.",
       cancellable: false
     }
   }

@@ -24,16 +24,18 @@ export function SidebarAgents() {
   const [now] = useState(() => new Date())
 
   return (
-    <SidebarGroup className="mt-4">
+    <SidebarGroup className="mt-4 transition-[margin] group-data-[collapsible=icon]/sidebar-panel:mt-1">
       <SidebarGroupLabel>Your agents</SidebarGroupLabel>
       <SidebarMenu>
         {AsyncResult.isSuccess(agents) ?
           agents.value.map((agent) => (
             <SidebarMenuItem key={agent.id}>
               <SidebarMenuButton
-                isActive={matchRoute({ to: "/agents/$agentId", params: { agentId: agent.id } }) !== false}
+                isActive={matchRoute({ to: "/agents/$agentId", params: { agentId: agent.id }, fuzzy: true }) !== false}
                 tooltip={agent.name}
                 render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
+                // The avatar is wider than an icon: folded to icons, less padding keeps it centred.
+                className="group-data-[collapsible=icon]/sidebar-panel:px-[5px]"
               >
                 {/* `contents` keeps the avatar out of the button's `> span` label styles (flex-1, truncate). */}
                 <i className="contents">

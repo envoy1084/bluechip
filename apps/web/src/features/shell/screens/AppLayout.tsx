@@ -1,4 +1,3 @@
-import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
 import { Logo } from "@bluechip/ui/bluechip/logo"
 import {
   Sidebar,
@@ -64,18 +63,26 @@ export function AppLayout(
   }>
 ) {
   const matchRoute = useMatchRoute()
+  const onChat = matchRoute({ to: "/chat/{-$conversationId}", fuzzy: true }) !== false
   return (
     <SignedIn>
       {(me) =>
         me.user.eligibility !== "outsideUs" ?
           <Navigate to="/welcome/eligibility" /> :
           (
-            <SidebarProvider className="bg-canvas" storageKey="bluechip:sidebar">
+            <SidebarProvider
+              className="bg-canvas"
+              // The chat page has its own chats sidebar, so the app's folds there by default; each keeps what you set.
+              storageKey={onChat ? "bluechip:sidebar:chat" : "bluechip:sidebar"}
+              defaultOpen={!onChat}
+            >
               <LiveUpdates />
               {dialogs}
               <Sidebar collapsible="icon" className="bg-g-50">
                 <SidebarHeader className="px-2 pt-0.5 pb-1 group-data-[collapsible=icon]/sidebar-panel:px-[7px] [&_[data-slot=logo]>span]:transition-opacity group-data-[collapsible=icon]/sidebar-panel:[&_[data-slot=logo]>span]:opacity-0">
-                  <Logo />
+                  <Link to="/home" aria-label="bluechip, home" className="rounded-sm outline-offset-2">
+                    <Logo />
+                  </Link>
                 </SidebarHeader>
                 <SidebarContent>
                   <SidebarGroup>
@@ -83,7 +90,9 @@ export function AppLayout(
                       {NAV.map((item) => (
                         <SidebarMenuItem key={item.to}>
                           <SidebarMenuButton
-                            isActive={matchRoute({ to: item.to, fuzzy: item.label === "Chat" }) !== false}
+                            // An agent's pages and New agent light their own rows under "Your agents", not Agents.
+                            isActive={matchRoute({ to: item.to, fuzzy: item.to !== "/agents" }) !== false ||
+                              (item.to === "/settings" && matchRoute({ to: "/memory" }) !== false)}
                             tooltip={item.label}
                             render={<Link to={item.to} params={{ conversationId: undefined }} />}
                           >
@@ -101,15 +110,6 @@ export function AppLayout(
                 </SidebarContent>
                 <SidebarFooter>
                   {pauseAll}
-                  <div className="flex items-center gap-2.5 border-t border-ink/6 px-1.5 pt-3">
-                    <span className="grid size-[30px] shrink-0 place-items-center rounded-full bg-blue-50 text-[13px] font-semibold text-blue ring-1 ring-blue/15">
-                      {(me.user.displayName ?? "Y").charAt(0).toUpperCase()}
-                    </span>
-                    <span className="grid min-w-0 transition-opacity duration-base group-data-[collapsible=icon]/sidebar-panel:opacity-0">
-                      <b className="truncate text-[13px] font-semibold">{me.user.displayName ?? "You"}</b>
-                      <span className="font-mono text-[11.5px] text-g-500">{shortAddress(me.account.address)}</span>
-                    </span>
-                  </div>
                 </SidebarFooter>
                 <SidebarRail />
               </Sidebar>

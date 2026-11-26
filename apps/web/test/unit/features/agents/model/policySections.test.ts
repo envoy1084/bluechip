@@ -7,30 +7,25 @@ import { PICKER } from "../../../../fixtures/Agents.ts"
 const nameOf = (symbol: string) => ({ NVDA: "Nvidia", AAPL: "Apple" })[symbol] ?? symbol
 
 describe("policySections", () => {
-  it("a stock picker: its limits, the rules to add, and its fine-tuning", () => {
+  it("a stock picker: its limits, on or off, in the catalog's order, and its fine-tuning", () => {
     assert.deepStrictEqual(policySections(PICKER), {
-      limits: ["tradeSize", "stockCap", "cashReserve"],
-      more: ["rebalance", "stopLossFloor"],
-      fineTuning: ["fairPrice", "slippageBudget", "tradesPerDay"],
-      fineTuningToAdd: []
+      limits: ["tradeSize", "stockCap", "cashReserve", "rebalance", "stopLossFloor"],
+      fineTuning: ["fairPrice", "slippageBudget", "tradesPerDay"]
     })
   })
 
-  it("from scratch: only the limits every agent has", () => {
+  it("from scratch: the same rows in the same order, most of them off", () => {
     assert.deepStrictEqual(policySections(scratchSpec()), {
-      limits: ["tradeSize"],
-      more: ["stockCap", "cashReserve", "rebalance", "stopLossFloor"],
-      fineTuning: ["fairPrice", "tradesPerDay"],
-      fineTuningToAdd: ["slippageBudget"]
+      limits: ["tradeSize", "stockCap", "cashReserve", "rebalance", "stopLossFloor"],
+      fineTuning: ["fairPrice", "slippageBudget", "tradesPerDay"]
     })
   })
 
-  it("an added fine-tuning rule moves from the ones to add to the ones it carries", () => {
-    const sections = policySections(addPolicy(scratchSpec(), "slippageBudget"))
-    assert.deepStrictEqual([sections.fineTuning, sections.fineTuningToAdd], [
-      ["fairPrice", "slippageBudget", "tradesPerDay"],
-      []
-    ])
+  it("a rule switched on stays where it was", () => {
+    assert.deepStrictEqual(
+      policySections(addPolicy(scratchSpec(), "slippageBudget")).fineTuning,
+      ["fairPrice", "slippageBudget", "tradesPerDay"]
+    )
   })
 })
 
@@ -53,7 +48,7 @@ describe("policySummary", () => {
     const rebalancer = draftSpec({ template: "rebalancer", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
     assert.strictEqual(
       policySummary(rebalancer, "trade", nameOf),
-      "Trade Nvidia and Apple, only to move you back to your target mix. Spend up to $250 a day."
+      "Trade Nvidia and Apple, only to move you back to your target mix. Spend up to $2,000 a day."
     )
   })
 })

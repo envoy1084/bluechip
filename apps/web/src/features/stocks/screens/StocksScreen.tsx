@@ -1,11 +1,7 @@
-import type { Stock } from "@bluechip/domain/market/Market"
 import { Button } from "@bluechip/ui/components/button"
-import { InputGroup, InputGroupInput } from "@bluechip/ui/components/input-group"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
@@ -13,12 +9,7 @@ import { StockListRow } from "../components/StockListRow.tsx"
 
 const PLACEHOLDER_ROWS = ["a", "b", "c", "d", "e", "f"]
 
-const matches = (stock: Stock, query: string) => {
-  const needle = query.trim().toLowerCase()
-  return needle === "" || stock.name.toLowerCase().includes(needle) || stock.symbol.toLowerCase().includes(needle)
-}
-
-function StockRows({ query }: Readonly<{ query: string }>) {
+function StockRows() {
   const stocks = useAtomValue(stocksAtom)
   const refresh = useAtomRefresh(stocksAtom)
   if (AsyncResult.isInitial(stocks)) {
@@ -38,32 +29,15 @@ function StockRows({ query }: Readonly<{ query: string }>) {
       </div>
     )
   }
-  const shown = stocks.value.filter((stock) => matches(stock, query))
-  if (shown.length === 0) {
-    return <p className="px-4 py-10 text-center text-body-sm text-g-500">No stock matches “{query.trim()}”.</p>
-  }
-  return shown.map((stock) => <StockListRow key={stock.symbol} stock={stock} />)
+  return stocks.value.map((stock) => <StockListRow key={stock.symbol} stock={stock} />)
 }
 
-/** Every stock bluechip trades, searchable, with its past day and price. */
+/** Every stock bluechip trades (13, so no search), with its past day and price. */
 export function StocksScreen() {
   const stocks = useAtomValue(stocksAtom)
-  const [query, setQuery] = useState("")
-  const count = AsyncResult.isSuccess(stocks) ? stocks.value.length : undefined
   return (
     <AppPage title="Stocks" actions={<MarketPill className="hidden sm:inline-flex" />} width="wide">
       <div className="mx-auto grid w-full max-w-[820px] gap-3.5">
-        <InputGroup className="sm:max-w-[300px]">
-          <Icon name="search" size={16} />
-          <InputGroupInput
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder={count === undefined ? "Search stocks" : `Search ${count} stocks`}
-            aria-label="Search stocks"
-            autoComplete="off"
-          />
-        </InputGroup>
         <section
           aria-labelledby="stocks-title"
           aria-busy={AsyncResult.isInitial(stocks)}
@@ -74,7 +48,7 @@ export function StocksScreen() {
             <span className="text-label-sm text-g-500">Past day and price</span>
           </div>
           <div className="grid">
-            <StockRows query={query} />
+            <StockRows />
           </div>
         </section>
         <p className="text-center text-label-sm text-g-600">

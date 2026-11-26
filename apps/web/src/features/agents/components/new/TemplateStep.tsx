@@ -108,7 +108,7 @@ export function TemplateStep(
       <div className="grid gap-1.5">
         <h2 className="text-2xl font-semibold tracking-[-0.03em]">What should your agent do?</h2>
         <p className="max-w-[60ch] text-[15px] text-g-600">
-          Pick a starting point. You set its rules next, and nothing runs until you lock them with Face ID.
+          Pick a starting point. You set its rules next, and it does nothing until you lock them.
         </p>
       </div>
 

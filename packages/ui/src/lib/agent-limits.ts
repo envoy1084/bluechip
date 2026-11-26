@@ -17,7 +17,7 @@ export interface AgentLimits {
   readonly maxInOneStock: number
   /** Percent of your money always kept as cash (USDC). */
   readonly cashReserve: number
-  /** Trades above this many dollars wait for your OK. 0 means every trade does. */
+  /** Trades above this many dollars wait for your approval. 0 means every trade does. */
   readonly approveAbove: number
 }
 
@@ -81,7 +81,7 @@ export const LIMIT_FIELDS: ReadonlyArray<LimitFieldSpec> = [
   {
     field: "approveAbove",
     label: "Ask me above",
-    help: "Bigger trades wait for your OK with Face ID. 0 means every trade.",
+    help: "Bigger trades wait for your approval. 0 means every trade.",
     min: 0,
     max: 1000,
     step: 10,

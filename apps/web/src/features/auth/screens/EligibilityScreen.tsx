@@ -34,14 +34,13 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
     setSaving(true)
     await setEligibility({ payload: { answer: "outsideUs" }, reactivityKeys: [accountReactivityKey] })
       .finally(() => setSaving(false))
-    await navigate({ to: "/welcome/cash" })
+    await navigate({ to: "/welcome/deposit" })
   }
   return (
     <OnboardingFrame step="Eligibility">
       <div className="grid w-full gap-3.5 text-left">
         <OnboardingTitle title="Where do you live?">
-          Tokenized US stocks can't be offered to people in the United States, so bluechip can't be either. We ask once,
-          here.
+          Tokenized US stocks can't be offered in the United States, so bluechip isn't available there.
         </OnboardingTitle>
         <RadioGroup
           aria-label="Where you live"

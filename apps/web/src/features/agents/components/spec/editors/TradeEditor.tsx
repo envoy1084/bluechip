@@ -6,27 +6,40 @@ import { DirectionField } from "../fields/DirectionField.tsx"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
 import type { EditorProps } from "./editorProps.ts"
 
-/** The stocks it trades, which way, and what it may spend a day. */
-export function TradeEditor({ context, problemOf, onSpecChange }: EditorProps) {
+/** Which part of the trade policy an editor shows: the new agent form splits it between two sections. */
+export type TradePart = "stocks" | "direction" | "budget"
+
+const EVERY_PART: ReadonlyArray<TradePart> = ["stocks", "direction", "budget"]
+
+/** The stocks it trades, which way, and what it may spend a day; or only `parts` of them. */
+export function TradeEditor(
+  { context, problemOf, onSpecChange, parts = EVERY_PART }: EditorProps & {
+    readonly parts?: ReadonlyArray<TradePart>
+  }
+) {
   const config = configOf(context.spec.policies, trade)
   if (config === undefined) return null
 
   return (
     <div className="grid gap-4">
-      <StockField
-        label={trade.fields.stocks.label}
-        value={config.stocks}
-        stocks={context.stocks}
-        problem={problemOf("stocks")}
-        onChange={(stocks) => onSpecChange(setStocks(context.spec, stocks))}
-      />
-      <DirectionField
-        label={trade.fields.direction.label}
-        value={config.direction}
-        problem={problemOf("direction")}
-        onChange={(direction) => onSpecChange(setDirection(context.spec, direction))}
-      />
-      {config.direction === "sell" ?
+      {parts.includes("stocks") && (
+        <StockField
+          label={trade.fields.stocks.label}
+          value={config.stocks}
+          stocks={context.stocks}
+          problem={problemOf("stocks")}
+          onChange={(stocks) => onSpecChange(setStocks(context.spec, stocks))}
+        />
+      )}
+      {parts.includes("direction") && (
+        <DirectionField
+          label={trade.fields.direction.label}
+          value={config.direction}
+          problem={problemOf("direction")}
+          onChange={(direction) => onSpecChange(setDirection(context.spec, direction))}
+        />
+      )}
+      {!parts.includes("budget") ? null : config.direction === "sell" ?
         <p className="text-label-sm text-g-500">It only sells, so it has no daily budget.</p> :
         (
           <FieldEditor

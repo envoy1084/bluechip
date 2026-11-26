@@ -7,6 +7,7 @@ import { Button } from "@bluechip/ui/components/button"
 import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from "@bluechip/ui/components/sheet"
 import { Switch } from "@bluechip/ui/components/switch"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useState } from "react"
 import { localTimeZone } from "../../../../lib/localTime.ts"
@@ -38,7 +39,6 @@ export function TemplateAutomations(
   const [editing, setEditing] = useState<number | null>(null)
   if (automations.length === 0) return null
 
-  const kept = automations.filter((automation) => automation.kept).length
   const set = (index: number, change: Partial<TemplateAutomation>) =>
     onChange(automations.map((automation, at) => at === index ? { ...automation, ...change } : automation))
   const open = editing === null ? undefined : automations[editing]
@@ -46,8 +46,8 @@ export function TemplateAutomations(
   return (
     <PolicyGroup
       title="Automations"
+      media={<Illustration name="bolt" size={40} className="shrink-0" />}
       description="It comes with these. They start once it's live, and you can change them any time."
-      aside={<span className="text-label-sm text-g-500">{kept} of {automations.length} kept</span>}
     >
       <ul>
         {automations.map((automation, index) => (
@@ -80,7 +80,7 @@ export function TemplateAutomations(
       </ul>
 
       <Sheet open={open !== undefined} onOpenChange={(next) => !next && setEditing(null)}>
-        <SheetContent className="w-[min(560px,96vw)]">
+        <SheetContent className="w-[min(600px,96vw)]">
           {open === undefined ? null : (
             <>
               <SheetHeader>
@@ -94,6 +94,7 @@ export function TemplateAutomations(
                   unsaved={{ spec, nameOf }}
                   whoTrades="This agent, once it's live"
                   saveLabel="Keep these changes"
+                  compact
                   onSave={async (draft) => {
                     set(editing!, { draft, edited: true })
                     setEditing(null)

@@ -19,6 +19,3 @@ export const confirmWithdrawalAtom = BluechipApiClient.runtime.fn(
   }),
   { reactivityKeys: [portfolioReactivityKey, liveReactivityKey] }
 )
-
-/** Local development: test USDC and ETH for the signed-in account. */
-export const devFundAtom = BluechipApiClient.mutation("dev", "fund")

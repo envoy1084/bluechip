@@ -1,3 +1,4 @@
+import { usdcTransferRequest } from "@bluechip/chain/funding/PaymentRequest"
 import { DepositCard } from "@bluechip/ui/bluechip/deposit-card"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -11,6 +12,7 @@ import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
 import { MoneySummary } from "../../../components/MoneySummary.tsx"
+import { network } from "../../../lib/wallet.ts"
 
 // The visitor's own day and time of day.
 const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
@@ -59,7 +61,9 @@ export function HomeScreen({ approvals, latest }: Readonly<{ approvals: ReactNod
       {empty && (
         <DepositCard
           address={account.address}
-          status="waiting"
+          paymentRequest={usdcTransferRequest({ network, recipient: account.address as `0x${string}` })}
+          title="Add cash"
+          description="Send USDC on Base to this address. It appears in your balance once it arrives."
           footer={
             <Button size="sm" onClick={() => openCash("add")}>
               <Icon name="plus" size={14} />Add cash

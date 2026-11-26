@@ -20,7 +20,7 @@ export function PushCard() {
   const remove = useAtomSet(unsubscribePushAtom, { mode: "promise" })
 
   return (
-    <SettingsCard title="Push notifications" description="Each device opts in on its own.">
+    <SettingsCard title="Push notifications" description="Each device opts in on its own." illustration="phone">
       <SettingsRow
         title="This device"
         description={push.failed ? "That didn't work. Nothing changed, so try again." : SAID[push.state]}

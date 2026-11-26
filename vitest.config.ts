@@ -72,6 +72,7 @@ export default defineConfig({
             "glimm/react",
             "@tanstack/react-table",
             "embla-carousel-react",
+            "qr-code-styling",
             "react-resizable-panels",
             "@tanstack/charts",
             "@tanstack/charts/mark/decorative",

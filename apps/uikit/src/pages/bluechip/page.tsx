@@ -2,6 +2,7 @@ import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
 import { AllocationDonut, type AllocationSlice } from "@bluechip/ui/bluechip/allocation-donut"
 import { AllocationEditor } from "@bluechip/ui/bluechip/allocation-editor"
 import { BlockedTradeCard } from "@bluechip/ui/bluechip/blocked-trade-card"
+import { DepositArrivedCard } from "@bluechip/ui/bluechip/deposit-arrived-card"
 import { DepositCard } from "@bluechip/ui/bluechip/deposit-card"
 import { CashHoldingRow, HoldingRow } from "@bluechip/ui/bluechip/holding-row"
 import { KillSwitch } from "@bluechip/ui/bluechip/kill-switch"
@@ -424,19 +425,18 @@ export function KitBluechip() {
         <Section
           id="deposit"
           title="Deposit card"
-          purpose="How to add cash. Send USDC on Base to your address; while it's open, it shows the moment the cash lands. The warning is loud because other coins or networks can be lost."
+          purpose="Where to send cash: a QR code your wallet opens as a USDC transfer on Base, and your address to copy. It spans its column; the page around it says what it's for. A screen that watches for the deposit swaps in the arrival card when the cash lands."
           notes={[
-            "The QR here is a pixel pattern, not a real code",
+            "The QR is a real EIP-681 request: USDC on Base, this address filled in",
+            "Brand blue rounded dots, the USDC mark in the middle",
             "Arrival sweeps and rolls in",
             "Warning always visible, never in a tooltip"
           ]}
         >
           {deposit.arrived ?
             (
-              <DepositCard
+              <DepositArrivedCard
                 key={deposit.key}
-                address={ADDRESS}
-                status="arrived"
                 amount={deposit.amount}
                 from={SENDER}
                 celebrate
@@ -455,7 +455,7 @@ export function KitBluechip() {
             (
               <DepositCard
                 address={ADDRESS}
-                status="waiting"
+                paymentRequest={`ethereum:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913@8453/transfer?address=${ADDRESS}`}
                 footer={
                   <Button variant="ghost" size="sm" className="justify-self-start" onClick={actions.deposit}>
                     Simulate a deposit

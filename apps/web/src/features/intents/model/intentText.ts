@@ -11,7 +11,7 @@ export const STATUS: Readonly<Record<IntentStatus, { readonly label: string; rea
   proposed: { label: "Asked", tone: "bg-g-100 text-g-600" },
   deciding: { label: "Checking", tone: "bg-blue-50 text-blue" },
   waiting: { label: "Waiting", tone: "bg-warn-wash text-warn" },
-  needsApproval: { label: "Needs your OK", tone: "bg-blue-50 text-blue" },
+  needsApproval: { label: "Needs your approval", tone: "bg-blue-50 text-blue" },
   awaitingSignature: { label: "Waiting for Face ID", tone: "bg-blue-50 text-blue" },
   sending: { label: "Sending", tone: "bg-blue-50 text-blue" },
   confirming: { label: "Confirming", tone: "bg-blue-50 text-blue" },

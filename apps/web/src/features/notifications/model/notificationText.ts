@@ -1,6 +1,7 @@
 // How notifications read in the app: when, which channel, which section of settings, and a device's name.
 import { type KindGroup, type KindInfo, KINDS } from "@bluechip/domain/notifications/Kinds"
 import type { Channel, NotificationRule } from "@bluechip/domain/notifications/Notification"
+import type { IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import * as DateTime from "effect/DateTime"
 
 /** When a notification came, as people say it: "Just now", "5 min ago", "3 h ago", "Yesterday", "24 Nov". */
@@ -19,13 +20,45 @@ export const CHANNEL_LABELS: Readonly<Record<Channel, string>> = {
   telegram: "Telegram"
 }
 
-const GROUPS: ReadonlyArray<{ readonly group: KindGroup; readonly title: string; readonly description: string }> = [
-  { group: "trades", title: "Trades", description: "Approvals, trades done and the ones a policy stopped." },
-  { group: "agents", title: "Agents", description: "Pauses, renewals and sessions about to end." },
-  { group: "automations", title: "Automations", description: "Runs, and the judgments that held one back." },
-  { group: "money", title: "Money", description: "Cash arriving and withdrawals." },
-  { group: "security", title: "Security", description: "Always on, on every channel, through quiet hours." },
-  { group: "digest", title: "Daily digest", description: "What the digest held back, in one message each morning." }
+const GROUPS: ReadonlyArray<
+  {
+    readonly group: KindGroup
+    readonly title: string
+    readonly description: string
+    readonly illustration: IllustrationName
+  }
+> = [
+  {
+    group: "trades",
+    title: "Trades",
+    description: "Approvals, trades done and the ones a policy stopped.",
+    illustration: "certificate"
+  },
+  {
+    group: "agents",
+    title: "Agents",
+    description: "Pauses, renewals and sessions about to end.",
+    illustration: "butterfly"
+  },
+  {
+    group: "automations",
+    title: "Automations",
+    description: "Runs, and the judgments that held one back.",
+    illustration: "bolt"
+  },
+  { group: "money", title: "Money", description: "Cash arriving and withdrawals.", illustration: "wallet" },
+  {
+    group: "security",
+    title: "Security",
+    description: "Always on, on every channel, through quiet hours.",
+    illustration: "shield"
+  },
+  {
+    group: "digest",
+    title: "Daily digest",
+    description: "What the digest held back, in one message each morning.",
+    illustration: "sun"
+  }
 ]
 
 /** The settings page's sections, each with its kinds and the rule in force for each. */

@@ -20,7 +20,7 @@ export const AGENT_STATES: Readonly<Record<AgentState, AgentStateInfo>> = {
   active: { label: "Active", description: "Trading within its limits.", dot: "active" },
   paused: { label: "Paused", description: "You paused it. It won't trade until you resume it.", dot: "paused" },
   "needs-approval": {
-    label: "Needs your OK",
+    label: "Needs your approval",
     description: "A trade is waiting for your approval.",
     dot: "waiting"
   },

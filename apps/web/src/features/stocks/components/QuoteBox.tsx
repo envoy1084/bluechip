@@ -3,20 +3,24 @@ import { Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { MINIMUM_BUY } from "@bluechip/domain/trading/Trade"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
+import { Spinner } from "@bluechip/ui/components/spinner"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
+import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
+import { ButtonCheck } from "@bluechip/ui/motion/button-check"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
+import { AmountInput, type AmountUnit } from "../../../components/fields/AmountInput.tsx"
+import { QuoteSummary, QuoteSummarySkeleton } from "../../../components/trading/QuoteSummary.tsx"
+import { type QuoteSide, useQuote } from "../../../hooks/useQuote.ts"
 import { parseShares, parseUsdc, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 import { useMarketStatus } from "../hooks/useMarketStatus.ts"
-import { type QuoteSide, useQuote } from "../hooks/useQuote.ts"
 import { useTrade } from "../hooks/useTrade.ts"
 import { amountHint } from "../model/amountHint.ts"
-import { AmountInput, type AmountUnit } from "./AmountInput.tsx"
-import { QuoteSummary, QuoteSummarySkeleton } from "./QuoteSummary.tsx"
 import { referenceGap } from "./ReferenceGap.tsx"
 import { TradeProgress } from "./TradeProgress.tsx"
 
@@ -75,7 +79,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
     side,
     stock.tradable && !over && !belowMinimum ? amount as Usdc | Shares | null : null
   )
-  const busy = flow.status === "preparing" || flow.status === "signing"
+  const busy = flow.status === "preparing" || flow.status === "signing" || flow.status === "signed"
   const ready = quote.status === "ready" && amount !== null && !over && !belowMinimum
 
   const available = side === "buy" ?
@@ -187,7 +191,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
           />
         )}
 
-      {quote.status === "loading" && <QuoteSummarySkeleton />}
+      {quote.status === "loading" && <QuoteSummarySkeleton stock={stock} side={side} />}
       {quote.status === "ready" && <QuoteSummary stock={stock} quote={quote.quote} />}
       {quote.status === "failed" && (
         <Alert variant="destructive">
@@ -203,9 +207,40 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
         </Alert>
       )}
 
-      <Button size="lg" disabled={!stock.tradable || !ready || busy} loading={busy} onClick={trade}>
-        <Icon name="face-id" size={18} />
-        {flow.status === "signing" ? "Waiting for Face ID" : `${side === "buy" ? "Buy" : "Sell"} with Face ID`}
+      <Button
+        size="lg"
+        disabled={!stock.tradable || !ready || busy}
+        aria-busy={busy || undefined}
+        onClick={trade}
+        className={cn(
+          "gap-2.5 transition-[background,box-shadow,filter] duration-slow disabled:opacity-100 aria-busy:grayscale-0",
+          busy && "disabled:grayscale-0"
+        )}
+      >
+        {flow.status === "preparing" ?
+          <Spinner size={16} /> :
+          flow.status === "signing" ?
+          (
+            <span className="relative grid place-items-center">
+              <i
+                aria-hidden
+                className="absolute size-5 animate-ping rounded-full bg-white/15 [animation-duration:1.8s] motion-reduce:hidden"
+              />
+              <Icon name="face-id" size={18} />
+            </span>
+          ) :
+          flow.status === "signed" ?
+          <ButtonCheck /> :
+          <Icon name="face-id" size={18} />}
+        <TextMorph>
+          {flow.status === "preparing" ?
+            "Checking the price…" :
+            flow.status === "signing" ?
+            "Waiting for Face ID…" :
+            flow.status === "signed" ?
+            "Signed with Face ID" :
+            `${side === "buy" ? "Buy" : "Sell"} with Face ID`}
+        </TextMorph>
       </Button>
     </section>
   )

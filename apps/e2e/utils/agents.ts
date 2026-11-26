@@ -8,7 +8,7 @@ export interface NewAgent {
   /** The stocks it trades, by symbol and name as the stock buttons read ("NVDA NVIDIA"). */
   readonly stocks?: ReadonlyArray<string>
   readonly name?: string
-  /** "Ask me above": the largest trade it makes without your OK, in dollars. */
+  /** "Ask me above": the largest trade it makes without your approval, in dollars. */
   readonly askAbove?: number
 }
 

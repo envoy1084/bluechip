@@ -5,14 +5,15 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { UsdcLogo } from "@bluechip/ui/logos/usdc"
 import { useId } from "react"
-import { cleanAmount } from "../../../lib/amounts.ts"
+import { cleanAmount } from "../../lib/amounts.ts"
 
 /** What a trade's amount is typed in: dollars (USDC) or shares of the stock. */
 export type AmountUnit = "usd" | "shares"
 
 /**
  * The trade's amount, with its unit as a pill: press it to switch between dollars (USDC) and the stock's shares.
- * Quick amounts and Max fill the field in the current unit.
+ * Quick amounts and Max fill the field in the current unit. Without `onUnitChange` the unit is fixed and the pill only
+ * says it.
  */
 export function AmountInput(
   { label, available, unit, symbol, text, hint, invalid, quickAmounts, onMax, onTextChange, onUnitChange }: Readonly<{
@@ -26,7 +27,7 @@ export function AmountInput(
     quickAmounts: ReadonlyArray<number>
     onMax?: (() => void) | undefined
     onTextChange: (text: string) => void
-    onUnitChange: (unit: AmountUnit) => void
+    onUnitChange?: ((unit: AmountUnit) => void) | undefined
   }>
 ) {
   const id = useId()
@@ -52,28 +53,42 @@ export function AmountInput(
           autoComplete="off"
           placeholder="0"
           aria-invalid={invalid}
-          aria-describedby={`${id}-hint`}
+          aria-describedby={hint === null ? undefined : `${id}-hint`}
           onChange={(event) => onTextChange(cleanAmount(event.currentTarget.value, unit === "usd" ? 2 : 8))}
           className="text-[18px] font-semibold tracking-[-0.02em] tabular-nums placeholder:text-g-300"
         />
         {onMax !== undefined && <Button variant="secondary" size="sm" onClick={onMax}>Max</Button>}
-        <button
-          type="button"
-          onClick={() => onUnitChange(nextUnit)}
-          aria-label={`Amount in ${unit === "usd" ? "USDC" : `${symbol} shares`}. Switch to ${
-            nextUnit === "usd" ? "USDC" : "shares"
-          }`}
-          className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[9px] bg-white pr-2 pl-1.5 text-[13.5px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-g-200)] transition-colors duration-fast ease-brand hover:bg-g-50 focus-visible:shadow-[0_0_0_2px_var(--color-blue)] focus-visible:outline-none"
-        >
-          {unit === "usd" ?
-            (
-              <>
-                <UsdcLogo size={20} />USDC
-              </>
-            ) :
-            <TickerChip symbol={symbol} size="sm" />}
-          <Icon name="sort" size={14} className="text-g-400" />
-        </button>
+        {onUnitChange === undefined ?
+          (
+            <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[9px] bg-white px-2 text-[13.5px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-g-200)]">
+              {unit === "usd" ?
+                (
+                  <>
+                    <UsdcLogo size={20} />USDC
+                  </>
+                ) :
+                <TickerChip symbol={symbol} size="sm" />}
+            </span>
+          ) :
+          (
+            <button
+              type="button"
+              onClick={() => onUnitChange(nextUnit)}
+              aria-label={`Amount in ${unit === "usd" ? "USDC" : `${symbol} shares`}. Switch to ${
+                nextUnit === "usd" ? "USDC" : "shares"
+              }`}
+              className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[9px] bg-white pr-2 pl-1.5 text-[13.5px] font-semibold text-ink shadow-[inset_0_0_0_1px_var(--color-g-200)] transition-colors duration-fast ease-brand hover:bg-g-50 focus-visible:shadow-[0_0_0_2px_var(--color-blue)] focus-visible:outline-none"
+            >
+              {unit === "usd" ?
+                (
+                  <>
+                    <UsdcLogo size={20} />USDC
+                  </>
+                ) :
+                <TickerChip symbol={symbol} size="sm" />}
+              <Icon name="sort" size={14} className="text-g-400" />
+            </button>
+          )}
       </InputGroup>
 
       {unit === "usd" && quickAmounts.length > 0 && (
@@ -91,13 +106,15 @@ export function AmountInput(
         </fieldset>
       )}
 
-      <p
-        id={`${id}-hint`}
-        aria-live="polite"
-        className={cn("min-h-[1.4em] text-caption", invalid ? "text-loss" : "text-g-500")}
-      >
-        {hint}
-      </p>
+      {hint === null ? null : (
+        <p
+          id={`${id}-hint`}
+          aria-live="polite"
+          className={cn("min-h-[1.4em] text-caption", invalid ? "text-loss" : "text-g-500")}
+        >
+          {hint}
+        </p>
+      )}
     </div>
   )
 }

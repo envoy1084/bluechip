@@ -60,7 +60,7 @@ describe("ApprovalCard", () => {
     const screen = await render(
       <ApprovalCard agentName="Tech picker" order={BUY} onApprove={approves} onDecline={declines} />
     )
-    await expect.element(screen.getByText("It's over your ask-me amount, so it needs your OK.")).toBeVisible()
+    await expect.element(screen.getByText("It's over your ask-me amount, so it needs your approval.")).toBeVisible()
   })
 
   it("says the reason it's given", async () => {

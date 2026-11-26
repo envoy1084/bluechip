@@ -2,18 +2,25 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { type Intent, IntentRequest } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
-import { Shares, Usdc } from "@bluechip/domain/market/Units"
+import { Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
+import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
-import { InputGroup, InputGroupInput, InputGroupText } from "@bluechip/ui/components/input-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
 import { Spinner } from "@bluechip/ui/components/spinner"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
-import { useAtomSet } from "@effect/atom-react/Hooks"
-import { useId, useState } from "react"
-import { cleanAmount, parseShares, parseUsdc } from "../../../../lib/amounts.ts"
+import { cn } from "@bluechip/ui/lib/cn"
+import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
+import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { useState } from "react"
+import { stocksAtom } from "../../../../atoms/market.ts"
+import { portfolioAtom } from "../../../../atoms/portfolio.ts"
+import { AmountInput, type AmountUnit } from "../../../../components/fields/AmountInput.tsx"
+import { QuoteSummary, QuoteSummarySkeleton } from "../../../../components/trading/QuoteSummary.tsx"
+import { useQuote } from "../../../../hooks/useQuote.ts"
+import { parseShares, parseUsdc, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
 import { createIntentAtom } from "../../atoms/intents.ts"
 import { useIntentPreview } from "../../hooks/useIntentPreview.ts"
 import { intentProblem } from "../../model/intentText.ts"
@@ -45,14 +52,42 @@ export function TradeWithAgent(
   const stocks = configOf(agent.spec.policies, trade)?.stocks ?? []
   const sides = sidesOf(agent)
   const create = useAtomSet(createIntentAtom, { mode: "promise" })
-  const amountId = useId()
   const [symbol, setSymbol] = useState<StockSymbol | null>(stocks[0] ?? null)
   const [side, setSide] = useState<Side>(sides[0] ?? "buy")
   const [text, setText] = useState("")
+  const [unit, setUnit] = useState<AmountUnit>(side === "buy" ? "usd" : "shares")
   const [asking, setAsking] = useState<Asking>({ status: "idle" })
+  const allStocks = useAtomValue(stocksAtom)
+  const stock = AsyncResult.isSuccess(allStocks) ? allStocks.value.find((each) => each.symbol === symbol) : undefined
+  const price = stock?.price?.price ?? stock?.reference?.price ?? null
 
-  const amount = side === "buy" ? parseUsdc(text) : parseShares(text)
+  const portfolio = useAtomValue(portfolioAtom)
+  const cash = AsyncResult.isSuccess(portfolio) ? portfolio.value.cash : BigInt(0)
+  const held = AsyncResult.isSuccess(portfolio) && symbol !== null ?
+    portfolio.value.holdings.find((holding) => holding.symbol === symbol)?.shares ?? BigInt(0) :
+    BigInt(0)
+  // What the trade moves in its own unit: USDC spent for a buy, shares sold for a sell, converted at today's price
+  // when typed in the other unit.
+  const typed = unit === "usd" ? parseUsdc(text) : parseShares(text)
+  const amount = typed === null ?
+    null :
+    side === "buy" ?
+    (unit === "usd" ? typed : price === null ? null : valueOf(Shares.make(typed), price)) :
+    (unit === "shares" ? typed : price === null ? null : sharesFor(Usdc.make(typed), price))
   const preview = useIntentPreview(agent.id, symbol, side, amount)
+  const quote = useQuote(symbol ?? ("" as StockSymbol), side, symbol === null ? null : amount as Usdc | Shares | null)
+
+  const switchUnit = (next: AmountUnit) => {
+    // Keep the same amount, said in the other unit.
+    if (typed !== null && price !== null) {
+      setText(
+        next === "shares" ?
+          String(shareCount(sharesFor(Usdc.make(typed), price))) :
+          usdcDollars(valueOf(Shares.make(typed), price)).toFixed(2)
+      )
+    }
+    setUnit(next)
+  }
 
   const ask = async () => {
     if (symbol === null || amount === null) return
@@ -92,61 +127,80 @@ export function TradeWithAgent(
           ) :
           (
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                {sides.length > 1 ?
-                  (
-                    <Tabs
-                      variant="segmented"
-                      value={side}
-                      onValueChange={(value) => {
-                        setSide(value as Side)
-                        setText("")
-                      }}
+              {sides.length > 1 ?
+                (
+                  <Tabs
+                    variant="segmented"
+                    value={side}
+                    onValueChange={(value) => {
+                      setSide(value as Side)
+                      setUnit(value === "buy" ? "usd" : "shares")
+                      setText("")
+                    }}
+                    className="justify-self-start"
+                  >
+                    <TabsList
+                      aria-label="Buy or sell"
+                      className="[&_[role=tab]]:h-[26px] [&_[role=tab]]:px-2.5 [&_[role=tab]]:text-label-sm"
                     >
-                      <TabsList
-                        aria-label="Buy or sell"
-                        className="[&_[role=tab]]:h-[26px] [&_[role=tab]]:px-2.5 [&_[role=tab]]:text-label-sm"
-                      >
-                        <TabsTab value="buy">Buy</TabsTab>
-                        <TabsTab value="sell">Sell</TabsTab>
-                      </TabsList>
-                    </Tabs>
-                  ) :
-                  <span className="text-label-sm font-semibold">{side === "buy" ? "Buy" : "Sell"}</span>}
-                <Select
-                  items={stocks.map((stock) => ({ value: stock, label: nameOf(stock) }))}
-                  value={symbol}
-                  onValueChange={(value) => value !== null && setSymbol(value as StockSymbol)}
-                >
-                  <SelectTrigger size="sm" aria-label="Stock" className="min-w-[150px] flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stocks.map((stock) => <SelectItem key={stock} value={stock}>{nameOf(stock)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+                      <TabsTab value="buy">Buy</TabsTab>
+                      <TabsTab value="sell">Sell</TabsTab>
+                    </TabsList>
+                  </Tabs>
+                ) :
+                null}
 
-              <div className="grid gap-1.5">
-                <label htmlFor={amountId} className="text-[13.5px] font-semibold">
-                  {side === "buy" ? "How much to spend" : "How many shares to sell"}
-                </label>
-                <InputGroup>
-                  {side === "buy" ? <InputGroupText>$</InputGroupText> : null}
-                  <InputGroupInput
-                    id={amountId}
-                    value={text}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder="0"
-                    onChange={(event) => setText(cleanAmount(event.currentTarget.value, side === "buy" ? 2 : 8))}
-                    className="tabular-nums"
-                  />
-                  {side === "sell" ? <InputGroupText>shares</InputGroupText> : null}
-                </InputGroup>
-              </div>
+              <fieldset className="grid gap-1.5">
+                <legend className="mb-1.5 text-[13.5px] font-semibold">Stock</legend>
+                <div className="flex flex-wrap gap-1.5">
+                  {stocks.map((stock) => (
+                    <button
+                      key={stock}
+                      type="button"
+                      aria-pressed={symbol === stock}
+                      onClick={() => setSymbol(stock)}
+                      className={cn(
+                        "inline-flex cursor-pointer items-center gap-2 rounded-[10px] py-1 pr-3 pl-1 text-[13.5px] font-medium shadow-[inset_0_0_0_1px_var(--color-g-200)] transition-[background,box-shadow] duration-fast ease-brand hover:bg-g-50",
+                        symbol === stock && "bg-blue-50 shadow-[inset_0_0_0_1.5px_var(--color-blue)] hover:bg-blue-50"
+                      )}
+                    >
+                      <TickerChip symbol={stock} size="sm" />
+                      {nameOf(stock)}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
 
-              <div aria-live="polite" className="min-h-[1.4em]">
+              <AmountInput
+                label={side === "buy"
+                  ? `Buy ${symbol === null ? "" : nameOf(symbol)}`
+                  : `Sell ${symbol === null ? "" : nameOf(symbol)}`}
+                available={side === "buy" ?
+                  `${formatMoney(usdcDollars(cash))} cash available` :
+                  `${formatShareCount(shareCount(held))}`}
+                unit={unit}
+                symbol={symbol ?? ""}
+                text={text}
+                hint={null}
+                invalid={false}
+                quickAmounts={side === "buy" ? [50, 100, 150] : []}
+                onTextChange={setText}
+                onUnitChange={switchUnit}
+                onMax={(side === "buy" ? cash : held) === BigInt(0) || price === null ? undefined : () => {
+                  // All the cash for a buy, every share for a sell, in the unit shown.
+                  if (price === null) return
+                  const all = side === "buy" ? cash : held
+                  const inUsd = side === "buy" ? all : valueOf(Shares.make(all), price)
+                  const inShares = side === "sell" ? all : sharesFor(Usdc.make(all), price)
+                  setText(unit === "usd" ? String(usdcDollars(inUsd)) : String(shareCount(inShares)))
+                }}
+              />
+
+              {stock !== undefined && quote.status === "loading" && <QuoteSummarySkeleton stock={stock} side={side} />}
+              {stock !== undefined && quote.status === "ready" && <QuoteSummary stock={stock} quote={quote.quote} />}
+              {quote.status === "failed" && <p className="text-label-sm text-loss">{quote.message}</p>}
+
+              <div aria-live="polite" className="empty:hidden">
                 {preview.status === "loading" ?
                   (
                     <p className="flex items-center gap-2 text-label-sm text-g-500">
@@ -156,13 +210,6 @@ export function TradeWithAgent(
                   null}
                 {preview.status === "ready" ? <DecisionLine decision={preview.decision} /> : null}
                 {preview.status === "failed" ? <p className="text-label-sm text-loss">{preview.message}</p> : null}
-                {preview.status === "idle" ?
-                  (
-                    <p className="text-label-sm text-g-500">
-                      Enter an amount to see what {agent.name}'s policies would do with it.
-                    </p>
-                  ) :
-                  null}
               </div>
 
               {asking.status === "failed" ?
@@ -174,6 +221,7 @@ export function TradeWithAgent(
                 null}
 
               <Button
+                size="lg"
                 disabled={symbol === null || amount === null}
                 loading={asking.status === "asking"}
                 onClick={() => void ask()}

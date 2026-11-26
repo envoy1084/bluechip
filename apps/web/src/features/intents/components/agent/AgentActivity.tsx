@@ -11,6 +11,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 import { nothingMoved } from "../../../../lib/tradeOutcome.ts"
 import { agentIntentsAtom } from "../../atoms/intents.ts"
 import { useLatestIntent } from "../../hooks/useLatestIntent.ts"
@@ -101,9 +102,9 @@ function IntentPage(
   const { items, nextPageToken } = page.value
   if (pageToken === "" && items.length === 0) {
     return (
-      <p className="p-[18px] text-body-sm text-g-600">
-        No trades yet. What {agent.name} is asked to do, and what its policies decide, shows up here.
-      </p>
+      <IllustratedEmpty illustration="certificate" title="No trades yet">
+        What {agent.name} is asked to do, and what its policies decide, shows up here.
+      </IllustratedEmpty>
     )
   }
 

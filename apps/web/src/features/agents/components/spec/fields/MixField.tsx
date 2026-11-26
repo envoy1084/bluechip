@@ -19,6 +19,12 @@ export function MixField(
     onChange: (targets: ReadonlyArray<Target>) => void
   }>
 ) {
+  // The editor already marks a stock over the cap, cash under the reserve and a mix that doesn't add up, on the rows.
+  const cap = targets.some((target) => target.asset !== "USDC" && target.weight > capBps)
+  const cash = (targets.find((target) => target.asset === "USDC")?.weight ?? 0) < reserveBps
+  const sum = targets.reduce((total, target) => total + target.weight, 0) !== 10_000
+  const shownOnRows = stocks.length > 0 && (cap || cash || sum)
+
   return (
     <div className="grid gap-1.5">
       <span className="text-[13.5px] font-medium text-g-700">{label}</span>
@@ -34,7 +40,9 @@ export function MixField(
             className="max-w-none px-0 py-0 shadow-none"
           />
         )}
-      {problem === undefined ? null : <p className="text-label-sm font-medium text-loss">{problem}</p>}
+      {problem === undefined || shownOnRows ?
+        null :
+        <p className="text-label-sm font-medium text-loss">{problem}</p>}
     </div>
   )
 }

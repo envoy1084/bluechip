@@ -19,7 +19,6 @@ export function NotificationSettingsScreen() {
   return (
     <AppPage
       title="Notifications"
-      sub="What bluechip tells you, and where"
       actions={
         <ButtonLink variant="ghost" size="sm" render={<Link to="/settings" />}>
           <Icon name="arrow-left" size={14} />Settings

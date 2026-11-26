@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from "class-variance-authority"
 import { type ComponentProps, useEffect, useRef } from "react"
+import { Illustration } from "../illustrations/illustration.tsx"
 import { paintButterfly } from "../lib/butterfly.ts"
 import { cn } from "../lib/cn.ts"
 
@@ -73,6 +74,29 @@ export function AgentAvatar({ agentId, size, status, removed = false, label, cla
           className={cn("absolute rounded-full", DOT_SIZE[size ?? "md"], STATUS_DOT[status])}
         />
       )}
+    </span>
+  )
+}
+
+const ACCOUNT_ART: Readonly<Record<"sm" | "md" | "lg" | "xl", number>> = { sm: 18, md: 24, lg: 30, xl: 50 }
+
+/**
+ * Your own account on the same raised tile as an agent's butterfly, drawn with the pixel wallet, so a list of who
+ * trades (you, then your agents) reads as one set.
+ */
+export function AccountAvatar(
+  { size = "md", label = "My account", className, ...props }: Omit<ComponentProps<"span">, "children"> & {
+    readonly size?: "sm" | "md" | "lg" | "xl"
+    readonly label?: string
+  }
+) {
+  return (
+    <span
+      data-slot="account-avatar"
+      className={cn(agentAvatarVariants({ size }), className)}
+      {...props}
+    >
+      <Illustration name="wallet" size={ACCOUNT_ART[size]} label={label} />
     </span>
   )
 }

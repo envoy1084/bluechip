@@ -1,1 +1,39 @@
 @import "@bluechip/ui/styles.css";
+
+/*
+ * Page transitions: the router wraps each change of page in a view transition (router.tsx). Only the page's content
+ * (`view-transition-name: page`) moves: the old one fades out as the new one fades in and rises 6px. The rest, the
+ * sidebar, the onboarding header and the top bar (`page-bar`, named so content scrolled under it stays under it),
+ * changes at once. The group doesn't morph between the two pages' sizes or scroll positions.
+ */
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-group(page),
+::view-transition-group(page-bar),
+::view-transition-old(page-bar),
+::view-transition-new(page-bar) {
+  animation: none;
+}
+
+::view-transition-old(page) {
+  animation: 120ms cubic-bezier(.2, 0, 0, 1) both page-out;
+}
+
+::view-transition-new(page) {
+  animation: 200ms cubic-bezier(.2, 0, 0, 1) both page-in;
+}
+
+@keyframes page-out {
+  to { opacity: 0 }
+}
+
+@keyframes page-in {
+  from { opacity: 0; translate: 0 6px }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(page),
+  ::view-transition-new(page) {
+    animation: none;
+  }
+}

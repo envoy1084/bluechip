@@ -30,7 +30,7 @@ export type ApprovalProgress = "approved" | "sending" | "confirming"
 export interface ApprovalCardProps {
   readonly agentName: string
   readonly order: TradeOrder
-  /** Why it needs you. Defaults to "This trade is over your ask-me amount, so it needs your OK." */
+  /** Why it needs you. Defaults to "This trade is over your ask-me amount, so it needs your approval." */
   readonly reason?: ReactNode
   /**
    * Asks for Face ID, then sends the trade. Call `progress("approved")` once Face ID passes, then `"sending"` and
@@ -110,7 +110,7 @@ export function ApprovalCard(
     "Nothing was sold. Your shares are where they were."
   const what = `${formatMoney(order.amount)} of ${order.name}`
   const deciding = state === "pending" || state === "approving" || state === "declining"
-  const ask = reason ?? "It's over your ask-me amount, so it needs your OK."
+  const ask = reason ?? "It's over your ask-me amount, so it needs your approval."
 
   if (deciding) {
     return (

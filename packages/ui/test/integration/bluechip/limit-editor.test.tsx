@@ -232,7 +232,7 @@ describe("LimitEditor", () => {
   it("says every trade waits for you when the ask-me amount is 0", async () => {
     const screen = await render(<LimitEditor locked={LOCKED} />)
     await userEvent.fill(screen.getByRole("textbox", { name: "Ask me above" }), "0")
-    await expect.element(screen.getByText("Every trade waits for your OK.")).toBeVisible()
+    await expect.element(screen.getByText("Every trade waits for your approval.")).toBeVisible()
   })
 
   it("fills every field from a preset", async () => {

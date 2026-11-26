@@ -29,7 +29,7 @@ export function StepFoot({ children, className }: Readonly<{ children: ReactNode
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-2.5 border-t border-ink/7 pt-4",
+        "flex flex-wrap items-center justify-between gap-2.5 pt-2",
         className
       )}
     >

@@ -111,7 +111,9 @@ export function SidebarProvider(
     () => (storageKey === undefined ? undefined : readStored(storageKey)),
     () => undefined
   )
-  const open = openProp ?? stored ?? openState
+  // A remembered sidebar with nothing stored yet under its key starts as `defaultOpen`, so a page can keep a
+  // preference of its own (the chat page folds the app's sidebar) by switching keys.
+  const open = openProp ?? stored ?? (storageKey === undefined ? openState : defaultOpen)
 
   const setOpen = useCallback((next: boolean) => {
     setOpenState(next)
@@ -271,6 +273,8 @@ export function SidebarGroupLabel({ className, ...props }: ComponentProps<"div">
       data-slot="sidebar-group-label"
       className={cn(
         "h-[18px] px-2.5 pb-1 text-caption-sm font-semibold whitespace-nowrap text-g-400",
+        // Folded to icons, the label gives back its height too, so the groups sit close.
+        "transition-[height,padding] group-data-[collapsible=icon]/sidebar-panel:h-0 group-data-[collapsible=icon]/sidebar-panel:pb-0",
         collapsedHiddenClassName,
         className
       )}

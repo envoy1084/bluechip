@@ -4,7 +4,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 
-const STEPS = ["Account", "Eligibility", "Cash"] as const
+const STEPS = ["Account", "Eligibility", "Deposit"] as const
 
 /** Where the person is in setup; without a step the header links home instead of showing progress. */
 export type OnboardingStep = (typeof STEPS)[number]
@@ -50,7 +50,7 @@ export function OnboardingFrame(
           </ol>
         )}
       </header>
-      <main className="grid flex-1 content-start justify-items-center px-5 pt-6 pb-10 sm:pt-10">
+      <main className="grid flex-1 content-start justify-items-center px-5 pt-6 pb-10 [view-transition-name:page] sm:pt-10">
         <div
           className={cn(
             "grid w-full justify-items-center gap-3.5 text-center",

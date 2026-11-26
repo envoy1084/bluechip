@@ -21,8 +21,17 @@ export function TargetMixBar({ targets }: Readonly<{ targets: ReadonlyArray<Targ
         <i className="block min-w-0" style={{ flexGrow: cash, background: "var(--color-series-cash)" }} />
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-        {[...stocks, { asset: CASH_SYMBOL, weight: cash }].map((target) => (
+        {[...stocks, { asset: CASH_SYMBOL, weight: cash }].map((target, index) => (
           <span key={target.asset} className="inline-flex items-center gap-1.5 text-[13.5px]">
+            <i
+              aria-hidden
+              className="size-2.5 rounded-full"
+              style={{
+                background: index < stocks.length
+                  ? `var(--color-series-${(index % 8) + 1})`
+                  : "var(--color-series-cash)"
+              }}
+            />
             <TickerChip symbol={target.asset} size="sm" />
             <b className="font-semibold tabular-nums">{formatPercent(target.weight)}</b>
           </span>

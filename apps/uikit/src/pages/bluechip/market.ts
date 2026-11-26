@@ -124,7 +124,7 @@ export const FIRST_ACTIVITY: ReadonlyArray<Activity> = [
     id: 1,
     kind: "approval",
     agentId: "picker",
-    title: "Tech picker needs your OK",
+    title: "Tech picker needs your approval",
     body: "Buy $600 of Nvidia. It's over your $300 ask-me amount.",
     time: "Just now",
     go: "approval"

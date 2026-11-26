@@ -6,6 +6,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { automationsAtom } from "../atoms/automations.ts"
 import { takesAutomations } from "../model/traders.ts"
 import { AutomationCard } from "./AutomationCard.tsx"
@@ -41,11 +42,21 @@ export function AgentAutomations({ agent }: Readonly<{ agent: Agent }>) {
         </div>
       )}
       {AsyncResult.isSuccess(automations) && automations.value.length === 0 && (
-        <p className="rounded-lg bg-white p-[18px] text-label text-g-600 shadow-e2">
+        <IllustratedEmpty
+          illustration="bolt"
+          title="No automations yet"
+          action={open ?
+            (
+              <ButtonLink render={<Link to="/automations/new" search={{ agent: agent.id }} />}>
+                <Icon name="plus" size={16} />New automation
+              </ButtonLink>
+            ) :
+            undefined}
+        >
           {open ?
-            "None yet. An automation has it trade on a schedule, a price move or the news, inside its rules." :
-            "None. It can take automations once it runs."}
-        </p>
+            "Have it trade on a schedule, a price move or the news, always inside its rules." :
+            "It can take automations once it runs."}
+        </IllustratedEmpty>
       )}
       {AsyncResult.isSuccess(automations) && automations.value.length > 0 && (
         <div className="grid gap-3">

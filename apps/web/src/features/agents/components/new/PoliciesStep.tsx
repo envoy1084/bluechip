@@ -1,10 +1,10 @@
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
-import { checkSpec, describeSpec } from "@bluechip/domain/policies/Catalog"
+import { checkSpec } from "@bluechip/domain/policies/Catalog"
 import type { TemplateId } from "@bluechip/domain/policies/Templates"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { PolicyRules } from "../spec/PolicyRules.tsx"
+import { AgentAtAGlance } from "../spec/AgentAtAGlance.tsx"
 import { SpecForm } from "../spec/SpecForm.tsx"
 import { StepFoot } from "./NewAgentShell.tsx"
 
@@ -26,11 +26,8 @@ export function PoliciesStep(
     <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       <SpecForm spec={spec} onChange={onChange} stocks={stocks} nameOf={nameOf} template={template} />
 
-      <div className="grid min-w-0 gap-2.5 lg:sticky lg:top-[76px]">
-        <span className="text-caption font-semibold tracking-[.06em] text-g-500 uppercase">
-          What it can and can never do
-        </span>
-        <PolicyRules description={describeSpec(spec, nameOf)} />
+      <div className="min-w-0 lg:sticky lg:top-[76px]">
+        <AgentAtAGlance spec={spec} nameOf={nameOf} />
       </div>
 
       <StepFoot className="lg:col-span-2">

@@ -3,7 +3,6 @@ import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import { Seal } from "@bluechip/ui/motion/seal"
 import { useAtomSet } from "@effect/atom-react/Hooks"
@@ -14,7 +13,7 @@ import { signInAtom, signUpAtom } from "../atoms/auth.ts"
 
 type Phase =
   | { readonly _tag: "Start"; readonly creating: boolean; readonly failed: boolean }
-  | { readonly _tag: "Created"; readonly me: Me; readonly revealed: boolean }
+  | { readonly _tag: "Created"; readonly me: Me }
 
 export function WelcomeScreen() {
   const signUp = useAtomSet(signUpAtom, { mode: "promise" })
@@ -26,7 +25,7 @@ export function WelcomeScreen() {
   const create = () => {
     setPhase({ _tag: "Start", creating: true, failed: false })
     signUp(undefined).then(
-      (me) => setPhase({ _tag: "Created", me, revealed: false }),
+      (me) => setPhase({ _tag: "Created", me }),
       () => setPhase({ _tag: "Start", creating: false, failed: true })
     )
   }
@@ -82,25 +81,13 @@ export function WelcomeScreen() {
 
   return (
     <OnboardingFrame step="Account">
-      <section className="grid w-full justify-items-center gap-1.5 rounded-[30px] bg-white/90 px-6 pt-7 pb-6 shadow-e4">
-        <Seal
-          playing
-          className="mb-1 size-[136px]"
-          label="Passkey saved"
-          onDone={() => setPhase({ ...phase, revealed: true })}
-        />
+      <section className="grid w-full animate-slide-up justify-items-center gap-1.5 rounded-[30px] bg-white/90 px-6 pt-7 pb-6 shadow-e4">
+        <Seal playing className="mb-1 size-[136px]" label="Passkey saved" />
         <h1 className="text-[28px] leading-[1.12] font-semibold tracking-[-0.035em] max-sm:text-2xl">
           Your account is ready
         </h1>
         <p className="text-label-sm text-gain">Passkey saved with Face ID</p>
-        {/* Laid out from the start, so the card keeps its height when this fades in after the seal. */}
-        <div
-          inert={!phase.revealed}
-          className={cn(
-            "mt-4 grid w-full justify-items-center gap-2 border-t border-g-100 pt-5 transition-opacity duration-slow ease-brand",
-            !phase.revealed && "opacity-0"
-          )}
-        >
+        <div className="mt-4 grid w-full justify-items-center gap-2 border-t border-g-100 pt-5">
           <span className="text-label-sm font-medium text-g-500">Your account on Base</span>
           <AddressChip address={phase.me.account.address} />
           <Button size="lg" className="mt-4 w-full" onClick={() => navigate({ to: "/welcome/eligibility" })}>

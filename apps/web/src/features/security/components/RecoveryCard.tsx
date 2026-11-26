@@ -62,6 +62,7 @@ export function RecoveryCard() {
   return (
     <SettingsSection
       title="Recovery"
+      illustration="key"
       description="A recovery key gets you back in if you lose every passkey, 48 hours after it asks."
     >
       {text.cancellable ?

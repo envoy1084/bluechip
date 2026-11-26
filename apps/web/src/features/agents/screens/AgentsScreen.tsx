@@ -1,8 +1,9 @@
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
+import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtom, useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -15,9 +16,9 @@ import { momentText } from "../model/agentMoment.ts"
 
 const PLACEHOLDER_CARDS = ["a", "b", "c"]
 
-function NewAgentButton() {
+function NewAgentButton({ size = "sm" }: Readonly<{ size?: "sm" | "md" }>) {
   return (
-    <ButtonLink size="sm" render={<Link to="/agents/new" />}>
+    <ButtonLink size={size} render={<Link to="/agents/new" />}>
       <Icon name="plus" size={14} />New agent
     </ButtonLink>
   )
@@ -45,15 +46,19 @@ function AgentCards() {
   if (agents.value.length === 0) {
     return (
       <Empty>
-        <EmptyMedia>
-          <Icon name="agents" size={24} />
-        </EmptyMedia>
+        <Illustration name="butterfly" variant="halftone" size={160} animate className="-my-2" />
         <EmptyTitle>No agents yet</EmptyTitle>
         <EmptyDescription>
-          Start one from a template. You set its limits and lock them with Face ID before it can trade.
+          Start one from a template. You set its limits, and it trades only once they're locked.
         </EmptyDescription>
-        <EmptyContent>
-          <NewAgentButton />
+        <EmptyContent className="flex flex-wrap justify-center gap-2">
+          <NewAgentButton size="md" />
+          <ButtonLink
+            variant="secondary"
+            render={<Link to="/chat/{-$conversationId}" params={{ conversationId: undefined }} />}
+          >
+            <Icon name="chat" size={16} />Ask the assistant
+          </ButtonLink>
         </EmptyContent>
       </Empty>
     )

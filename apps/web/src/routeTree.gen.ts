@@ -22,7 +22,7 @@ import { Route as DevConnectionRouteImport } from './routes/dev/connection'
 import { Route as LegalRiskRouteImport } from './routes/legal/risk'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
-import { Route as WelcomeCashRouteImport } from './routes/welcome/cash'
+import { Route as WelcomeDepositRouteImport } from './routes/welcome/deposit'
 import { Route as WelcomeEligibilityRouteImport } from './routes/welcome/eligibility'
 import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/index'
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
@@ -38,6 +38,12 @@ import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/sett
 import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings_.security'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
+import { Route as AppAgentsAgentIdIndexRouteImport } from './routes/_app/agents/$agentId.index'
+import { Route as AppAgentsAgentIdAutomationsRouteImport } from './routes/_app/agents/$agentId.automations'
+import { Route as AppAgentsAgentIdHistoryRouteImport } from './routes/_app/agents/$agentId.history'
+import { Route as AppAgentsAgentIdJournalRouteImport } from './routes/_app/agents/$agentId.journal'
+import { Route as AppAgentsAgentIdResultsRouteImport } from './routes/_app/agents/$agentId.results'
+import { Route as AppAgentsAgentIdUsageRouteImport } from './routes/_app/agents/$agentId.usage'
 import { Route as AppAgentsAgentIdEditRouteImport } from './routes/_app/agents/$agentId_.edit'
 import { Route as AppAutomationsAutomationIdEditRouteImport } from './routes/_app/automations/$automationId_.edit'
 
@@ -105,9 +111,9 @@ const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
   path: '/welcome/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WelcomeCashRoute = WelcomeCashRouteImport.update({
-  id: '/welcome/cash',
-  path: '/welcome/cash',
+const WelcomeDepositRoute = WelcomeDepositRouteImport.update({
+  id: '/welcome/deposit',
+  path: '/welcome/deposit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelcomeEligibilityRoute = WelcomeEligibilityRouteImport.update({
@@ -188,6 +194,37 @@ const AppStocksSymbolRoute = AppStocksSymbolRouteImport.update({
   path: '/stocks/$symbol',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgentsAgentIdIndexRoute = AppAgentsAgentIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAgentsAgentIdRoute,
+} as any)
+const AppAgentsAgentIdAutomationsRoute =
+  AppAgentsAgentIdAutomationsRouteImport.update({
+    id: '/automations',
+    path: '/automations',
+    getParentRoute: () => AppAgentsAgentIdRoute,
+  } as any)
+const AppAgentsAgentIdHistoryRoute = AppAgentsAgentIdHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppAgentsAgentIdRoute,
+} as any)
+const AppAgentsAgentIdJournalRoute = AppAgentsAgentIdJournalRouteImport.update({
+  id: '/journal',
+  path: '/journal',
+  getParentRoute: () => AppAgentsAgentIdRoute,
+} as any)
+const AppAgentsAgentIdResultsRoute = AppAgentsAgentIdResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => AppAgentsAgentIdRoute,
+} as any)
+const AppAgentsAgentIdUsageRoute = AppAgentsAgentIdUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AppAgentsAgentIdRoute,
+} as any)
 const AppAgentsAgentIdEditRoute = AppAgentsAgentIdEditRouteImport.update({
   id: '/agents/$agentId_/edit',
   path: '/agents/$agentId/edit',
@@ -212,10 +249,10 @@ export interface FileRoutesByFullPath {
   '/dev/connection': typeof DevConnectionRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
-  '/welcome/cash': typeof WelcomeCashRoute
+  '/welcome/deposit': typeof WelcomeDepositRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
-  '/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdRouteWithChildren
   '/agents/new': typeof AppAgentsNewRoute
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/automations/new': typeof AppAutomationsNewRoute
@@ -229,8 +266,14 @@ export interface FileRoutesByFullPath {
   '/automations/': typeof AppAutomationsIndexRoute
   '/portfolio/': typeof AppPortfolioIndexRoute
   '/stocks/': typeof AppStocksIndexRoute
+  '/agents/$agentId/automations': typeof AppAgentsAgentIdAutomationsRoute
+  '/agents/$agentId/history': typeof AppAgentsAgentIdHistoryRoute
+  '/agents/$agentId/journal': typeof AppAgentsAgentIdJournalRoute
+  '/agents/$agentId/results': typeof AppAgentsAgentIdResultsRoute
+  '/agents/$agentId/usage': typeof AppAgentsAgentIdUsageRoute
   '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
   '/automations/$automationId/edit': typeof AppAutomationsAutomationIdEditRoute
+  '/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -244,10 +287,9 @@ export interface FileRoutesByTo {
   '/dev/connection': typeof DevConnectionRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
-  '/welcome/cash': typeof WelcomeCashRoute
+  '/welcome/deposit': typeof WelcomeDepositRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome': typeof WelcomeIndexRoute
-  '/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/agents/new': typeof AppAgentsNewRoute
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/automations/new': typeof AppAutomationsNewRoute
@@ -261,8 +303,14 @@ export interface FileRoutesByTo {
   '/automations': typeof AppAutomationsIndexRoute
   '/portfolio': typeof AppPortfolioIndexRoute
   '/stocks': typeof AppStocksIndexRoute
+  '/agents/$agentId/automations': typeof AppAgentsAgentIdAutomationsRoute
+  '/agents/$agentId/history': typeof AppAgentsAgentIdHistoryRoute
+  '/agents/$agentId/journal': typeof AppAgentsAgentIdJournalRoute
+  '/agents/$agentId/results': typeof AppAgentsAgentIdResultsRoute
+  '/agents/$agentId/usage': typeof AppAgentsAgentIdUsageRoute
   '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
   '/automations/$automationId/edit': typeof AppAutomationsAutomationIdEditRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -278,10 +326,10 @@ export interface FileRoutesById {
   '/dev/connection': typeof DevConnectionRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
-  '/welcome/cash': typeof WelcomeCashRoute
+  '/welcome/deposit': typeof WelcomeDepositRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
   '/welcome/': typeof WelcomeIndexRoute
-  '/_app/agents/$agentId': typeof AppAgentsAgentIdRoute
+  '/_app/agents/$agentId': typeof AppAgentsAgentIdRouteWithChildren
   '/_app/agents/new': typeof AppAgentsNewRoute
   '/_app/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/_app/automations/new': typeof AppAutomationsNewRoute
@@ -295,8 +343,14 @@ export interface FileRoutesById {
   '/_app/automations/': typeof AppAutomationsIndexRoute
   '/_app/portfolio/': typeof AppPortfolioIndexRoute
   '/_app/stocks/': typeof AppStocksIndexRoute
+  '/_app/agents/$agentId/automations': typeof AppAgentsAgentIdAutomationsRoute
+  '/_app/agents/$agentId/history': typeof AppAgentsAgentIdHistoryRoute
+  '/_app/agents/$agentId/journal': typeof AppAgentsAgentIdJournalRoute
+  '/_app/agents/$agentId/results': typeof AppAgentsAgentIdResultsRoute
+  '/_app/agents/$agentId/usage': typeof AppAgentsAgentIdUsageRoute
   '/_app/agents/$agentId_/edit': typeof AppAgentsAgentIdEditRoute
   '/_app/automations/$automationId_/edit': typeof AppAutomationsAutomationIdEditRoute
+  '/_app/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -312,7 +366,7 @@ export interface FileRouteTypes {
     | '/dev/connection'
     | '/legal/risk'
     | '/legal/terms'
-    | '/welcome/cash'
+    | '/welcome/deposit'
     | '/welcome/eligibility'
     | '/welcome/'
     | '/agents/$agentId'
@@ -329,8 +383,14 @@ export interface FileRouteTypes {
     | '/automations/'
     | '/portfolio/'
     | '/stocks/'
+    | '/agents/$agentId/automations'
+    | '/agents/$agentId/history'
+    | '/agents/$agentId/journal'
+    | '/agents/$agentId/results'
+    | '/agents/$agentId/usage'
     | '/agents/$agentId/edit'
     | '/automations/$automationId/edit'
+    | '/agents/$agentId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -344,10 +404,9 @@ export interface FileRouteTypes {
     | '/dev/connection'
     | '/legal/risk'
     | '/legal/terms'
-    | '/welcome/cash'
+    | '/welcome/deposit'
     | '/welcome/eligibility'
     | '/welcome'
-    | '/agents/$agentId'
     | '/agents/new'
     | '/automations/$automationId'
     | '/automations/new'
@@ -361,8 +420,14 @@ export interface FileRouteTypes {
     | '/automations'
     | '/portfolio'
     | '/stocks'
+    | '/agents/$agentId/automations'
+    | '/agents/$agentId/history'
+    | '/agents/$agentId/journal'
+    | '/agents/$agentId/results'
+    | '/agents/$agentId/usage'
     | '/agents/$agentId/edit'
     | '/automations/$automationId/edit'
+    | '/agents/$agentId'
   id:
     | '__root__'
     | '/'
@@ -377,7 +442,7 @@ export interface FileRouteTypes {
     | '/dev/connection'
     | '/legal/risk'
     | '/legal/terms'
-    | '/welcome/cash'
+    | '/welcome/deposit'
     | '/welcome/eligibility'
     | '/welcome/'
     | '/_app/agents/$agentId'
@@ -394,8 +459,14 @@ export interface FileRouteTypes {
     | '/_app/automations/'
     | '/_app/portfolio/'
     | '/_app/stocks/'
+    | '/_app/agents/$agentId/automations'
+    | '/_app/agents/$agentId/history'
+    | '/_app/agents/$agentId/journal'
+    | '/_app/agents/$agentId/results'
+    | '/_app/agents/$agentId/usage'
     | '/_app/agents/$agentId_/edit'
     | '/_app/automations/$automationId_/edit'
+    | '/_app/agents/$agentId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -407,7 +478,7 @@ export interface RootRouteChildren {
   DevConnectionRoute: typeof DevConnectionRoute
   LegalRiskRoute: typeof LegalRiskRoute
   LegalTermsRoute: typeof LegalTermsRoute
-  WelcomeCashRoute: typeof WelcomeCashRoute
+  WelcomeDepositRoute: typeof WelcomeDepositRoute
   WelcomeEligibilityRoute: typeof WelcomeEligibilityRoute
   WelcomeIndexRoute: typeof WelcomeIndexRoute
 }
@@ -505,11 +576,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/welcome/cash': {
-      id: '/welcome/cash'
-      path: '/welcome/cash'
-      fullPath: '/welcome/cash'
-      preLoaderRoute: typeof WelcomeCashRouteImport
+    '/welcome/deposit': {
+      id: '/welcome/deposit'
+      path: '/welcome/deposit'
+      fullPath: '/welcome/deposit'
+      preLoaderRoute: typeof WelcomeDepositRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welcome/eligibility': {
@@ -617,6 +688,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStocksSymbolRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agents/$agentId/': {
+      id: '/_app/agents/$agentId/'
+      path: '/'
+      fullPath: '/agents/$agentId/'
+      preLoaderRoute: typeof AppAgentsAgentIdIndexRouteImport
+      parentRoute: typeof AppAgentsAgentIdRoute
+    }
+    '/_app/agents/$agentId/automations': {
+      id: '/_app/agents/$agentId/automations'
+      path: '/automations'
+      fullPath: '/agents/$agentId/automations'
+      preLoaderRoute: typeof AppAgentsAgentIdAutomationsRouteImport
+      parentRoute: typeof AppAgentsAgentIdRoute
+    }
+    '/_app/agents/$agentId/history': {
+      id: '/_app/agents/$agentId/history'
+      path: '/history'
+      fullPath: '/agents/$agentId/history'
+      preLoaderRoute: typeof AppAgentsAgentIdHistoryRouteImport
+      parentRoute: typeof AppAgentsAgentIdRoute
+    }
+    '/_app/agents/$agentId/journal': {
+      id: '/_app/agents/$agentId/journal'
+      path: '/journal'
+      fullPath: '/agents/$agentId/journal'
+      preLoaderRoute: typeof AppAgentsAgentIdJournalRouteImport
+      parentRoute: typeof AppAgentsAgentIdRoute
+    }
+    '/_app/agents/$agentId/results': {
+      id: '/_app/agents/$agentId/results'
+      path: '/results'
+      fullPath: '/agents/$agentId/results'
+      preLoaderRoute: typeof AppAgentsAgentIdResultsRouteImport
+      parentRoute: typeof AppAgentsAgentIdRoute
+    }
+    '/_app/agents/$agentId/usage': {
+      id: '/_app/agents/$agentId/usage'
+      path: '/usage'
+      fullPath: '/agents/$agentId/usage'
+      preLoaderRoute: typeof AppAgentsAgentIdUsageRouteImport
+      parentRoute: typeof AppAgentsAgentIdRoute
+    }
     '/_app/agents/$agentId_/edit': {
       id: '/_app/agents/$agentId_/edit'
       path: '/agents/$agentId/edit'
@@ -634,12 +747,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppAgentsAgentIdRouteChildren {
+  AppAgentsAgentIdAutomationsRoute: typeof AppAgentsAgentIdAutomationsRoute
+  AppAgentsAgentIdHistoryRoute: typeof AppAgentsAgentIdHistoryRoute
+  AppAgentsAgentIdJournalRoute: typeof AppAgentsAgentIdJournalRoute
+  AppAgentsAgentIdResultsRoute: typeof AppAgentsAgentIdResultsRoute
+  AppAgentsAgentIdUsageRoute: typeof AppAgentsAgentIdUsageRoute
+  AppAgentsAgentIdIndexRoute: typeof AppAgentsAgentIdIndexRoute
+}
+
+const AppAgentsAgentIdRouteChildren: AppAgentsAgentIdRouteChildren = {
+  AppAgentsAgentIdAutomationsRoute: AppAgentsAgentIdAutomationsRoute,
+  AppAgentsAgentIdHistoryRoute: AppAgentsAgentIdHistoryRoute,
+  AppAgentsAgentIdJournalRoute: AppAgentsAgentIdJournalRoute,
+  AppAgentsAgentIdResultsRoute: AppAgentsAgentIdResultsRoute,
+  AppAgentsAgentIdUsageRoute: AppAgentsAgentIdUsageRoute,
+  AppAgentsAgentIdIndexRoute: AppAgentsAgentIdIndexRoute,
+}
+
+const AppAgentsAgentIdRouteWithChildren =
+  AppAgentsAgentIdRoute._addFileChildren(AppAgentsAgentIdRouteChildren)
+
 interface AppRouteChildren {
   AppApprovalsRoute: typeof AppApprovalsRoute
   AppHomeRoute: typeof AppHomeRoute
   AppMemoryRoute: typeof AppMemoryRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
+  AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRouteWithChildren
   AppAgentsNewRoute: typeof AppAgentsNewRoute
   AppAutomationsAutomationIdRoute: typeof AppAutomationsAutomationIdRoute
   AppAutomationsNewRoute: typeof AppAutomationsNewRoute
@@ -662,7 +796,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppHomeRoute: AppHomeRoute,
   AppMemoryRoute: AppMemoryRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
+  AppAgentsAgentIdRoute: AppAgentsAgentIdRouteWithChildren,
   AppAgentsNewRoute: AppAgentsNewRoute,
   AppAutomationsAutomationIdRoute: AppAutomationsAutomationIdRoute,
   AppAutomationsNewRoute: AppAutomationsNewRoute,
@@ -692,7 +826,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevConnectionRoute: DevConnectionRoute,
   LegalRiskRoute: LegalRiskRoute,
   LegalTermsRoute: LegalTermsRoute,
-  WelcomeCashRoute: WelcomeCashRoute,
+  WelcomeDepositRoute: WelcomeDepositRoute,
   WelcomeEligibilityRoute: WelcomeEligibilityRoute,
   WelcomeIndexRoute: WelcomeIndexRoute,
 }

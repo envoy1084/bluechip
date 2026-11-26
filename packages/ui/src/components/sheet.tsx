@@ -15,11 +15,11 @@ export const sheetVariants = cva(
     variants: {
       side: {
         right: [
-          "inset-y-0 right-0 w-[min(400px,92vw)] rounded-l-xl pt-[env(safe-area-inset-top)]",
+          "inset-y-0 right-0 w-[min(400px,92vw)] rounded-none pt-[env(safe-area-inset-top)]",
           "data-starting-style:translate-x-full data-ending-style:translate-x-full"
         ],
         left: [
-          "inset-y-0 left-0 w-[min(300px,86vw)] rounded-r-xl pt-[env(safe-area-inset-top)]",
+          "inset-y-0 left-0 w-[min(300px,86vw)] rounded-none pt-[env(safe-area-inset-top)]",
           "data-starting-style:-translate-x-full data-ending-style:-translate-x-full"
         ],
         top: [

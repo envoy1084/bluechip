@@ -108,7 +108,7 @@ describe("checkMoneyInput", () => {
   it("an amount over the approval line", () => {
     expect(checkMoneyInput(600, limits)).toStrictEqual({
       status: "warning",
-      message: "Over $500.00 needs your OK with Face ID."
+      message: "Over $500.00 needs your approval."
     })
   })
 
@@ -175,7 +175,7 @@ describe("MoneyInput", () => {
     const input = screen.getByLabelText("Buy Nvidia with")
     await userEvent.type(input, "600")
     await expect.element(input).toHaveAttribute("aria-invalid", "false")
-    await expect.element(input).toHaveAccessibleDescription("Over $500.00 needs your OK with Face ID.")
+    await expect.element(input).toHaveAccessibleDescription("Over $500.00 needs your approval.")
   })
 
   it("shows a hint for the amount while it's fine", async () => {

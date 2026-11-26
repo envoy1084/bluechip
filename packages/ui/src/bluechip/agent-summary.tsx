@@ -60,9 +60,9 @@ export function AgentSummary(
       <header className="flex flex-wrap items-center gap-3">
         <AgentAvatar agentId={agentId} size="lg" status={AGENT_STATES[state].dot} />
         <span className="grid min-w-0 flex-1 gap-0.5">
-          <span className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center justify-between gap-2">
             <b className="truncate text-[16px] font-semibold">{name}</b>
-            <AgentStatus state={state} />
+            <AgentStatus state={state} className="shrink-0" />
           </span>
           <span className="text-label text-g-500">{does}</span>
         </span>

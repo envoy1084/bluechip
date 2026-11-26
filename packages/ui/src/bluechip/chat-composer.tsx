@@ -18,6 +18,8 @@ export interface ChatComposerProps {
   readonly defaultMessage?: string | undefined
   /** Beside the send button, in place of the keyboard hint: a picker for who the message is for, say. */
   readonly leading?: ReactNode
+  /** The start of a chat: a taller box that takes the eye, before any message. */
+  readonly size?: "md" | "lg"
   readonly className?: string
 }
 
@@ -34,6 +36,7 @@ export function ChatComposer({
   placeholder = "Ask anything, or describe the agent you want…",
   defaultMessage = "",
   leading,
+  size = "md",
   className
 }: ChatComposerProps) {
   const id = useId()
@@ -94,7 +97,10 @@ export function ChatComposer({
           onKeyDown={onKeyDown}
           placeholder={sending ? "bluechip is answering…" : placeholder}
           aria-describedby={`${id}-hint`}
-          className="block max-h-[148px] min-h-[38px] w-full resize-none border-0 bg-transparent px-2.5 pt-2.5 pb-1.5 font-sans text-[15px] leading-[22px] text-ink outline-none field-sizing-content placeholder:text-g-400"
+          className={cn(
+            "block max-h-[148px] min-h-[38px] w-full resize-none border-0 bg-transparent px-2.5 pt-2.5 pb-1.5 font-sans text-[15px] leading-[22px] text-ink outline-none field-sizing-content placeholder:text-g-400",
+            size === "lg" && "max-h-[220px] min-h-[96px] px-3 pt-3 text-[16px]"
+          )}
         />
         <div className="flex items-center justify-between gap-2 py-0.5 pr-0.5 pl-2.5">
           {leading}

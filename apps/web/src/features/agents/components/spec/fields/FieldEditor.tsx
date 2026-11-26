@@ -34,10 +34,6 @@ const choicesOf = (field: Field, value: number): ReadonlyArray<number> | undefin
   return field.choices.includes(value) ? field.choices : [...field.choices, value].toSorted((a, b) => a - b)
 }
 
-/**
- * One configuration field edited from its catalog hints (label, unit, range, step, choices), so a policy without an
- * editor of its own is still editable.
- */
 export function FieldEditor(
   { field, value, context, help, choiceLabel, disabled, problem, onChange }: Readonly<{
     field: Field
@@ -62,9 +58,13 @@ export function FieldEditor(
           unit="dollars"
           value={toDollars(value as bigint)}
           min={min}
-          max={field.max === undefined
-            ? Math.max(min * 10, toDollars(value as bigint) * 2, 1000)
-            : toDollars(field.max)}
+          max={toDollars(field.sliderMax ?? field.max ?? Math.max(min * 10, 1000))}
+          // A field with a slider end but no ceiling takes any custom amount.
+          ceiling={field.max !== undefined
+            ? toDollars(field.max)
+            : field.sliderMax !== undefined
+            ? Infinity
+            : undefined}
           step={toDollars(field.step ?? DEFAULT_DOLLAR_STEP)}
           onChange={(dollars) => onChange(Usdc.make(BigInt(Math.round(dollars * 1_000_000))))}
         />
@@ -93,7 +93,8 @@ export function FieldEditor(
             unit="count"
             value={value as number}
             min={field.min ?? 0}
-            max={field.max ?? 100}
+            max={field.sliderMax ?? field.max ?? 100}
+            ceiling={field.max}
             step={field.step ?? 1}
             onChange={(count) => onChange(Math.round(count))}
           />

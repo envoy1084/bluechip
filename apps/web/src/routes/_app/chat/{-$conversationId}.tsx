@@ -33,7 +33,9 @@ function ChatPage() {
       conversationId={conversationId ?? null}
       agentId={agent ?? null}
       initialMessage={ask}
-      onStarted={(id) => void navigate({ params: { conversationId: id }, search: {}, replace: true })}
+      // The chat on screen getting its address: the same page, so no page transition.
+      onStarted={(id) =>
+        void navigate({ params: { conversationId: id }, search: {}, replace: true, viewTransition: false })}
       approvals={<ApprovalsBell />}
       Trade={AgentTradeProgress}
     />

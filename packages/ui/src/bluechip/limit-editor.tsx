@@ -294,7 +294,7 @@ function LimitFieldRow({ id, spec, value, change, error, onChange }: {
         showScale={false}
       />
       <p id={`${id}-help`} className={cn("text-label-sm text-g-500", error && "font-medium text-loss")}>
-        {error ?? (spec.field === "approveAbove" && value === 0 ? "Every trade waits for your OK." : spec.help)}
+        {error ?? (spec.field === "approveAbove" && value === 0 ? "Every trade waits for your approval." : spec.help)}
       </p>
     </div>
   )

@@ -54,7 +54,7 @@ test.describe("automation editor", () => {
   test("a condition joins the sentence, and goes with Remove", async ({ page, user: _user }) => {
     await page.goto("/automations/new")
 
-    await page.getByRole("button", { name: "Add a condition" }).click()
+    await page.getByRole("button", { name: /^Add a check/ }).click()
     await expect(sentence(page)).toHaveText(/^Every Monday at 10:00 New York time, while the market is open, buy/)
     await page.getByRole("button", { name: "Remove condition 1" }).click()
 

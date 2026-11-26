@@ -32,15 +32,17 @@ const sideEffect = (spec: AgentSpec, id: PolicyId, on: boolean): string | undefi
  * carry a lock.
  */
 export function RuleRow(
-  { id, context, nameOf, change, open, onOpenChange, problem, problemOf, onSpecChange }: Readonly<{
+  { id, context, nameOf, change, open, onOpenChange, problem, held, problemOf, onSpecChange }: Readonly<{
     id: PolicyId
     context: FieldContext
     nameOf: (symbol: StockSymbol) => string
     change: ChangeKind | undefined
     open: boolean
     onOpenChange: (open: boolean) => void
-    /** The first thing about it that blocks locking, which keeps the row open. */
+    /** What about the rule as a whole blocks locking: said in its header, and it keeps the row open. */
     problem: string | undefined
+    /** One of its fields has a problem, shown under that field: the row stays open. */
+    held: boolean
     problemOf: (field: string) => string | undefined
     onSpecChange: (spec: AgentSpec) => void
   }>
@@ -55,21 +57,19 @@ export function RuleRow(
     <PolicyRow
       title={policy.title}
       off={!on}
-      open={open}
+      open={open || held}
       onOpenChange={onOpenChange}
       badge={<ChangeMark change={change} />}
       problem={problem}
-      summary={
-        <>
-          {policySummary(spec, id, nameOf)}
-          {note === undefined ? null : <span className="block text-label-sm text-g-600">{note}</span>}
-        </>
-      }
+      summary={policySummary(spec, id, nameOf)}
       control={policy.required ?
         <Icon name="lock" size={16} label="Every agent has this rule" className="text-g-400" /> :
         (
           <Switch
             aria-label={policy.title}
+            // What switching it also changes, or why it can't be switched, kept off the one-line summary.
+            title={note}
+            aria-description={note}
             checked={on}
             disabled={blocked !== undefined}
             onCheckedChange={(checked) => onSpecChange(checked ? addPolicy(spec, id) : removePolicy(spec, id))}

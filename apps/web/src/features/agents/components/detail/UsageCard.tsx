@@ -3,102 +3,122 @@ import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { formatPercent } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { slippageBudget } from "@bluechip/domain/policies/SlippageBudget"
-import { UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
-import { Progress } from "@bluechip/ui/components/progress"
+import { UsageRing } from "@bluechip/ui/bluechip/usage-ring"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
+import { Icon } from "@bluechip/ui/icons/icon"
 import { formatDollars } from "@bluechip/ui/lib/agent-limits"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useId } from "react"
+import { useEffect, useState } from "react"
 import { toDollars } from "../../model/fieldText.ts"
 
-function Count({ label, counted }: Readonly<{ label: string; counted: PolicyUsage }>) {
-  const id = useId()
-  const used = Number(counted.used)
-  const limit = counted.limit === null ? null : Number(counted.limit)
+const dollars = (value: number) => formatDollars(value)
+
+/** Time left until the next UTC midnight, when the daily counts start again, ticking each minute. */
+function ResetsIn() {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(tick)
+  }, [])
+  const midnight = new Date(now)
+  midnight.setUTCHours(24, 0, 0, 0)
+  const minutes = Math.max(0, Math.ceil((midnight.getTime() - now) / 60_000))
+  const hours = Math.floor(minutes / 60)
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-label-sm font-medium text-blue">
+      <Icon name="clock" size={13} />
+      Resets in {hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`}, at midnight UTC
+    </span>
+  )
+}
+
+/** One policy's count as a ring: dollars against a budget, trades against a cap, prices lost against a weekly cap. */
+function PolicyRing({ agent, counted }: Readonly<{ agent: Agent; counted: PolicyUsage }>) {
+  const used = counted.unit === "usd" ? toDollars(counted.used) : Number(counted.used)
+  const limit = counted.limit === null
+    ? null
+    : counted.unit === "usd"
+    ? toDollars(counted.limit)
+    : Number(counted.limit)
+  const format = counted.unit === "usd" ? dollars : undefined
   const left = limit === null ? null : Math.max(0, limit - used)
+  const leftText = left === null ?
+    undefined :
+    left === 0 ?
+    "None left" :
+    `${counted.unit === "usd" ? dollars(left) : left} left`
 
-  return (
-    <div className="grid gap-[7px]">
-      <div className="flex justify-between gap-2.5 text-[13.5px] text-g-600">
-        <span id={id}>{label}</span>
-        <span className="tabular-nums">
-          <b className="font-semibold text-ink">{used}</b>
-          {limit === null ? null : ` of ${limit}`}
-        </span>
-      </div>
-      {limit === null ? null : (
-        <>
-          <Progress
-            aria-labelledby={id}
-            value={Math.min(used, limit)}
-            max={limit}
-            variant={left === 0 ? "warning" : "default"}
-          />
-          <span className="text-caption text-g-500">
-            {left === 0 ? "None left today. They reset at midnight UTC." : `${left} left today`}
-          </span>
-        </>
-      )}
-    </div>
-  )
-}
-
-function Amount({ label, counted, note }: Readonly<{ label: string; counted: PolicyUsage; note?: string }>) {
-  return (
-    <div className="grid gap-0.5">
-      <div className="flex justify-between gap-2.5 text-[13.5px] text-g-600">
-        <span>{label}</span>
-        <b className="font-semibold text-ink tabular-nums">
-          {formatDollars(toDollars(counted.used))}
-          {counted.limit === null
-            ? null
-            : <span className="font-normal text-g-600">of {formatDollars(toDollars(counted.limit))}</span>}
-        </b>
-      </div>
-      {note === undefined ? null : <span className="text-caption text-g-500">{note}</span>}
-    </div>
-  )
-}
-
-/** One policy's count, in the way its unit reads: dollars against a budget, trades against a cap. */
-function PolicyMeter({ agent, counted }: Readonly<{ agent: Agent; counted: PolicyUsage }>) {
   if (counted.policy === "trade") {
-    if (counted.limit === null || counted.limit === BigInt(0)) return null
-    return <UsageMeter used={toDollars(counted.used)} limit={toDollars(counted.limit)} resetsAt="midnight UTC" />
+    if (limit === null || limit === 0) return null
+    return <UsageRing label="Spent today" used={used} limit={limit} format={dollars} detail={leftText} />
   }
-  if (counted.policy === "tradesPerDay") return <Count label="Trades today" counted={counted} />
-  if (counted.policy === "slippageBudget") {
-    const weekly = configOf(agent.spec.policies, slippageBudget)?.weeklyBps
+  if (counted.policy === "tradesPerDay") {
     return (
-      <Amount
-        label="Lost to prices this week"
-        counted={counted}
-        {...(weekly === undefined ? {} : { note: `It stops at ${formatPercent(weekly)} of your money in any 7 days.` })}
+      <UsageRing
+        label="Trades today"
+        used={used}
+        limit={limit}
+        {...(leftText === undefined ? {} : { detail: leftText })}
       />
     )
   }
-
-  const title = policyOf(counted.policy).title
-  return counted.unit === "usd" ? <Amount label={title} counted={counted} /> : <Count label={title} counted={counted} />
+  if (counted.policy === "slippageBudget") {
+    const weekly = configOf(agent.spec.policies, slippageBudget)?.weeklyBps
+    return (
+      <UsageRing
+        label="Lost to prices"
+        used={used}
+        limit={limit}
+        format={dollars}
+        detail={weekly === undefined ? "This week" : `This week, it stops at ${formatPercent(weekly)}`}
+      />
+    )
+  }
+  return (
+    <UsageRing
+      label={policyOf(counted.policy).title}
+      used={used}
+      limit={limit}
+      {...(format === undefined ? {} : { format })}
+      {...(leftText === undefined ? {} : { detail: leftText })}
+    />
+  )
 }
 
-/** What a locked agent has used, read from its session onchain, policy by policy (gas is bluechip's to watch). */
+/**
+ * What a locked agent has used, read from its session onchain: each limit as a ring, with when the daily ones start
+ * again (gas is bluechip's to watch).
+ */
 export function UsageCard(
   { agent, usage }: Readonly<{ agent: Agent; usage: AsyncResult.AsyncResult<AgentUsage, unknown> }>
 ) {
+  const shown = AsyncResult.isSuccess(usage) ?
+    usage.value.policies.filter((counted) => !policyOf(counted.policy).hidden) :
+    []
+
   return (
-    <section aria-labelledby={`usage-${agent.id}`} className="grid content-start gap-2.5">
-      <h3 id={`usage-${agent.id}`} className="px-0.5 text-label-sm font-semibold text-g-500">Usage</h3>
-      <div className="grid gap-4 rounded-lg bg-white p-[18px] shadow-e2">
+    <section aria-labelledby={`usage-${agent.id}`} className="grid content-start gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-0.5">
+        <h3 id={`usage-${agent.id}`} className="text-[15px] font-semibold tracking-[-0.01em]">Today's usage</h3>
+        <ResetsIn />
+      </div>
+      <div className="rounded-lg bg-white px-[18px] py-6 shadow-e2">
         {AsyncResult.isSuccess(usage) ?
-          usage.value.policies
-            .filter((counted) => !policyOf(counted.policy).hidden)
-            .map((counted) => <PolicyMeter key={counted.policy} agent={agent} counted={counted} />) :
+          (
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-6">
+              {shown.map((counted) => <PolicyRing key={counted.policy} agent={agent} counted={counted} />)}
+            </div>
+          ) :
           AsyncResult.isInitial(usage) ?
           (
-            <div aria-busy className="grid gap-3">
-              <SkeletonBlock className="h-10 w-full" />
-              <SkeletonBlock className="h-10 w-full" />
+            <div aria-busy className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-6">
+              {["a", "b", "c"].map((key) => (
+                <div key={key} className="grid justify-items-center gap-2.5">
+                  <SkeletonBlock className="size-[132px] rounded-full" />
+                  <SkeletonBlock className="h-3.5 w-24" />
+                </div>
+              ))}
             </div>
           ) :
           (
@@ -107,6 +127,9 @@ export function UsageCard(
             </p>
           )}
       </div>
+      <p className="px-0.5 text-label-sm text-g-500">
+        Read from Base: these are the counts its policies check before every trade.
+      </p>
     </section>
   )
 }

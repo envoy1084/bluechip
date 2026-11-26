@@ -6,7 +6,7 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@bluechip/ui/compon
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import type { ReactNode } from "react"
+import type { CSSProperties, ReactNode } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { ConnectionBanner } from "../../../components/layout/ConnectionBanner.tsx"
 import { useFrameActions } from "../../../components/layout/FrameActions.tsx"
@@ -17,30 +17,28 @@ import { ThreadsSidebar } from "../components/ThreadsSidebar.tsx"
 import { useAssistant } from "../hooks/useAssistant.ts"
 
 /** The conversation's name in the header: its title once it has one, its agent beside it. */
-function ChatTitle(
-  { conversationId, agentId }: Readonly<{ conversationId: ConversationId | null; agentId: AgentId | null }>
-) {
+function ChatTitle({ conversationId }: Readonly<{ conversationId: ConversationId | null }>) {
   const conversations = useAtomValue(conversationsAtom)
-  const agents = useAtomValue(agentsAtom)
   const title = conversationId === null || !AsyncResult.isSuccess(conversations) ?
     null :
     conversations.value.items.find((conversation) => conversation.id === conversationId)?.title ?? null
+
+  return <h1 className="truncate text-[17px] leading-tight font-semibold tracking-[-0.02em]">{title ?? "New chat"}</h1>
+}
+
+/** The agent the chat's trades go through, at the header's far end. */
+function ChatAgent({ agentId }: Readonly<{ agentId: AgentId | null }>) {
+  const agents = useAtomValue(agentsAtom)
   const agent = agentId === null || !AsyncResult.isSuccess(agents) ?
     undefined :
     agents.value.find((each) => each.id === agentId)
+  if (agent === undefined) return null
 
   return (
-    <div className="flex min-w-0 items-center gap-2.5">
-      <h1 className="truncate text-[17px] leading-tight font-semibold tracking-[-0.02em]">{title ?? "New chat"}</h1>
-      {agent === undefined ?
-        null :
-        (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue/10 py-0.5 pr-2.5 pl-0.5 text-label-sm font-medium text-blue">
-            <AgentAvatar agentId={agent.id} size="sm" className="size-5" />
-            {agent.name}
-          </span>
-        )}
-    </div>
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue/10 py-0.5 pr-2.5 pl-0.5 text-label-sm font-medium text-blue">
+      <AgentAvatar agentId={agent.id} size="sm" className="size-5" />
+      {agent.name}
+    </span>
   )
 }
 
@@ -65,9 +63,14 @@ export function ChatScreen(
 
   return (
     <div className="flex h-svh min-h-0 flex-col">
-      <SidebarProvider className="min-h-0 flex-1" shortcut={false} storageKey="bluechip:chats">
+      <SidebarProvider
+        className="min-h-0 flex-1"
+        shortcut={false}
+        storageKey="bluechip:chats"
+        style={{ "--sidebar-width": "288px" } as CSSProperties}
+      >
         <ThreadsSidebar current={assistant.state.conversationId} />
-        <div className="flex h-svh min-w-0 flex-1 flex-col">
+        <div className="flex h-svh min-w-0 flex-1 flex-col [view-transition-name:page]">
           <header className="flex min-h-[60px] shrink-0 items-center justify-between gap-3 border-b border-ink/6 bg-canvas/90 px-4 py-2.5 backdrop-blur md:px-5">
             <div className="flex min-w-0 items-center gap-1.5">
               {/* The app's own sidebar is a level up, so its trigger is drawn from its state, not this provider's. */}
@@ -85,9 +88,13 @@ export function ChatScreen(
               <SidebarTrigger label="Toggle chats" className="text-g-500">
                 <Icon name="chat" size={18} />
               </SidebarTrigger>
-              <ChatTitle conversationId={assistant.state.conversationId} agentId={assistant.state.agentId} />
+              <ChatTitle conversationId={assistant.state.conversationId} />
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">{approvals}{frameActions}</div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <ChatAgent agentId={assistant.state.agentId} />
+              {approvals}
+              {frameActions}
+            </div>
           </header>
           <div className="px-4 pt-3 empty:hidden md:px-6">
             <ConnectionBanner />
@@ -97,12 +104,13 @@ export function ChatScreen(
             initialMessage={initialMessage}
             Trade={Trade}
             empty={
-              <div className="grid justify-items-center gap-2 py-16 text-center">
-                <h2 className="text-[22px] font-semibold tracking-[-0.03em]">What should we do?</h2>
-                <p className="max-w-[44ch] text-body-sm text-g-600">
-                  Ask about your money, start an agent or trade. Pick an agent below and its trades go through it.
+              <>
+                <h2 className="text-[28px] font-semibold tracking-[-0.035em]">What should we do today?</h2>
+                <p className="max-w-[46ch] text-body-sm text-g-600">
+                  Ask about your money, trade, or set up an agent. Pick an agent in the box and its trades go through
+                  it.
                 </p>
-              </div>
+              </>
             }
           />
         </div>

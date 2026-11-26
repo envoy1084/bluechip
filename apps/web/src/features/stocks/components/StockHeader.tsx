@@ -42,7 +42,7 @@ export function StockHeader({ stock }: Readonly<{ stock: Stock }>) {
         <div className="grid min-w-0 gap-0.5">
           <span className="flex flex-wrap items-center gap-x-2 text-label-sm text-g-500">
             {stock.name} on Base
-            {price === null ? null : <SessionNote price={price} />}
+            {price === null ? null : <SessionNote price={price} showPaused={false} />}
           </span>
           {price === null ?
             <b className="text-title-1 font-semibold text-g-500">No price right now</b> :

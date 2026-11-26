@@ -13,6 +13,7 @@ import { usePauseAll } from "../../../hooks/usePauseAll.ts"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { setDisplayNameAtom, signOutAtom } from "../atoms/settings.ts"
 import { RemoveAllAgents } from "../components/RemoveAllAgents.tsx"
+import { TestMoneyRow } from "../components/TestMoneyRow.tsx"
 import { TimeZoneRow } from "../components/TimeZoneRow.tsx"
 
 export function SettingsScreen() {
@@ -24,23 +25,19 @@ export function SettingsScreen() {
   const { account } = me.value
   return (
     <AppPage title="Settings">
-      <Section title="Account" description="Your bluechip account lives on Base. Only your Face ID can move money out.">
+      <Section title="Account" description="Your name, time zone and address on Base." illustration="wallet">
         <NameRow saved={me.value.user.displayName} />
         <TimeZoneRow saved={me.value.user.timeZone} />
         <Row title="Address" description="Send USDC on Base here to add cash.">
           <AddressChip address={account.address} />
         </Row>
-        <Row title="Eligibility" description="You confirmed you live outside the United States.">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gain-wash py-[3px] pr-[9px] pl-[7px] text-[12.5px] font-medium text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]">
-            <i className="size-1.5 rounded-full bg-current" />Confirmed
-          </span>
-        </Row>
+        <TestMoneyRow />
         <Row
           title="Sign out"
           description="Signs this browser out. Your agents keep working inside their limits."
         >
           <Button
-            variant="secondary"
+            variant="danger"
             size="sm"
             loading={signingOut}
             onClick={async () => {
@@ -54,42 +51,45 @@ export function SettingsScreen() {
         </Row>
       </Section>
       <Section
-        title="Passkeys and devices"
-        description="Each device signs in with its own Face ID or fingerprint. Remove a device you lost."
-      >
-        <Row
-          title="Security"
-          description="Your passkeys, a recovery key for when you lose them all, and the devices signed in."
-          icon="shield"
-        >
+        title="Security"
+        description="Your passkeys, a recovery key for when you lose them all, and the devices signed in."
+        illustration="shield"
+        action={
           <ButtonLink variant="secondary" size="sm" render={<Link to="/settings/security" />}>
             Security settings
           </ButtonLink>
-        </Row>
-        <Row title="Audit log" description="Everything that happened to your account, saved as JSON." icon="book">
+        }
+      />
+      <Section
+        title="Audit log"
+        description="Everything that happened to your account, saved as JSON."
+        illustration="magnifier"
+        action={
           <ButtonLink variant="secondary" size="sm" render={<Link to="/settings/audit" />}>
             Open the audit log
           </ButtonLink>
-        </Row>
-      </Section>
-      <Section title="Notifications" description="What bluechip tells you, in the app, as push and in Telegram.">
-        <Row
-          title="Notifications"
-          description="Each kind and where it goes, quiet hours, push and Telegram."
-          icon="bell"
-        >
+        }
+      />
+      <Section
+        title="Notifications"
+        description="What bluechip tells you, in the app, as push and in Telegram."
+        illustration="bell"
+        action={
           <ButtonLink variant="secondary" size="sm" render={<Link to="/settings/notifications" />}>
             Notification settings
           </ButtonLink>
-        </Row>
-      </Section>
-      <Section title="Assistant" description="What the assistant knows about you is yours to see and delete.">
-        <Row title="Memory" description="Preferences, rules, goals and facts it uses to answer you." icon="book">
+        }
+      />
+      <Section
+        title="Memory"
+        description="What the assistant knows about you, yours to see and delete."
+        illustration="chat"
+        action={
           <ButtonLink variant="secondary" size="sm" render={<Link to="/memory" />}>
             See memories
           </ButtonLink>
-        </Row>
-      </Section>
+        }
+      />
       <AgentsSection />
     </AppPage>
   )
@@ -151,7 +151,7 @@ function NameRow({ saved }: Readonly<{ saved: string | null }>) {
           onChange={(event) => setName(event.target.value)}
           className="w-48"
         />
-        <Button type="submit" variant="secondary" size="sm" disabled={!changed} loading={saving}>Save</Button>
+        <Button type="submit" variant="secondary" disabled={!changed} loading={saving}>Save</Button>
       </form>
     </Row>
   )

@@ -7,6 +7,7 @@ import { PermissionCard } from "@bluechip/ui/bluechip/permission-card"
 import { PresetPicker } from "@bluechip/ui/bluechip/preset-picker"
 import { AGENT_TEMPLATES, type AgentTemplate, TemplatePicker } from "@bluechip/ui/bluechip/template-picker"
 import { UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
+import { UsageRing } from "@bluechip/ui/bluechip/usage-ring"
 import { Button } from "@bluechip/ui/components/button"
 import { Slider } from "@bluechip/ui/components/slider"
 import { toast } from "@bluechip/ui/components/toast"
@@ -265,6 +266,32 @@ export function DraftSection() {
           }
         />
       </Demo>
+    </Section>
+  )
+}
+
+const usd = (value: number) => `$${value.toLocaleString("en-US")}`
+
+export function UsageRingSection() {
+  return (
+    <Section
+      title="Usage ring"
+      purpose="One of an agent's limits on its Usage page: the ring fills as it's used and the amount rolls in its middle. Blue while there's room, amber from 80%, red when it's used up."
+    >
+      <States>
+        <Demo label="Room left">
+          <UsageRing label="Spent today" used={60} limit={250} format={usd} detail="$190 left" />
+        </Demo>
+        <Demo label="Near the limit">
+          <UsageRing label="Trades today" used={430} limit={500} detail="70 left" />
+        </Demo>
+        <Demo label="Used up">
+          <UsageRing label="Spent today" used={250} limit={250} format={usd} detail="None left" />
+        </Demo>
+        <Demo label="Nothing yet">
+          <UsageRing label="Lost to prices" used={0} limit={50} format={usd} detail="This week" />
+        </Demo>
+      </States>
     </Section>
   )
 }

@@ -29,6 +29,7 @@ export function DoneStep({ agent, automations }: Readonly<{ agent: Agent; automa
     <ButtonLink
       variant={noCash ? "secondary" : "primary"}
       render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
+      className="min-w-[150px] flex-1"
     >
       Go to {agent.name}
       <Icon name="arrow-right" size={16} />
@@ -49,15 +50,17 @@ export function DoneStep({ agent, automations }: Readonly<{ agent: Agent; automa
           `Locked with Face ID until ${until}. Pause it any time.`}
         actions={
           <>
+            <ButtonLink variant="secondary" render={<Link to="/agents" />} className="min-w-[150px] flex-1">
+              See all agents
+            </ButtonLink>
+            {goTo}
             {noCash ?
               (
-                <Button onClick={() => openCash("add")}>
+                <Button onClick={() => openCash("add")} className="min-w-[150px] flex-1">
                   <Icon name="plus" size={16} />Add cash
                 </Button>
               ) :
               null}
-            {goTo}
-            <ButtonLink variant="ghost" render={<Link to="/agents" />}>See all agents</ButtonLink>
           </>
         }
       >

@@ -7,6 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/ale
 import { Button } from "@bluechip/ui/components/button"
 import { Input } from "@bluechip/ui/components/input"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
+import { cn } from "@bluechip/ui/lib/cn"
 import { type ReactNode, useId, useMemo, useState } from "react"
 import { useAutomationCheck } from "../../hooks/useAutomationCheck.ts"
 import { problemText, saveProblem } from "../../model/automationText.ts"
@@ -22,7 +24,7 @@ const MAX_NAME = 60
  * the API's error when bluechip refuses it.
  */
 export function AutomationEditor(
-  { initial, context, spec, whoTrades, unsaved, saveLabel, footer, onSave }: Readonly<{
+  { initial, context, spec, whoTrades, unsaved, saveLabel, footer, onSave, compact = false }: Readonly<{
     initial: DraftFields
     context: Omit<EditorContext, "check">
     /** The policies of the agent it trades through; `null` for your own trades. */
@@ -35,6 +37,8 @@ export function AutomationEditor(
     /** Under Save: Cancel, Delete. */
     footer?: ReactNode
     onSave: (draft: AutomationDraft) => Promise<unknown>
+    /** In a sheet: one column, what it does under the form, whatever the window's width. */
+    compact?: boolean
   }>
 ) {
   const nameId = useId()
@@ -66,8 +70,48 @@ export function AutomationEditor(
     }
   }
 
+  // What it will do, in words, as you set it: at the top in a sheet, beside the form on a page.
+  const summary = (
+    <section aria-label="What it does" className="grid gap-4 rounded-lg bg-white p-[18px] shadow-e2">
+      <div className="flex items-start gap-3.5">
+        <Illustration name="bolt" size={44} className="shrink-0" />
+        <div className="grid min-w-0 gap-1" aria-live="polite">
+          <span className="text-label-sm font-semibold text-g-500">It will</span>
+          {check === undefined ?
+            <SkeletonBlock className="h-5 w-full" /> :
+            <p className="text-[16px] leading-snug font-semibold text-ink">{check.description.sentence}</p>}
+        </div>
+      </div>
+      <div className="grid gap-1.5">
+        <label htmlFor={nameId} className="text-label-sm font-semibold text-g-500">Name</label>
+        <Input
+          id={nameId}
+          value={fields.name}
+          maxLength={MAX_NAME}
+          autoComplete="off"
+          placeholder={suggestedName(action)}
+          onChange={(event) => setFields({ ...fields, name: event.currentTarget.value })}
+        />
+      </div>
+      <OrderPreview>
+        <OrderPreviewRow label="Trades through">{whoTrades}</OrderPreviewRow>
+        {check === undefined || check.description.settings.length === 0 ? null : (
+          <OrderPreviewRow label="Settings">
+            <span className="text-right">{check.description.settings.join(". ")}.</span>
+          </OrderPreviewRow>
+        )}
+      </OrderPreview>
+    </section>
+  )
+
   return (
-    <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+    <div
+      className={cn(
+        "grid items-start gap-[18px]",
+        !compact && "lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]"
+      )}
+    >
+      {compact ? summary : null}
       <AutomationForm
         draft={fields}
         context={editor}
@@ -79,37 +123,8 @@ export function AutomationEditor(
         }}
       />
 
-      <div className="grid min-w-0 gap-3 lg:sticky lg:top-[76px]">
-        <section aria-label="What it does" className="grid gap-4 rounded-lg bg-white p-[18px] shadow-e2">
-          <div className="grid gap-1.5">
-            <label htmlFor={nameId} className="text-label-sm font-semibold text-g-500">Name</label>
-            <Input
-              id={nameId}
-              value={fields.name}
-              maxLength={MAX_NAME}
-              autoComplete="off"
-              placeholder={suggestedName(action)}
-              onChange={(event) => setFields({ ...fields, name: event.currentTarget.value })}
-              className="text-[16px] font-semibold"
-            />
-          </div>
-
-          <div className="grid gap-1" aria-live="polite">
-            <span className="text-label-sm font-semibold text-g-500">It will</span>
-            {check === undefined ?
-              <SkeletonBlock className="h-5 w-full" /> :
-              <p className="text-[15px] leading-snug font-medium text-ink">{check.description.sentence}</p>}
-          </div>
-
-          <OrderPreview>
-            <OrderPreviewRow label="Trades through">{whoTrades}</OrderPreviewRow>
-            {check === undefined || check.description.settings.length === 0 ? null : (
-              <OrderPreviewRow label="Settings">
-                <span className="text-right">{check.description.settings.join(". ")}.</span>
-              </OrderPreviewRow>
-            )}
-          </OrderPreview>
-        </section>
+      <div className={cn("grid min-w-0 gap-3", !compact && "lg:sticky lg:top-[76px]")}>
+        {compact ? null : summary}
 
         {checking.status === "failed" && (
           <Alert variant="destructive">

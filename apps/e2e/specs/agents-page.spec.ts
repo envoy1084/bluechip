@@ -9,7 +9,7 @@ test.describe("agents list", () => {
 
     await expect(page.getByRole("heading", { name: "No agents yet" })).toBeVisible()
     await expect(
-      page.getByText("Start one from a template. You set its limits and lock them with Face ID before it can trade.")
+      page.getByText("Start one from a template. You set its limits, and it trades only once they're locked.")
     ).toBeVisible()
     await expect(page.getByRole("main").getByRole("link", { name: "New agent" })).toHaveCount(2)
   })

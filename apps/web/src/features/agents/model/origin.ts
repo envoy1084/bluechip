@@ -31,9 +31,15 @@ export const originLabel = (origin: Origin): string =>
 /** The built-in template whose presets apply, if it started from one. */
 export const originPresets = (origin: Origin): TemplateId | null => origin.kind === "builtIn" ? origin.template : null
 
-/** The policies an origin starts with: a built-in's balanced preset keeps the stocks already picked. */
+/**
+ * The policies an origin starts with: a built-in's balanced preset keeps the stocks already picked, or starts with the
+ * template's own (a Rebalancer's four) when none are.
+ */
 export const originSpec = (origin: Origin, stocks: ReadonlyArray<StockSymbol>): AgentSpec => {
-  if (origin.kind === "builtIn") return templateSpec(origin.template, "balanced", stocks)
+  if (origin.kind === "builtIn") {
+    const picked = stocks.length > 0 ? stocks : TEMPLATES[origin.template].defaultStocks
+    return templateSpec(origin.template, "balanced", picked)
+  }
   return origin.kind === "saved" ? origin.template.spec : scratchSpec()
 }
 

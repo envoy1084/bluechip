@@ -17,7 +17,7 @@ export function TradeSizeEditor({ context, problemOf, onSpecChange }: EditorProp
         field={tradeSize.fields.maxPerTrade}
         value={config.maxPerTrade}
         context={context}
-        help="Bigger trades wait for your OK with Face ID."
+        help="Bigger trades wait for your approval."
         problem={problemOf("maxPerTrade")}
         onChange={(maxPerTrade) => set({ maxPerTrade: maxPerTrade as typeof config.maxPerTrade })}
       />

@@ -1,7 +1,6 @@
 import type { AgentId } from "@bluechip/domain/Ids"
-import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import { AccountAvatar, AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
-import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { agentsAtom } from "../../../atoms/agents.ts"
@@ -28,7 +27,7 @@ export function AgentPicker(
   const name = (
     <span className="inline-flex min-w-0 items-center gap-1.5">
       {picked === undefined ?
-        <Icon name="wallet" size={16} className="text-g-500" /> :
+        <AccountAvatar size="sm" aria-hidden /> :
         <AgentAvatar agentId={picked.id} size="sm" />}
       <span className="truncate">{picked?.name ?? "My account"}</span>
     </span>
@@ -48,7 +47,7 @@ export function AgentPicker(
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={ACCOUNT}>
-          <Icon name="wallet" size={16} className="text-g-500" />My account
+          <AccountAvatar size="sm" aria-hidden />My account
         </SelectItem>
         {usable.map((agent) => (
           <SelectItem key={agent.id} value={agent.id}>

@@ -2,8 +2,9 @@
 
 ## Adding cash
 
-Send USDC on Base to your bluechip account's address. It usually shows up in about a minute. Only send USDC on Base;
-other tokens or networks don't reach your account as cash.
+Send USDC on Base to your bluechip account's address, or scan its QR code with your wallet: it opens a USDC transfer on
+Base with your address filled in. The cash appears in your balance once it arrives. Only send USDC on Base; other
+tokens or networks don't reach your account as cash.
 
 ## Withdrawing
 

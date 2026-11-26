@@ -43,15 +43,13 @@ test.describe("the chat page", () => {
     await expect(page.getByRole("button", { name: "Send" })).toBeDisabled()
   })
 
-  test("a suggestion fills the box with its text, ready to send", async ({ page, user: _user, replies }) => {
+  test("an idea on the start screen asks it straight away", async ({ page, user: _user, replies }) => {
     await replies.record({ to: "How did I do this week?", rounds: [[{ text: "You haven't traded yet this week." }]] })
 
-    await page.getByRole("button", { name: "How did I do this week?" }).click()
-    await expect(composer(page)).toHaveValue("How did I do this week?")
-    await composer(page).press("Enter")
+    await page.getByRole("button", { name: /^How did I do this week\?/ }).click()
 
     await expect(lastTurn(page).getByText("You haven't traded yet this week.")).toBeVisible()
-    await expect(page.getByRole("button", { name: "What did my agents do today?" })).toBeHidden()
+    await expect(page.getByRole("button", { name: /^What did my agents do today\?/ })).toBeHidden()
   })
 
   test("Stop ends an answer midway: what was written stays, then Stopped.", async ({ page, user: _user, replies }) => {
@@ -164,7 +162,7 @@ test.describe("chats sidebar", () => {
 
     await expect(page).toHaveURL(/\/chat$/)
     await expect(page.getByText(to, { exact: true })).toBeHidden()
-    await expect(page.getByRole("button", { name: "What did my agents do today?" })).toBeVisible()
+    await expect(page.getByRole("button", { name: /^What did my agents do today\?/ })).toBeVisible()
   })
 
   test("with no chats yet, it says where they come from", async ({ page, user: _user }) => {

@@ -24,7 +24,7 @@ export interface IllustrationProps extends Omit<ComponentProps<"canvas">, "child
   readonly cell?: number
 }
 
-/** One of the 23 illustration objects, drawn as crisp pixel art or as line halftone from the same shapes. */
+/** One of the 30 illustration objects, drawn as crisp pixel art or as line halftone from the same shapes. */
 export function Illustration(
   { name, variant = "pixel", size = 48, animate, label, cell, className, style, ...props }: IllustrationProps
 ) {

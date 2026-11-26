@@ -7,7 +7,7 @@ export interface User {
   readonly id: string
   /** The account's address on Base. */
   readonly address: `0x${string}`
-  /** Adds $1,000 of test USDC and ETH for gas (`POST /api/dev/fund`, the Add cash screen's test money button). */
+  /** Adds $1,000 of test USDC and ETH for gas (`POST /api/dev/fund`, Settings' test money button). */
   readonly fund: (page: Page) => Promise<void>
   /**
    * Runs the agents' expiry cron for this person as if the server's clock read `at` (`POST /e2e/expire` on the suite's
@@ -29,7 +29,7 @@ export const signUp = async (page: Page): Promise<User> => {
   // The answer is read from the account first; Continue saves it only once the form shows it.
   await expect(page.getByText("You can use bluechip.")).toBeVisible()
   await page.getByRole("button", { name: "Continue" }).click()
-  await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Deposit cash", level: 1 })).toBeVisible()
   await page.getByRole("button", { name: "Skip for now" }).click()
   await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 

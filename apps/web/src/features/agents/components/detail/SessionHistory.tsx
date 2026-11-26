@@ -9,6 +9,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 import { agentSessionsAtom } from "../../atoms/agents.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { SpecChangeRows } from "../spec/SpecChangeRows.tsx"
@@ -128,7 +129,9 @@ export function SessionHistory(
     }
     if (sessions.value.length === 0) {
       return (
-        <p className="p-[18px] text-body-sm text-g-600">Nothing locked yet. Its history starts with its first lock.</p>
+        <IllustratedEmpty illustration="calendar" title="Nothing locked yet">
+          Its history starts with its first lock.
+        </IllustratedEmpty>
       )
     }
 

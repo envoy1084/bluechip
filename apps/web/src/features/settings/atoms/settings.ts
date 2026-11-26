@@ -7,6 +7,9 @@ export const signOutAtom = BluechipApiClient.mutation("auth", "logout")
 
 export const setDisplayNameAtom = BluechipApiClient.mutation("account", "setDisplayName")
 
+/** On a network with play money: $1,000 of test USDC and ETH for gas, for the signed-in account. */
+export const testMoneyAtom = BluechipApiClient.mutation("dev", "fund")
+
 /** Removes every agent with one Face ID: one owner operation revokes all their sessions onchain. */
 export const removeAllAgentsAtom = BluechipApiClient.runtime.fn(
   Effect.fnUntraced(function*(requestId: RequestId) {

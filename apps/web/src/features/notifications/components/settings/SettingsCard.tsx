@@ -1,10 +1,12 @@
+import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import type { ReactNode } from "react"
 
-/** A card of the notification settings page: its title and what it is for, then its rows. */
+/** A card of the notification settings page: its illustration, title and what it is for, then its rows. */
 export function SettingsCard(
-  { title, description, children, aside }: Readonly<{
+  { title, description, illustration, children, aside }: Readonly<{
     title: string
     description: string
+    illustration: IllustrationName
     children: ReactNode
     aside?: ReactNode
   }>
@@ -12,9 +14,12 @@ export function SettingsCard(
   return (
     <section className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2" aria-label={title}>
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-g-100 pt-[18px] pb-3.5">
-        <div className="grid gap-1">
-          <h3 className="text-base font-semibold tracking-[-0.02em]">{title}</h3>
-          <p className="text-[13.5px] text-g-600">{description}</p>
+        <div className="flex min-w-0 items-center gap-3.5">
+          <Illustration name={illustration} size={48} className="shrink-0" />
+          <div className="grid gap-1">
+            <h3 className="text-base font-semibold tracking-[-0.02em]">{title}</h3>
+            <p className="text-[13.5px] text-g-600">{description}</p>
+          </div>
         </div>
         {aside}
       </div>

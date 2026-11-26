@@ -4,26 +4,29 @@ import { withdraw } from "../utils/trading.ts"
 const burn = "0x000000000000000000000000000000000000dEaD"
 
 test.describe("add cash", () => {
-  test("sign-up's cash screen takes test money and says it arrived", async ({ page }) => {
+  test("sign-up's deposit screen shows where to send USDC, without test money", async ({ page }) => {
     await page.goto("/welcome")
     await page.getByRole("button", { name: "Create account with Face ID" }).click()
     await page.getByRole("button", { name: "Continue" }).click()
     await expect(page.getByRole("heading", { name: "Where do you live?" })).toBeVisible()
     await page.getByRole("button", { name: "Continue" }).click()
-    await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
-    await expect(page.getByText("Send USDC on Base to your bluechip account. It usually shows up in about a minute."))
+
+    await expect(page).toHaveURL(/\/welcome\/deposit$/)
+    await expect(page.getByRole("heading", { name: "Deposit cash", level: 1 })).toBeVisible()
+    await expect(page.getByText("Send USDC on Base to this address. It appears in your balance once it arrives."))
       .toBeVisible()
-
-    await page.getByRole("button", { name: "Get $1,000 test money (local fork)" }).click()
-
-    await expect(page.getByRole("region", { name: "Cash arrived" })).toContainText("$1,000.00")
-    await expect(page.getByText("USDC on Base. It's ready to invest.")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Get $1,000 test money (local fork)" })).toBeHidden()
+    const deposit = page.getByRole("region", { name: "Your deposit address" })
+    await expect(
+      deposit.getByRole("img", { name: /^QR code to send USDC on Base to 0x[0-9a-fA-F]{4}…[0-9a-fA-F]{4}$/ })
+    )
+      .toBeVisible()
+    await expect(deposit.getByRole("button", { name: "Copy address" })).toBeVisible()
+    await expect(page.getByRole("button", { name: /test money/ })).toHaveCount(0)
     await page.getByRole("button", { name: "Go to home" }).click()
-    await expect(page.getByText("Cash (USDC)")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })
 
-  test("Portfolio's Add cash shows the account's address and takes test money", async ({ page, user }) => {
+  test("Portfolio's Add cash shows the account's address, then the cash that arrives", async ({ page, user }) => {
     await page.goto("/portfolio")
 
     await page.getByRole("button", { name: "Add cash" }).first().click()
@@ -32,9 +35,20 @@ test.describe("add cash", () => {
     await expect(dialog.getByText("Send USDC on Base to your bluechip account. It shows up here as soon as it lands."))
       .toBeVisible()
     await expect(dialog).toContainText(`${user.address.slice(0, 6)}…${user.address.slice(-4)}`)
-    await dialog.getByRole("button", { name: "Get $1,000 test money (local fork)" }).click()
+    await expect(dialog.getByRole("button", { name: /test money/ })).toHaveCount(0)
+    await user.fund(page)
     await expect(dialog.getByRole("region", { name: "Cash arrived" })).toContainText("$1,000.00")
     await dialog.getByRole("button", { name: "Close" }).click()
+    await expect(page.getByRole("region", { name: "Holdings" })).toContainText("$1,000.00")
+  })
+
+  test("Settings' test money adds $1,000 on the local network", async ({ page, user: _user }) => {
+    await page.goto("/settings")
+
+    await page.getByRole("button", { name: "Get $1,000 test money" }).click()
+
+    await expect(page.getByText("$1,000 of test USDC is in your account.")).toBeVisible()
+    await page.goto("/portfolio")
     await expect(page.getByRole("region", { name: "Holdings" })).toContainText("$1,000.00")
   })
 })

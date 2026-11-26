@@ -1,6 +1,7 @@
 import { Switch } from "@bluechip/ui/components/switch"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useId } from "react"
+import { FieldHelp } from "./FieldHelp.tsx"
 
 /** A setting that is on or off, with what it means beside it. */
 export function ToggleField(
@@ -14,12 +15,15 @@ export function ToggleField(
   }>
 ) {
   const id = useId()
-  const note = problem ?? help
+  const note = problem
 
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="grid gap-0.5">
-        <label htmlFor={id} className="text-[13.5px] font-medium text-g-700">{label}</label>
+        <span className="inline-flex items-center gap-1.5">
+          <label htmlFor={id} className="text-[13.5px] font-medium text-g-700">{label}</label>
+          <FieldHelp label={label} help={help} />
+        </span>
         {note === undefined ?
           null :
           <p className={cn("text-label-sm text-g-500", problem !== undefined && "font-medium text-loss")}>{note}</p>}

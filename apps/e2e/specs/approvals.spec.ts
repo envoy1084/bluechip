@@ -5,11 +5,11 @@ import { agentActivity, askToBuy, tradeCard } from "../utils/intents.ts"
 
 const request = (page: Page) => page.getByRole("region", { name: "Stock picker wants to buy $150.00 of NVIDIA" })
 
-/** A $150 buy through an agent that asks above $100: it waits for your OK. */
+/** A $150 buy through an agent that asks above $100: it waits for your approval. */
 const askOverLargestTrade = async (page: Page) => {
   await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
   await askToBuy(page, 150)
-  await expect(tradeCard(page).getByText("Needs your OK", { exact: true })).toBeVisible()
+  await expect(tradeCard(page).getByText("Needs your approval", { exact: true })).toBeVisible()
 }
 
 test.describe("approvals", () => {
@@ -17,7 +17,7 @@ test.describe("approvals", () => {
     await page.goto("/approvals")
 
     await expect(page.getByRole("heading", { name: "Approvals", level: 1 })).toBeVisible()
-    await expect(page.getByText("When an agent's trade needs your OK, it shows up here.")).toBeVisible()
+    await expect(page.getByText("When an agent's trade needs your approval, it shows up here.")).toBeVisible()
     await expect(page.getByText("Nothing waiting for you")).toHaveCount(2)
   })
 
@@ -52,7 +52,7 @@ test.describe("approvals", () => {
   test.fixme("the agent's activity leads to its approval", async ({ page, funded: _funded }) => {
     await askOverLargestTrade(page)
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $150.00 of NVIDIA" })
-    await expect(row.getByText("Over the agent's largest trade ($100): it needs your Face ID.")).toBeVisible()
+    await expect(row.getByText("Over its $100 limit, so it needs your approval.")).toBeVisible()
 
     await row.getByRole("link", { name: "Review and approve" }).click()
 
@@ -72,7 +72,7 @@ test.describe("approvals", () => {
     await expect(page.getByText("Nothing waiting for you")).toBeVisible()
     await expect(page.getByLabel("1 waiting")).toBeHidden()
     await declined.getByRole("button", { name: "Done" }).click()
-    await expect(page.getByText("When an agent's trade needs your OK, it shows up here.")).toBeVisible()
+    await expect(page.getByText("When an agent's trade needs your approval, it shows up here.")).toBeVisible()
   })
 
   test("approving it with Face ID sends it and it fills", async ({ page, funded: _funded }) => {

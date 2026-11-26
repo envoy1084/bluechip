@@ -33,6 +33,7 @@ export function TelegramCard() {
     <SettingsCard
       title="Telegram"
       description="Talk to the same assistant in Telegram and get your notifications there. Nothing is signed there."
+      illustration="plane"
     >
       {linked.map((link) => (
         <SettingsRow

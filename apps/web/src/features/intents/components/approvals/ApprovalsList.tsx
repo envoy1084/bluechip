@@ -1,8 +1,9 @@
 import type { Intent } from "@bluechip/domain/intents/Intent"
 import { Button } from "@bluechip/ui/components/button"
-import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
+import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
@@ -61,11 +62,9 @@ export function ApprovalsList() {
   if (shown.length === 0) {
     return (
       <Empty variant="outline" size="sm">
-        <EmptyMedia>
-          <Icon name="bell" size={18} />
-        </EmptyMedia>
+        <Illustration name="passkey" variant="halftone" size={120} animate className="-my-1" />
         <EmptyTitle>Nothing waiting for you</EmptyTitle>
-        <EmptyDescription>When an agent's trade needs your OK, it shows up here.</EmptyDescription>
+        <EmptyDescription>When an agent's trade needs your approval, it shows up here.</EmptyDescription>
       </Empty>
     )
   }

@@ -9,6 +9,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { agentJournalAtom } from "../../atoms/agents.ts"
 
@@ -65,10 +66,9 @@ function JournalPage(
   const { items, nextPageToken } = page.value
   if (pageToken === "" && items.length === 0) {
     return (
-      <p className="p-[18px] text-body-sm text-g-600">
-        Nothing yet. What {agent.name}{" "}
-        does and why, its automations' runs and the judgments they ask for, are written here as they happen.
-      </p>
+      <IllustratedEmpty illustration="notebook" title="Nothing written yet">
+        What {agent.name} does and why, and its automations' runs, are written here as they happen.
+      </IllustratedEmpty>
     )
   }
 

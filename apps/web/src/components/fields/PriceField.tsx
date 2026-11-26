@@ -2,6 +2,7 @@ import { Price } from "@bluechip/domain/market/Units"
 import { InputGroup, InputGroupInput, InputGroupText } from "@bluechip/ui/components/input-group"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useId, useState } from "react"
+import { FieldHelp } from "./FieldHelp.tsx"
 
 const PRICE_SCALE = 100_000_000
 
@@ -23,12 +24,15 @@ export function PriceField(
 ) {
   const id = useId()
   const [text, setText] = useState<string | null>(null)
-  const note = problem ?? help
+  const note = problem
 
   return (
     <div className="grid gap-1.5">
       <div className="flex items-center justify-between gap-3">
-        <label htmlFor={id} className="text-[13.5px] font-medium text-g-700">{label}</label>
+        <span className="inline-flex items-center gap-1.5">
+          <label htmlFor={id} className="text-[13.5px] font-medium text-g-700">{label}</label>
+          <FieldHelp label={label} help={help} />
+        </span>
         <InputGroup size="sm" className="w-[120px] shrink-0 font-semibold">
           <InputGroupText>$</InputGroupText>
           <InputGroupInput

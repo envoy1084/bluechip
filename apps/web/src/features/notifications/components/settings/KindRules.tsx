@@ -18,6 +18,7 @@ export function KindRules({ rules }: Readonly<{ rules: ReadonlyArray<Notificatio
           key={section.group}
           title={section.title}
           description={section.description}
+          illustration={section.illustration}
           aside={
             <div aria-hidden className="hidden gap-4 text-caption-sm font-medium text-g-500 sm:flex">
               {COLUMNS.map((channel) => (

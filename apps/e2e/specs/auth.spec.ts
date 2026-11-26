@@ -27,7 +27,7 @@ test.describe("landing and legal", () => {
 })
 
 test.describe("sign up", () => {
-  test("a passkey makes an account on Base, then eligibility and cash lead home", async ({ page, authenticator }) => {
+  test("a passkey makes an account on Base, then eligibility and deposit lead home", async ({ page, authenticator }) => {
     await page.goto("/welcome")
     await page.getByRole("button", { name: "Create account with Face ID" }).click()
 
@@ -40,7 +40,7 @@ test.describe("sign up", () => {
     await expect(page.getByRole("radio", { name: /Outside the United States/ })).toBeChecked()
     await expect(page.getByText("You can use bluechip.")).toBeVisible()
     await page.getByRole("button", { name: "Continue" }).click()
-    await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Deposit cash", level: 1 })).toBeVisible()
     await page.getByRole("button", { name: "Go to home" }).click()
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })

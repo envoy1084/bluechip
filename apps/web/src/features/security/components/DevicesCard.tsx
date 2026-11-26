@@ -31,6 +31,7 @@ export function DevicesCard() {
   return (
     <SettingsSection
       title="Devices"
+      illustration="devices"
       description="Every browser signed in to your account. Sign out one you don't know."
     >
       {list.map((device) => (

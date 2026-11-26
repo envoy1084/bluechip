@@ -5,6 +5,8 @@ import { ChatConversation, ChatConversationContent, ChatScrollButton } from "@bl
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
+import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
@@ -15,9 +17,25 @@ import { AgentPicker } from "./AgentPicker.tsx"
 import type { CardViews } from "./cards/CardViews.ts"
 import { Thread } from "./Thread.tsx"
 
-const SUGGESTIONS = ["What did my agents do today?", "How did I do this week?", "Create an agent that only rebalances"]
+interface Suggestion {
+  readonly icon: IconName
+  readonly ask: string
+  readonly hint: string
+}
 
-const AGENT_SUGGESTIONS = ["What has this agent done this week?", "Sell $50 of Nvidia", "Pause this agent"]
+const SUGGESTIONS: ReadonlyArray<Suggestion> = [
+  { icon: "activity", ask: "What did my agents do today?", hint: "Their trades, refusals and approvals" },
+  { icon: "portfolio", ask: "How did I do this week?", hint: "Profit by stock and by agent" },
+  { icon: "agents", ask: "Create an agent that only rebalances", hint: "Set a target mix in words" },
+  { icon: "zap", ask: "Buy $50 of Apple every Monday", hint: "An automation from one sentence" }
+]
+
+const AGENT_SUGGESTIONS: ReadonlyArray<Suggestion> = [
+  { icon: "activity", ask: "What has this agent done this week?", hint: "Its trades and why" },
+  { icon: "stocks", ask: "Sell $50 of Nvidia", hint: "Through its rules" },
+  { icon: "zap", ask: "Add an automation to this agent", hint: "On a schedule, a price or the news" },
+  { icon: "pause", ask: "Pause this agent", hint: "Nothing trades until you resume" }
+]
 
 /** The column's width: one readable measure, centred. */
 const COLUMN = "mx-auto w-full max-w-[720px] px-4 md:px-6"
@@ -41,6 +59,69 @@ export function Conversation(
   const { nameOf } = useStockLookup()
   const spent = AsyncResult.isSuccess(budget) && isSpent(budget.value)
   const fresh = state.entries.length === 0 && state.load === "ready"
+  const composer = (
+    <ChatComposer
+      key={initialMessage}
+      defaultMessage={initialMessage}
+      onSend={(text) => void send(text)}
+      sending={running}
+      onStop={cancel}
+      size={fresh ? "lg" : "md"}
+      leading={
+        <AgentPicker
+          agentId={state.agentId}
+          onChange={(agentId: AgentId | null) => chooseAgent(agentId)}
+          locked={state.conversationId !== null}
+        />
+      }
+    />
+  )
+  const budgetNotice = spent ?
+    (
+      <Alert>
+        <AlertDescription>
+          You've used today's assistant budget. It resets at midnight UTC, and everything else in bluechip still works.
+        </AlertDescription>
+      </Alert>
+    ) :
+    null
+
+  // Before the first message the page is a start screen: the prompt in the middle, ideas under it. The first message
+  // turns it into the thread, with the box at the bottom.
+  if (fresh) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className={`${COLUMN} my-auto grid gap-6 py-10`}>
+          <div className="grid justify-items-center gap-2 text-center">
+            <Illustration name="chat" variant="halftone" size={132} animate className="-mb-1" />
+            {empty}
+          </div>
+          {budgetNotice}
+          {composer}
+          <ul aria-label="Ideas to start with" className="grid gap-2.5 sm:grid-cols-2">
+            {(state.agentId === null ? SUGGESTIONS : AGENT_SUGGESTIONS).map((idea) => (
+              <li key={idea.ask}>
+                <button
+                  type="button"
+                  disabled={running}
+                  onClick={() => void send(idea.ask)}
+                  className="group/idea flex h-full w-full cursor-pointer items-start gap-3 rounded-[14px] bg-white p-3.5 text-left shadow-e1 transition-[box-shadow,transform] duration-fast ease-brand hover:-translate-y-px hover:shadow-e2 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-blue-50 text-blue">
+                    <Icon name={idea.icon} size={16} />
+                  </span>
+                  <span className="grid min-w-0 gap-0.5">
+                    <b className="text-[14px] font-semibold group-hover/idea:text-blue">{idea.ask}</b>
+                    <span className="text-label-sm text-g-500">{idea.hint}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -70,31 +151,8 @@ export function Conversation(
       </ChatConversation>
 
       <div className={`${COLUMN} grid gap-2.5 pb-4`}>
-        {spent ?
-          (
-            <Alert>
-              <AlertDescription>
-                You've used today's assistant budget. It resets at midnight UTC, and everything else in bluechip still
-                works.
-              </AlertDescription>
-            </Alert>
-          ) :
-          null}
-        <ChatComposer
-          key={initialMessage}
-          defaultMessage={initialMessage}
-          onSend={(text) => void send(text)}
-          sending={running}
-          onStop={cancel}
-          leading={
-            <AgentPicker
-              agentId={state.agentId}
-              onChange={(agentId: AgentId | null) => chooseAgent(agentId)}
-              locked={state.conversationId !== null}
-            />
-          }
-          suggestions={fresh ? (state.agentId === null ? SUGGESTIONS : AGENT_SUGGESTIONS) : []}
-        />
+        {budgetNotice}
+        {composer}
       </div>
     </div>
   )

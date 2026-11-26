@@ -2,7 +2,7 @@ import { type Agent, MAX_NAME_LENGTH, SESSION_DAYS } from "@bluechip/domain/agen
 import type { RequestId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
-import { describeSpec, policyOf } from "@bluechip/domain/policies/Catalog"
+import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { formatDollars, listNames } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { rebalance } from "@bluechip/domain/policies/Rebalance"
@@ -26,7 +26,7 @@ import { useSpecCheck } from "../../hooks/useSpecCheck.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { type Origin, originLabel, originTemplate } from "../../model/origin.ts"
 import { SaveTemplate } from "../SaveTemplate.tsx"
-import { PolicyRules } from "../spec/PolicyRules.tsx"
+import { AgentAtAGlance } from "../spec/AgentAtAGlance.tsx"
 import { TargetMixBar } from "../spec/TargetMixBar.tsx"
 
 /** Whether `name` can be an agent's name: something to call it, short enough for a card. */
@@ -135,10 +135,10 @@ export function ReviewStep(
     <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       <div className="grid min-w-0 gap-3">
         <div className="overflow-hidden rounded-lg bg-white shadow-e2">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-[18px] py-4">
-            <AgentAvatar agentId={draft?.id ?? name} size="lg" />
-            <div className="grid min-w-0 gap-1.5">
-              <label htmlFor={nameId} className="text-label-sm font-semibold text-g-500">Name</label>
+          <div className="grid gap-1.5 px-[18px] py-4">
+            <label htmlFor={nameId} className="text-label-sm font-semibold text-g-500">Name</label>
+            <div className="flex items-center gap-3">
+              <AgentAvatar agentId={draft?.id ?? name} size="lg" />
               <Input
                 id={nameId}
                 value={name}
@@ -148,18 +148,18 @@ export function ReviewStep(
                 aria-invalid={problem === undefined ? undefined : true}
                 aria-describedby={`${nameId}-note`}
                 onChange={(event) => onNameChange(event.currentTarget.value)}
-                className="text-[16px] font-semibold"
+                className="min-w-0 flex-1 text-[16px] font-semibold"
               />
-              <p
-                id={`${nameId}-note`}
-                className={cn("text-label-sm text-g-500", problem !== undefined && "font-medium text-loss")}
-              >
-                {problem ??
-                  (draft === null ?
-                    `${originLabel(origin)}, runs for ${SESSION_DAYS} days once locked.` :
-                    "Saved with its draft. Edit the rules to change it.")}
-              </p>
             </div>
+            <p
+              id={`${nameId}-note`}
+              className={cn("text-label-sm text-g-500", problem !== undefined && "font-medium text-loss")}
+            >
+              {problem ??
+                (draft === null ?
+                  `${originLabel(origin)}, runs for ${SESSION_DAYS} days once locked.` :
+                  "Saved with its draft. Edit the rules to change it.")}
+            </p>
           </div>
 
           {targets === undefined ? null : (
@@ -167,17 +167,17 @@ export function ReviewStep(
               <TargetMixBar targets={targets} />
             </div>
           )}
-
-          <PolicyRules
-            description={check?.description ?? describeSpec(spec, nameOf)}
-            className="rounded-none border-t border-g-100 shadow-none"
-            footer={
-              <Button variant="secondary" size="sm" onClick={onEdit}>
-                <Icon name="edit" size={14} />Edit rules
-              </Button>
-            }
-          />
         </div>
+
+        <AgentAtAGlance
+          spec={spec}
+          nameOf={nameOf}
+          action={
+            <Button variant="secondary" size="sm" onClick={onEdit}>
+              <Icon name="edit" size={14} />Edit rules
+            </Button>
+          }
+        />
 
         {automations}
 

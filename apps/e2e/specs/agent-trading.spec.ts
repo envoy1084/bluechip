@@ -8,19 +8,17 @@ test.describe("asking an agent for a trade", () => {
 
     await typeBuy(page, 50)
 
-    await expect(tradeCard(page).getByText("Within the agent's policies: it sends this itself.")).toBeVisible()
+    await expect(tradeCard(page).getByText("Within its policies, so it sends it itself.")).toBeVisible()
   })
 
   test("the preview says a trade over its largest trade needs your Face ID", async ({ page, funded: _funded }) => {
     await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
-    await expect(
-      tradeCard(page).getByText("Enter an amount to see what Stock picker's policies would do with it.")
-    ).toBeVisible()
+    await expect(tradeCard(page).getByRole("button", { name: "Ask Stock picker to buy" })).toBeDisabled()
 
     await typeBuy(page, 150)
 
     await expect(
-      tradeCard(page).getByText("Over the agent's largest trade ($100): it needs your Face ID.")
+      tradeCard(page).getByText("Over its $100 limit, so it needs your approval.")
     ).toBeVisible()
     await expect(tradeCard(page).getByRole("button", { name: "Ask Stock picker to buy" })).toBeEnabled()
   })
@@ -55,7 +53,7 @@ test.describe("asking an agent for a trade", () => {
 
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $50.00 of NVIDIA" })
     await expect(row.getByText("Filled", { exact: true })).toBeVisible()
-    await expect(row.getByText("Within the agent's policies: it sends this itself.")).toBeVisible()
+    await expect(row.getByText("Within its policies, so it sends it itself.")).toBeVisible()
     const usage = page.getByRole("region", { name: "Usage" })
     await expect(usage.getByText("$200 left today")).toBeVisible()
     await expect(usage.getByText("11 left today")).toBeVisible()

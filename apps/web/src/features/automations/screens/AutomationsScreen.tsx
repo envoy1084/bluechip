@@ -1,8 +1,9 @@
 import type { Automation } from "@bluechip/domain/automations/Automation"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
+import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -14,9 +15,9 @@ import { AutomationCard } from "../components/AutomationCard.tsx"
 
 const PLACEHOLDERS = ["a", "b", "c"]
 
-function NewAutomationButton() {
+function NewAutomationButton({ size = "sm" }: Readonly<{ size?: "sm" | "md" }>) {
   return (
-    <ButtonLink size="sm" render={<Link to="/automations/new" />}>
+    <ButtonLink size={size} render={<Link to="/automations/new" />}>
       <Icon name="plus" size={14} />New automation
     </ButtonLink>
   )
@@ -78,16 +79,19 @@ export function AutomationsScreen() {
       )}
       {AsyncResult.isSuccess(automations) && automations.value.length === 0 && (
         <Empty>
-          <EmptyMedia>
-            <Icon name="zap" size={24} />
-          </EmptyMedia>
+          <Illustration name="bolt" variant="halftone" size={160} animate className="-my-2" />
           <EmptyTitle>No automations yet</EmptyTitle>
           <EmptyDescription>
-            An automation trades for you on a schedule, a price move or the news, inside your agent's rules. You read
-            what it does before you save it.
+            Trade on a schedule, a price move or the news, always inside your agent's rules.
           </EmptyDescription>
-          <EmptyContent>
-            <NewAutomationButton />
+          <EmptyContent className="flex flex-wrap justify-center gap-2">
+            <NewAutomationButton size="md" />
+            <ButtonLink
+              variant="secondary"
+              render={<Link to="/chat/{-$conversationId}" params={{ conversationId: undefined }} />}
+            >
+              <Icon name="chat" size={16} />Ask the assistant
+            </ButtonLink>
           </EmptyContent>
         </Empty>
       )}

@@ -1,5 +1,6 @@
 // How the policies form lays an agent's policies out, one decision at a time: what it trades first, then its limits,
-// then the rules to add and the fine-tuning most people leave alone.
+// then the fine-tuning most people leave alone. Each list keeps the catalog's order whether a rule is on or off, so a
+// rule never jumps when it is switched.
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec, PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
@@ -9,26 +10,21 @@ import { hasPolicy, VISIBLE_POLICIES } from "@bluechip/domain/policies/SpecEdits
 export const FINE_TUNING: ReadonlyArray<PolicyId> = ["fairPrice", "slippageBudget", "tradesPerDay"]
 
 export interface PolicySections {
-  /** The limits it carries now, after what it trades: every visible policy on it but the trade and fine-tuning. */
+  /** Its limits after what it trades: every visible policy but the trade and fine-tuning, carried or one to add. */
   readonly limits: ReadonlyArray<PolicyId>
-  /** Optional rules it doesn't carry yet, to add. */
-  readonly more: ReadonlyArray<PolicyId>
-  /** The fine-tuning it carries, then the optional fine-tuning it doesn't. */
+  /** The fine-tuning, carried or one to add. */
   readonly fineTuning: ReadonlyArray<PolicyId>
-  readonly fineTuningToAdd: ReadonlyArray<PolicyId>
 }
 
 /** Where each visible policy goes in the form, in the order `TradeGuard` runs them. */
 export const policySections = (spec: AgentSpec): PolicySections => {
-  const visible = VISIBLE_POLICIES.map((policy) => policy.id as PolicyId)
-  const on = visible.filter((id) => hasPolicy(spec, id))
-  const off = visible.filter((id) => !hasPolicy(spec, id) && !policyOf(id).required)
+  const shown = VISIBLE_POLICIES
+    .map((policy) => policy.id as PolicyId)
+    .filter((id) => hasPolicy(spec, id) || !policyOf(id).required)
 
   return {
-    limits: on.filter((id) => id !== "trade" && !FINE_TUNING.includes(id)),
-    more: off.filter((id) => !FINE_TUNING.includes(id)),
-    fineTuning: on.filter((id) => FINE_TUNING.includes(id)),
-    fineTuningToAdd: off.filter((id) => FINE_TUNING.includes(id))
+    limits: shown.filter((id) => id !== "trade" && !FINE_TUNING.includes(id)),
+    fineTuning: shown.filter((id) => FINE_TUNING.includes(id))
   }
 }
 

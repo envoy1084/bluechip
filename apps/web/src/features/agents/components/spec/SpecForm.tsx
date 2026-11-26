@@ -67,10 +67,8 @@ export function SpecForm(
     ].join()
   }
 
-  const sections = policySections(spec)
-  const limits = [...sections.limits, ...sections.more]
-  const fineTuning = [...sections.fineTuning, ...sections.fineTuningToAdd]
-  const fineTuningProblem = problems.some((problem) => sections.fineTuning.includes(problem.policy))
+  const { limits, fineTuning } = policySections(spec)
+  const fineTuningProblem = problems.some((problem) => fineTuning.includes(problem.policy))
   const preset = template === null ? undefined : presetOf(spec, template, Preset.literals)
 
   const row = (id: PolicyId) => (
@@ -88,7 +86,9 @@ export function SpecForm(
           else next.delete(id)
           return next
         })}
-      problem={problems.find((problem) => problem.policy === id)?.message}
+      // A field's problem shows under its field, so the row only opens for it; the header says the rule's own.
+      problem={problemOf(id, null)}
+      held={problems.some((problem) => problem.policy === id && problem.field !== null)}
       problemOf={(field) => problemOf(id, field)}
       onSpecChange={onChange}
     />
@@ -98,12 +98,13 @@ export function SpecForm(
     <div className="grid min-w-0 gap-3.5">
       <PolicyGroup
         title="What it trades"
-        description="The stocks it may trade, which way, and what it may spend."
+        description="The stocks it may trade."
         aside={<ChangeMark change={changeOf("trade")} />}
       >
         <div className="grid gap-4 px-[18px] py-4">
           <TradeEditor
             id="trade"
+            parts={["stocks"]}
             context={context}
             problemOf={(field) => problemOf("trade", field)}
             onSpecChange={onChange}
@@ -115,17 +116,33 @@ export function SpecForm(
       </PolicyGroup>
 
       <PolicyGroup title="Its limits" description="Checked onchain on every trade it makes.">
-        {template === null ? null : (
-          <div className="grid gap-2 border-b border-g-100 px-[18px] py-4">
-            <span className="text-label font-semibold text-g-800">Start from a preset</span>
-            <PresetPicker
-              value={preset ?? null}
-              amounts={presetAmounts(template)}
-              onValueChange={(picked) => onChange(applyPreset(spec, template, picked.name))}
-            />
-            {preset === undefined && <p className="text-label-sm text-g-500">Custom amounts.</p>}
-          </div>
-        )}
+        <div className="grid gap-4 border-b border-g-100 px-[18px] py-4">
+          <TradeEditor
+            id="trade"
+            parts={["direction"]}
+            context={context}
+            problemOf={(field) => problemOf("trade", field)}
+            onSpecChange={onChange}
+          />
+          {template === null ? null : (
+            <div className="grid gap-2">
+              <span className="text-label font-semibold text-g-800">Start from a preset</span>
+              <PresetPicker
+                value={preset ?? null}
+                amounts={presetAmounts(template)}
+                onValueChange={(picked) => onChange(applyPreset(spec, template, picked.name))}
+              />
+              {preset === undefined && <p className="text-label-sm text-g-500">Custom amounts.</p>}
+            </div>
+          )}
+          <TradeEditor
+            id="trade"
+            parts={["budget"]}
+            context={context}
+            problemOf={(field) => problemOf("trade", field)}
+            onSpecChange={onChange}
+          />
+        </div>
         {limits.map(row)}
       </PolicyGroup>
 

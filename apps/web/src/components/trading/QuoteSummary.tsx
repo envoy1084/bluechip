@@ -4,7 +4,7 @@ import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { formatMoney, formatShareCount, formatTokenAmount } from "@bluechip/ui/lib/format"
 import { UsdcLogo } from "@bluechip/ui/logos/usdc"
-import { bpsPercent, priceDollars, shareCount } from "../../../lib/amounts.ts"
+import { bpsPercent, priceDollars, shareCount } from "../../lib/amounts.ts"
 
 const usdc = (units: bigint) => (
   <>
@@ -28,7 +28,7 @@ function FairPrice({ quote }: Readonly<{ quote: Quote }>) {
   if (quote.gapBps <= (paused ? PAUSED_LIMIT_BPS : LIVE_LIMIT_BPS)) {
     return (
       <FairPriceCheck>
-        {paused ? "Within 0.5% of Chainlink's last price before the pause" : "Within 1% of Chainlink's price"}
+        {paused ? "Within 0.5%" : "Within 1%"}
       </FairPriceCheck>
     )
   }
@@ -62,10 +62,27 @@ export function QuoteSummary({ stock, quote }: Readonly<{ stock: Stock; quote: Q
   )
 }
 
-export function QuoteSummarySkeleton() {
+/** The summary's own rows while the quote loads: the labels and the stock are known, only the values shimmer. */
+export function QuoteSummarySkeleton({ stock, side }: Readonly<{ stock: Stock; side: Quote["side"] }>) {
+  // The summary sits in a grey well, so its bars shimmer a shade darker than on white.
+  const value = (width: string) => (
+    <SkeletonBlock
+      className={`my-[3px] h-3.5 bg-[linear-gradient(90deg,var(--color-g-200)_0%,var(--color-g-100)_40%,var(--color-g-200)_80%)] ${width}`}
+    />
+  )
   return (
-    <div aria-busy className="grid gap-3 rounded-[12px] px-3.5 py-3.5 surface-well">
-      {["a", "b", "c", "d", "e", "f"].map((id) => <SkeletonBlock key={id} className="h-4 w-full" />)}
+    <div aria-busy aria-label="Getting a quote">
+      <OrderPreview>
+        <OrderPreviewRow label={side === "buy" ? "Buy" : "Sell"}>
+          <TickerChip symbol={stock.symbol} size="sm" />
+          {stock.name}
+        </OrderPreviewRow>
+        <OrderPreviewRow label="You pay">{value("w-24")}</OrderPreviewRow>
+        <OrderPreviewRow label="Price">{value("w-28")}</OrderPreviewRow>
+        <OrderPreviewRow label="You get about">{value("w-28")}</OrderPreviewRow>
+        <OrderPreviewRow label="Fair price check">{value("w-20")}</OrderPreviewRow>
+        <OrderPreviewRow label="At least, after 0.5% slippage">{value("w-28")}</OrderPreviewRow>
+      </OrderPreview>
     </div>
   )
 }

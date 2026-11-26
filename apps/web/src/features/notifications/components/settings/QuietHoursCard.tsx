@@ -23,6 +23,7 @@ export function QuietHoursCard(
     <SettingsCard
       title="Quiet hours"
       description="Push and Telegram wait until they end. Security notifications never wait."
+      illustration="moon"
     >
       <SettingsRow
         title="Quiet hours"

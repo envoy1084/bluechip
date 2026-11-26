@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router"
 // page hydrates.
 export function LandingScreen() {
   return (
-    <main className="grid min-h-dvh place-items-center p-6">
+    <main className="grid min-h-dvh place-items-center p-6 [view-transition-name:page]">
       <div className="grid justify-items-center gap-6 text-center">
         <h1 className="text-display-2 font-semibold tracking-tight">bluechip</h1>
         <p className="max-w-[40ch] text-body-lg text-g-600">You and your agents, trading stocks on Base.</p>

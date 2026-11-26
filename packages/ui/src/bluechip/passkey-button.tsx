@@ -5,7 +5,7 @@ import { TextMorph } from "../components/text-morph.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { haptic } from "../lib/haptics.ts"
-import { Seal } from "../motion/seal.tsx"
+import { ButtonCheck } from "../motion/button-check.tsx"
 
 /** How the person proves it's them. The button always names it. */
 export type PasskeyMethod = "face-id" | "fingerprint"
@@ -29,7 +29,7 @@ export interface PasskeyButtonProps extends Omit<ButtonProps, "children" | "onCl
 
 /**
  * The one button for anything that needs you: creating your account, signing in, approving a trade, locking limits.
- * Waiting says so, success forms the seal, turns green and taps a success haptic on phones, and a failure asks to try
+ * Waiting says so, success draws a check and taps a success haptic on phones, and a failure asks to try
  * again, never with a code. The label morphs between states (string labels only).
  */
 export function PasskeyButton({
@@ -72,16 +72,14 @@ export function PasskeyButton({
           }
         }}
         className={cn(
-          "w-full gap-2.5 transition-[background,box-shadow,filter,translate] duration-slow",
-          state === "done" &&
-            "bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white [text-shadow:none] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_0_0_1px_#0c7a40,0_4px_10px_-4px_rgba(15,138,74,.24)]"
+          "w-full gap-2.5 transition-[background,box-shadow,filter,translate] duration-slow"
         )}
         {...props}
       >
         {state === "waiting" ?
           <Spinner size={16} /> :
           state === "done" ?
-          <Seal playing label={`Done with ${name}`} className="size-5" /> :
+          <ButtonCheck /> :
           <Icon name={icon} size={18} />}
         <TextMorph>
           {state === "waiting"

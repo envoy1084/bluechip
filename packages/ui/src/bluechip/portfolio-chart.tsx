@@ -178,7 +178,12 @@ export function PortfolioChart(
           <div className="grid gap-1">
             <span className="flex items-center gap-1.5 text-label text-g-600">{title}{titleAddon}</span>
             {loading ?
-              <Skeleton className="h-9 w-48" /> :
+              (
+                <>
+                  <Skeleton className="my-[3px] h-[30px] w-44" />
+                  <Skeleton className="my-[3.5px] h-3.5 w-36" />
+                </>
+              ) :
               (
                 <NumberRoll
                   value={current?.value ?? 0}
@@ -206,8 +211,22 @@ export function PortfolioChart(
         <TabsPanel value={rangeId} className="min-w-0 focus-visible:outline-none">
           {loading ?
             (
-              <div aria-busy className="flex h-[120px] items-end gap-1.5">
-                {[40, 65, 85, 55, 75].map((h) => <Skeleton key={h} className="flex-1" style={{ height: `${h}%` }} />)}
+              // The chart's own frame while it loads: its height, gridlines and time axis, with the plot shimmering.
+              <div aria-busy className="grid h-[210px] grid-rows-[1fr_auto] gap-3">
+                <div className="relative">
+                  {[0, 1, 2].map((line) => (
+                    <i
+                      key={line}
+                      aria-hidden
+                      className="absolute inset-x-0 h-px bg-g-100"
+                      style={{ top: `${20 + line * 32}%` }}
+                    />
+                  ))}
+                  <Skeleton className="absolute inset-x-0 bottom-0 h-3/5 rounded-sm opacity-70" />
+                </div>
+                <div aria-hidden className="flex justify-between">
+                  {["a", "b", "c", "d"].map((tick) => <Skeleton key={tick} className="h-3 w-9" />)}
+                </div>
               </div>
             ) :
             definition === undefined ?

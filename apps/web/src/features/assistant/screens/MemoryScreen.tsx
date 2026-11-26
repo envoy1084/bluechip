@@ -73,7 +73,7 @@ export function MemoryScreen() {
   const any = AsyncResult.isSuccess(all) && all.value.length > 0
 
   return (
-    <AppPage title="Memory" sub="What bluechip remembers about you">
+    <AppPage title="Memory">
       <section className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2">
         <div className="grid gap-3.5 border-b border-g-100 pt-[18px] pb-3.5">
           <div className="flex flex-wrap items-end justify-between gap-3">

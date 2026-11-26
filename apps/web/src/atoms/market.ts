@@ -30,3 +30,6 @@ export const stocksAtom = Atom.make((get) =>
     })
   })
 )
+
+/** Asks for a quote; each call replaces the last. */
+export const quoteAtom = BluechipApiClient.mutation("market", "quote")

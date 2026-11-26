@@ -12,8 +12,11 @@ export type TradeFlow =
   | { readonly status: "idle" }
   | { readonly status: "preparing" }
   | { readonly status: "signing" }
+  | { readonly status: "signed"; readonly trade: Trade }
   | { readonly status: "sent"; readonly trade: Trade }
   | { readonly status: "failed"; readonly message: string }
+
+const SEAL_MS = 900
 
 /**
  * Buying or selling with Face ID: the server prepares the trade (and checks its price), the passkey signs it, the
@@ -31,12 +34,17 @@ export function useTrade(symbol: StockSymbol) {
       const request = await prepare({ payload: { requestId: crypto.randomUUID() as RequestId, symbol, side, amount } })
       setFlow({ status: "signing" })
       const trade = await confirm({ id: request.id, options: request.options })
-      setFlow({ status: "sent", trade })
+      // The button holds its seal a beat before the trade's own status takes over the box.
+      setFlow({ status: "signed", trade })
+      await new Promise((resolve) => setTimeout(resolve, SEAL_MS))
+      setFlow((current) => current.status === "signed" ? { status: "sent", trade } : current)
     } catch (error) {
       setFlow({ status: "failed", message: tradeProblem(error, side) })
     }
   }
 
-  const current = flow.status === "sent" ? { ...flow, trade: live.get(flow.trade.id) ?? flow.trade } : flow
+  const current = flow.status === "sent" || flow.status === "signed"
+    ? { ...flow, trade: live.get(flow.trade.id) ?? flow.trade }
+    : flow
   return { flow: current, start, reset: () => setFlow({ status: "idle" }) }
 }

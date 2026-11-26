@@ -28,24 +28,6 @@ test.describe("performance", () => {
     await expect(lines.first()).toHaveAccessibleName(/NVIDIA Cost \$50\.00, worth \$\d/)
   })
 
-  test("a stock you bought shows your cost and results on its page", async ({ page, funded: _ }) => {
-    await buy(page, "NVDA", 50)
-
-    await page.goto("/stocks/NVDA")
-
-    const card = results(page, "Your results")
-    await expect(card.getByText("$50.00", { exact: true })).toBeVisible()
-    await expect(card.getByText(/^\$\d+\.\d{2} a share$/)).toBeVisible()
-    await expect(card.getByText(/^Costs: \$\d+\.\d{2} in pool fees, /)).toBeVisible()
-  })
-
-  test("a stock never traded has no results section", async ({ page, funded: _ }) => {
-    await page.goto("/stocks/AAPL")
-
-    await expect(page.getByRole("heading", { name: "Apple" })).toBeVisible()
-    await expect(results(page, "Your results")).toHaveCount(0)
-  })
-
   test("an agent's page shows what it bought and how often its policies blocked it", async ({ page, funded: _ }) => {
     await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
     await askToBuy(page, 50)

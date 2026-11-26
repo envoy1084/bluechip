@@ -22,7 +22,7 @@ test.describe("buying on a stock's page", () => {
     await expect(rows.nth(1)).toHaveText("10.00 USDC")
     await expect(rows.nth(2)).toHaveText(/^\$\d+\.\d{2} a share$/)
     await expect(rows.nth(3)).toHaveText(/^\d+\.\d+ shares$/)
-    await expect(rows.nth(4)).toHaveText("Within 1% of Chainlink's price")
+    await expect(rows.nth(4)).toHaveText("Within 1%")
     await expect(rows.nth(5)).toHaveText(/^\d+\.\d+ shares$/)
     await expect(box.getByRole("term").nth(5)).toHaveText("At least, after 0.5% slippage")
     await expect(box.getByRole("button", { name: "Buy with Face ID" })).toBeEnabled()
@@ -133,7 +133,7 @@ test.describe("buying on a stock's page", () => {
     await page.goto("/stocks/SPCX")
     const box = tradeBox(page, "SpaceX")
     await box.getByRole("textbox", { name: "Buy SpaceX" }).fill("10")
-    await expect(box.getByText("Within 1% of Chainlink's price")).toBeVisible()
+    await expect(box.getByText("Within 1%")).toBeVisible()
     await authenticator.setVerified(false)
     const confirms: Array<string> = []
     page.on("request", (request) => {

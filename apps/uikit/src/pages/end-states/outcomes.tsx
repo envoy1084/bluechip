@@ -1,4 +1,4 @@
-import { DepositCard } from "@bluechip/ui/bluechip/deposit-card"
+import { DepositArrivedCard } from "@bluechip/ui/bluechip/deposit-arrived-card"
 import { OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { Outcome, OutcomeLink, OutcomeMark, type OutcomeTone } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
@@ -124,9 +124,7 @@ export function CashOutcomesSection() {
       purpose="Money in and out. A deposit lands with the amount rolling up; a withdrawal waits a moment, then says where the USDC went."
     >
       <Demo className="justify-center">
-        <DepositCard
-          address="0x8a3f2c9e1b7d4a6f0e5c8b2d9a1f3e7c4b6d0a2e"
-          status="arrived"
+        <DepositArrivedCard
           amount={200}
           from="0x12ab34cd56ef7890a1b2c3d4e5f6a7b8c9d09f3e"
         />

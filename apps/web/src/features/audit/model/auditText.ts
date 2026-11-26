@@ -15,7 +15,7 @@ const INTENT: Readonly<Record<string, string>> = {
   proposed: "A trade was proposed",
   deciding: "A trade was checked against its policies",
   waiting: "A trade is waiting",
-  needsApproval: "A trade needs your OK",
+  needsApproval: "A trade needs your approval",
   awaitingSignature: "A trade is waiting for your Face ID",
   sending: "A trade was sent",
   confirming: "A trade is confirming",

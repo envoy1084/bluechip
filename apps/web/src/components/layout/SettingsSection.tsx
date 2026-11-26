@@ -1,16 +1,42 @@
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
+import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
 
-/** A card of settings: its title and what it is for, then its rows. */
+/**
+ * A card of settings: its illustration, title and what it is for, then its rows; or, without rows, a card that leads
+ * to a page of its own through `action`.
+ */
 export function SettingsSection(
-  { title, description, children }: Readonly<{ title: string; description: string; children: ReactNode }>
+  { title, description, illustration, action, children }: Readonly<{
+    title?: string
+    description?: string
+    illustration?: IllustrationName
+    action?: ReactNode
+    children?: ReactNode
+  }>
 ) {
   return (
     <section className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2">
-      <div className="grid gap-1 border-b border-g-100 pt-[18px] pb-3.5">
-        <h3 className="text-base font-semibold tracking-[-0.02em]">{title}</h3>
-        <p className="text-[13.5px] text-g-600">{description}</p>
-      </div>
+      {title === undefined ?
+        null :
+        (
+          <div
+            className={cn(
+              "flex flex-wrap items-center justify-between gap-x-5 gap-y-3 pt-[18px] pb-3.5",
+              children !== undefined && "border-b border-g-100"
+            )}
+          >
+            <div className="flex min-w-0 flex-[1_1_260px] items-center gap-3.5">
+              {illustration === undefined ? null : <Illustration name={illustration} size={48} className="shrink-0" />}
+              <div className="grid gap-1">
+                <h3 className="text-base font-semibold tracking-[-0.02em]">{title}</h3>
+                {description === undefined ? null : <p className="text-[13.5px] text-g-600">{description}</p>}
+              </div>
+            </div>
+            {action}
+          </div>
+        )}
       {children}
     </section>
   )

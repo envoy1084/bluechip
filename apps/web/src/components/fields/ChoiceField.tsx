@@ -1,5 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from "@bluechip/ui/components/toggle-group"
 import { cn } from "@bluechip/ui/lib/cn"
+import { FieldHelp } from "./FieldHelp.tsx"
 
 /** One of a few settings, each said in words. */
 export function ChoiceField<A extends string | number>(
@@ -12,12 +13,15 @@ export function ChoiceField<A extends string | number>(
     onChange: (value: A) => void
   }>
 ) {
-  const note = problem ?? help
+  const note = problem
 
   return (
     <div className="grid gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[13.5px] font-medium text-g-700">{label}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-[13.5px] font-medium text-g-700">{label}</span>
+          <FieldHelp label={label} help={help} />
+        </span>
         <ToggleGroup
           size="sm"
           aria-label={label}

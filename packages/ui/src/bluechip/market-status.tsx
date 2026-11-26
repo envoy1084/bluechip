@@ -1,5 +1,6 @@
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react"
 import { cva } from "class-variance-authority"
-import type { ComponentProps } from "react"
+import { type ComponentProps, useEffect, useState } from "react"
 import { Popover, PopoverContent, PopoverDescription, PopoverTitle, PopoverTrigger } from "../components/popover.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
@@ -133,12 +134,19 @@ export function MarketStatus(
           )}
         {label}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[280px] gap-2.5">
-        <PopoverTitle>{label}</PopoverTitle>
+      <PopoverContent align="end" className="w-[300px] gap-3.5 p-[18px]">
+        <PopoverTitle>
+          <span className={cn(marketStatusVariants({ state }), "pointer-events-none size-7 justify-center p-0")}>
+            {state === "open" ?
+              <i aria-hidden className="size-[7px] rounded-full bg-green" /> :
+              <Icon name={state === "halted" || state === "paused" ? "pause" : "moon"} size={13} />}
+          </span>
+          {label}
+        </PopoverTitle>
         {moment === undefined || at === undefined ? null : (
-          <div className="grid gap-1.5">
-            <span className="text-label-sm text-g-500">{moment}</span>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-label">
+          <div className="grid gap-3">
+            <Countdown to={at} moment={moment} />
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-md px-3 py-2.5 text-label surface-well">
               <dt className="text-g-500">New York</dt>
               <dd className="text-right font-[550] tabular-nums">{formatDate(at, { timeZone: MARKET_TIME_ZONE })}</dd>
               {timeZone === MARKET_TIME_ZONE ? null : (
@@ -153,5 +161,62 @@ export function MarketStatus(
         {note === undefined ? null : <PopoverDescription>{note}</PopoverDescription>}
       </PopoverContent>
     </Popover>
+  )
+}
+
+/**
+ * The time left until `to` under `moment`, ticking each second: days, hours and minutes when it's a day or more away,
+ * else hours, minutes and seconds. Its digits roll (NumberFlow), and change in place under reduced motion. A time
+ * already past (the weekend's last close) is only named.
+ */
+function Countdown({ to, moment }: Readonly<{ to: Date | number; moment: string }>) {
+  const target = new Date(to).getTime()
+  const [start] = useState(() => Date.now())
+  const [now, setNow] = useState(start)
+  const future = target > start
+  useEffect(() => {
+    if (!future) return
+    const tick = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(tick)
+  }, [future])
+
+  if (!future) return <span className="text-label-sm text-g-500">{moment}</span>
+
+  const left = Math.max(0, Math.floor((target - now) / 1000))
+  if (left === 0) {
+    return (
+      <div className="grid gap-1">
+        <span className="text-label-sm text-g-500">{moment}</span>
+        <span className="text-[26px] leading-none font-semibold tracking-[-0.03em]">Any moment now</span>
+      </div>
+    )
+  }
+
+  const days = Math.floor(left / 86_400)
+  const hours = Math.floor((left % 86_400) / 3600)
+  const minutes = Math.floor((left % 3600) / 60)
+  const seconds = left % 60
+  const units: ReadonlyArray<readonly [number, string]> = days > 0 ?
+    [[days, "d"], [hours, "h"], [minutes, "m"]] :
+    [[hours, "h"], [minutes, "m"], [seconds, "s"]]
+
+  return (
+    <div className="grid gap-1.5">
+      <span className="text-label-sm text-g-500">{moment} in</span>
+      <NumberFlowGroup>
+        <span
+          role="timer"
+          aria-label={units.map(([value, unit]) => `${value}${unit}`).join(" ")}
+          className="flex items-baseline gap-2.5 text-[28px] leading-none font-semibold tracking-[-0.03em] tabular-nums"
+        >
+          {units.map(([value, unit]) => (
+            <span key={unit} className="inline-flex items-baseline">
+              <NumberFlow value={value} format={{ minimumIntegerDigits: 2 }} trend={-1} />
+              <span className="ml-0.5 text-[15px] font-medium text-g-500">{unit}</span>
+            </span>
+          ))}
+        </span>
+      </NumberFlowGroup>
+    </div>
   )
 }

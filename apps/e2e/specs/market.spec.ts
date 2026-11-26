@@ -1,7 +1,6 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
-import { giveShares } from "../utils/trading.ts"
 
 const list = (page: Page) => page.getByRole("region", { name: "Stocks on bluechip" })
 
@@ -10,10 +9,6 @@ test.describe("stocks list", () => {
   test.fixme("every stock bluechip trades is listed with its price and day", async ({ page, user: _user }) => {
     await page.goto("/stocks")
 
-    await expect(page.getByRole("searchbox", { name: "Search stocks" })).toHaveAttribute(
-      "placeholder",
-      `Search ${stocks.length} stocks`
-    )
     await expect(list(page).getByRole("link")).toHaveCount(stocks.length)
     for (const stock of stocks) {
       await expect(list(page).getByRole("link", { name: new RegExp(`^${stock.symbol} ${stock.name}`) })).toBeVisible()
@@ -21,33 +16,6 @@ test.describe("stocks list", () => {
     await expect(list(page).getByRole("link", { name: /^TSLA Tesla/ })).toContainText("+2.04%")
     await expect(page.getByText("These are Coinbase's tokenized US stocks on Base. Each one tracks its stock's price."))
       .toBeVisible()
-  })
-
-  test("a search by symbol keeps the stocks it matches", async ({ page, user: _user }) => {
-    await page.goto("/stocks")
-
-    await page.getByRole("searchbox", { name: "Search stocks" }).fill("tsla")
-
-    await expect(list(page).getByRole("link")).toHaveCount(1)
-    await expect(list(page).getByRole("link", { name: /^TSLA Tesla/ })).toBeVisible()
-  })
-
-  test("a search by name keeps the stocks it matches", async ({ page, user: _user }) => {
-    await page.goto("/stocks")
-
-    await page.getByRole("searchbox", { name: "Search stocks" }).fill("Micro")
-
-    await expect(list(page).getByRole("link")).toHaveCount(1)
-    await expect(list(page).getByRole("link", { name: /^MSFT Microsoft/ })).toBeVisible()
-  })
-
-  test("a search that matches nothing says so", async ({ page, user: _user }) => {
-    await page.goto("/stocks")
-
-    await page.getByRole("searchbox", { name: "Search stocks" }).fill("  Zebra ")
-
-    await expect(list(page).getByRole("link")).toHaveCount(0)
-    await expect(list(page).getByText("No stock matches “Zebra”.")).toBeVisible()
   })
 
   test("a row opens the stock's page", async ({ page, user: _user }) => {
@@ -111,25 +79,5 @@ test.describe("stock page", () => {
       await expect(page.getByRole("tabpanel", { name: tab })).toBeVisible()
       await expect(page.getByText(description, { exact: true })).toBeVisible()
     }
-  })
-})
-
-test.describe("stock page: your holding", () => {
-  test("a stock you hold shows your shares and their share of your money", async ({ page, user }) => {
-    await giveShares(user, { MSFT: 2 })
-    await user.fund(page)
-
-    await page.goto("/stocks/MSFT")
-
-    const holding = page.getByRole("region", { name: "Your Microsoft" })
-    await expect(holding).toContainText("2 shares at")
-    await expect(holding).toContainText("Share of your money")
-  })
-
-  test("a stock you don't hold shows no holding", async ({ page, funded: _funded }) => {
-    await page.goto("/stocks/MSFT")
-
-    await expect(page.getByRole("heading", { level: 1, name: "Microsoft" })).toBeVisible()
-    await expect(page.getByRole("region", { name: "Your Microsoft" })).toBeHidden()
   })
 })

@@ -43,6 +43,7 @@ Reuse a maintained library before writing behaviour from scratch. The chosen set
 | Tables                                                    | `@tanstack/react-table`                                                                                                                                     |
 | Carousels                                                 | `embla-carousel-react`                                                                                                                                      |
 | Resizable panels                                          | `react-resizable-panels`                                                                                                                                    |
+| QR codes (rounded dots, brand colours, a logo)            | `qr-code-styling`, through `bluechip/deposit-card.tsx`                                                                                                      |
 | Charts                                                    | `@tanstack/charts` (sparklines stay plain SVG)                                                                                                              |
 | Easing                                                    | tokens in `theme.css` (`ease-brand`, `ease-spring`, from easing.dev's curves)                                                                               |
 
