@@ -1,13 +1,17 @@
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
+import { useAtom, useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { agentMomentAtom } from "../atoms/moment.ts"
 import { AgentListCard } from "../components/list/AgentListCard.tsx"
+import { momentText } from "../model/agentMoment.ts"
 
 const PLACEHOLDER_CARDS = ["a", "b", "c"]
 
@@ -61,10 +65,33 @@ function AgentCards() {
   )
 }
 
+/** The agent just removed on its page, said once here until dismissed. */
+function RemovedAlert() {
+  const [handed, setHanded] = useAtom(agentMomentAtom)
+  const [removed, setRemoved] = useState(() => handed?.moment === "removed" ? handed : null)
+  useEffect(() => {
+    if (handed?.moment === "removed") setHanded(null)
+  }, [handed, setHanded])
+
+  if (removed === null) return null
+
+  const text = momentText("removed", { name: removed.name, lockedUntil: null })
+  return (
+    <Alert variant="success" className="mb-4 animate-pop-in">
+      <AlertTitle>{text.title}</AlertTitle>
+      <AlertDescription>{text.description}</AlertDescription>
+      <AlertAction>
+        <Button variant="ghost" size="sm" onClick={() => setRemoved(null)}>Done</Button>
+      </AlertAction>
+    </Alert>
+  )
+}
+
 /** The user's agents as cards, with the way to a new one. */
 export function AgentsScreen() {
   return (
     <AppPage title="Agents" actions={<NewAgentButton />} width="wide">
+      <RemovedAlert />
       <AgentCards />
     </AppPage>
   )

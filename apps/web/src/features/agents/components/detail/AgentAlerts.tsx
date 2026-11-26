@@ -9,8 +9,10 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import { lockAgentAtom } from "../../atoms/agents.ts"
+import { useAgentMoment } from "../../hooks/useAgentMoment.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
 import { usePauseAgent } from "../../hooks/usePauseAgent.ts"
+import { momentText } from "../../model/agentMoment.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { RenewButton } from "./RenewButton.tsx"
 
@@ -66,6 +68,23 @@ function PausedAlert({ agent }: Readonly<{ agent: Agent }>) {
   )
 }
 
+/** What just landed (live, new rules locked, renewed, trading again), said once until you dismiss it. */
+function MomentAlert({ agent }: Readonly<{ agent: Agent }>) {
+  const { moment, dismiss } = useAgentMoment(agent)
+  if (moment === null) return null
+
+  const text = momentText(moment, agent)
+  return (
+    <Alert variant="success" className="animate-pop-in">
+      <AlertTitle>{text.title}</AlertTitle>
+      <AlertDescription>{text.description}</AlertDescription>
+      <AlertAction>
+        <Button variant="ghost" size="sm" onClick={dismiss}>Done</Button>
+      </AlertAction>
+    </Alert>
+  )
+}
+
 function SendingAlert({ title, description }: Readonly<{ title: string; description: string }>) {
   return (
     <Alert icon="clock">
@@ -113,6 +132,7 @@ export function AgentAlerts({ agent, now }: Readonly<{ agent: Agent; now: Date }
 
   return (
     <>
+      <MomentAlert agent={agent} />
       {agent.status === "locking" ?
         (
           <SendingAlert
