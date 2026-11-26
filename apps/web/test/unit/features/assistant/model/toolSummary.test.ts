@@ -26,6 +26,7 @@ const trade = (id: string) => ({
   _tag: "Trade",
   trade: {
     id,
+    agentId: null,
     symbol: "NVDA",
     side: "buy",
     status: "filled",
