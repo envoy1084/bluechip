@@ -3,7 +3,7 @@ import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import { Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
-import { TransactionStatus } from "@bluechip/ui/bluechip/transaction-status"
+import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
@@ -11,8 +11,9 @@ import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { priceDollars, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
+import { nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
-import { clockTime, expiresIn, nothingMoved } from "../../model/intentText.ts"
+import { clockTime, expiresIn } from "../../model/intentText.ts"
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
 
@@ -40,28 +41,33 @@ function Estimate({ intent, stock }: Readonly<{ intent: Intent; stock: Stock | u
   )
 }
 
-/** Where an approved trade is on Base, then what it did. */
-function Approved({ intent, onDone }: Readonly<{ intent: Intent; onDone: () => void }>) {
-  const ended = intent.status === "filled" || intent.status === "failed"
-  const state = intent.status === "confirming" || intent.status === "filled" || intent.status === "failed" ?
+/** An approved trade: a short wait while Base takes it, then what it did, or that nothing moved. */
+function Approved(
+  { intent, trade, onDone }: Readonly<{ intent: Intent; trade: string; onDone: () => void }>
+) {
+  const stage: TradeStage = intent.status === "filled" || intent.status === "failed" ||
+      intent.status === "confirming" ?
     intent.status :
     "sending"
+  const text = tradeOutcome(stage, intent.leg.side, trade)
 
   return (
-    <div className="grid gap-3 border-t border-ink/5 px-[18px] py-3.5">
-      <TransactionStatus
-        state={state}
-        orientation="vertical"
-        failureReason={`Base didn't take it. ${nothingMoved(intent.leg.side)}`}
+    <section aria-label={text.title} className="rounded-lg bg-white px-[18px] py-5 shadow-e2">
+      <Outcome
+        tone={text.tone}
+        title={text.title}
+        description={text.description}
+        actions={stage === "filled" || stage === "failed" ?
+          <Button variant="secondary" className="w-full" onClick={onDone}>Done</Button> :
+          undefined}
       />
-      {ended ? <Button variant="secondary" className="justify-self-end" onClick={onDone}>Done</Button> : null}
-    </div>
+    </section>
   )
 }
 
 /**
  * An agent's trade waiting for you: what it wants to do, why it needs you, when the request runs out, and Approve with
- * Face ID or Decline. Once approved, the card follows the trade on Base until it fills.
+ * Face ID or Decline. Once approved, the card turns into the trade's end: what it bought or sold, or that nothing moved.
  */
 export function ApprovalRequest(
   { intent: asked, agentName, now, stockOf, nameOf, onHandled, onDone }: Readonly<{
@@ -79,13 +85,9 @@ export function ApprovalRequest(
   const trade = describeLeg(intent.leg, nameOf)
   const busy = flow.status === "preparing" || flow.status === "signing" || flow.status === "declining"
 
-  const title = flow.status === "approved" ?
-    intent.status === "filled" ?
-      trade.replace(/^Buy/, "Bought").replace(/^Sell/, "Sold") :
-      intent.status === "failed" ?
-      `${trade} didn't go through` :
-      `Approved. Sending ${agentName}'s trade` :
-    flow.status === "declined" ?
+  if (flow.status === "approved") return <Approved intent={intent} trade={trade} onDone={onDone} />
+
+  const title = flow.status === "declined" ?
     `You declined: ${lowerFirst(trade)}` :
     `${agentName} wants to ${lowerFirst(trade)}`
   const why = flow.status === "declined" ?
@@ -104,7 +106,7 @@ export function ApprovalRequest(
           </b>
           <span className="text-label-sm text-g-500">{why}</span>
         </div>
-        {flow.status === "approved" || flow.status === "declined" || intent.expiresAt === null ?
+        {flow.status === "declined" || intent.expiresAt === null ?
           null :
           (
             <span className="inline-flex items-center gap-1 rounded-full bg-warn-wash px-2 py-px text-[11.5px] font-semibold whitespace-nowrap text-warn">
@@ -114,8 +116,6 @@ export function ApprovalRequest(
           )}
       </div>
 
-      {flow.status === "approved" ? <Approved intent={intent} onDone={onDone} /> : null}
-
       {flow.status === "declined" ?
         (
           <div className="flex justify-end border-t border-ink/5 px-[18px] py-3">
@@ -124,7 +124,7 @@ export function ApprovalRequest(
         ) :
         null}
 
-      {flow.status === "approved" || flow.status === "declined" ? null : (
+      {flow.status === "declined" ? null : (
         <>
           <Estimate intent={intent} stock={stockOf(intent.leg.symbol)} />
           {flow.status === "failed" ?

@@ -111,8 +111,8 @@ test.describe("buying on a stock's page", () => {
     await buy(page, "SPCX", 10)
 
     const status = page.getByRole("region", { name: "Trade status" })
-    await expect(status.getByText("Buying SpaceX")).toBeVisible()
-    await expect(status.getByText(/^Bought \d+\.\d+ shares of SpaceX for \$\d+\.\d{2}\.$/)).toBeVisible()
+    await expect(status.getByRole("heading", { name: /^Bought \$\d+\.\d{2} of SpaceX$/ })).toBeVisible()
+    await expect(status.getByText("Shares bought")).toBeVisible()
     await expect(status.getByRole("link", { name: "View on BaseScan" })).toBeVisible()
     await page.goto("/portfolio")
     await expect(page.getByRole("region", { name: "Holdings" }).getByRole("button", { name: /^SPCX SpaceX/ }))
@@ -121,10 +121,10 @@ test.describe("buying on a stock's page", () => {
     await expect(page.getByRole("button", { name: /^Bought \$\d+\.\d{2} of SpaceX/ })).toBeVisible()
   })
 
-  test.fixme(`"Bought. Buy more" starts a new buy (${deadlineBug})`, async ({ page, funded: _funded }) => {
+  test.fixme(`"Buy more SpaceX" starts a new buy (${deadlineBug})`, async ({ page, funded: _funded }) => {
     await buy(page, "SPCX", 5)
 
-    await page.getByRole("button", { name: "Bought. Buy more" }).click()
+    await page.getByRole("button", { name: "Buy more SpaceX" }).click()
 
     await expect(tradeBox(page, "SpaceX").getByRole("textbox", { name: "Buy SpaceX" })).toHaveValue("")
   })
@@ -223,7 +223,7 @@ test.describe("selling on a stock's page", () => {
 
   test.fixme(`selling part of a holding with Face ID fills (${deadlineBug})`, async ({ page, funded: _funded }) => {
     await buy(page, "SPCX", 20)
-    await page.getByRole("button", { name: "Bought. Buy more" }).click()
+    await page.getByRole("button", { name: "Buy more SpaceX" }).click()
     const box = tradeBox(page, "SpaceX")
     await box.getByRole("tab", { name: "Sell" }).click()
     await box.getByRole("textbox", { name: "Sell SpaceX" }).fill("5")
@@ -231,8 +231,8 @@ test.describe("selling on a stock's page", () => {
 
     await box.getByRole("button", { name: "Sell with Face ID" }).click()
 
-    await expect(page.getByRole("button", { name: "Sold. Trade again" })).toBeVisible()
-    await expect(page.getByText(/^Sold \d+\.\d+ shares of SpaceX for \$\d+\.\d{2}\.$/)).toBeVisible()
+    await expect(page.getByRole("button", { name: "Trade again" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: /^Sold \d+(\.\d+)? shares? of SpaceX$/ })).toBeVisible()
     await page.goto("/activity")
     await expect(page.getByRole("button", { name: /^Sold \$\d+\.\d{2} of SpaceX/ })).toBeVisible()
   })

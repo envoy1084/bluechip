@@ -39,7 +39,8 @@ describe("ApprovalSheet", () => {
         onDecline={declines}
       />
     )
-    await expect.element(page.getByRole("heading", { name: "Approve Tech picker's trade" })).toBeVisible()
+    await expect.element(page.getByRole("heading", { name: "Tech picker wants to buy $600.00 of Nvidia" }))
+      .toBeVisible()
 
     // Base UI's scroll lock keeps Playwright from clicking inside the open sheet in the test iframe; Enter is as real.
     page.getByRole("button", { name: "Approve with Face ID" }).element().focus()
@@ -47,7 +48,7 @@ describe("ApprovalSheet", () => {
     await expect.element(page.getByRole("button", { name: "Waiting for Face ID…" })).toBeDisabled()
 
     faceId.resolve()
-    await expect.element(page.getByRole("heading", { name: "Approved" })).toBeVisible()
+    await expect.element(page.getByRole("heading", { name: "Buying $600.00 of Nvidia" })).toBeVisible()
 
     confirmed.resolve()
     await expect.element(page.getByRole("heading", { name: "Bought $600.00 of Nvidia" })).toBeVisible()
@@ -59,7 +60,7 @@ describe("ApprovalCard", () => {
     const screen = await render(
       <ApprovalCard agentName="Tech picker" order={BUY} onApprove={approves} onDecline={declines} />
     )
-    await expect.element(screen.getByText("This trade is over your ask-me amount, so it needs your OK.")).toBeVisible()
+    await expect.element(screen.getByText("It's over your ask-me amount, so it needs your OK.")).toBeVisible()
   })
 
   it("says the reason it's given", async () => {
@@ -109,7 +110,7 @@ describe("ApprovalCard", () => {
     await expect.element(screen.getByRole("heading", { name: "Bought $600.00 of Nvidia" })).toBeVisible()
   })
 
-  it("names the reason at the step a trade failed after you approved it", async () => {
+  it("names the reason a trade failed after you approved it", async () => {
     const screen = await render(
       <ApprovalCard
         agentName="Tech picker"
@@ -123,11 +124,9 @@ describe("ApprovalCard", () => {
       />
     )
     await userEvent.click(screen.getByRole("button", { name: "Approve with Face ID" }))
-    await expect.element(screen.getByRole("heading", { name: "Trade didn't go through" })).toBeVisible()
-    const confirming = screen.getByRole("listitem").nth(1)
-    await expect.element(confirming).toHaveAttribute("data-state", "fail")
+    await expect.element(screen.getByRole("heading", { name: "Tech picker's trade didn't go through" })).toBeVisible()
     await expect.element(
-      confirming.getByText("The price moved more than 1% while confirming. Your $600.00 is still cash.")
+      screen.getByText("The price moved more than 1% while confirming. Your $600.00 is still cash.")
     ).toBeVisible()
   })
 
@@ -146,7 +145,7 @@ describe("ApprovalCard", () => {
     await userEvent.click(screen.getByRole("button", { name: "Approve with Face ID" }))
     await expect.element(
       screen.getByText(
-        "The price moved more than 1% while confirming, so nothing was bought. Your $600.00 is still cash."
+        "The price moved more than 1%. Nothing was bought. Your $600.00 is still cash."
       )
     ).toBeVisible()
   })
@@ -166,7 +165,7 @@ describe("ApprovalCard", () => {
     await userEvent.click(screen.getByRole("button", { name: "Approve with Face ID" }))
     await expect.element(
       screen.getByText(
-        "The price moved more than 1% while confirming, so nothing was sold. Your shares are where they were."
+        "The price moved more than 1%. Nothing was sold. Your shares are where they were."
       )
     ).toBeVisible()
   })

@@ -30,12 +30,6 @@ export const STATUS: Readonly<Record<IntentStatus, { readonly label: string; rea
 export const shownDecision = (intent: Intent): Decision | null =>
   intent.decision?._tag === "Wait" && intent.status !== "waiting" ? null : intent.decision
 
-/** "Nothing was bought. Your cash is where it was.", for a trade that ended without moving money. */
-export const nothingMoved = (side: "buy" | "sell"): string =>
-  side === "buy"
-    ? "Nothing was bought. Your cash is where it was."
-    : "Nothing was sold. Your stocks are where they were."
-
 /** When it was asked, for its row: "2 min ago", "Yesterday", then the date. */
 export const askedAt = (intent: Intent, now: Date): string =>
   formatRelative(DateTime.toDateUtc(intent.createdAt), now, { timeZone: localTimeZone() })

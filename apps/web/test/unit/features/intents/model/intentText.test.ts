@@ -7,22 +7,12 @@ import {
   clockTime,
   expiresIn,
   intentProblem,
-  nothingMoved,
   shownDecision,
   waitingText
 } from "../../../../../src/features/intents/model/intentText.ts"
 import { nvidiaBuy } from "../../../../fixtures/Intents.ts"
 
 const NOW = new Date("2026-11-26T12:00:00Z")
-
-describe("nothingMoved", () => {
-  it.each<{ side: "buy" | "sell"; expected: string }>([
-    { side: "buy", expected: "Nothing was bought. Your cash is where it was." },
-    { side: "sell", expected: "Nothing was sold. Your stocks are where they were." }
-  ])("$side", ({ expected, side }) => {
-    assert.strictEqual(nothingMoved(side), expected)
-  })
-})
 
 describe("shownDecision", () => {
   const wait = { _tag: "Wait", reason: "noGas", until: DateTime.makeUnsafe("2026-11-26T05:34:00Z") } as const

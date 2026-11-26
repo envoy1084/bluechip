@@ -1,8 +1,8 @@
 import { ActivityItem, type ActivityKind } from "@bluechip/ui/bluechip/activity-item"
 import { ApprovalCard, type ApprovalProgress, ApprovalSheet } from "@bluechip/ui/bluechip/approval-sheet"
 import { FairPriceCheck, OrderPreview, OrderPreviewRow, TradeOrderPreview } from "@bluechip/ui/bluechip/order-preview"
+import { Outcome, type OutcomeTone } from "@bluechip/ui/bluechip/outcome"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
-import { type TransactionState, TransactionStatus } from "@bluechip/ui/bluechip/transaction-status"
 import { Button } from "@bluechip/ui/components/button"
 import { Checkbox } from "@bluechip/ui/components/checkbox"
 import { Label } from "@bluechip/ui/components/label"
@@ -144,36 +144,58 @@ export function OrderSection({ nvidia, tesla }: { readonly nvidia: number; reado
   )
 }
 
-export function TransactionSection() {
-  const [state, setState] = useState<TransactionState>("sending")
+export function TradeOutcomeSection() {
+  const [tone, setTone] = useState<OutcomeTone>("pending")
   const run = useRef(0)
   const go = async (fail: boolean) => {
     const id = ++run.current
-    setState("sending")
-    await wait(900)
-    if (id !== run.current) return
-    setState("confirming")
-    await wait(1100)
-    if (id === run.current) setState(fail ? "failed" : "filled")
+    setTone("pending")
+    await wait(2000)
+    if (id === run.current) setTone(fail ? "failure" : "success")
   }
+  const copy: Readonly<Record<OutcomeTone, readonly [string, string]>> = {
+    pending: ["Buying $50.00 of Apple", "Base confirms it in a couple of seconds."],
+    success: ["Bought $50.00 of Apple", "It's in your portfolio."],
+    failure: ["Your buy didn't go through", "Base didn't take it. Nothing was bought. Your cash is where it was."],
+    neutral: ["Declined", "Nothing was bought."]
+  }
+  const [title, description] = copy[tone]
   return (
     <Section
-      id="transaction-status"
-      title="Transaction status"
-      purpose="Where a trade is after you approve it. Three steps, a couple of seconds each on Base. If it fails we say why and that your cash is back."
+      id="trade-outcome"
+      title="Trade end state"
+      purpose="Where a trade is after you approve it. Base takes about two seconds, so it's one short wait in place, then the fill or what happened to the money. No step tracker."
       notes={[
-        "Row from 560 px wide, stacked below",
-        "Current step spins; done steps check",
-        "Failure names the reason"
-      ]}
-      states={[
-        ["Sending", <TransactionStatus key="s" state="sending" orientation="vertical" />],
-        ["Filled", <TransactionStatus key="f" state="filled" orientation="vertical" />],
-        ["Failed", <TransactionStatus key="x" state="failed" orientation="vertical" />]
+        "One element from the send to the end",
+        "The spinner turns into a check that draws",
+        "A failure says nothing moved and what to do"
       ]}
     >
       <div className="grid w-full justify-items-center gap-[22px]">
-        <TransactionStatus state={state} />
+        <div className={cn(card, "max-w-[400px] px-5 py-6")}>
+          <Outcome
+            tone={tone}
+            title={title}
+            description={description}
+            actions={tone === "pending" ?
+              undefined :
+              (
+                <Button variant="secondary" className="w-full">
+                  {tone === "failure" ? "Try again" : "Buy more Apple"}
+                </Button>
+              )}
+          >
+            {tone === "success" ?
+              (
+                <OrderPreview>
+                  <OrderPreviewRow label="Shares bought">0.2623 shares</OrderPreviewRow>
+                  <OrderPreviewRow label="Price">$190.62 a share</OrderPreviewRow>
+                  <OrderPreviewRow label="You paid">$50.00</OrderPreviewRow>
+                </OrderPreview>
+              ) :
+              undefined}
+          </Outcome>
+        </div>
         <div className="flex flex-wrap justify-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => void go(false)}>
             <Icon name="play" size={14} />Run trade
@@ -201,7 +223,7 @@ export function ApprovalSection({ nvidia }: { readonly nvidia: number }) {
     await wait(1100)
     if (fail) {
       throw new Error(
-        "The price moved more than 1% while confirming, so nothing was bought. Your $600.00 is still cash."
+        "The price moved more than 1% while confirming. Nothing was bought. Your $600.00 is still cash."
       )
     }
   }
@@ -215,10 +237,10 @@ export function ApprovalSection({ nvidia }: { readonly nvidia: number }) {
     <Section
       id="approval"
       title="Approval sheet"
-      purpose="When a trade is over your ask-me amount, it waits here. You see the order, approve with Face ID, and watch it fill, all in one sheet."
+      purpose="When a trade is over your ask-me amount, it waits here. You see the order, approve with Face ID, and see what it bought, all in one sheet."
       notes={[
-        "Pending → approving → approved → sending → filled",
-        "The Face ID seal forms on approval",
+        "Asks, then a short wait, then the fill",
+        "The Face ID seal forms while Base takes it",
         "Decline is always one tap away"
       ]}
     >
@@ -230,7 +252,7 @@ export function ApprovalSection({ nvidia }: { readonly nvidia: number }) {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Label htmlFor={failId} className="flex cursor-pointer items-center gap-2 font-normal text-g-600">
             <Checkbox id={failId} checked={fail} onCheckedChange={setFail} />
-            Make this one fail at confirming
+            Make this one fail
           </Label>
           <Button variant="secondary" size="sm" onClick={() => setSheetOpen(true)}>
             <Icon name="approvals" size={14} />Open as a sheet

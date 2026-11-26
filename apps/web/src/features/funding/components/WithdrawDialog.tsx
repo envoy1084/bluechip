@@ -4,8 +4,8 @@ import type { SigningRequest, Transfer } from "@bluechip/domain/portfolio/Transf
 import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
 import { MoneyInput } from "@bluechip/ui/bluechip/money-input"
 import { OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
+import { Outcome, OutcomeLink } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
-import { TransactionStatus } from "@bluechip/ui/bluechip/transaction-status"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import {
@@ -24,6 +24,7 @@ import { useState } from "react"
 import { withdrawalsAtom } from "../../../atoms/portfolio.ts"
 import { parseUsdc, usdcDollars } from "../../../lib/amounts.ts"
 import { confirmWithdrawalAtom, prepareWithdrawalAtom } from "../atoms/funding.ts"
+import { withdrawalOutcome } from "../model/withdrawalOutcome.ts"
 
 type Step =
   | { readonly _tag: "Form" }
@@ -42,7 +43,7 @@ const prepareProblem = (error: unknown): string => {
 
 /**
  * Takes USDC out to any address on Base: amount and address, a review of exactly what Face ID approves (and that the
- * first withdrawal also sets up the account), then where it stands until Base confirms it.
+ * first withdrawal also sets up the account), then a short wait and what it did.
  */
 export function WithdrawDialog(
   { cash, open, onOpenChange }: Readonly<{ cash: bigint; open: boolean; onOpenChange: (open: boolean) => void }>
@@ -198,28 +199,22 @@ function WithdrawProgress({ transfer, onDone }: Readonly<{ transfer: Transfer; o
   const latest = AsyncResult.isSuccess(withdrawals) ?
     withdrawals.value.items.find((item) => item.id === transfer.id) ?? transfer :
     transfer
-
-  const state = latest.status === "confirmed" ? "filled" : latest.status === "failed" ? "failed" : "confirming"
+  const text = withdrawalOutcome(latest.status, latest.amount, shortAddress(latest.to))
 
   return (
-    <div className="grid gap-4">
-      <TransactionStatus
-        kind="withdrawal"
-        state={state}
-        orientation="vertical"
-        failureReason="Base didn't accept it. Your cash is still in your account."
-      />
-      {latest.txHash !== null && (
-        <a
-          href={`https://basescan.org/tx/${latest.txHash}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-label-sm font-medium text-blue hover:underline"
-        >
-          View on BaseScan
-        </a>
-      )}
-      <Button variant="secondary" onClick={onDone}>{state === "confirming" ? "Close, it keeps going" : "Done"}</Button>
-    </div>
+    <Outcome
+      tone={text.tone}
+      title={text.title}
+      description={text.description}
+      actions={
+        <Button variant={latest.status === "pending" ? "ghost" : "secondary"} className="w-full" onClick={onDone}>
+          {latest.status === "pending" ? "Close, it keeps going" : "Done"}
+        </Button>
+      }
+    >
+      {latest.txHash === null ?
+        undefined :
+        <OutcomeLink href={`https://basescan.org/tx/${latest.txHash}`}>View on BaseScan</OutcomeLink>}
+    </Outcome>
   )
 }

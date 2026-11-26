@@ -30,8 +30,7 @@ test.describe("asking an agent for a trade", () => {
 
     await askToBuy(page, 50)
 
-    await expect(tradeCard(page).getByText("Buy $50.00 of NVIDIA")).toBeVisible()
-    await expect(tradeCard(page).getByText("Filled", { exact: true })).toBeVisible()
+    await expect(tradeCard(page).getByRole("heading", { name: "Bought $50.00 of NVIDIA" })).toBeVisible()
     await expect(tradeCard(page).getByRole("button", { name: "Trade again" })).toBeVisible()
   })
 
@@ -39,7 +38,7 @@ test.describe("asking an agent for a trade", () => {
   test.fixme("a filled trade shows in its activity, its usage, the stock's holdings and Activity", async ({ page, funded: _funded }) => {
     await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
     await askToBuy(page, 50)
-    await expect(tradeCard(page).getByText("Filled", { exact: true })).toBeVisible()
+    await expect(tradeCard(page).getByRole("heading", { name: "Bought $50.00 of NVIDIA" })).toBeVisible()
 
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $50.00 of NVIDIA" })
     await expect(row.getByText("Filled", { exact: true })).toBeVisible()

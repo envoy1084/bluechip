@@ -129,9 +129,6 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
         className="grid content-start gap-3.5 rounded-lg bg-white px-5 py-[18px] shadow-e2"
         aria-label="Trade status"
       >
-        <b className="text-[14.5px] font-semibold">
-          {flow.trade.side === "buy" ? "Buying" : "Selling"} {stock.name}
-        </b>
         <TradeProgress
           trade={flow.trade}
           name={stock.name}

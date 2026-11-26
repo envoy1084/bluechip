@@ -9,6 +9,7 @@ import { Confetti } from "../motion/confetti.tsx"
 import { NumberRoll } from "../motion/number-roll.tsx"
 import { MomentScope, useMoment } from "../motion/sweep.tsx"
 import { AddressChip, shortAddress } from "./address-chip.tsx"
+import { OutcomeMark } from "./outcome.tsx"
 
 // The address as an EIP-681 link on Base (chain 8453), so a wallet that scans it also picks the right network. High
 // error correction keeps the code readable under the mark in the middle.
@@ -36,8 +37,8 @@ export interface DepositCardProps {
 
 /**
  * How to add cash: send USDC on Base to your address. The warning is loud because other coins or networks can be
- * lost. When the deposit lands, a sweep passes over the card, the amount rolls up from zero and phones get a success
- * haptic.
+ * lost. When the deposit lands, the check draws itself, a sweep passes over the card, the amount rolls up from zero
+ * and phones get a success haptic.
  */
 export function DepositCard(
   { address, status, amount = 0, from, footer, celebrate = false, className }: DepositCardProps
@@ -70,9 +71,7 @@ export function DepositCard(
         )}
       >
         {celebrate && <Confetti />}
-        <span className="mb-2 grid size-[52px] animate-pop-in place-items-center rounded-[16px] bg-[linear-gradient(180deg,#23a463,var(--color-gain))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(15,138,74,.3)]">
-          <Icon name="check" size={22} />
-        </span>
+        <OutcomeMark tone="success" size={52} className="mb-2" />
         <span className="text-label text-g-600">Cash arrived</span>
         <NumberRoll
           value={shown}

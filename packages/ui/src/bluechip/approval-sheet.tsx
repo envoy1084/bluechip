@@ -10,7 +10,7 @@ import { haptic } from "../lib/haptics.ts"
 import { Seal } from "../motion/seal.tsx"
 import { MomentScope, useMoment } from "../motion/sweep.tsx"
 import { type TradeOrder, TradeOrderPreview } from "./order-preview.tsx"
-import { TransactionStatus, type TransactionStep } from "./transaction-status.tsx"
+import { Outcome } from "./outcome.tsx"
 
 /** Where an approval is, from the moment it waits for you until the trade fills, fails or you decline it. */
 export type ApprovalState =
@@ -45,19 +45,11 @@ export interface ApprovalCardProps {
   readonly className?: string
 }
 
-const STEP_OF: Partial<Record<ApprovalState, "sending" | "confirming" | "filled" | "failed">> = {
-  approved: "sending",
-  sending: "sending",
-  confirming: "confirming",
-  filled: "filled",
-  failed: "failed"
-}
-
 /**
- * A trade over your ask-me amount, waiting for you: the order, Approve with Face ID and Decline. After you approve,
- * the Face ID seal forms and the same card follows the trade until it fills, with a sweep when it does. The title
- * morphs from step to step, and phones get a success haptic when Face ID passes and when the trade fills. Use
- * `ApprovalSheet` to show it in a bottom sheet.
+ * A trade over your ask-me amount, waiting for you: what the agent wants, the order, Approve with Face ID and Decline.
+ * After you approve, the Face ID seal forms while Base takes the trade (a couple of seconds), then the card says what
+ * it bought or sold, with a sweep, or that nothing moved. Phones get a success haptic when Face ID passes and when the
+ * trade fills. Use `ApprovalSheet` to show it in a bottom sheet.
  */
 export function ApprovalCard(
   { agentName, order, reason, onApprove, onDecline, onDone, className }: ApprovalCardProps
@@ -66,7 +58,6 @@ export function ApprovalCard(
   const [state, setState] = useState<ApprovalState>("pending")
   const [faceIdFailed, setFaceIdFailed] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
-  const [failedAt, setFailedAt] = useState<TransactionStep>("sending")
   const run = useRef(0)
   const { ref: momentRef, play: playMoment } = useMoment()
   useEffect(() => () => void run.current++, [])
@@ -81,7 +72,6 @@ export function ApprovalCard(
       if (!approved) haptic("success")
       approved = true
       setState(step)
-      setFailedAt(step === "confirming" ? "confirming" : "sending")
     }).then(
       () => {
         if (id !== run.current) return
@@ -115,117 +105,108 @@ export function ApprovalCard(
   }
 
   const shares = (order.amount / order.price).toFixed(3)
-  const verb = order.side === "buy" ? "Bought" : "Sold"
-  const [title, description] = {
-    pending: [`Approve ${agentName}'s trade`, reason ?? "This trade is over your ask-me amount, so it needs your OK."],
-    approving: [
-      `Approve ${agentName}'s trade`,
-      reason ?? "This trade is over your ask-me amount, so it needs your OK."
-    ],
-    declining: [
-      `Approve ${agentName}'s trade`,
-      reason ?? "This trade is over your ask-me amount, so it needs your OK."
-    ],
-    approved: ["Approved", "Sending your trade to Base."],
-    sending: ["Approved", "Sending your trade to Base."],
-    confirming: ["Confirming", "This takes a couple of seconds."],
-    filled: [
-      `${verb} ${formatMoney(order.amount)} of ${order.name}`,
-      `${shares} shares at ${formatMoney(order.price)}. It's in your portfolio.`
-    ],
-    failed: [
-      "Trade didn't go through",
-      failure ??
-        `The price moved more than 1% while confirming, so nothing was ${order.side === "buy" ? "bought" : "sold"}. ${
-          order.side === "buy" ? `Your ${formatMoney(order.amount)} is still cash.` : "Your shares are where they were."
-        }`
-    ],
-    declined: [
-      "Declined",
-      `Nothing was ${order.side === "buy" ? "bought" : "sold"}. ${agentName} won't ask about this trade again.`
-    ]
-  }[state]
-
+  const nothing = order.side === "buy" ?
+    `Nothing was bought. Your ${formatMoney(order.amount)} is still cash.` :
+    "Nothing was sold. Your shares are where they were."
+  const what = `${formatMoney(order.amount)} of ${order.name}`
   const deciding = state === "pending" || state === "approving" || state === "declining"
-  const finished = state === "filled" || state === "failed" || state === "declined"
-  const step = STEP_OF[state]
-  const sealed = step !== undefined && state !== "failed"
+  const ask = reason ?? "It's over your ask-me amount, so it needs your OK."
+
+  if (deciding) {
+    return (
+      <section
+        data-slot="approval-card"
+        data-state={state}
+        aria-labelledby={titleId}
+        className={cn("relative grid w-full gap-3.5 text-center", className)}
+      >
+        <span
+          aria-hidden
+          className={cn(
+            "grid size-[52px] place-items-center justify-self-center rounded-[16px] text-white",
+            "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(42,91,255,.3)]",
+            state === "approving" && "animate-pulse"
+          )}
+        >
+          <Icon name="face-id" size={26} />
+        </span>
+        <div className="grid gap-1">
+          <h3 id={titleId} className="text-[19px] font-semibold tracking-[-0.02em]">
+            {agentName} wants to {order.side} {what}
+          </h3>
+          <p className="max-w-[36ch] justify-self-center text-body-sm text-g-600">{ask}</p>
+        </div>
+        <TradeOrderPreview order={order} />
+        <Button
+          size="lg"
+          className="w-full"
+          aria-busy={state === "approving" || undefined}
+          disabled={state !== "pending"}
+          onClick={approve}
+        >
+          {state === "approving" ? <Spinner size={18} /> : <Icon name="face-id" size={18} />}
+          <TextMorph>
+            {state === "approving"
+              ? "Waiting for Face ID…"
+              : faceIdFailed
+              ? "Try Face ID again"
+              : "Approve with Face ID"}
+          </TextMorph>
+        </Button>
+        {faceIdFailed && (
+          <p role="alert" className="-mt-1.5 text-label-sm text-loss">Face ID didn't work. Try again.</p>
+        )}
+        <Button
+          variant="ghost"
+          className="w-full"
+          loading={state === "declining"}
+          disabled={state === "approving"}
+          onClick={decline}
+        >
+          Decline
+        </Button>
+      </section>
+    )
+  }
+
+  const ended = state === "filled" || state === "failed" || state === "declined"
+  const [tone, title, description] = state === "filled" ?
+    [
+      "success",
+      `${order.side === "buy" ? "Bought" : "Sold"} ${what}`,
+      `${shares} shares at ${formatMoney(order.price)}. ${
+        order.side === "buy" ? "It's in your portfolio." : "The cash is in your account."
+      }`
+    ] as const :
+    state === "failed" ?
+    [
+      "failure",
+      `${agentName}'s trade didn't go through`,
+      failure ?? `The price moved more than 1%. ${nothing}`
+    ] as const :
+    state === "declined" ?
+    ["neutral", "Declined", `${nothing.split(". ")[0]}. ${agentName} won't ask about this trade again.`] as const :
+    [
+      "pending",
+      `${order.side === "buy" ? "Buying" : "Selling"} ${what}`,
+      "Approved. Base confirms it in a couple of seconds."
+    ] as const
 
   return (
     <section
       data-slot="approval-card"
       data-state={state}
       aria-labelledby={titleId}
-      className={cn("relative grid w-full gap-3.5 text-center", className)}
+      className={cn("relative grid w-full", className)}
     >
-      <div
-        aria-hidden
-        className={cn(
-          "grid place-items-center justify-self-center text-white transition-[width,height,background,box-shadow] duration-slow ease-brand",
-          sealed ?
-            "size-24 rounded-2xl bg-white shadow-[0_0_0_1px_rgba(10,11,13,.08),0_6px_14px_-6px_rgba(42,91,255,.17)]" :
-            "size-[60px] rounded-[18px]",
-          deciding &&
-            "bg-[linear-gradient(180deg,#4c76ff,#2a5bff)] shadow-[inset_0_1px_0_rgba(255,255,255,.3),0_6px_14px_-6px_rgba(42,91,255,.3)]",
-          state === "approving" && "animate-pulse",
-          state === "failed" &&
-            "bg-[linear-gradient(180deg,#f25e3e,var(--color-loss))] shadow-[0_6px_14px_-6px_rgba(217,58,28,.28)]",
-          state === "declined" &&
-            "bg-[linear-gradient(180deg,#fff,#eef0f3)] text-g-500 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.1)]"
-        )}
-      >
-        {sealed ? <Seal playing className="size-[88px]" /> : <Icon name={deciding ? "face-id" : "close"} size={28} />}
-      </div>
-      <div aria-live="polite" className="grid gap-1.5">
-        <h3 id={titleId} className="text-[19px] font-semibold tracking-[-0.02em]">
-          <TextMorph>{title}</TextMorph>
-        </h3>
-        <p className="max-w-[36ch] justify-self-center text-body-sm text-g-600">{description}</p>
-      </div>
-      {deciding && <TradeOrderPreview order={order} />}
-      {step !== undefined && (
-        <div className="rounded-[12px] p-3.5 text-left surface-well">
-          <TransactionStatus
-            state={step}
-            orientation="vertical"
-            failedAt={failedAt}
-            {...(failure === null ? {} : { failureReason: failure })}
-          />
-        </div>
-      )}
-      {deciding && (
-        <>
-          <Button
-            size="lg"
-            className="w-full"
-            aria-busy={state === "approving" || undefined}
-            disabled={state !== "pending"}
-            onClick={approve}
-          >
-            {state === "approving" ? <Spinner size={18} /> : <Icon name="face-id" size={18} />}
-            <TextMorph>
-              {state === "approving" ?
-                "Waiting for Face ID…" :
-                faceIdFailed ?
-                "Try Face ID again" :
-                "Approve with Face ID"}
-            </TextMorph>
-          </Button>
-          {faceIdFailed && (
-            <p role="alert" className="-mt-1.5 text-label-sm text-loss">Face ID didn't work. Try again.</p>
-          )}
-          <Button
-            variant="secondary"
-            className="w-full"
-            loading={state === "declining"}
-            disabled={state === "approving"}
-            onClick={decline}
-          >
-            Decline
-          </Button>
-        </>
-      )}
-      {finished && <Button variant="secondary" className="w-full" onClick={onDone}>Done</Button>}
+      <Outcome
+        tone={tone}
+        title={<span id={titleId}>{title}</span>}
+        description={description}
+        // Face ID passed: the seal forms while Base takes the trade, then the check takes its place.
+        media={tone === "pending" ? <Seal playing label="Approved with Face ID" className="mb-1 size-16" /> : undefined}
+        actions={ended ? <Button variant="secondary" className="w-full" onClick={onDone}>Done</Button> : undefined}
+      />
       <MomentScope ref={momentRef} direction="btt" />
     </section>
   )

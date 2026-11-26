@@ -13,7 +13,7 @@ import { Toaster } from "@bluechip/ui/components/toast"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { useRef, useState } from "react"
-import { ActivitySection, ApprovalSection, OrderSection, TransactionSection } from "./activity.tsx"
+import { ActivitySection, ApprovalSection, OrderSection, TradeOutcomeSection } from "./activity.tsx"
 import { DemoControls } from "./controls.tsx"
 import { card, Group, Section } from "./layout.tsx"
 import {
@@ -379,7 +379,7 @@ export function KitBluechip() {
           />
         </Section>
         <OrderSection nvidia={quote("NVDA").price} tesla={quote("TSLA").price} />
-        <TransactionSection />
+        <TradeOutcomeSection />
         <ApprovalSection key={approvalKey} nvidia={quote("NVDA").price} />
       </Group>
 
