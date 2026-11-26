@@ -1,7 +1,8 @@
 import { type AgentRequest, SESSION_DAYS } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
-import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import { AgentDraftCard } from "@bluechip/ui/bluechip/agent-draft-card"
+import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -10,8 +11,7 @@ import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { confirmAgentAtom, lockAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
-import { AGENT_STANDING, hasExpired, signingProblem } from "../../model/cardText.ts"
-import { CardFrame, CardProblem, RuleList } from "./CardFrame.tsx"
+import { AGENT_STANDING, agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
 
 /**
  * An agent drafted from chat: what it can and never does, Customize to change its policies in the new-agent flow, and
@@ -24,6 +24,7 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
   const [request, setRequest] = useState<AgentRequest>(card.request)
   const [problem, setProblem] = useState<string | null>(null)
   const draft = agent.status === "draft"
+  const landed = draft ? null : agentOutcome("lock", agent.status, agent.name)
 
   const approve = async () => {
     setProblem(null)
@@ -41,17 +42,19 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
   }
 
   return (
-    <CardFrame
-      tag="Draft from chat"
-      icon="edit"
+    <AgentDraftCard
+      agentId={agent.id}
+      name={agent.name}
+      detail={`Runs for ${SESSION_DAYS} days once locked. Pause it any time.`}
+      can={card.description.can}
+      never={card.description.never}
       state={AGENT_STANDING[agent.status]}
+      tone={draft ? "waiting" : agent.status === "active" ? "done" : "quiet"}
+      problem={problem}
       footer={draft ?
         (
           <>
-            <ButtonLink
-              variant="ghost"
-              render={<Link to="/agents/new" search={{ draft: agent.id }} />}
-            >
+            <ButtonLink variant="ghost" render={<Link to="/agents/new" search={{ draft: agent.id }} />}>
               Customize
             </ButtonLink>
             <PasskeyButton doneLabel="Sent" onAuthenticate={approve}>Lock with Face ID</PasskeyButton>
@@ -67,19 +70,9 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
           </ButtonLink>
         )}
     >
-      <div className="flex items-center gap-3">
-        <AgentAvatar agentId={agent.id} size="lg" />
-        <div className="grid min-w-0">
-          <h3 className="truncate text-[17px] font-semibold tracking-[-0.015em]">{agent.name}</h3>
-          <span className="text-label-sm text-g-500">
-            {draft
-              ? `Lasts ${SESSION_DAYS} days once locked. You can pause it any time.`
-              : AGENT_STANDING[agent.status]}
-          </span>
-        </div>
-      </div>
-      <RuleList can={card.description.can} never={card.description.never} />
-      <CardProblem message={problem} />
-    </CardFrame>
+      {landed === null
+        ? undefined
+        : <Outcome tone={landed.tone} title={landed.title} description={landed.description} />}
+    </AgentDraftCard>
   )
 }

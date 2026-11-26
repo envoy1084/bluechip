@@ -15,30 +15,28 @@ export interface ToolCallRowProps extends Omit<ComponentProps<"output">, "childr
 
 const STATE_TEXT: Readonly<Record<ToolCallState, string>> = { running: "Running", done: "Done", failed: "Failed" }
 
-/** A quiet line saying what bluechip checked, so you can see where an answer came from. */
+/**
+ * A quiet line saying what bluechip checked, so you can see where an answer came from: a soft pill while it runs,
+ * then just a small check, the label and its result, or a cross and what went wrong.
+ */
 export function ToolCallRow({ state, label, result, className, ...props }: ToolCallRowProps) {
   return (
     <output
       data-slot="tool-call-row"
       data-state={state}
       className={cn(
-        "inline-flex max-w-full items-center gap-2 justify-self-start rounded-full bg-g-50 py-1 pr-2.5 pl-[5px] text-label-sm text-g-500 shadow-[inset_0_0_0_1px_var(--color-g-100)]",
-        state === "failed" && "bg-loss-wash text-loss shadow-[inset_0_0_0_1px_var(--color-loss-line)]",
+        "inline-flex max-w-full items-center gap-1.5 justify-self-start rounded-full py-0.5 pr-2 pl-1 text-label-sm text-g-500",
+        "transition-[background-color,box-shadow] duration-base ease-brand",
+        state === "running" && "bg-g-50 shadow-[inset_0_0_0_1px_var(--color-g-100)]",
+        state === "failed" && "text-loss",
         className
       )}
       {...props}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "grid size-[18px] shrink-0 place-items-center rounded-full",
-          state === "done" && "bg-gain text-white",
-          state === "failed" && "bg-loss text-white"
-        )}
-      >
-        {state === "running" && <Spinner size={13} className="text-blue" />}
-        {state === "done" && <Icon name="check" size={12} strokeWidth={2.2} />}
-        {state === "failed" && <Icon name="close" size={12} strokeWidth={2.2} />}
+      <span aria-hidden className="grid size-4 shrink-0 place-items-center">
+        {state === "running" && <Spinner size={12} className="text-blue" />}
+        {state === "done" && <Icon name="check" size={13} strokeWidth={2.2} className="animate-pop-in text-gain" />}
+        {state === "failed" && <Icon name="close" size={13} strokeWidth={2.2} />}
       </span>
       <span className="sr-only">{`${STATE_TEXT[state]}: `}</span>
       <span
@@ -50,9 +48,7 @@ export function ToolCallRow({ state, label, result, className, ...props }: ToolC
       >
         {label}
       </span>
-      {state === "done" && result && (
-        <span className="shrink-0 border-l border-g-200 pl-2 font-semibold text-ink tabular-nums">{result}</span>
-      )}
+      {state === "done" && result && <span className="shrink-0 font-semibold text-g-800 tabular-nums">{result}</span>}
     </output>
   )
 }

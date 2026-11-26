@@ -17,7 +17,7 @@ const draftAppleWeekly = async (page: Page, replies: Replies) => {
       [{ text: "Here's the draft. Lock it with Face ID when you're happy." }]
     ]
   })
-  return page.getByRole("region", { name: "Draft from chat" })
+  return page.getByRole("region", { name: "Draft agent" })
 }
 
 /** Makes "Chip picker" through the new agent flow, then opens a new chat. */
@@ -31,7 +31,7 @@ test.describe("draft agent cards", () => {
   test("a draft locked with Face ID from the card goes live", async ({ page, funded: _funded, replies }) => {
     const card = await draftAppleWeekly(page, replies)
     await expect(card.getByRole("heading", { name: "Apple weekly" })).toBeVisible()
-    await expect(card.getByText("Lasts 90 days once locked. You can pause it any time.")).toBeVisible()
+    await expect(card.getByText("Runs for 90 days once locked. Pause it any time.")).toBeVisible()
     await expect(card.getByText("Not running yet")).toBeVisible()
 
     await card.getByRole("button", { name: "Lock with Face ID" }).click()
@@ -67,8 +67,8 @@ test.describe("policy change cards", () => {
         [{ text: "Approve the change on the card." }]
       ]
     })
-    const card = page.getByRole("region", { name: "Change of policies" })
-    await expect(card.getByText("Its new policies are locked onchain once you approve.")).toBeVisible()
+    const card = page.getByRole("region", { name: "New rules" })
+    await expect(card.getByText("Its new rules are locked onchain once you approve.")).toBeVisible()
     await expect(card.getByText("Tighter", { exact: true })).toBeVisible()
 
     await card.getByRole("button", { name: "Approve with Face ID" }).click()
@@ -84,7 +84,7 @@ test.describe("policy change cards", () => {
       rounds: [[{ call: "renewAgent", params: { agentId: agent.id } }], [{ text: "Renew it on the card." }]]
     })
     const card = page.getByRole("region", { name: "Renewal" })
-    await expect(card.getByText("Locks the same policies with a new key for 90 more days.")).toBeVisible()
+    await expect(card.getByText("Locks the same rules with a new key for 90 more days.")).toBeVisible()
 
     await card.getByRole("button", { name: "Renew with Face ID" }).click()
 
@@ -103,7 +103,7 @@ test.describe("policy change cards", () => {
 
     await card.getByRole("button", { name: "Remove with Face ID" }).click()
 
-    await expect(card.getByText("Removed")).toBeVisible()
+    await expect(card.getByText("Removed", { exact: true })).toBeVisible()
   })
 
   test("a draft is removed right away, with nothing to sign", async ({ page, funded: _funded, replies }) => {
@@ -117,8 +117,8 @@ test.describe("policy change cards", () => {
     })
 
     const card = page.getByRole("region", { name: "Removal" })
-    await expect(card.getByText("Apple weekly was a draft, so it was removed right away. Nothing was onchain."))
-      .toBeVisible()
+    await expect(card.getByRole("heading", { name: "Apple weekly is removed" })).toBeVisible()
+    await expect(card.getByText("It was a draft, so it was removed right away. Nothing was onchain.")).toBeVisible()
     await expect(card.getByRole("button")).toHaveCount(0)
   })
 })
@@ -136,7 +136,7 @@ test.describe("agent control cards", () => {
 
     await card.getByRole("button", { name: "Pause Chip picker" }).click()
 
-    await expect(card.getByText("Done. Resume it any time.")).toBeVisible()
+    await expect(card.getByRole("heading", { name: "Chip picker is paused" })).toBeVisible()
     await page.goto(`/agents/${agent.id}`)
     await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeVisible()
   })
@@ -152,7 +152,7 @@ test.describe("agent control cards", () => {
     await card.getByRole("button", { name: "Not now" }).click()
 
     await expect(card.getByText("You left it as it was.")).toBeVisible()
-    await expect(card.getByText("Dismissed")).toBeVisible()
+    await expect(card.getByText("Not now", { exact: true })).toBeVisible()
     await page.goto(`/agents/${agent.id}`)
     await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible()
   })
@@ -166,11 +166,11 @@ test.describe("agent control cards", () => {
       rounds: [[{ call: "resumeAgent", params: { agentId: agent.id } }], [{ text: "Confirm on the card." }]]
     })
     const card = page.getByRole("region", { name: "Resume" })
-    await expect(card.getByText("It trades again inside its policies.")).toBeVisible()
+    await expect(card.getByText("It trades again inside its rules.")).toBeVisible()
 
     await card.getByRole("button", { name: "Resume Chip picker" }).click()
 
-    await expect(card.getByText("Done. It's trading again.")).toBeVisible()
+    await expect(card.getByRole("heading", { name: "Chip picker is trading again" })).toBeVisible()
   })
 
   test("every agent is paused at once from the card", async ({ page, funded: _funded, replies }) => {
@@ -184,7 +184,7 @@ test.describe("agent control cards", () => {
 
     await card.getByRole("button", { name: "Pause every agent" }).click()
 
-    await expect(card.getByText("Done. Resume it any time.")).toBeVisible()
+    await expect(card.getByRole("heading", { name: "Every agent is paused" })).toBeVisible()
   })
 })
 

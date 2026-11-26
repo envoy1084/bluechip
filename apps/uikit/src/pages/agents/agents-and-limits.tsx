@@ -244,34 +244,27 @@ export function DraftSection() {
   return (
     <Section
       title="Agent draft card"
-      purpose="What chat hands you after “create an agent that…”: the agent, its rules in sentences, and one button to review and lock it. Nothing runs until it's locked with Face ID."
+      purpose="What chat hands you after “make an agent that…”: the agent, its rules in sentences, then Customize or Lock with Face ID. Every state is on the Chat cards page."
     >
       <Demo className="justify-center">
         <AgentDraftCard
-          className="max-w-[520px]"
           agentId="rebalancer"
           name="Rebalancer"
-          template="Rebalancer"
-          summary="Keeps you at 30 / 25 / 20 / 15, 10% cash"
-          limits={REBALANCER.limits}
-          duration="Lasts 90 days, until 22 Feb. You can pause it any time."
-          onReview={() => toast("Opening review")}
-          onEditRule={(rule) => toast(`Edit: ${rule}`)}
+          detail="Runs for 90 days once locked. Pause it any time."
+          can={[
+            "Trade Nvidia, Apple, Microsoft and Tesla, only to move you back to your target mix",
+            "Spend up to $250 a day"
+          ]}
+          never={["Send money out of your account", "Put over 30% of your money in one stock"]}
+          state="Not running yet"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => toast("Opening the new agent flow")}>Customize</Button>
+              <Button onClick={() => toast("Face ID")}>Lock with Face ID</Button>
+            </>
+          }
         />
       </Demo>
-      <States>
-        <Demo label="Inline, in a chat answer">
-          <AgentDraftCard
-            variant="inline"
-            agentId="rebalancer"
-            name="Rebalancer"
-            template="Rebalancer"
-            summary="$200 a day, rebalance only"
-            limits={REBALANCER.limits}
-            onReview={() => toast("Opening review")}
-          />
-        </Demo>
-      </States>
     </Section>
   )
 }

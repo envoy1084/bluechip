@@ -40,3 +40,39 @@ export const AGENT_STANDING: Readonly<Record<AgentStatus, string>> = {
   expired: "Ran out, renew it to keep it running",
   removed: "Removed"
 }
+
+/** What an agent card's Face ID did: lock a draft, or change, renew or remove an agent. */
+export type AgentCardAction = "lock" | "update" | "renew" | "remove"
+
+const LANDED: Readonly<Record<AgentCardAction, (name: string) => string>> = {
+  lock: (name) => `${name} is live`,
+  update: (name) => `${name}'s new rules are locked`,
+  renew: (name) => `${name} is renewed`,
+  remove: (name) => `${name} is removed`
+}
+
+/**
+ * An agent card's end once signed, from where the agent stands: a short wait while Base takes it, then what landed;
+ * `null` while there's nothing to say (still a draft, or back where it was).
+ */
+export const agentOutcome = (
+  action: AgentCardAction,
+  status: AgentStatus,
+  name: string
+): { readonly tone: "pending" | "success"; readonly title: string; readonly description: string } | null => {
+  if (status === "locking" || status === "updating" || status === "removing") {
+    const doing = action === "remove" ? `Removing ${name}` : action === "lock" ?
+      `Locking ${name}'s rules` :
+      action === "renew"
+      ? `Renewing ${name}`
+      : `Changing ${name}'s rules`
+    return { tone: "pending", title: doing, description: "Base takes a couple of seconds." }
+  }
+  const landed = action === "remove" ? status === "removed" : status === "active"
+  if (!landed) return null
+  return {
+    tone: "success",
+    title: LANDED[action](name),
+    description: action === "remove" ? "Your stocks and cash stay in your account." : "It trades inside its rules."
+  }
+}

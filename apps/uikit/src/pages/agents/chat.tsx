@@ -9,7 +9,7 @@ import { Button } from "@bluechip/ui/components/button"
 import { toast } from "@bluechip/ui/components/toast"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useEffect, useRef, useState } from "react"
-import { ACCOUNT, FILING, NEWS, PICKER, PRICE, PROPOSAL, REBALANCER, SOURCES, SUGGESTIONS } from "./data.ts"
+import { ACCOUNT, FILING, NEWS, PICKER, PRICE, PROPOSAL, SOURCES, SUGGESTIONS } from "./data.ts"
 import { Demo, Section, States } from "./layout.tsx"
 
 type ThreadEntry =
@@ -103,13 +103,16 @@ export function ChatDemoSection() {
                           onAdjust={() => toast("Adjust the weights")}
                         />
                         <AgentDraftCard
-                          variant="inline"
                           agentId="ai-chips"
                           name="AI chips keeper"
-                          template="Rebalancer"
-                          summary="$200 a day, rebalance only"
-                          limits={REBALANCER.limits}
-                          onReview={() => toast("Opening review")}
+                          detail="Runs for 90 days once locked. Pause it any time."
+                          can={[
+                            "Trade Nvidia and AMD, only to move you back to your target mix",
+                            "Spend up to $200 a day"
+                          ]}
+                          never={["Send money out of your account"]}
+                          state="Not running yet"
+                          footer={<Button size="sm" onClick={() => toast("Opening review")}>Review and lock</Button>}
                         />
                       </>
                     )}

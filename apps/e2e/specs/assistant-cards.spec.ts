@@ -27,7 +27,7 @@ test.describe("trade cards", () => {
     })
 
     await expect(lastTurn(page).getByRole("status").filter({ hasText: "Prepared the trade" })).toBeVisible()
-    await expect(lastTurn(page).getByText("Done. It's in your portfolio")).toBeVisible()
+    await expect(lastTurn(page).getByText("It's in your portfolio.")).toBeVisible()
   })
 
   test("your own buy waits for Face ID, then is filled", async ({ page, funded: _funded, replies }) => {
@@ -43,12 +43,12 @@ test.describe("trade cards", () => {
       ]
     })
     const card = page.getByRole("region", { name: "Your trade" })
-    await expect(card.getByText("Waiting for your Face ID")).toBeVisible()
+    await expect(card.getByText("Needs Face ID")).toBeVisible()
     await expect(card.getByText("Nothing happens unless you approve it.")).toBeVisible()
 
     await card.getByRole("button", { name: "Buy with Face ID" }).click()
 
-    await expect(lastTurn(page).getByText("Done. It's in your portfolio")).toBeVisible()
+    await expect(lastTurn(page).getByText("It's in your portfolio.")).toBeVisible()
   })
 })
 
@@ -72,7 +72,7 @@ test.describe("research cards", () => {
 
     const card = page.getByRole("region", { name: "From the web" })
     await expect(card.getByText("Not checked by bluechip")).toBeVisible()
-    await expect(card.getByText("Searched for \"Nvidia quarterly results\"")).toBeVisible()
+    await expect(card.getByText("Searched for “Nvidia quarterly results”")).toBeVisible()
     await expect(card.getByRole("link", { name: "Nvidia Q3" })).toHaveAttribute("href", "https://example.com/nvidia-q3")
     await expect(card.getByText("Revenue rose 60%.")).toBeVisible()
     await expect(card.getByRole("link", { name: "Chip makers" })).toHaveAttribute(
@@ -106,7 +106,7 @@ test.describe("template cards", () => {
 
     await card.getByRole("button", { name: "Save template" }).click()
 
-    await expect(card.getByText("Saved. It's in your templates when you make an agent.")).toBeVisible()
+    await expect(card.getByText("It's in your templates for the next agent.")).toBeVisible()
     await card.getByRole("link", { name: "Start an agent" }).click()
     await expect(page).toHaveURL(/\/agents\/new$/)
     await expect(page.getByRole("radio", { name: /^Steady picks/ })).toBeVisible()
@@ -118,7 +118,7 @@ test.describe("template cards", () => {
 
     await card.getByRole("button", { name: "Not now" }).click()
 
-    await expect(card.getByText("Dismissed")).toBeVisible()
+    await expect(card.getByText("Not now", { exact: true })).toBeVisible()
     await page.goto("/agents/new")
     await expect(page.getByRole("radio", { name: /^Stock picker/ })).toBeVisible()
     await expect(page.getByRole("radio", { name: /^Steady picks/ })).toBeHidden()
