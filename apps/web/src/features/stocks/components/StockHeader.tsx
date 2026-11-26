@@ -1,30 +1,18 @@
 import type { PriceStatus, Stock } from "@bluechip/domain/market/Market"
 import { Price } from "@bluechip/ui/bluechip/price-change"
+import { StatusPill, type StatusTone } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney, formatRelative } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { bpsPercent, priceDollars } from "../../../lib/amounts.ts"
 import { referenceGap } from "./ReferenceGap.tsx"
 import { SessionNote } from "./SessionNote.tsx"
 
-const REFERENCE_PILL: Readonly<Record<PriceStatus, { label: string; icon: IconName; className: string }>> = {
-  live: {
-    label: "Live",
-    icon: "check-circle",
-    className: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]"
-  },
-  paused: {
-    label: "Paused",
-    icon: "pause",
-    className: "bg-g-50 text-g-600 shadow-[inset_0_0_0_1px_var(--color-g-200)]"
-  },
-  stale: {
-    label: "Not updating",
-    icon: "warning",
-    className: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]"
-  }
+const REFERENCE_PILL: Readonly<Record<PriceStatus, { label: string; icon: IconName; tone: StatusTone }>> = {
+  live: { label: "Live", icon: "check-circle", tone: "positive" },
+  paused: { label: "Paused", icon: "pause", tone: "neutral" },
+  stale: { label: "Not updating", icon: "warning", tone: "attention" }
 }
 
 /**
@@ -67,15 +55,9 @@ export function StockHeader({ stock }: Readonly<{ stock: Stock }>) {
               {gap === null ? null : `, ${Math.abs(gap).toFixed(1)}% apart`}
               {`, updated ${formatRelative(DateTime.toDateUtc(reference.updatedAt)).toLowerCase()}`}
             </span>
-            <span
-              className={cn(
-                "inline-flex items-center gap-[5px] rounded-full px-2 py-0.5 text-caption font-semibold",
-                REFERENCE_PILL[reference.status].className
-              )}
-            >
-              <Icon name={REFERENCE_PILL[reference.status].icon} size={13} />
+            <StatusPill tone={REFERENCE_PILL[reference.status].tone} icon={REFERENCE_PILL[reference.status].icon}>
               {REFERENCE_PILL[reference.status].label}
-            </span>
+            </StatusPill>
           </p>
         )}
     </div>

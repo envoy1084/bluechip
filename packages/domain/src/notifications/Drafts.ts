@@ -10,6 +10,7 @@ import type { AutomationRun } from "../automations/Run.ts"
 import { describeDecision, describeLeg } from "../intents/Describe.ts"
 import type { Intent } from "../intents/Intent.ts"
 import type { StockSymbol } from "../market/Market.ts"
+import { formatShareCount } from "../policies/Format.ts"
 import type { Transfer } from "../portfolio/Transfer.ts"
 import type { NotificationDraft } from "./Notification.ts"
 
@@ -35,8 +36,6 @@ export interface Names {
 export const APPROVALS_LINK = "/home?sheet=approvals"
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })
-
-const sharesFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
 
 const centsFormat = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
@@ -231,7 +230,7 @@ export const notificationOfSessionEnding = (
 const amountOf = (transfer: Transfer, stock: (symbol: StockSymbol) => string) =>
   transfer.asset === "USDC" ?
     `${centsFormat.format(Number(transfer.amount) / 1e6)} of USDC` :
-    `${sharesFormat.format(Number(transfer.amount) / 1e8)} shares of ${stock(transfer.asset)}`
+    `${formatShareCount(Number(transfer.amount) / 1e8)} of ${stock(transfer.asset)}`
 
 /**
  * Money that arrived, or a withdrawal that landed or failed; `undefined` while a withdrawal is on its way.

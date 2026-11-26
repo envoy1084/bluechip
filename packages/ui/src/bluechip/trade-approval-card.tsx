@@ -29,7 +29,7 @@ export function TradeApprovalCard(
   { title, detail, reason, warnings = NONE, setsUpAccount = false, preview, action, problem }: TradeApprovalCardProps
 ) {
   return (
-    <ChatCard tag="Your trade" icon="face-id" state="Needs Face ID" footer={action}>
+    <ChatCard tag="Your trade" icon="face-id" state="Waiting for Face ID" footer={action}>
       <ChatCardHeadline title={title} detail={detail} />
       {preview}
       {reason === undefined || reason === "" ? null : <p className="text-[13.5px] text-g-700">{reason}</p>}

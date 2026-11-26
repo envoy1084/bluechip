@@ -1,8 +1,9 @@
 import type { QuietHours } from "@bluechip/domain/notifications/Notification"
-import { Input } from "@bluechip/ui/components/input"
 import { Switch } from "@bluechip/ui/components/switch"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
+import { TimeField } from "../../../../components/fields/TimeField.tsx"
+import { zoneLabel } from "../../../../lib/timeZones.ts"
 import { notificationKeys, setQuietHoursAtom } from "../../atoms/notifications.ts"
 import { SettingsCard, SettingsRow } from "./SettingsCard.tsx"
 
@@ -29,7 +30,7 @@ export function QuietHoursCard(
         title="Quiet hours"
         description={quietHours === null ?
           "Off: everything goes out when it happens." :
-          `In ${(timeZone ?? "UTC").replaceAll("_", " ")} time, your time zone in Settings.`}
+          `In ${zoneLabel(timeZone ?? "UTC")} time, your time zone in Settings.`}
       >
         <Switch
           checked={quietHours !== null}
@@ -43,26 +44,20 @@ export function QuietHoursCard(
         (
           <SettingsRow title="From and to" description="A window past midnight carries on into the next day.">
             <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                aria-label="Quiet from"
-                className="w-[118px]"
-                defaultValue={quietHours.from}
+              <TimeField
+                label="Quiet from"
+                labelHidden
+                value={quietHours.from}
                 disabled={saving}
-                onBlur={(event) =>
-                  event.target.value !== "" && event.target.value !== quietHours.from &&
-                  save({ ...quietHours, from: event.target.value })}
+                onChange={(from) => from !== quietHours.from && void save({ ...quietHours, from })}
               />
               <span className="text-g-500">to</span>
-              <Input
-                type="time"
-                aria-label="Quiet until"
-                className="w-[118px]"
-                defaultValue={quietHours.to}
+              <TimeField
+                label="Quiet until"
+                labelHidden
+                value={quietHours.to}
                 disabled={saving}
-                onBlur={(event) =>
-                  event.target.value !== "" && event.target.value !== quietHours.to &&
-                  save({ ...quietHours, to: event.target.value })}
+                onChange={(to) => to !== quietHours.to && void save({ ...quietHours, to })}
               />
             </div>
           </SettingsRow>

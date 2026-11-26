@@ -5,7 +5,6 @@ import type { AgentPerformance } from "@bluechip/domain/performance/Performance"
 import type { SpecDescription } from "@bluechip/domain/policies/Catalog"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { listNames } from "@bluechip/domain/policies/Format"
-import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { ChatCardRules } from "@bluechip/ui/bluechip/chat-card"
 import {
   ChatResultHeadline,
@@ -18,12 +17,14 @@ import { Sparkline } from "@bluechip/ui/bluechip/sparkline"
 import { UsageRing } from "@bluechip/ui/bluechip/usage-ring"
 import { formatChange, formatDate, formatMoney } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
+import { AgentStateAvatar } from "../../../../components/AgentStateAvatar.tsx"
+import { AgentStateNow } from "../../../../components/AgentStatePill.tsx"
 import { useNow } from "../../../../hooks/useNow.ts"
 import { usdcDollars } from "../../../../lib/amounts.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { agentGlance } from "../../model/agentGlance.ts"
 import type { ResultState } from "../../model/resultCards.ts"
-import { agentDot, agentStanding, resetText, RESULT_LOOK } from "../../model/resultText.ts"
+import { resetText, RESULT_LOOK } from "../../model/resultText.ts"
 import { SpecGlance } from "../cards/SpecGlance.tsx"
 import { LookedResult } from "./MoneyResults.tsx"
 import { more, OpenLink } from "./OpenLink.tsx"
@@ -47,11 +48,12 @@ export function AgentResult(
       action={<OpenLink to="/agents/$agentId" params={{ agentId: agent.id }} />}
     >
       <div className="flex items-center gap-2.5">
-        <AgentAvatar agentId={agent.id} status={agentDot(agent)} />
-        <span className="grid min-w-0 gap-px">
+        <AgentStateAvatar agent={agent} />
+        <span className="grid min-w-0 flex-1 gap-px">
           <b className="truncate text-[14.5px] font-semibold">{agent.name}</b>
-          <span className="text-label-sm text-g-500">{`${agentStanding(agent)}. ${until}.`}</span>
+          <span className="text-label-sm text-g-500">{`${until}.`}</span>
         </span>
+        <AgentStateNow agent={agent} />
       </div>
       <SpecGlance spec={agent.spec} />
       <ChatCardRules can={description.can.slice(0, 3)} never={description.never.slice(0, 2)} />
@@ -75,12 +77,13 @@ export function AgentsResult(
         {shown.map((agent) => (
           <ChatResultRow
             key={agent.id}
-            media={<AgentAvatar agentId={agent.id} size="sm" status={agentDot(agent)} />}
+            media={<AgentStateAvatar agent={agent} size="sm" />}
             title={agent.name}
             detail={stocksOf(agent).length === 0 ?
-              agentStanding(agent) :
-              `${agentStanding(agent)}, trades ${listNames(stocksOf(agent).map(nameOf))}`}
+              "Trades nothing yet" :
+              `Trades ${listNames(stocksOf(agent).map(nameOf))}`}
             value={<OpenLink label="Open" to="/agents/$agentId" params={{ agentId: agent.id }} />}
+            valueDetail={<AgentStateNow agent={agent} />}
           />
         ))}
       </ChatResultRows>

@@ -7,6 +7,7 @@
 import * as Schema from "effect/Schema"
 import { StockSymbol } from "../../market/Market.ts"
 import { Shares } from "../../market/Units.ts"
+import { formatShareCount } from "../../policies/Format.ts"
 import * as Condition from "../Condition.ts"
 import { Field } from "../Entry.ts"
 
@@ -19,12 +20,7 @@ import { Field } from "../Entry.ts"
  */
 export const HoldingAtLeastConfig = Schema.Struct({ symbol: StockSymbol, shares: Shares })
 
-const sharesFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
-
-const sharesText = (shares: bigint) => {
-  const amount = Number(shares) / 1e8
-  return `${sharesFormat.format(amount)} ${amount === 1 ? "share" : "shares"}`
-}
+const sharesText = (shares: bigint) => formatShareCount(Number(shares) / 1e8)
 
 /**
  * @stability unstable

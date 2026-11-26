@@ -1,7 +1,6 @@
 import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
 import { AllocationDonut, type AllocationSlice } from "@bluechip/ui/bluechip/allocation-donut"
 import { AllocationEditor } from "@bluechip/ui/bluechip/allocation-editor"
-import { BlockedTradeCard } from "@bluechip/ui/bluechip/blocked-trade-card"
 import { DepositArrivedCard } from "@bluechip/ui/bluechip/deposit-arrived-card"
 import { DepositCard } from "@bluechip/ui/bluechip/deposit-card"
 import { CashHoldingRow, HoldingRow } from "@bluechip/ui/bluechip/holding-row"
@@ -14,7 +13,7 @@ import { Toaster } from "@bluechip/ui/components/toast"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { useRef, useState } from "react"
-import { ActivitySection, ApprovalSection, OrderSection, TradeOutcomeSection } from "./activity.tsx"
+import { ActivitySection, OrderSection, TradeOutcomeSection } from "./activity.tsx"
 import { DemoControls } from "./controls.tsx"
 import { card, Group, Section } from "./layout.tsx"
 import {
@@ -40,7 +39,6 @@ import {
   MoneySection,
   PriceSection,
   SparklineSection,
-  StockList,
   TickerSection
 } from "./money.tsx"
 import { PasskeySection } from "./safety.tsx"
@@ -55,8 +53,6 @@ export function KitBluechip() {
   const [deposit, setDeposit] = useState<{ readonly arrived: boolean; readonly amount: number; readonly key: number }>(
     { arrived: false, amount: 0, key: 0 }
   )
-  const [blockedKey, setBlockedKey] = useState(0)
-  const [approvalKey, setApprovalKey] = useState(0)
   const [activity, setActivity] = useState(FIRST_ACTIVITY)
   const [log, setLog] = useState<{ readonly text: string; readonly target: string } | null>(null)
   const nextId = useRef(100)
@@ -101,25 +97,23 @@ export function KitBluechip() {
       )
       setLog({
         text: next === "open" ?
-          "Market opened. Status pills, stock rows and activity updated." :
-          "Market closed. Status pills, stock rows, sparklines and activity updated.",
-        target: "stock-row"
+          "Market opened. Status pills and activity updated." :
+          "Market closed. Status pills, sparklines and activity updated.",
+        target: "market-status"
       })
     },
     blocked: () => {
-      setBlockedKey((k) => k + 1)
       addActivity({ ...FIRST_ACTIVITY[1] as Activity, time: "Just now" })
       setLog({
         text: "Tech picker tried to buy $2,400 of Tesla and your 30% limit stopped it.",
-        target: "blocked-trade"
+        target: "activity"
       })
     },
     approval: () => {
-      setApprovalKey((k) => k + 1)
       addActivity({ ...FIRST_ACTIVITY[0] as Activity, time: "Just now" })
       setLog({
-        text: "Tech picker asked to buy $600 of Nvidia. It's waiting in the approval sheet.",
-        target: "approval"
+        text: "Tech picker asked to buy $600 of Nvidia. It's waiting in your activity.",
+        target: "activity"
       })
     },
     drop: () => {
@@ -348,14 +342,6 @@ export function KitBluechip() {
             <CashHoldingRow value={cash} weight={weight(cash)} reserve={RESERVE} />
           </div>
         </Section>
-        <Section
-          id="stock-row"
-          title="Stock row"
-          purpose="A stock you can buy: price, today's change, the day's shape and whether its market is open. Rows are buttons; the selected one is pressed."
-          notes={["Sparkline hides on phones", "Halted: per stock, amber", "Closed: dashed tail + “Last close”"]}
-        >
-          <StockList prices={prices} market={market} />
-        </Section>
         <MarketSection live={market} />
         <Section
           id="ticker-marquee"
@@ -375,29 +361,8 @@ export function KitBluechip() {
         intro="What happened, what's waiting for you, and the moment a limit says no."
       >
         <ActivitySection activity={activity} onGo={show} />
-        <Section
-          id="blocked-trade"
-          title="Blocked-trade card"
-          purpose="bluechip's signature moment. When a limit stops a trade we say so plainly: what the agent tried, which limit stopped it, and that nothing happened to your money. Then you choose."
-          notes={["Red wash, never a modal", "Shows the would-be number against your max", "Keep is the calm default"]}
-        >
-          <BlockedTradeCard
-            key={blockedKey}
-            agentName="Tech picker"
-            time="2 min ago"
-            side="buy"
-            stockName="Tesla"
-            amount={2400}
-            weight={17.5}
-            projected={41}
-            cap={CAP}
-            onChangeLimit={() =>
-              setLog({ text: "Change limit opens the limit editor on the agent's page.", target: "blocked-trade" })}
-          />
-        </Section>
         <OrderSection nvidia={quote("NVDA").price} tesla={quote("TSLA").price} />
         <TradeOutcomeSection />
-        <ApprovalSection key={approvalKey} nvidia={quote("NVDA").price} />
       </Group>
 
       <Group id="account-safety" title="Account & safety" intro="Face ID, cash in, and the brakes.">

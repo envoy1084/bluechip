@@ -8,9 +8,9 @@ import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { usdcDollars } from "../../../../lib/amounts.ts"
+import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
 import { costsSentence } from "../../../../lib/performance.ts"
 import { automationPerformanceAtom } from "../../atoms/performance.ts"
-import { OUTCOME } from "../../model/automationText.ts"
 import { runsSentence } from "../../model/results.ts"
 import { OUTCOME_MARK } from "../RunStrip.tsx"
 
@@ -76,7 +76,7 @@ function RunOutcomes({ performance }: Readonly<{ performance: AutomationPerforma
           <li key={row.outcome} className="flex items-center justify-between gap-3 text-[13.5px]">
             <span className="flex items-center gap-2 text-g-700">
               <i aria-hidden className={cn("size-2 rounded-full", OUTCOME_MARK[row.outcome])} />
-              {OUTCOME[row.outcome].label}
+              {RUN_OUTCOME[row.outcome].label}
             </span>
             <b className="font-semibold tabular-nums">{row.count}</b>
           </li>

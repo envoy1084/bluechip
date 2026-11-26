@@ -1,4 +1,5 @@
 import type { Judgment } from "@bluechip/domain/automations/Run"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { choiceLabel } from "../../model/automationText.ts"
@@ -23,14 +24,9 @@ export function JudgmentCard(
           </span>
           <b className="font-semibold text-ink">{choiceLabel("judgment", "preset", judgment.preset, {})}?</b>
         </span>
-        <span
-          className={cn(
-            "rounded-full px-2 py-px text-[11.5px] font-semibold",
-            answer.verdict ? "bg-blue-50 text-blue" : "bg-g-100 text-g-700"
-          )}
-        >
+        <StatusPill tone={answer.verdict ? "pending" : "neutral"}>
           {answer.verdict ? "Yes" : "No"}, {sure}% sure
-        </span>
+        </StatusPill>
       </div>
 
       <div className="grid gap-1">

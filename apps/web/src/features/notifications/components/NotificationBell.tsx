@@ -1,5 +1,4 @@
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from "@bluechip/ui/components/popover"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
@@ -7,6 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import {
   notificationKeys,
   notificationsAtom,
@@ -72,13 +72,9 @@ export function NotificationBell() {
         </div>
         {items.length === 0 ?
           (
-            <Empty size="sm" className="py-6">
-              <EmptyMedia>
-                <Icon name="bell" size={18} />
-              </EmptyMedia>
-              <EmptyTitle>Nothing new</EmptyTitle>
-              <EmptyDescription>Trades, approvals and your agents' news show up here.</EmptyDescription>
-            </Empty>
+            <IllustratedEmpty illustration="bell" size={88} variant="plain" compact title="Nothing new">
+              Trades, approvals and your agents' news show up here.
+            </IllustratedEmpty>
           ) :
           (
             <div className="grid max-h-[min(440px,60vh)] gap-0.5 overflow-y-auto">

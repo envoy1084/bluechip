@@ -1,4 +1,3 @@
-import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { Button } from "@bluechip/ui/components/button"
 import {
   SidebarGroup,
@@ -12,16 +11,14 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link, useMatchRoute } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { AgentStateAvatar } from "../../../components/AgentStateAvatar.tsx"
 import { usePauseAll } from "../../../hooks/usePauseAll.ts"
-import { agentDot, agentState } from "../model/agentState.ts"
 
 /** The sidebar's "Your agents" group: each agent with its status dot, then "New agent". */
 export function SidebarAgents() {
   const agents = useAtomValue(agentsAtom)
   const matchRoute = useMatchRoute()
-  const [now] = useState(() => new Date())
 
   return (
     <SidebarGroup className="mt-4 transition-[margin] group-data-[collapsible=icon]/sidebar-panel:mt-1">
@@ -39,7 +36,7 @@ export function SidebarAgents() {
               >
                 {/* `contents` keeps the avatar out of the button's `> span` label styles (flex-1, truncate). */}
                 <i className="contents">
-                  <AgentAvatar agentId={agent.id} size="sm" status={agentDot(agentState(agent, now))} />
+                  <AgentStateAvatar agent={agent} size="sm" />
                 </i>
                 <span>{agent.name}</span>
               </SidebarMenuButton>

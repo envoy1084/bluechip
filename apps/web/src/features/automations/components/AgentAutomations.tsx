@@ -1,10 +1,12 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import { Button, ButtonLink } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { SectionHeader } from "../../../components/layout/SectionHeader.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useListedAutomations } from "../hooks/useListedAutomations.ts"
 import { type Filter, shows, sortListed } from "../model/standing.ts"
 import { takesAutomations } from "../model/traders.ts"
@@ -42,12 +44,7 @@ export function AgentAutomations({ agent }: Readonly<{ agent: Agent }>) {
       )
     }
     if (!AsyncResult.isSuccess(listed)) {
-      return (
-        <div className="grid justify-items-start gap-2 rounded-lg bg-white p-[18px] shadow-e2">
-          <p className="text-body-sm text-g-600">We couldn't load its automations. Try again.</p>
-          <Button variant="secondary" size="sm" onClick={refresh}>Try again</Button>
-        </div>
-      )
+      return <LoadProblem what="its automations" onRetry={refresh} variant="card" size="sm" />
     }
 
     const rows = listed.value
@@ -75,15 +72,13 @@ export function AgentAutomations({ agent }: Readonly<{ agent: Agent }>) {
 
   return (
     <section aria-labelledby={`automations-${agent.id}`} className="grid content-start gap-3">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2.5 px-0.5">
-        <div className="grid gap-0.5">
-          <h3 id={`automations-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">Automations</h3>
-          <p className="text-label-sm text-g-500">
-            What starts {agent.name} trading on its own, and how each run went.
-          </p>
-        </div>
-        {open ? newAutomation("xs") : null}
-      </div>
+      <SectionHeader
+        id={`automations-${agent.id}`}
+        level="h3"
+        title="Automations"
+        description={`What starts ${agent.name} trading on its own, and how each run went.`}
+        {...(open ? { actions: newAutomation("xs") } : {})}
+      />
       {body()}
     </section>
   )

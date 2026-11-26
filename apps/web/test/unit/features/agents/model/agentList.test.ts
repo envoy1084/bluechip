@@ -40,6 +40,7 @@ describe("listedAgent", () => {
     assert.deepStrictEqual(listedAgent(agent("active"), NOW), {
       agent: agent("active"),
       state: "active",
+      settled: true,
       usage: undefined,
       lastTradeAt: undefined,
       awaiting: 0

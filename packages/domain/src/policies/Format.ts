@@ -33,6 +33,30 @@ const priceFormat = new Intl.NumberFormat("en-US", {
  */
 export const formatPrice = (price: bigint): string => priceFormat.format(Number(price) / 1e8)
 
+const shareFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 })
+
+/**
+ * A number of shares, to the 8 decimals a stock token has: `0.12345678`, `12`.
+ *
+ * @stability unstable
+ * @category formatting
+ * @since 0.0.0
+ */
+export const formatShares = (shares: number): string => shareFormat.format(shares)
+
+/**
+ * A number of shares with its noun, singular only for exactly one: `1 share`, `0.5 shares`; the same rule the web
+ * app shows them by.
+ *
+ * @stability unstable
+ * @category formatting
+ * @since 0.0.0
+ */
+export const formatShareCount = (shares: number): string => {
+  const text = formatShares(shares)
+  return `${text} ${text === "1" ? "share" : "shares"}`
+}
+
 /**
  * Basis points as a percentage: `2.5%`.
  *

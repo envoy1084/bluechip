@@ -35,7 +35,7 @@ test.describe("security: passkeys", () => {
     await page.getByRole("button", { name: "Done" }).click()
 
     await page.getByRole("button", { name: "Remove" }).last().click()
-    await expect(page.getByRole("dialog")).toContainText("It can no longer sign in or approve anything")
+    await expect(page.getByRole("alertdialog")).toContainText("It can no longer sign in or approve anything")
     await page.getByRole("button", { name: "Remove with Face ID" }).click()
 
     await expect(page.getByRole("heading", { name: "The passkey is removed" })).toBeVisible()
@@ -49,7 +49,7 @@ test.describe("security: passkeys", () => {
     await page.getByRole("button", { name: "Add a passkey" }).click()
     await page.getByRole("button", { name: "Make it and approve with Face ID" }).click()
 
-    await expect(page.getByRole("dialog")).toContainText("Nothing changed")
+    await expect(page.getByRole("alertdialog")).toContainText("Nothing changed")
     await authenticator.setVerified(true)
   })
 })

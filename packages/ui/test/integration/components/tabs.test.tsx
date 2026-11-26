@@ -1,4 +1,4 @@
-import { Tabs, TabsList, TabsPanel, TabsTab } from "@bluechip/ui/components/tabs"
+import { Tabs, TabsLink, TabsList, TabsNav, TabsPanel, TabsTab } from "@bluechip/ui/components/tabs"
 import { describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
 import { page, userEvent } from "vitest/browser"
@@ -34,5 +34,20 @@ describe("Tabs", () => {
     await userEvent.keyboard("{ArrowRight}")
     await expect.element(page.getByRole("tab", { name: "Activity" })).toHaveFocus()
     await expect.element(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true")
+  })
+})
+
+describe("TabsNav", () => {
+  it("is a navigation of links, the current one marked", async () => {
+    const screen = await render(
+      <TabsNav aria-label="Agent's pages">
+        <TabsLink href="#overview" aria-current="page">Overview</TabsLink>
+        <TabsLink href="#journal">Journal</TabsLink>
+      </TabsNav>
+    )
+
+    await expect.element(screen.getByRole("navigation", { name: "Agent's pages" })).toBeInTheDocument()
+    await expect.element(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page")
+    await expect.element(screen.getByRole("link", { name: "Journal" })).toHaveAttribute("href", "#journal")
   })
 })

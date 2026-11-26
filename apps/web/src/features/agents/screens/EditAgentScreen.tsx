@@ -3,7 +3,6 @@ import { NotFound as NotFoundError } from "@bluechip/domain/Errors"
 import type { AgentId } from "@bluechip/domain/Ids"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
@@ -12,6 +11,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { agentAtom } from "../atoms/agents.ts"
 import { ChangeProgress } from "../components/edit/ChangeProgress.tsx"
 import { ChangeReview } from "../components/edit/ChangeReview.tsx"
@@ -36,18 +36,13 @@ export function EditAgentScreen({ agentId }: Readonly<{ agentId: AgentId }>) {
     <AppPage title="Edit rules">
       {failed ?
         (
-          <div className="grid justify-items-center gap-3 py-10 text-center">
-            <p className="text-body-sm text-g-600">We couldn't load this agent. Check your connection and try again.</p>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                refreshAgent()
-                refreshStocks()
-              }}
-            >
-              Try again
-            </Button>
-          </div>
+          <LoadProblem
+            what="this agent"
+            onRetry={() => {
+              refreshAgent()
+              refreshStocks()
+            }}
+          />
         ) :
         (
           <div aria-busy className="grid gap-4">

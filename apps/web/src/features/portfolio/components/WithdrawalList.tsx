@@ -1,30 +1,27 @@
 import type { Transfer } from "@bluechip/domain/portfolio/Transfer"
 import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
-import { Badge } from "@bluechip/ui/components/badge"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { toast } from "@bluechip/ui/components/toast"
 import { CopyIcon } from "@bluechip/ui/icons/copy-icon"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatDate, formatMoney } from "@bluechip/ui/lib/format"
-import { useAtomValue } from "@effect/atom-react/Hooks"
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { withdrawalsAtom } from "../../../atoms/portfolio.ts"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
+import { transferStatus } from "../../../lib/activityText.ts"
 import { usdcDollars } from "../../../lib/amounts.ts"
 
 const SHOWN = 3
 
-const STATUS = {
-  pending: { label: "Sending", variant: "warning" },
-  confirmed: { label: "Sent", variant: "success" },
-  failed: { label: "Failed", variant: "destructive" }
-} as const
-
 /** Your latest withdrawals, newest first: the last few, the rest a tap away, each with where it stands. */
 export function WithdrawalList() {
   const withdrawals = useAtomValue(withdrawalsAtom)
+  const refresh = useAtomRefresh(withdrawalsAtom)
   const [expanded, setExpanded] = useState(false)
 
   const items = AsyncResult.isSuccess(withdrawals) ? withdrawals.value.items : []
@@ -52,9 +49,7 @@ export function WithdrawalList() {
         </div>
       )}
 
-      {AsyncResult.isFailure(withdrawals) && (
-        <p className="px-5 py-2 text-label-sm text-g-500">We couldn't load your withdrawals. Try again in a moment.</p>
-      )}
+      {AsyncResult.isFailure(withdrawals) && <LoadProblem what="your withdrawals" onRetry={refresh} size="sm" />}
 
       {AsyncResult.isSuccess(withdrawals) && items.length === 0 && (
         <div className="mx-5 mt-1 mb-2 flex items-center gap-3 rounded-[12px] px-3.5 py-3 surface-well">
@@ -75,7 +70,7 @@ export function WithdrawalList() {
 }
 
 function WithdrawalRow({ transfer }: Readonly<{ transfer: Transfer }>) {
-  const status = STATUS[transfer.status]
+  const status = transferStatus(transfer)
 
   return (
     <li className="flex items-center gap-3 px-5 py-2">
@@ -100,7 +95,7 @@ function WithdrawalRow({ transfer }: Readonly<{ transfer: Transfer }>) {
         </span>
       </span>
 
-      <Badge variant={status.variant}>{status.label}</Badge>
+      <StatusPill tone={status.tone}>{status.label}</StatusPill>
       {transfer.txHash === null ?
         <span aria-hidden className="size-7 shrink-0" /> :
         (

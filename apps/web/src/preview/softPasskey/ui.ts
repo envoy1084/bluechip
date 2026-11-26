@@ -98,7 +98,7 @@ export const mountBadge = (keyring: Keyring) => {
   menu.hidden = true
 
   const render = () => {
-    const credentials = keyring.list().toSorted((a, b) => b.createdAt - a.createdAt)
+    const credentials = keyring.list().toReversed()
     toggle.textContent = `Software passkey, ${credentials.length} ${credentials.length === 1 ? "key" : "keys"}`
 
     const keys = credentials.length === 0 ?

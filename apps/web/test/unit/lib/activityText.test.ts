@@ -64,14 +64,14 @@ describe("activityStatus", () => {
       item: appleTrade({ status: "confirming" }),
       expected: { label: "Confirming", tone: "pending" }
     },
-    { name: "filled", item: appleTrade(), expected: { label: "Filled", tone: "done" } },
+    { name: "filled", item: appleTrade(), expected: { label: "Filled", tone: "positive" } },
     {
       name: "a failed trade",
       item: appleTrade({ status: "failed" }),
-      expected: { label: "Didn't go through", tone: "failed" }
+      expected: { label: "Didn't go through", tone: "negative" }
     },
-    { name: "a deposit", item: cashTransfer({ kind: "deposit" }), expected: { label: "Arrived", tone: "done" } },
-    { name: "a withdrawal sent", item: cashTransfer(), expected: { label: "Sent", tone: "done" } },
+    { name: "a deposit", item: cashTransfer({ kind: "deposit" }), expected: { label: "Arrived", tone: "positive" } },
+    { name: "a withdrawal sent", item: cashTransfer(), expected: { label: "Sent", tone: "positive" } },
     {
       name: "a pending withdrawal",
       item: cashTransfer({ status: "pending" }),
@@ -80,7 +80,7 @@ describe("activityStatus", () => {
     {
       name: "a failed withdrawal",
       item: cashTransfer({ status: "failed" }),
-      expected: { label: "Didn't go through", tone: "failed" }
+      expected: { label: "Didn't go through", tone: "negative" }
     }
   ])("$name", ({ item, expected }) => {
     assert.deepStrictEqual(activityStatus(item), expected)

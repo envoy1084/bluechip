@@ -5,9 +5,8 @@
  * @since 0.0.0
  */
 import type { AdjustmentReason } from "../ledger/Reconcile.ts"
+import { formatShareCount } from "../policies/Format.ts"
 import type { NotificationDraft } from "./Notification.ts"
-
-const sharesFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
 
 const centsFormat = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
@@ -59,8 +58,7 @@ export const notificationOfAdjustment = (
     }
   }
 
-  const count = Number(size) / 1e8
-  const shares = `${sharesFormat.format(count)} ${count === 1 ? "share" : "shares"} of ${name}`
+  const shares = `${formatShareCount(Number(size) / 1e8)} of ${name}`
   return {
     ...base,
     title: adjustment.reason === "transferIn" ?

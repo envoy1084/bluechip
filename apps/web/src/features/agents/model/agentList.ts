@@ -3,13 +3,18 @@ import type { Agent, AgentUsage } from "@bluechip/domain/agents/Agent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
+import type { AgentState } from "@bluechip/ui/bluechip/agent-status"
 import * as DateTime from "effect/DateTime"
-import { type AgentDisplayState, agentState } from "./agentState.ts"
+import { agentState } from "../../../lib/agentState.ts"
 
-/** One agent as the list reads it: its state, today's usage, its last filled trade and its approvals waiting. */
+/**
+ * One agent as the list reads it: its state, today's usage, its last filled trade and its approvals waiting.
+ * `settled` once what its state depends on (usage, approvals) has loaded, so a pill shows only its final state.
+ */
 export interface ListedAgent {
   readonly agent: Agent
-  readonly state: AgentDisplayState
+  readonly state: AgentState
+  readonly settled: boolean
   /** `undefined` for an agent with no session, or while it loads. */
   readonly usage: AgentUsage | undefined
   /** When its last trade filled: `null` when it has none, `undefined` while it loads. */
@@ -17,10 +22,7 @@ export interface ListedAgent {
   readonly awaiting: number
 }
 
-/**
- * The agent as the list shows it: its state, except that a running agent with a trade waiting for your approval
- * needs it.
- */
+/** The agent as the list shows it, `settled` unless the caller says what it reads is still loading. */
 export const listedAgent = (
   agent: Agent,
   now: Date,
@@ -28,13 +30,14 @@ export const listedAgent = (
     readonly usage?: AgentUsage
     readonly lastTradeAt?: Date | null | undefined
     readonly awaiting?: number
+    readonly settled?: boolean
   } = {}
 ): ListedAgent => {
   const awaiting = read.awaiting ?? 0
-  const state = agentState(agent, now, read.usage)
   return {
     agent,
-    state: awaiting > 0 && (state === "active" || state === "stopped") ? "needs-approval" : state,
+    state: agentState(agent, now, read.usage, awaiting),
+    settled: read.settled ?? true,
     usage: read.usage,
     lastTradeAt: read.lastTradeAt,
     awaiting

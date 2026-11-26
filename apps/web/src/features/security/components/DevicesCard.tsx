@@ -1,4 +1,5 @@
 import type { Device } from "@bluechip/domain/Account"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
@@ -42,11 +43,7 @@ export function DevicesCard() {
             <>
               {device.device}
               {device.current ?
-                (
-                  <span className="rounded-full bg-g-100 px-2 py-0.5 text-[11.5px] font-semibold text-g-600">
-                    This device
-                  </span>
-                ) :
+                <StatusPill tone="info">This device</StatusPill> :
                 null}
             </>
           }

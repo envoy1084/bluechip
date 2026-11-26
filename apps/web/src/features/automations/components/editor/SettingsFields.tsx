@@ -5,10 +5,10 @@ import * as DateTime from "effect/DateTime"
 import { type ReactNode, useId } from "react"
 import { ChoiceField } from "../../../../components/fields/ChoiceField.tsx"
 import { NumberField } from "../../../../components/fields/NumberField.tsx"
+import { TimeField } from "../../../../components/fields/TimeField.tsx"
 import { ToggleField } from "../../../../components/fields/ToggleField.tsx"
 import { COOLDOWNS } from "../../model/automationText.ts"
 import type { DraftFields } from "../../model/drafts.ts"
-import { TimeField } from "./fields/TimeField.tsx"
 
 // The day in your time zone, as the last day is kept: its end in your time.
 const dayOf = (at: DateTime.Utc): string => new Date(DateTime.toEpochMillis(at)).toLocaleDateString("en-CA")

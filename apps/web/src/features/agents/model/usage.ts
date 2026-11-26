@@ -3,6 +3,7 @@
 import type { AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { formatDollars, listNames } from "@bluechip/domain/policies/Format"
+import { dailyResetText, nextDailyReset } from "../../../lib/localTime.ts"
 
 /** How a limit stands: room left, from 80% nearly used, used up, or open when it has no limit. */
 export type Standing = "room" | "nearly" | "used" | "open"
@@ -22,16 +23,12 @@ export const standingOf = (counted: Pick<PolicyUsage, "used" | "limit">): Standi
   return counted.used * BigInt(5) >= counted.limit * BigInt(4) ? "nearly" : "room"
 }
 
-/** The next midnight UTC, when the daily counts start again. */
-export const nextReset = (now: Date): Date =>
-  new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
-
 /** How much of the UTC day has gone, 0 to 1. */
 export const dayGone = (now: Date): number => (now.getTime() % DAY) / DAY
 
 /** The time left until the next reset, as a clock that ticks: "5:42:13", "0:00:09". */
 export const countdown = (now: Date): string => {
-  const seconds = Math.ceil((nextReset(now).getTime() - now.getTime()) / 1000)
+  const seconds = Math.ceil((nextDailyReset(now).getTime() - now.getTime()) / 1000)
   const pad = (value: number) => String(value).padStart(2, "0")
   return `${Math.floor(seconds / 3600)}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`
 }
@@ -72,8 +69,10 @@ export const todayRoom = (usage: AgentUsage, name: string, now: Date): TodayRoom
       standing,
       headline: "Done for today",
       detail: spent ?
-        `${name} used all of today's ${formatDollars(budget.limit!)} budget, so it waits for midnight UTC.` :
-        `${name} made all ${tradesText(trades!.limit!)} it may today, so it waits for midnight UTC.`
+        `${name} used all of today's ${formatDollars(budget.limit!)} budget, so it waits until ${
+          dailyResetText(now)
+        }.` :
+        `${name} made all ${tradesText(trades!.limit!)} it may today, so it waits until ${dailyResetText(now)}.`
     }
   }
 

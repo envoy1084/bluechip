@@ -3,8 +3,8 @@ import type { AgentSpec, PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import { policyOf, type SpecChanges } from "@bluechip/domain/policies/Catalog"
 import type { Field } from "@bluechip/domain/policies/Policy"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { fieldText } from "../../model/fieldText.ts"
+import { ChangeMark } from "./ChangeMark.tsx"
 
 type Values = ReadonlyArray<{ readonly label: string; readonly text: string }>
 
@@ -14,29 +14,6 @@ const valuesOf = (spec: AgentSpec, id: PolicyId, nameOf: (symbol: StockSymbol) =
   return Object.entries(policyOf(id).fields as Record<string, Field>)
     .map(([name, field]) => ({ label: field.label, text: fieldText(field, config[name], nameOf) }))
 }
-
-const MARK = {
-  tighter: {
-    label: "Tighter",
-    icon: "shield",
-    tone: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]"
-  },
-  added: {
-    label: "New",
-    icon: "shield",
-    tone: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]"
-  },
-  looser: {
-    label: "Looser",
-    icon: "unlock",
-    tone: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]"
-  },
-  removed: {
-    label: "Removed",
-    icon: "unlock",
-    tone: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]"
-  }
-} as const
 
 /**
  * A change of policies, policy by policy: each value that moves (struck through, then the new one), and whether the
@@ -64,7 +41,6 @@ export function SpecChangeRows(
               to: value.text
             }))
             .filter((value) => value.from !== value.to)
-        const mark = MARK[change as keyof typeof MARK]
 
         return (
           <li
@@ -84,15 +60,7 @@ export function SpecChangeRows(
                 </span>
               ))}
             </span>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 justify-self-start rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap",
-                mark.tone
-              )}
-            >
-              <Icon name={mark.icon} size={12} />
-              {mark.label}
-            </span>
+            <ChangeMark change={change} icon />
           </li>
         )
       })}

@@ -5,9 +5,9 @@
  * @since 0.0.0
  */
 import * as Prompt from "effect/ai/Prompt"
+import { formatShares } from "../policies/Format.ts"
 
 const centsFormat = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
-const sharesFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
 
 /**
  * USDC base units (6 decimals) as dollars and cents: `$1,234.56`.
@@ -28,13 +28,13 @@ export const usd = (micros: bigint): string => centsFormat.format(Number(micros)
 export const price = (value: bigint): string => centsFormat.format(Number(value) / 100_000_000)
 
 /**
- * Shares (8 decimals), to 4 places.
+ * Shares (8 decimals), to all 8 places.
  *
  * @stability unstable
  * @category formatting
  * @since 0.0.0
  */
-export const shares = (value: bigint): string => sharesFormat.format(Number(value) / 100_000_000)
+export const shares = (value: bigint): string => formatShares(Number(value) / 100_000_000)
 
 /**
  * Basis points as a signed percent: `+1.25%`.

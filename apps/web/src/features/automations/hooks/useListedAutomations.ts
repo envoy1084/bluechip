@@ -6,8 +6,9 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useMemo } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { standingOf } from "../../../lib/automationWords.ts"
 import { automationRunsAtom, automationsAtom } from "../atoms/automations.ts"
-import { attentionOf, type Listed, standingOf } from "../model/standing.ts"
+import { attentionOf, type Listed } from "../model/standing.ts"
 
 export interface ListedAutomation extends Listed {
   readonly automation: Automation

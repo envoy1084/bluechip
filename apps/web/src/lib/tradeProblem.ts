@@ -7,6 +7,7 @@ import {
 } from "@bluechip/domain/Errors"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { bpsPercent, shareCount, usdcDollars } from "./amounts.ts"
+import { passkeyProblem } from "./passkeyProblem.ts"
 import { unavailableProblem } from "./unavailableProblem.ts"
 
 /** Why a trade didn't start, in words: nothing moved in any of these. */
@@ -27,5 +28,5 @@ export const tradeProblem = (error: unknown, side: "buy" | "sell"): string => {
       }% allowed. ${nothing}`
   }
   if (error instanceof Unavailable) return unavailableProblem(error)
-  return `Face ID was cancelled or the trade couldn't be sent. ${nothing}`
+  return passkeyProblem(error, nothing).text
 }

@@ -6,16 +6,13 @@ import { rebalance } from "@bluechip/domain/policies/Rebalance"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useNavigate } from "@tanstack/react-router"
+import { SectionHeader } from "../../../../components/layout/SectionHeader.tsx"
 import { dayLabel } from "../../model/fieldText.ts"
 import { SaveTemplate } from "../SaveTemplate.tsx"
 import { AgentAtAGlance } from "../spec/AgentAtAGlance.tsx"
 import { SpecChangeRows } from "../spec/SpecChangeRows.tsx"
 import { TargetMixBar } from "../spec/TargetMixBar.tsx"
 import { RenewButton } from "./RenewButton.tsx"
-
-function Heading({ children }: Readonly<{ children: string }>) {
-  return <h3 className="px-0.5 text-label-sm font-semibold text-g-500">{children}</h3>
-}
 
 /**
  * The rules in force (or, for a draft, the ones it will lock) in words, with Edit and Renew while it's active (Renew
@@ -36,10 +33,13 @@ export function PoliciesSection(
   const pending = agent.pendingSpec === null ? null : compareSpecs(agent.spec, agent.pendingSpec)
 
   return (
-    <section className="grid content-start gap-2.5">
-      <Heading>
-        {removed ? "The rules it had" : agent.status === "draft" ? "The rules it will lock" : "Its rules"}
-      </Heading>
+    <section aria-labelledby={`rules-${agent.id}`} className="grid content-start gap-3">
+      <SectionHeader
+        id={`rules-${agent.id}`}
+        level="h3"
+        title={removed ? "The rules it had" : agent.status === "draft" ? "The rules it will lock" : "Its rules"}
+        description="What it can and can never do, checked onchain before every trade."
+      />
       {targets === undefined ? null : (
         <div className="rounded-lg bg-white px-[18px] py-4 shadow-e2">
           <TargetMixBar targets={targets} />
@@ -81,7 +81,12 @@ export function PoliciesSection(
       {agent.status === "updating" && agent.pendingSpec !== null && pending !== null && pending.policies.length > 0 ?
         (
           <>
-            <Heading>The change on its way</Heading>
+            <SectionHeader
+              id={`rules-change-${agent.id}`}
+              level="h3"
+              title="The change on its way"
+              description="Its new rules take force once Base has them."
+            />
             <div className="overflow-hidden rounded-lg bg-white shadow-e2">
               <SpecChangeRows before={agent.spec} after={agent.pendingSpec} changes={pending} nameOf={nameOf} />
             </div>

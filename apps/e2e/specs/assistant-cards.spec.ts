@@ -43,7 +43,7 @@ test.describe("trade cards", () => {
       ]
     })
     const card = page.getByRole("region", { name: "Your trade" })
-    await expect(card.getByText("Needs Face ID")).toBeVisible()
+    await expect(card.getByText("Waiting for Face ID")).toBeVisible()
     await expect(card.getByText("Fair price check")).toBeVisible()
     await expect(card.getByText("Nothing happens unless you approve it.")).toBeVisible()
 

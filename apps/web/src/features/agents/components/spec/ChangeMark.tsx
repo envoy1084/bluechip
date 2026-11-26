@@ -1,27 +1,22 @@
 import type { PolicyChange } from "@bluechip/domain/policies/Catalog"
-import { cn } from "@bluechip/ui/lib/cn"
+import { StatusPill, type StatusTone } from "@bluechip/ui/bluechip/status-pill"
+import type { IconName } from "@bluechip/ui/icons/icon"
 
 export type ChangeKind = PolicyChange["change"]
 
-const CHANGE: Readonly<Record<Exclude<ChangeKind, "same">, { readonly label: string; readonly tone: string }>> = {
-  tighter: { label: "Tighter", tone: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]" },
-  added: { label: "New", tone: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]" },
-  looser: { label: "Looser", tone: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]" },
-  removed: { label: "Removed", tone: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]" }
+/** How a policy compares with the one in force, in a word: safer is positive, looser worth a look. */
+export const CHANGE: Readonly<
+  Record<Exclude<ChangeKind, "same">, { readonly label: string; readonly tone: StatusTone; readonly icon: IconName }>
+> = {
+  tighter: { label: "Tighter", tone: "positive", icon: "shield" },
+  added: { label: "New", tone: "positive", icon: "shield" },
+  looser: { label: "Looser", tone: "attention", icon: "unlock" },
+  removed: { label: "Removed", tone: "attention", icon: "unlock" }
 }
 
 /** How a policy compares with the one in force: tighter, looser, new or removed; nothing when it's the same. */
-export function ChangeMark({ change }: Readonly<{ change: ChangeKind | undefined }>) {
+export function ChangeMark({ change, icon = false }: Readonly<{ change: ChangeKind | undefined; icon?: boolean }>) {
   if (change === undefined || change === "same") return null
-  return (
-    <span
-      data-change={change}
-      className={cn(
-        "rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap",
-        CHANGE[change].tone
-      )}
-    >
-      {CHANGE[change].label}
-    </span>
-  )
+  const { label, tone, icon: name } = CHANGE[change]
+  return <StatusPill data-change={change} tone={tone} {...(icon ? { icon: name } : {})}>{label}</StatusPill>
 }

@@ -1,6 +1,5 @@
 import type { Memory, MemoryKind } from "@bluechip/domain/assistant/Memory"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { InputGroup, InputGroupButton, InputGroupInput } from "@bluechip/ui/components/input-group"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Tabs, TabsCount, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
@@ -10,7 +9,9 @@ import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { memoriesAtom } from "../atoms/assistant.ts"
 import { ExportMemories } from "../components/memory/ExportMemories.tsx"
 import { ForgetEverything } from "../components/memory/ForgetEverything.tsx"
@@ -40,14 +41,9 @@ function MemoriesEmpty(
   { title, description, action }: Readonly<{ title: string; description: string; action: ReactNode }>
 ) {
   return (
-    <Empty size="sm" className="py-12 shadow-e2">
-      <EmptyMedia>
-        <Icon name="book" size={18} />
-      </EmptyMedia>
-      <EmptyTitle>{title}</EmptyTitle>
-      <EmptyDescription>{description}</EmptyDescription>
-      <EmptyContent>{action}</EmptyContent>
-    </Empty>
+    <IllustratedEmpty illustration="notebook" size={110} compact title={title} action={action}>
+      {description}
+    </IllustratedEmpty>
   )
 }
 
@@ -80,16 +76,7 @@ export function MemoryScreen() {
   const body = () => {
     if (AsyncResult.isInitial(all)) return <MemoriesSkeleton />
     if (!AsyncResult.isSuccess(all)) {
-      return (
-        <div className="grid justify-items-center gap-3 rounded-lg bg-white px-5 py-10 text-center shadow-e2">
-          <p className="text-body-sm text-g-600">
-            We couldn't load your memories. Check your connection and try again.
-          </p>
-          <Button variant="secondary" size="sm" onClick={refresh}>
-            <Icon name="refresh" size={14} />Try again
-          </Button>
-        </div>
-      )
+      return <LoadProblem what="your memories" onRetry={refresh} variant="card" />
     }
     if (all.value.length === 0) {
       return (

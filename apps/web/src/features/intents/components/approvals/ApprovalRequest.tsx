@@ -4,6 +4,7 @@ import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import { Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
@@ -130,12 +131,7 @@ export function ApprovalRequest(
         </div>
         {flow.status === "declined" || intent.expiresAt === null ?
           null :
-          (
-            <span className="inline-flex items-center gap-1 rounded-full bg-warn-wash px-2 py-px text-[11.5px] font-semibold whitespace-nowrap text-warn">
-              <Icon name="clock" size={13} />
-              {expiresIn(intent.expiresAt, now)}
-            </span>
-          )}
+          <StatusPill tone="attention" icon="clock">{expiresIn(intent.expiresAt, now)}</StatusPill>}
       </div>
 
       {flow.status === "declined" ?

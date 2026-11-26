@@ -6,6 +6,7 @@ import {
   LimitEditorSection,
   PermissionSection,
   PresetSection,
+  StatusPillSection,
   StatusSection,
   TemplateSection,
   UsageDialSection,
@@ -13,12 +14,10 @@ import {
   UsageSection
 } from "../pages/agents/agents-and-limits.tsx"
 import {
-  BriefSection,
   ChatDemoSection,
   CitationSection,
   ComposerSection,
   MessageSection,
-  ProposalSection,
   ToolCallSection
 } from "../pages/agents/chat.tsx"
 import { Group } from "../pages/agents/layout.tsx"
@@ -37,6 +36,7 @@ function KitAgents() {
         </p>
       </div>
       <Group n="01" title="Agents & limits">
+        <StatusPillSection />
         <StatusSection />
         <AgentCardSection />
         <PermissionSection />
@@ -54,8 +54,6 @@ function KitAgents() {
         <MessageSection />
         <ToolCallSection />
         <CitationSection />
-        <ProposalSection />
-        <BriefSection />
       </Group>
       <Toaster />
     </div>

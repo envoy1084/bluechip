@@ -6,8 +6,7 @@ import {
   choiceLabel,
   judgmentText,
   problemText,
-  saveProblem,
-  timeZones
+  saveProblem
 } from "../../../../../src/features/automations/model/automationText.ts"
 
 describe("judgmentText", () => {
@@ -149,19 +148,5 @@ describe("asOneLine", () => {
     { name: "none", phrases: [], expected: "" }
   ])("$name", ({ phrases, expected }) => {
     assert.strictEqual(asOneLine(phrases), expected)
-  })
-})
-
-describe("timeZones", () => {
-  it.each([
-    {
-      name: "another zone is offered as yours",
-      local: "Europe/London",
-      expected: ["America/New_York", "Europe/London", "UTC"]
-    },
-    { name: "in New York, the market's is yours", local: "America/New_York", expected: ["America/New_York", "UTC"] },
-    { name: "in UTC, no zone twice", local: "UTC", expected: ["America/New_York", "UTC"] }
-  ])("$name", ({ local, expected }) => {
-    assert.deepStrictEqual(timeZones(local).map((option) => option.zone), expected)
   })
 })

@@ -3,15 +3,16 @@ import { type Intent, isEnded } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { ChatCardState } from "@bluechip/ui/bluechip/chat-card"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
+import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
 import { nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
-import { shownDecision, STATUS } from "../../model/intentText.ts"
+import { shownDecision } from "../../model/intentText.ts"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { FilledTrade } from "../FilledTrade.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
@@ -70,7 +71,7 @@ export function AgentTradeProgress(
   }>
 ) {
   const { approve, decline, flow, intent } = useApproveIntent(asked)
-  const status = STATUS[intent.status]
+  const status = INTENT_STATUS[intent.status]
   const decision = shownDecision(intent)
   const deciding = intent.status === "proposed" || intent.status === "deciding"
   const stage: TradeStage | null = intent.status === "sending" || intent.status === "confirming" ||
@@ -106,14 +107,7 @@ export function AgentTradeProgress(
       <div className="flex flex-wrap items-center justify-between gap-2">
         <b className="text-[15px] font-semibold tracking-[-0.01em]">{trade}</b>
         <ChatCardState>
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap",
-              status.tone
-            )}
-          >
-            {status.label}
-          </span>
+          <StatusPill tone={status.tone}>{status.label}</StatusPill>
         </ChatCardState>
       </div>
 

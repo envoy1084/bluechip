@@ -5,10 +5,8 @@
  */
 import type { StockSymbol } from "../market/Market.ts"
 import { policyOf } from "../policies/Catalog.ts"
-import { formatDollars } from "../policies/Format.ts"
+import { formatDollars, formatShareCount } from "../policies/Format.ts"
 import type { Decision, Leg, WaitReason } from "./Intent.ts"
-
-const shareFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
 
 const centsFormat = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
@@ -33,7 +31,7 @@ export const describeLeg = (leg: Leg, name: (symbol: StockSymbol) => string): st
     return `${verb} ${centsFormat.format(Number(leg.amount.usdc) / 1_000_000)} of ${name(leg.symbol)}`
   }
   const shares = Number(leg.amount.shares) / 100_000_000
-  return `${verb} ${shareFormat.format(shares)} ${shares === 1 ? "share" : "shares"} of ${name(leg.symbol)}`
+  return `${verb} ${formatShareCount(shares)} of ${name(leg.symbol)}`
 }
 
 /**

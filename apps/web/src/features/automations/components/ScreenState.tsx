@@ -1,8 +1,9 @@
-import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Link } from "@tanstack/react-router"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 
 /** A page of this feature while what it shows loads, or after it couldn't: one line and Try again. */
 export function ScreenState(
@@ -17,12 +18,7 @@ export function ScreenState(
   return (
     <AppPage title={title} width="wide">
       {failed ?
-        (
-          <div className="grid justify-items-center gap-3 py-10 text-center">
-            <p className="text-body-sm text-g-600">We couldn't load {what}. Check your connection and try again.</p>
-            <Button variant="secondary" onClick={onRetry}>Try again</Button>
-          </div>
-        ) :
+        <LoadProblem what={what} onRetry={onRetry} /> :
         (
           <div aria-busy className="grid gap-4">
             <SkeletonBlock className="h-[112px] w-full rounded-lg" />
@@ -37,13 +33,14 @@ export function ScreenState(
 export function AutomationNotFound() {
   return (
     <AppPage title="Automation not found">
-      <Empty>
-        <EmptyTitle>We can't find that automation</EmptyTitle>
-        <EmptyDescription>It may have been deleted, or the link is wrong.</EmptyDescription>
-        <EmptyContent>
-          <ButtonLink variant="secondary" render={<Link to="/automations" />}>See your automations</ButtonLink>
-        </EmptyContent>
-      </Empty>
+      <IllustratedEmpty
+        illustration="magnifier"
+        size={120}
+        title="We can't find that automation"
+        action={<ButtonLink variant="secondary" render={<Link to="/automations" />}>See your automations</ButtonLink>}
+      >
+        It may have been deleted, or the link is wrong.
+      </IllustratedEmpty>
     </AppPage>
   )
 }

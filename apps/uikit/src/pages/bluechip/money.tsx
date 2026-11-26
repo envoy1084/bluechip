@@ -3,7 +3,6 @@ import { type MarketState, MarketStatus } from "@bluechip/ui/bluechip/market-sta
 import { MoneyInput } from "@bluechip/ui/bluechip/money-input"
 import { Price, PriceChange } from "@bluechip/ui/bluechip/price-change"
 import { Sparkline } from "@bluechip/ui/bluechip/sparkline"
-import { StockRow } from "@bluechip/ui/bluechip/stock-row"
 import { CASH_SYMBOL, TickerChip, TickerToggle } from "@bluechip/ui/bluechip/ticker-chip"
 import { Button } from "@bluechip/ui/components/button"
 import { ToggleGroup, ToggleGroupItem } from "@bluechip/ui/components/toggle-group"
@@ -313,37 +312,6 @@ function Stacked({ bar, text, tone }: { readonly bar: ReactNode; readonly text: 
     <div className="grid w-full gap-1.5">
       {bar}
       <span className={cn("text-label-sm text-g-500", tone)}>{text}</span>
-    </div>
-  )
-}
-
-export function StockList(
-  { prices, market }: { readonly prices: Readonly<Record<string, Quote>>; readonly market: "open" | "closed" }
-) {
-  const [selected, setSelected] = useState("NVDA")
-  return (
-    <div className={cn(card, "overflow-hidden")}>
-      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-g-100 px-4 py-[13px]">
-        <b className="text-body-sm font-semibold">Stocks on bluechip</b>
-        <MarketStatus state={market} closesAt={CLOSES} opensAt={OPENS} />
-      </div>
-      {["NVDA", "AAPL", "TSLA", "MSFT", "MSTR", "SPCX"].map((symbol) => {
-        const q = prices[symbol] ?? START[symbol] as Quote
-        return (
-          <StockRow
-            key={symbol}
-            symbol={symbol}
-            name={q.name}
-            price={q.price}
-            change={changeOf(q)}
-            history={history(symbol, q)}
-            market={symbol === "SPCX" ? "halted" : market}
-            closedFrom={26}
-            selected={selected === symbol}
-            onClick={() => setSelected(symbol)}
-          />
-        )
-      })}
     </div>
   )
 }

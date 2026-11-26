@@ -64,6 +64,6 @@ test.describe("recovery", () => {
 
     await page.getByRole("button", { name: "Use my recovery key" }).click()
 
-    await expect(page.getByText(/passkey prompt was cancelled|isn't a recovery key/)).toBeVisible()
+    await expect(page.getByText(/You cancelled Face ID|isn't a recovery key/)).toBeVisible()
   })
 })

@@ -6,12 +6,10 @@ import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import type * as DateTime from "effect/DateTime"
 import { priceDollars, shareCount, usdcDollars } from "./amounts.ts"
+import { INTENT_STATUS, type StatusWords } from "./intentStatus.ts"
 import { nothingMoved } from "./tradeOutcome.ts"
 
 type Transfer = Extract<ActivityItem, { _tag: "Withdrawal" }>["transfer"]
-
-/** How a status pill looks: done, on its way, or ended without moving money. */
-export type ActivityTone = "done" | "pending" | "failed"
 
 /** When an item happened. */
 export const activityAt = (item: ActivityItem): DateTime.Utc =>
@@ -64,26 +62,16 @@ export const activityDetail = (item: ActivityItem): string => {
   return status === "filled" ? detail : `About ${detail}`
 }
 
-/** Where an item stands, as its pill. */
-export const activityStatus = (item: ActivityItem): { readonly label: string; readonly tone: ActivityTone } => {
-  if (item._tag === "Withdrawal") {
-    const { kind, status } = item.transfer
-    if (status === "failed") return { label: "Didn't go through", tone: "failed" }
-    if (status === "pending") return { label: "On its way", tone: "pending" }
-    return { label: kind === "deposit" ? "Arrived" : "Sent", tone: "done" }
-  }
-
-  switch (item.trade.status) {
-    case "sending":
-      return { label: "Sending", tone: "pending" }
-    case "confirming":
-      return { label: "Confirming", tone: "pending" }
-    case "filled":
-      return { label: "Filled", tone: "done" }
-    case "failed":
-      return { label: "Didn't go through", tone: "failed" }
-  }
+/** Where a deposit or withdrawal stands, as its pill. */
+export const transferStatus = ({ kind, status }: Pick<Transfer, "kind" | "status">): StatusWords => {
+  if (status === "failed") return { label: "Didn't go through", tone: "negative" }
+  if (status === "pending") return { label: "On its way", tone: "pending" }
+  return { label: kind === "deposit" ? "Arrived" : "Sent", tone: "positive" }
 }
+
+/** Where an item stands, as its pill: a trade in the words of its intent's status. */
+export const activityStatus = (item: ActivityItem): StatusWords =>
+  item._tag === "Trade" ? INTENT_STATUS[item.trade.status] : transferStatus(item.transfer)
 
 /** What went wrong with an item that didn't go through, in a sentence; `null` for the rest. */
 export const activityProblem = (item: ActivityItem): string | null => {

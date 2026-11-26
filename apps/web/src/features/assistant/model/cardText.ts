@@ -3,6 +3,7 @@ import type { AgentStatus } from "@bluechip/domain/agents/Agent"
 import type { MemoryKind } from "@bluechip/domain/assistant/Memory"
 import { Conflict, InvalidAutomation, InvalidSpec, Unavailable } from "@bluechip/domain/Errors"
 import * as DateTime from "effect/DateTime"
+import { passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 
 /** Why confirming or dismissing a card didn't go, in words. */
@@ -19,7 +20,7 @@ export const signingProblem = (error: unknown): string => {
   if (error instanceof InvalidSpec) return error.problems.map((problem) => problem.message).join(" ")
   if (error instanceof Conflict) return "This agent has another change on its way. Try again once it lands."
   if (error instanceof Unavailable) return unavailableProblem(error)
-  return "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+  return passkeyProblem(error, "Nothing changed.").text
 }
 
 /** Whether a prepared request has run out (they last two minutes), so it must be prepared again before signing. */
@@ -30,17 +31,6 @@ export const MEMORY_KIND: Readonly<Record<MemoryKind, string>> = {
   constraint: "Rule",
   goal: "Goal",
   fact: "Fact"
-}
-
-/** Where an agent on a card stands. */
-export const AGENT_STANDING: Readonly<Record<AgentStatus, string>> = {
-  draft: "Not running yet",
-  locking: "Locking on Base",
-  active: "Running",
-  updating: "Changing on Base",
-  removing: "Being removed",
-  expired: "Ran out, renew it to keep it running",
-  removed: "Removed"
 }
 
 /** What an agent card's Face ID did: lock a draft, or change, renew or remove an agent. */

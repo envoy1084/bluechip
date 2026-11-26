@@ -11,6 +11,7 @@ import { agentsAtom } from "../../../atoms/agents.ts"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { activityAt, activityId } from "../../../lib/activityText.ts"
 import { dayHeading } from "../../../lib/localTime.ts"
@@ -44,12 +45,12 @@ function ListSkeleton() {
 function PageProblem({ query, what }: Readonly<{ query: Parameters<typeof activityAtom>[0]; what: string }>) {
   const refresh = useAtomRefresh(activityAtom(query))
   return (
-    <div className="grid justify-items-center gap-2.5 border-t border-g-100 px-5 py-8 text-center first:border-t-0">
-      <p className="text-body-sm text-g-600">We couldn't load {what}. Check your connection and try again.</p>
-      <Button variant="secondary" size="sm" onClick={refresh}>
-        <Icon name="refresh" size={14} />Try again
-      </Button>
-    </div>
+    <LoadProblem
+      what={what}
+      onRetry={refresh}
+      size="sm"
+      className="rounded-none border-t border-g-100 first:border-t-0"
+    />
   )
 }
 

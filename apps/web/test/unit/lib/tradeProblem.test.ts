@@ -76,7 +76,7 @@ describe("tradeProblem", () => {
   it("anything else: Face ID cancelled or not sent", () => {
     assert.strictEqual(
       tradeProblem(new Conflict({ reason: "requestIdReused" }), "sell"),
-      "Face ID was cancelled or the trade couldn't be sent. Nothing was sold."
+      "Face ID didn't finish, or the request couldn't be sent. Nothing was sold."
     )
   })
 })

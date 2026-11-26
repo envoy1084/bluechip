@@ -1,15 +1,13 @@
 import type { Intent } from "@bluechip/domain/intents/Intent"
-import { Button } from "@bluechip/ui/components/button"
-import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Icon } from "@bluechip/ui/icons/icon"
-import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../../atoms/agents.ts"
+import { approvalsAtom } from "../../../../atoms/approvals.ts"
+import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
+import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
-import { approvalsAtom } from "../../atoms/intents.ts"
 import { type ApprovalGroup, approvalGroups } from "../../model/approvalGroups.ts"
 import { ApprovalRequest } from "./ApprovalRequest.tsx"
 
@@ -43,14 +41,7 @@ export function ApprovalsList() {
     )
   }
   if (!AsyncResult.isSuccess(approvals)) {
-    return (
-      <div className="grid justify-items-center gap-3 py-8 text-center">
-        <p className="text-body-sm text-g-600">We couldn't load your approvals. Check your connection and try again.</p>
-        <Button variant="secondary" onClick={refresh}>
-          <Icon name="refresh" size={14} />Try again
-        </Button>
-      </div>
-    )
+    return <LoadProblem what="your approvals" onRetry={refresh} size="sm" />
   }
 
   // A card you approved or declined stays as it was: the trades that went with it don't lead cards of their own.
@@ -66,11 +57,9 @@ export function ApprovalsList() {
 
   if (shown.length === 0) {
     return (
-      <Empty variant="outline" size="sm">
-        <Illustration name="passkey" variant="halftone" size={120} animate className="-my-1" />
-        <EmptyTitle>Nothing waiting for you</EmptyTitle>
-        <EmptyDescription>When an agent's trade needs your approval, it shows up here.</EmptyDescription>
-      </Empty>
+      <IllustratedEmpty illustration="passkey" size={120} variant="outline" compact title="Nothing waiting for you">
+        When an agent's trade needs your approval, it shows up here.
+      </IllustratedEmpty>
     )
   }
 

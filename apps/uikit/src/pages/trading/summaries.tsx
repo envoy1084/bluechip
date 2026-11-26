@@ -1,4 +1,3 @@
-import { AgentSummary, AgentSummarySkeleton } from "@bluechip/ui/bluechip/agent-summary"
 import { HoldingDetail, HoldingDetailSkeleton } from "@bluechip/ui/bluechip/holding-detail"
 import {
   PortfolioSummary,
@@ -163,70 +162,6 @@ export function ReceiptSection() {
             total={72.57}
             by="Nimbus"
             when="Yesterday at 15:02"
-            className="w-full"
-          />
-        </Demo>
-      </States>
-    </Section>
-  )
-}
-
-export function AgentSummarySection() {
-  return (
-    <Section
-      title="Agent summary"
-      purpose="An agent at a glance: who it is and what it's doing, what it does, today's use against its limits, its last trade and how long its rules are locked."
-    >
-      <Demo className="justify-center">
-        <AgentSummary
-          agentId="nimbus"
-          name="Nimbus"
-          state="active"
-          does="Buys and sells Nvidia and Apple"
-          spentToday={150}
-          dailyBudget={250}
-          tradesToday={3}
-          tradesPerDay={12}
-          lastTrade="Bought $50.00 of Apple at 09:41"
-          lockedUntil="24 Feb"
-          actions={
-            <Button size="sm" variant="secondary">
-              <Icon name="pause" size={14} />Pause
-            </Button>
-          }
-          className="w-full max-w-[560px]"
-        />
-      </Demo>
-      <States>
-        <Demo label="Loading">
-          <AgentSummarySkeleton className="w-full" />
-        </Demo>
-        <Demo label="Paused, sells only, no trades yet">
-          <AgentSummary
-            agentId="guard"
-            name="Stop-loss guard"
-            state="paused"
-            does="Sells Tesla"
-            spentToday={0}
-            dailyBudget={0}
-            tradesToday={0}
-            tradesPerDay={4}
-            lockedUntil="2 Mar"
-            className="w-full"
-          />
-        </Demo>
-        <Demo label="At its limit today">
-          <AgentSummary
-            agentId="weekly"
-            name="Weekly buyer"
-            state="stopped"
-            does="Buys Microsoft"
-            spentToday={250}
-            dailyBudget={250}
-            tradesToday={1}
-            tradesPerDay={1}
-            lastTrade="Bought $250.00 of Microsoft at 09:30"
-            lockedUntil="12 Feb"
             className="w-full"
           />
         </Demo>

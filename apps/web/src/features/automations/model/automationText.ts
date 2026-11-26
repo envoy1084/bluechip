@@ -1,19 +1,8 @@
-// How automations read on screen: how a run ended, what a model answered, and each of the editor's choices in words.
+// How automations read on screen: what a model answered, and each of the editor's choices in words.
 import type { Action, AutomationProblem, Trigger } from "@bluechip/domain/automations/Automation"
 import type { JudgmentAnswer, JudgmentPreset } from "@bluechip/domain/automations/conditions/Judgment"
-import type { RunOutcome } from "@bluechip/domain/automations/Run"
 import type { Weekday } from "@bluechip/domain/automations/Time"
 import { Conflict, InvalidAutomation, NotFound } from "@bluechip/domain/Errors"
-
-export const OUTCOME: Readonly<
-  Record<RunOutcome, { readonly label: string; readonly tone: "done" | "quiet" | "waiting" | "warn" }>
-> = {
-  proposed: { label: "Traded", tone: "done" },
-  asked: { label: "Asked you", tone: "waiting" },
-  notified: { label: "Told you", tone: "done" },
-  skipped: { label: "Skipped", tone: "quiet" },
-  failed: { label: "Didn't run", tone: "warn" }
-}
 
 export const CREATED_BY: Readonly<Record<"owner" | "assistant" | "template", string>> = {
   owner: "You set it up",
@@ -95,15 +84,6 @@ export const WEEKDAYS: ReadonlyArray<{ readonly day: Weekday; readonly label: st
   { day: "friday", label: "Fri", name: "Friday" },
   { day: "saturday", label: "Sat", name: "Saturday" },
   { day: "sunday", label: "Sun", name: "Sunday" }
-]
-
-/** The time zones a time can be in: the market's, yours (when it's another), and UTC. */
-export const timeZones = (local: string): ReadonlyArray<{ readonly zone: string; readonly label: string }> => [
-  { zone: "America/New_York", label: "New York (market time)" },
-  ...(local === "America/New_York" || local === "UTC" || local === "Etc/UTC" ?
-    [] :
-    [{ zone: local, label: `${local.split("/").at(-1)!.replaceAll("_", " ")} (your time)` }]),
-  { zone: "UTC", label: "UTC" }
 ]
 
 /** How often it fired: "Not yet", "Once", "12 times". */

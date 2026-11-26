@@ -23,6 +23,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { withdrawalsAtom } from "../../../atoms/portfolio.ts"
 import { parseUsdc, usdcDollars } from "../../../lib/amounts.ts"
+import { type PasskeyProblem, passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { confirmWithdrawalAtom, prepareWithdrawalAtom } from "../atoms/funding.ts"
 import { withdrawalOutcome } from "../model/withdrawalOutcome.ts"
 
@@ -161,6 +162,7 @@ function WithdrawReview(
   }>
 ) {
   const confirm = useAtomSet(confirmWithdrawalAtom, { mode: "promise" })
+  const [problem, setProblem] = useState<PasskeyProblem | null>(null)
   const { amount, to } = request.withdrawal
 
   return (
@@ -181,10 +183,24 @@ function WithdrawReview(
         </Alert>
       )}
 
+      {problem === null ? null : problem.cancelled ?
+        <output className="block text-label text-g-600">{problem.text}</output> :
+        (
+          <Alert variant="destructive">
+            <AlertDescription>{problem.text}</AlertDescription>
+          </Alert>
+        )}
+
       <PasskeyButton
         size="lg"
         doneLabel="Sent"
-        onAuthenticate={() => confirm({ id: request.id, options: request.options }).then(onSent)}
+        onAuthenticate={() => {
+          setProblem(null)
+          return confirm({ id: request.id, options: request.options }).then(onSent, (error: unknown) => {
+            setProblem(passkeyProblem(error, "Your cash is where it was."))
+            throw error
+          })
+        }}
       >
         Withdraw with Face ID
       </PasskeyButton>

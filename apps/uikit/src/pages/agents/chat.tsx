@@ -2,14 +2,12 @@ import { AgentDraftCard } from "@bluechip/ui/bluechip/agent-draft-card"
 import { ChatComposer } from "@bluechip/ui/bluechip/chat-composer"
 import { ChatMessage } from "@bluechip/ui/bluechip/chat-message"
 import { CitationChip } from "@bluechip/ui/bluechip/citation-chip"
-import { DailyBriefCard } from "@bluechip/ui/bluechip/daily-brief-card"
-import { ProposalCard } from "@bluechip/ui/bluechip/proposal-card"
 import { ToolCallRow, type ToolCallState } from "@bluechip/ui/bluechip/tool-call-row"
 import { Button } from "@bluechip/ui/components/button"
 import { toast } from "@bluechip/ui/components/toast"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useEffect, useRef, useState } from "react"
-import { ACCOUNT, FILING, NEWS, PICKER, PRICE, PROPOSAL, SOURCES, SUGGESTIONS } from "./data.ts"
+import { ACCOUNT, FILING, NEWS, PRICE, SOURCES, SUGGESTIONS } from "./data.ts"
 import { Demo, Section, States } from "./layout.tsx"
 
 type ThreadEntry =
@@ -97,11 +95,6 @@ export function ChatDemoSection() {
                     toolCalls={entry.tool && <ToolCallRow {...entry.tool} />}
                     attachments={entry.cards && (
                       <>
-                        <ProposalCard
-                          {...PROPOSAL}
-                          onApprove={() => toast("Opening approval")}
-                          onAdjust={() => toast("Adjust the weights")}
-                        />
                         <AgentDraftCard
                           agentId="ai-chips"
                           name="AI chips keeper"
@@ -237,64 +230,6 @@ export function CitationSection() {
           <CitationChip index={3} source={NEWS} />, and it's 28.5% of your money{" "}
           <CitationChip index={4} source={ACCOUNT} />.
         </p>
-      </Demo>
-    </Section>
-  )
-}
-
-export function ProposalSection() {
-  return (
-    <Section
-      title="Proposal card"
-      purpose="When you ask for ideas, bluechip answers with a basket you can inspect: weights, facts with sources, the assumptions it made and its opinions, labelled as opinions. It says what it can't offer and what your limits changed."
-    >
-      <Demo className="justify-center">
-        <ProposalCard
-          {...PROPOSAL}
-          className="max-w-[600px]"
-          onApprove={() => toast("Opening approval")}
-          onAdjust={() => toast("Adjust the weights")}
-        />
-      </Demo>
-    </Section>
-  )
-}
-
-export function BriefSection() {
-  return (
-    <Section
-      title="Daily brief card"
-      purpose="One card each morning from all your agents: what they did, what they're watching, and what they refused to do because of your limits. Refusals are a feature, so they get their own section."
-    >
-      <Demo className="justify-center">
-        <DailyBriefCard
-          className="max-w-[560px]"
-          date="Tuesday 24 November"
-          did={[
-            {
-              agentId: "rebalancer",
-              agentName: "Rebalancer",
-              text: "Sold $73.61 of Nvidia, bought Apple. Back on target."
-            },
-            { agentId: "weekly", agentName: "Weekly buyer", text: "Bought $50 of Microsoft, as planned every Monday." }
-          ]}
-          watching={[
-            { agentId: "guard", agentName: "Stop-loss guard", text: "Tesla is 4% above your stop at $317.48." },
-            { agentId: "rebalancer", agentName: "Rebalancer", text: "Nvidia is at 28.5%, close to your 30% max." }
-          ]}
-          refused={[
-            {
-              agentId: "picker",
-              agentName: PICKER.name,
-              text: "Didn't buy $2,400 of Tesla. It would have put 41% in one stock."
-            },
-            {
-              agentId: "picker",
-              agentName: PICKER.name,
-              text: "Didn't trade at 9:31: the price was 1.4% off the market."
-            }
-          ]}
-        />
       </Demo>
     </Section>
   )

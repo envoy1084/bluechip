@@ -1,6 +1,7 @@
 import type { AgentId, AutomationId } from "@bluechip/domain/Ids"
 import type { JournalEntry } from "@bluechip/domain/journal/Journal"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
+import { StatusPill, type StatusTone } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
@@ -9,6 +10,8 @@ import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import type { ReactNode } from "react"
 import { IllustrationTile } from "../../../../../components/IllustrationTile.tsx"
+import { WhoChip } from "../../../../../components/WhoChip.tsx"
+import { RUN_OUTCOME } from "../../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../../lib/localTime.ts"
 import type { JournalStory, TradeMoment } from "../../../model/journalStory.ts"
 import {
@@ -20,7 +23,6 @@ import {
   RULES_ILLUSTRATION,
   RULES_TITLE,
   rulesDetail,
-  RUN_LABEL,
   runIllustration,
   runsWhen
 } from "../../../model/journalText.ts"
@@ -33,12 +35,12 @@ export interface AutomationTrigger {
 }
 
 const PILL = {
-  gain: "bg-gain-wash text-gain",
-  blue: "bg-blue-50 text-blue",
-  loss: "bg-loss-wash text-loss",
-  warn: "bg-warn-wash text-warn",
-  grey: "bg-g-100 text-g-600"
-} as const
+  gain: "positive",
+  blue: "pending",
+  loss: "negative",
+  warn: "attention",
+  grey: "neutral"
+} as const satisfies Record<string, StatusTone>
 
 type Tone = keyof typeof PILL
 
@@ -63,30 +65,8 @@ const MOMENT_LOOK: Readonly<Record<TradeMoment, { readonly tone: Tone; readonly 
   cancelled: { tone: "grey", icon: "close" }
 }
 
-const RUN_TONE: Readonly<Record<Extract<JournalStory, { _tag: "Run" }>["outcome"], Tone>> = {
-  proposed: "blue",
-  asked: "blue",
-  notified: "grey",
-  skipped: "grey",
-  failed: "loss"
-}
-
 function Pill({ tone, children }: Readonly<{ tone: Tone; children: ReactNode }>) {
-  return (
-    <span className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", PILL[tone])}>
-      {children}
-    </span>
-  )
-}
-
-/** Where a line came from, as a small grey pill: "Automation", "You". */
-function Source({ icon, children }: Readonly<{ icon: IconName; children: ReactNode }>) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-g-100 px-2 py-px text-[11.5px] font-medium text-g-700">
-      <Icon name={icon} size={12} />
-      {children}
-    </span>
-  )
+  return <StatusPill tone={PILL[tone]}>{children}</StatusPill>
 }
 
 /** The reason behind a line, quieter than what happened. */
@@ -219,12 +199,12 @@ function RunLine(
     <Line
       lead={<IllustrationTile name={runIllustration(trigger?.type)} />}
       title={<AutomationName name={story.automation} id={entry.refs.automationId} />}
-      pill={<Pill tone={RUN_TONE[story.outcome]}>{RUN_LABEL[story.outcome]}</Pill>}
+      pill={<StatusPill tone={RUN_OUTCOME[story.outcome].tone}>{RUN_OUTCOME[story.outcome].label}</StatusPill>}
       at={entry.at}
       tint={story.outcome === "failed" && "bg-[linear-gradient(180deg,#fff8f6,#fff3ef)]"}
     >
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-g-500">
-        <Source icon="zap">Automation</Source>
+        <WhoChip who={{ _tag: "source", source: "automation" }} />
         {trigger === undefined ? null : <span className="min-w-0">{runsWhen(trigger.when)}</span>}
       </span>
       {story.reason === "" ? null : <Why>{story.reason}</Why>}
@@ -245,9 +225,9 @@ function JudgmentLine(
       at={entry.at}
     >
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Source icon="zap">
+        <WhoChip who={{ _tag: "source", source: "automation" }}>
           <AutomationName name={story.automation} id={entry.refs.automationId} />
-        </Source>
+        </WhoChip>
       </span>
       {story.reason === "" ? null : <Why>{story.reason}</Why>}
     </Line>
@@ -270,7 +250,9 @@ function RulesLine(
       at={moment.at}
     >
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-g-600">
-        {moment.change === "ranOut" ? null : <Source icon="user">{RULES_AUTHOR[moment.by]}</Source>}
+        {moment.change === "ranOut" ?
+          null :
+          <WhoChip who={{ _tag: "source", source: moment.by }}>{RULES_AUTHOR[moment.by]}</WhoChip>}
         <span className="min-w-0">{rulesDetail(moment)}</span>
       </span>
       {showsStocks && moment.stocks.length > 0 ?

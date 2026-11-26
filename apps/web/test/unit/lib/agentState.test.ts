@@ -1,7 +1,7 @@
 import { type Agent, AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
 import { assert, describe, it } from "@effect/vitest"
-import { agentDot, agentState, hasSession, limitLine } from "../../../../../src/features/agents/model/agentState.ts"
-import { agent } from "../../../../fixtures/Agents.ts"
+import { agentDot, agentState, hasSession, limitLine } from "../../../src/lib/agentState.ts"
+import { agent } from "../../fixtures/Agents.ts"
 
 const NOW = new Date("2026-11-26T12:00:00Z")
 
@@ -80,6 +80,18 @@ describe("agentState", () => {
 
   it("a counted policy without a limit never stops it", () => {
     assert.strictEqual(agentState(agent("active"), NOW, usage(500_000_000n, null)), "active")
+  })
+
+  it("a trade waiting for your approval: needs-approval", () => {
+    assert.strictEqual(agentState(agent("active"), NOW, undefined, 1), "needs-approval")
+  })
+
+  it("a trade waiting, and today's budget used up: needs-approval", () => {
+    assert.strictEqual(agentState(agent("active"), NOW, usage(250_000_000n, 250_000_000n), 2), "needs-approval")
+  })
+
+  it("a trade waiting, but paused: paused", () => {
+    assert.strictEqual(agentState(agent("active", { paused: true }), NOW, undefined, 1), "paused")
   })
 })
 

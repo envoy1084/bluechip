@@ -12,7 +12,7 @@ test.describe("when the assistant stops early", () => {
     })
     await expect(
       page.getByText(
-        "You've used today's assistant budget. It resets at midnight UTC, and everything else in bluechip still works."
+        /^You've used today's assistant budget\. It resets at \d{2}:\d{2} your time, midnight UTC, and everything else in bluechip still works\.$/
       )
     ).toBeVisible()
 

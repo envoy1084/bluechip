@@ -15,7 +15,7 @@ describe("runsSentence", () => {
       name: "runs that ended in several ways",
       runs: 4,
       outcomes: [new RunCount({ outcome: "proposed", count: 3 }), new RunCount({ outcome: "skipped", count: 1 })],
-      expected: "4 runs: 3 traded, 1 held back."
+      expected: "4 runs: 3 traded, 1 skipped."
     }
   ])("$name", ({ expected, outcomes, runs }) => {
     assert.strictEqual(runsSentence(runs, outcomes), expected)

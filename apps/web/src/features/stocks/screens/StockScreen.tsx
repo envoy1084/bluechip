@@ -1,11 +1,11 @@
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { companyLogos } from "@bluechip/ui/logos/company"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
 import { stockAtom } from "../atoms/market.ts"
 import { PriceHistoryChart } from "../components/PriceHistoryChart.tsx"
@@ -30,12 +30,7 @@ export function StockScreen({ symbol }: Readonly<{ symbol: StockSymbol }>) {
             <SkeletonBlock className="h-64 w-full" />
           </div>
         ) :
-        (
-          <div className="grid justify-items-center gap-3 py-10 text-center">
-            <p className="text-body-sm text-g-600">We couldn't load this stock. Check your connection and try again.</p>
-            <Button variant="secondary" onClick={refresh}>Try again</Button>
-          </div>
-        )}
+        <LoadProblem what="this stock" onRetry={refresh} />}
     </AppPage>
   )
 }

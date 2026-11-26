@@ -1,9 +1,9 @@
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
 import { StockListRow } from "../components/StockListRow.tsx"
 
@@ -22,12 +22,7 @@ function StockRows() {
     ))
   }
   if (!AsyncResult.isSuccess(stocks)) {
-    return (
-      <div className="grid justify-items-center gap-3 px-6 py-10 text-center">
-        <p className="text-body-sm text-g-600">We couldn't load the stocks. Check your connection and try again.</p>
-        <Button variant="secondary" onClick={refresh}>Try again</Button>
-      </div>
-    )
+    return <LoadProblem what="the stocks" onRetry={refresh} />
   }
   return stocks.value.map((stock) => <StockListRow key={stock.symbol} stock={stock} />)
 }

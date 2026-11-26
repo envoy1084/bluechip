@@ -3,14 +3,16 @@ import type { AgentId } from "@bluechip/domain/Ids"
 import { ChatComposer } from "@bluechip/ui/bluechip/chat-composer"
 import { ChatConversation, ChatConversationContent, ChatScrollButton } from "@bluechip/ui/bluechip/chat-conversation"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useCallback } from "react"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
+import { useNow } from "../../../hooks/useNow.ts"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
+import { dailyResetText } from "../../../lib/localTime.ts"
 import { budgetAtom } from "../atoms/assistant.ts"
 import type { useAssistant } from "../hooks/useAssistant.ts"
 import { AgentPicker } from "./AgentPicker.tsx"
@@ -54,6 +56,7 @@ export function Conversation(
     Trade: CardViews["Trade"]
   }>
 ) {
+  const now = useNow(60_000)
   const { state, running, send, cancel, retry, updateCard, reload, chooseAgent } = assistant
   const budget = useAtomValue(budgetAtom)
   const { nameOf } = useStockLookup()
@@ -89,7 +92,8 @@ export function Conversation(
     (
       <Alert>
         <AlertDescription>
-          You've used today's assistant budget. It resets at midnight UTC, and everything else in bluechip still works.
+          You've used today's assistant budget. It resets at{" "}
+          {dailyResetText(now)}, and everything else in bluechip still works.
         </AlertDescription>
       </Alert>
     ) :
@@ -144,14 +148,7 @@ export function Conversation(
               </div>
             ) :
             state.load === "failed" ?
-            (
-              <div className="grid justify-items-center gap-3 py-8 text-center">
-                <p className="text-body-sm text-g-600">
-                  We couldn't load this conversation. Check your connection and try again.
-                </p>
-                <Button variant="secondary" onClick={reload}>Try again</Button>
-              </div>
-            ) :
+            <LoadProblem what="this conversation" onRetry={reload} size="sm" /> :
             state.entries.length === 0 ?
             empty :
             <Thread entries={state.entries} onCard={updateCard} onRetry={retry} Trade={Trade} nameOf={nameOf} />}

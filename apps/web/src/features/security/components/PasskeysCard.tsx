@@ -1,5 +1,6 @@
 import type { Passkey } from "@bluechip/domain/Account"
 import { type PasskeyId, RequestId } from "@bluechip/domain/Ids"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
@@ -68,11 +69,7 @@ export function PasskeysCard() {
             <>
               {passkey.label ?? "Passkey"}
               {passkey.current ?
-                (
-                  <span className="rounded-full bg-g-100 px-2 py-0.5 text-[11.5px] font-semibold text-g-600">
-                    This device
-                  </span>
-                ) :
+                <StatusPill tone="info">This device</StatusPill> :
                 null}
             </>
           }
@@ -120,6 +117,7 @@ export function PasskeysCard() {
         landing={change === undefined ? undefined : landingOf(sent, change, list)}
         words={change?.action === "remove" ?
           {
+            danger: true,
             title: `Remove ${change.passkey.label ?? "this passkey"}?`,
             description: "It can no longer sign in or approve anything, and devices signed in with it are signed out.",
             action: "Remove with Face ID",
@@ -130,6 +128,7 @@ export function PasskeysCard() {
           } :
           {
             title: "Add a passkey",
+            keep: "Not now",
             description: "First make the new passkey: on this device, on another by scanning its code, or on a " +
               "hardware key. Then approve it with one of your passkeys.",
             action: "Make it and approve with Face ID",

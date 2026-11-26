@@ -1,17 +1,16 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import type { AgentId } from "@bluechip/domain/Ids"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtom, useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { agentMomentAtom } from "../atoms/moment.ts"
 import { AgentListCard } from "../components/list/AgentListCard.tsx"
@@ -30,7 +29,7 @@ function NewAgentButton({ size = "sm" }: Readonly<{ size?: "sm" | "md" }>) {
   )
 }
 
-function AgentCards({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentId, number> }>) {
+function AgentCards() {
   const agents = useAtomValue(agentsAtom)
   const refresh = useAtomRefresh(agentsAtom)
 
@@ -42,47 +41,42 @@ function AgentCards({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentId, numb
     )
   }
   if (!AsyncResult.isSuccess(agents)) {
-    return (
-      <div className="grid justify-items-center gap-3 py-10 text-center">
-        <p className="text-body-sm text-g-600">We couldn't load your agents. Check your connection and try again.</p>
-        <Button variant="secondary" onClick={refresh}>Try again</Button>
-      </div>
-    )
+    return <LoadProblem what="your agents" onRetry={refresh} />
   }
   if (agents.value.length === 0) {
     return (
-      <Empty>
-        <Illustration name="butterfly" variant="halftone" size={160} animate className="-my-2" />
-        <EmptyTitle>No agents yet</EmptyTitle>
-        <EmptyDescription>
-          Start one from a template. You set its limits, and it trades only once they're locked.
-        </EmptyDescription>
-        <EmptyContent className="flex flex-wrap justify-center gap-2">
-          <NewAgentButton size="md" />
-          <ButtonLink
-            variant="secondary"
-            render={<Link to="/chat/{-$conversationId}" params={{ conversationId: undefined }} />}
-          >
-            <Icon name="chat" size={16} />Ask the assistant
-          </ButtonLink>
-        </EmptyContent>
-      </Empty>
+      <IllustratedEmpty
+        illustration="butterfly"
+        size={160}
+        title="No agents yet"
+        action={
+          <>
+            <NewAgentButton size="md" />
+            <ButtonLink
+              variant="secondary"
+              render={<Link to="/chat/{-$conversationId}" params={{ conversationId: undefined }} />}
+            >
+              <Icon name="chat" size={16} />Ask the assistant
+            </ButtonLink>
+          </>
+        }
+      >
+        Start one from a template. You set its limits, and it trades only once they're locked.
+      </IllustratedEmpty>
     )
   }
-  return <AgentList agents={agents.value} awaiting={awaiting} />
+  return <AgentList agents={agents.value} />
 }
 
 /** Your agents, filtered, searched and sorted; the toolbar shows once there are two to choose between. */
-function AgentList(
-  { agents, awaiting }: Readonly<{ agents: ReadonlyArray<Agent>; awaiting: ReadonlyMap<AgentId, number> }>
-) {
+function AgentList({ agents }: Readonly<{ agents: ReadonlyArray<Agent> }>) {
   const [now] = useState(() => new Date())
   const [filter, setFilter] = useState<AgentFilter>("all")
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<AgentSort>("recent")
   const { nameOf } = useStockLookup()
 
-  const listed = useListedAgents(agents, awaiting, now)
+  const listed = useListedAgents(agents, now)
 
   const shown = sortAgents(
     listed.filter((each) => shows(each, filter) && matches(each.agent, query, nameOf)),
@@ -110,18 +104,16 @@ function AgentList(
         null}
       {shown.length === 0 ?
         (
-          <Empty>
-            <Illustration name="magnifier" variant="halftone" size={120} className="-my-2" />
-            <EmptyTitle>No agents match</EmptyTitle>
-            <EmptyDescription>
-              {query.trim() === "" ?
-                "None of your agents are in this state right now." :
-                `No agent's name or stocks match "${query.trim()}".`}
-            </EmptyDescription>
-            <EmptyContent>
-              <Button variant="secondary" onClick={clear}>Show all agents</Button>
-            </EmptyContent>
-          </Empty>
+          <IllustratedEmpty
+            illustration="magnifier"
+            size={120}
+            title="No agents match"
+            action={<Button variant="secondary" onClick={clear}>Show all agents</Button>}
+          >
+            {query.trim() === "" ?
+              "None of your agents are in this state right now." :
+              `No agent's name or stocks match "${query.trim()}".`}
+          </IllustratedEmpty>
         ) :
         (
           <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
@@ -154,15 +146,12 @@ function RemovedAlert() {
   )
 }
 
-/**
- * The user's agents as compact cards, with the way to a new one. `awaiting` is how many of each agent's trades wait
- * for your approval, from the route.
- */
-export function AgentsScreen({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentId, number> }>) {
+/** The user's agents as compact cards, with the way to a new one. */
+export function AgentsScreen() {
   return (
     <AppPage title="Agents" actions={<NewAgentButton />} width="wide">
       <RemovedAlert />
-      <AgentCards awaiting={awaiting} />
+      <AgentCards />
     </AppPage>
   )
 }

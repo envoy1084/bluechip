@@ -32,7 +32,7 @@ test.describe("draft agent cards", () => {
     const card = await draftAppleWeekly(page, replies)
     await expect(card.getByRole("heading", { name: "Apple weekly" })).toBeVisible()
     await expect(card.getByText("Runs for 90 days once locked. Pause it any time.")).toBeVisible()
-    await expect(card.getByText("Not running yet")).toBeVisible()
+    await expect(card.getByText("Not locked yet", { exact: true })).toBeVisible()
     await expect(card.getByRole("list", { name: "Its stocks" }).getByRole("listitem")).toHaveCount(1)
     await expect(card.getByRole("region", { name: "The worst case" })).toContainText(
       "On its worst day it could spend $250"
@@ -40,7 +40,7 @@ test.describe("draft agent cards", () => {
 
     await card.getByRole("button", { name: "Lock with Face ID" }).click()
 
-    await expect(card.getByText("Running").first()).toBeVisible()
+    await expect(card.getByText("Active", { exact: true }).first()).toBeVisible()
     await card.getByRole("link", { name: "Open Apple weekly" }).click()
     await expect(page).toHaveURL(/\/agents\/agent_[0-9a-z]+$/)
   })
@@ -104,7 +104,7 @@ test.describe("policy change cards", () => {
 
     await card.getByRole("button", { name: "Approve with Face ID" }).click()
 
-    await expect(card.getByText("Running")).toBeVisible()
+    await expect(card.getByText("Active", { exact: true })).toBeVisible()
     await expect(card.getByRole("link", { name: "Open Chip picker" })).toBeVisible()
   })
 
@@ -119,7 +119,7 @@ test.describe("policy change cards", () => {
 
     await card.getByRole("button", { name: "Renew with Face ID" }).click()
 
-    await expect(card.getByText("Running")).toBeVisible()
+    await expect(card.getByText("Active", { exact: true })).toBeVisible()
     await expect(card.getByRole("link", { name: "Open Chip picker" })).toBeVisible()
   })
 

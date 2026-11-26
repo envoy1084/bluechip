@@ -2,6 +2,7 @@ import { AgentRequest, transition } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
+import { AGENT_STATES } from "@bluechip/ui/bluechip/agent-status"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { PolicyChangeCard as PolicyChangeView } from "@bluechip/ui/bluechip/policy-change-card"
@@ -11,9 +12,10 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as Result from "effect/Result"
 import { useState } from "react"
+import { useAgentState } from "../../../../hooks/useAgentState.ts"
 import { changeAgentAtom, confirmAgentAtom, removeAgentAtom, renewAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
-import { AGENT_STANDING, agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
+import { agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
 import { SpecGlance } from "./SpecGlance.tsx"
 
 type PolicyChange = Extract<Card, { _tag: "PolicyChange" }>
@@ -42,6 +44,7 @@ const ACTION: Readonly<
  */
 export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
   const agent = useLiveAgent(card.agent)
+  const standing = useAgentState(agent)
   const change = useAtomSet(changeAgentAtom, { mode: "promise" })
   const renew = useAtomSet(renewAgentAtom, { mode: "promise" })
   const remove = useAtomSet(removeAgentAtom, { mode: "promise" })
@@ -118,7 +121,7 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
       glance={card.action === "remove" ? undefined : <SpecGlance spec={locking} />}
       can={card.description?.can ?? []}
       never={card.description?.never ?? []}
-      state={waiting ? "Needs Face ID" : AGENT_STANDING[agent.status]}
+      state={waiting ? "Waiting for Face ID" : standing === undefined ? undefined : AGENT_STATES[standing].label}
       tone={waiting ? "waiting" : landed?.tone === "success" ? "done" : "quiet"}
       problem={problem}
       footer={waiting ?

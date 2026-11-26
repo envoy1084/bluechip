@@ -2,33 +2,24 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { AutomationDetail } from "@bluechip/domain/automations/Run"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { StatGrid, StatTile } from "@bluechip/ui/bluechip/stat-tile"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogIcon,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@bluechip/ui/components/alert-dialog"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatDate, formatRelative } from "@bluechip/ui/lib/format"
 import { Link, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import type { ComponentType } from "react"
+import { ConfirmDialog } from "../../../../components/ConfirmDialog.tsx"
+import { StandingPill } from "../../../../components/StandingPill.tsx"
+import { RUN_OUTCOME, standingOf } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { useAutomationActions } from "../../hooks/useAutomationActions.ts"
-import { CREATED_BY, firesText, OUTCOME } from "../../model/automationText.ts"
+import { CREATED_BY, firesText } from "../../model/automationText.ts"
 import { catalogEntry } from "../../model/drafts.ts"
 import { stocksIn } from "../../model/sentence.ts"
-import { attentionOf, nowLine, standingOf, untilText } from "../../model/standing.ts"
+import { attentionOf, nowLine, untilText } from "../../model/standing.ts"
 import { AutomationSentence } from "../AutomationSentence.tsx"
-import { StandingPill } from "../StatusPill.tsx"
 import { TriggerArt } from "../TriggerArt.tsx"
 import { EditAutomationSheet } from "./EditAutomationSheet.tsx"
 import { SettingsChips } from "./SettingsChips.tsx"
@@ -115,10 +106,7 @@ export function AutomationHero(
         <div className="grid min-w-0 content-start gap-3.5">
           <div className="flex flex-wrap items-center gap-2">
             <StandingPill standing={standing} />
-            <span className="inline-flex items-center gap-1 rounded-full bg-g-100 px-2 py-px text-[11.5px] font-medium text-g-700">
-              <Icon name="zap" size={12} />
-              {catalogEntry("trigger", automation.trigger.type).title}
-            </span>
+            <StatusPill tone="info" icon="zap">{catalogEntry("trigger", automation.trigger.type).title}</StatusPill>
           </div>
 
           <p className="text-[20px] leading-[1.4] font-semibold tracking-[-0.02em] text-ink sm:text-[22px]">
@@ -157,28 +145,21 @@ export function AutomationHero(
                   </Button>
                 )}
               <EditAutomationSheet automation={automation} agent={agent} />
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={<Button variant="ghost" size="sm" className="text-loss hover:bg-loss-wash hover:text-loss" />}
-                >
-                  <Icon name="trash" size={14} />Delete
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogIcon name="trash" />
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete “{automation.name}”?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      It stops at once and won't run again. Trades it already proposed stay as they are.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep it</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => void remove(() => navigate({ to: "/automations" }))}>
-                      Delete automation
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <ConfirmDialog
+                trigger={<Button variant="ghost" size="sm" className="text-loss hover:bg-loss-wash hover:text-loss" />}
+                triggerLabel={
+                  <>
+                    <Icon name="trash" size={14} />Delete
+                  </>
+                }
+                title={`Delete “${automation.name}”?`}
+                consequence="It stops at once and won't run again. Trades it already proposed stay as they are."
+                action={{
+                  _tag: "danger",
+                  label: "Delete automation",
+                  onConfirm: () => void remove(() => navigate({ to: "/automations" }))
+                }}
+              />
             </div>
           )}
 
@@ -196,7 +177,7 @@ export function AutomationHero(
           <StatTile
             label="Last ran"
             value={lastAt === null ? "Never" : formatRelative(DateTime.toDateUtc(lastAt), now, { timeZone: zone })}
-            {...(last === undefined ? {} : { detail: OUTCOME[last.outcome].label })}
+            {...(last === undefined ? {} : { detail: RUN_OUTCOME[last.outcome].label })}
           />
           {automation.status !== "active" ? null : automation.nextRunAt === null ?
             <StatTile label="Runs" value="On its trigger" detail={current.text} /> :

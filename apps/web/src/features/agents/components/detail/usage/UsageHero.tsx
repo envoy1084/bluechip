@@ -21,7 +21,7 @@ function ResetCountdown({ resetAt }: Readonly<{ resetAt: string }>) {
       <span role="timer" className="text-[17px] leading-none font-semibold tracking-[-0.01em] tabular-nums">
         {countdown(now)}
       </span>
-      <span className="text-label-sm text-g-500">at {resetAt} your time, midnight UTC</span>
+      <span className="text-label-sm text-g-500">at {resetAt}, midnight UTC</span>
     </div>
   )
 }

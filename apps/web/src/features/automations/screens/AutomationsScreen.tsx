@@ -1,10 +1,11 @@
-import { Button, ButtonLink } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { AutomationRows } from "../components/list/AutomationRows.tsx"
 import { AutomationsOverview, FilterTabs } from "../components/list/AutomationsOverview.tsx"
 import { FilterEmpty, NoAutomations } from "../components/list/ListEmpty.tsx"
@@ -40,14 +41,7 @@ export function AutomationsScreen() {
       )
     }
     if (!AsyncResult.isSuccess(listed)) {
-      return (
-        <div className="grid justify-items-center gap-3 py-10 text-center">
-          <p className="text-body-sm text-g-600">
-            We couldn't load your automations. Check your connection and try again.
-          </p>
-          <Button variant="secondary" onClick={refresh}>Try again</Button>
-        </div>
-      )
+      return <LoadProblem what="your automations" onRetry={refresh} />
     }
 
     const rows = listed.value

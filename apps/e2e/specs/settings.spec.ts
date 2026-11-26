@@ -37,17 +37,17 @@ test.describe("settings", () => {
     await page.goto("/settings")
     const zone = page.getByRole("combobox", { name: "Time zone" })
     const browserZone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
-    await expect(zone).toHaveValue(browserZone)
+    await expect(zone).toHaveValue(browserZone === "UTC" ? "UTC" : browserZone.split("/").at(-1)!.replaceAll("_", " "))
 
     await zone.fill("Tokyo")
-    await page.getByRole("option", { name: "Asia/Tokyo" }).click()
+    await page.getByRole("option", { name: /^Tokyo/ }).click()
 
-    await expect(zone).toHaveValue("Asia/Tokyo")
+    await expect(zone).toHaveValue("Tokyo")
     await page.reload()
-    await expect(page.getByRole("combobox", { name: "Time zone" })).toHaveValue("Asia/Tokyo")
+    await expect(page.getByRole("combobox", { name: "Time zone" })).toHaveValue("Tokyo")
     await page.goto("/settings/notifications")
     await page.getByRole("switch", { name: "Quiet hours" }).click()
-    await expect(page.getByText("In Asia/Tokyo time, your time zone in Settings.")).toBeVisible()
+    await expect(page.getByText("In Tokyo time, your time zone in Settings.")).toBeVisible()
   })
 
   test("the account shows its address", async ({ page, user }) => {
@@ -105,7 +105,7 @@ test.describe("settings", () => {
     await page.goto("/settings")
 
     await page.getByRole("button", { name: "Remove all" }).click()
-    await expect(page.getByRole("dialog")).toContainText("Remove all 2 agents?")
+    await expect(page.getByRole("alertdialog")).toContainText("Remove all 2 agents?")
     await page.getByRole("button", { name: "Remove with Face ID" }).click()
 
     await expect(page.getByRole("heading", { name: "Every agent is removed" })).toBeVisible()

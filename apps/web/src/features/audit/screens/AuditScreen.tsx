@@ -2,12 +2,12 @@ import type { AuditType } from "@bluechip/domain/audit/Audit"
 import type { AgentId } from "@bluechip/domain/Ids"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { type AuditFilter, auditPageAtom, auditPagesAtom, exportAuditAtom } from "../atoms/audit.ts"
@@ -32,14 +32,16 @@ function AuditEmpty(
 ) {
   return (
     <div className="rounded-lg bg-white shadow-e2">
-      <Empty variant="plain" size="sm" className="py-12">
-        <EmptyMedia>
-          <Icon name="book" size={18} />
-        </EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{description}</EmptyDescription>
-        {action === undefined ? null : <EmptyContent>{action}</EmptyContent>}
-      </Empty>
+      <IllustratedEmpty
+        illustration="notebook"
+        size={110}
+        variant="plain"
+        compact
+        title={title}
+        {...(action === undefined ? {} : { action })}
+      >
+        {description}
+      </IllustratedEmpty>
     </div>
   )
 }

@@ -103,7 +103,7 @@ test.describe("renew", () => {
     await page.getByRole("button", { name: "Renew", exact: true }).click()
 
     await expect(page.getByRole("alert")).toHaveText(
-      "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+      "You cancelled Face ID. Nothing changed."
     )
     await expect(page.getByRole("region", { name: "Its rules over time" }).locator("li")).toHaveCount(1)
   })
@@ -179,7 +179,7 @@ test.describe("remove", () => {
     await page.getByRole("button", { name: "Remove agent" }).click()
 
     await expect(page.getByRole("region", { name: "Remove Survivor?" }).getByRole("alert")).toHaveText(
-      "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+      "You cancelled Face ID. Nothing changed."
     )
     await expect(statePill(page)).toContainText("Active")
   })
@@ -195,7 +195,7 @@ test.describe("expired", () => {
     await funded.expireAgents(page, daysFromNow(91))
     await page.reload()
 
-    await expect(statePill(page)).toContainText("Expired")
+    await expect(statePill(page)).toContainText("Ran out")
     await expect(page.getByText(`Its rules ran out on ${ended}`)).toBeVisible()
     await expect(
       page.getByText("Ran out stopped trading. Renew it with Face ID to keep it running with the same rules.")
@@ -276,8 +276,8 @@ test.describe("expired", () => {
       .click()
 
     await expect(page.getByRole("status").getByRole("alert")).toHaveText(
-      "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+      "You cancelled Face ID. Nothing changed."
     )
-    await expect(statePill(page)).toContainText("Expired")
+    await expect(statePill(page)).toContainText("Ran out")
   })
 })

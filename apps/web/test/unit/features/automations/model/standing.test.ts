@@ -7,7 +7,6 @@ import {
   runsToday,
   shows,
   sortListed,
-  standingOf,
   stripLabel,
   summaryDetail,
   summaryHeadline,
@@ -16,22 +15,6 @@ import {
 } from "../../../../../src/features/automations/model/standing.ts"
 
 const AGENT = "agent_01kqpv00007008900000000001" as never
-
-describe("standingOf", () => {
-  it.each(
-    [
-      { name: "active, its last run traded", status: "active", runs: ["proposed", "failed"], expected: "active" },
-      { name: "active, its last run failed", status: "active", runs: ["failed", "proposed"], expected: "failing" },
-      { name: "active, never run", status: "active", runs: [], expected: "active" },
-      { name: "paused, its last run failed", status: "paused", runs: ["failed"], expected: "paused" },
-      { name: "done", status: "done", runs: ["proposed"], expected: "ended" },
-      { name: "expired", status: "expired", runs: [], expected: "ended" },
-      { name: "deleted", status: "deleted", runs: [], expected: "ended" }
-    ] as const
-  )("$name", ({ expected, runs, status }) => {
-    assert.strictEqual(standingOf({ status }, runs.map((outcome) => ({ outcome }))), expected)
-  })
-})
 
 describe("attentionOf", () => {
   const running = { status: "active", agentId: AGENT } as const
@@ -202,12 +185,12 @@ describe("summaryHeadline", () => {
 
 describe("summaryDetail", () => {
   it.each([
-    { name: "one needs a look", needLook: ["Weekly Apple"], today: 3, expected: "Weekly Apple needs a look." },
+    { name: "one needs a look", needLook: ["Weekly Apple"], today: 3, expected: "Weekly Apple needs attention." },
     {
       name: "three need a look",
       needLook: ["Weekly Apple", "Stop-loss", "News"],
       today: 0,
-      expected: "3 need a look: Weekly Apple, Stop-loss and News."
+      expected: "3 need attention: Weekly Apple, Stop-loss and News."
     },
     { name: "nothing ran today", needLook: [], today: 0, expected: "Nothing has run yet today." },
     { name: "one run today", needLook: [], today: 1, expected: "They ran once today." },
@@ -245,7 +228,7 @@ describe("nowLine", () => {
       {
         name: "a running schedule: its next time in the viewer's zone, and how soon",
         automation: { status: "active", nextRunAt: DateTime.makeUnsafe("2026-11-30T15:00:00Z"), trigger: schedule },
-        expected: { kind: "next", text: "Next run Mon 30 Nov, 10:00, in 4 days" }
+        expected: { kind: "next", text: "Next run Mon 30 Nov, 10:00 your time, in 4 days" }
       },
       {
         name: "a running news trigger: what it watches",
@@ -281,7 +264,7 @@ describe("stripLabel", () => {
       {
         name: "several runs, counted by outcome",
         outcomes: ["proposed", "skipped", "proposed", "failed"],
-        expected: "Last 4 runs: 2 traded, 1 skipped, 1 didn't run"
+        expected: "Last 4 runs: 2 traded, 1 skipped, 1 failed"
       }
     ] as const
   )("$name", ({ expected, outcomes }) => {

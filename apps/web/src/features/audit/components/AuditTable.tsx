@@ -1,9 +1,8 @@
 import type { AuditEvent } from "@bluechip/domain/audit/Audit"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Icon } from "@bluechip/ui/icons/icon"
 import * as Array from "effect/Array"
 import type { ReactNode } from "react"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { dayHeading } from "../../../lib/localTime.ts"
 import { AuditRow } from "./AuditRow.tsx"
 
@@ -34,14 +33,7 @@ export function AuditSkeleton({ rows = 6 }: Readonly<{ rows?: number }>) {
 
 /** A page that didn't load, with a way to ask again. */
 export function AuditProblem({ what, onRetry }: Readonly<{ what: string; onRetry: () => void }>) {
-  return (
-    <div className="grid justify-items-center gap-2.5 px-5 py-8 text-center">
-      <p className="text-body-sm text-g-600">We couldn't load {what}. Check your connection and try again.</p>
-      <Button variant="secondary" size="sm" onClick={onRetry}>
-        <Icon name="refresh" size={14} />Try again
-      </Button>
-    </div>
-  )
+  return <LoadProblem what={what} onRetry={onRetry} size="sm" />
 }
 
 /**

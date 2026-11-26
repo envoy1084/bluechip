@@ -1,13 +1,14 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
-import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { FilterTabs } from "../../../../../components/FilterTabs.tsx"
 import { IllustratedEmpty } from "../../../../../components/IllustratedEmpty.tsx"
+import { SectionHeader } from "../../../../../components/layout/SectionHeader.tsx"
+import { LoadProblem } from "../../../../../components/LoadProblem.tsx"
 import { dayHeading } from "../../../../../lib/localTime.ts"
 import {
   agentAutomationsAtom,
@@ -39,14 +40,7 @@ function Loading() {
 /** A page that didn't load, with a way to ask again. */
 function PageProblem({ pageKey, what }: Readonly<{ pageKey: string; what: string }>) {
   const refresh = useAtomRefresh(agentJournalAtom(pageKey))
-  return (
-    <div className="grid justify-items-center gap-2.5 border-t border-g-100 p-[18px] text-center first:border-t-0">
-      <p className="text-body-sm text-g-600">We couldn't load {what}. Check your connection and try again.</p>
-      <Button variant="secondary" size="sm" onClick={refresh}>
-        <Icon name="refresh" size={14} />Try again
-      </Button>
-    </div>
-  )
+  return <LoadProblem what={what} onRetry={refresh} size="sm" />
 }
 
 /**
@@ -152,28 +146,16 @@ export function JournalSection({ agent }: Readonly<{ agent: Agent }>) {
 
   return (
     <section aria-labelledby={`journal-${agent.id}`} className="grid content-start gap-3">
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2.5 px-0.5">
-        <div className="grid gap-0.5">
-          <h3 id={`journal-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">Journal</h3>
-          <p className="text-label-sm text-g-500">What it did and why, in bluechip's words, as it happened.</p>
-        </div>
-        <Tabs variant="segmented" value={filter} onValueChange={(value) => setFilter(value as JournalFilter)}>
-          <TabsList
-            aria-label="Show"
-            className="[&_[role=tab]]:h-[28px] [&_[role=tab]]:px-3 [&_[role=tab]]:text-label-sm"
-          >
-            {JOURNAL_FILTERS.map((option) => <TabsTab key={option.value} value={option.value}>{option.label}</TabsTab>)}
-          </TabsList>
-        </Tabs>
-      </div>
+      <SectionHeader
+        id={`journal-${agent.id}`}
+        level="h3"
+        title="Journal"
+        description="What it did and why, in bluechip's words, as it happened."
+        actions={<FilterTabs label="Show" value={filter} onChange={setFilter} options={JOURNAL_FILTERS} />}
+      />
 
       {AsyncResult.isFailure(sessions) && (filter === "all" || filter === "rules") ?
-        (
-          <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
-            <p className="text-label-sm text-g-600">We couldn't load the changes to its rules.</p>
-            <Button variant="ghost" size="sm" onClick={refreshSessions}>Try again</Button>
-          </div>
-        ) :
+        <LoadProblem what="the changes to its rules" onRetry={refreshSessions} /> :
         null}
 
       <div className="overflow-hidden rounded-lg bg-white shadow-e2">{body()}</div>

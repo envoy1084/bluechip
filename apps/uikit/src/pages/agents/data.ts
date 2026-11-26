@@ -1,7 +1,6 @@
 import type { Agent } from "@bluechip/ui/bluechip/agent-card"
 import type { CitationSource } from "@bluechip/ui/bluechip/citation-chip"
 import type { PresetAmounts } from "@bluechip/ui/bluechip/preset-picker"
-import type { ProposalCardProps } from "@bluechip/ui/bluechip/proposal-card"
 import { type AgentLimits, LIMIT_PRESETS, type LimitPresetName } from "@bluechip/ui/lib/agent-limits"
 
 export const AGENTS: ReadonlyArray<Agent> = [
@@ -116,22 +115,6 @@ export const [PRICE, FILING, NEWS, ACCOUNT] = SOURCES as [
   CitationSource,
   CitationSource
 ]
-
-export const PROPOSAL: Omit<ProposalCardProps, "onApprove" | "onAdjust"> = {
-  title: "AI chips and memory",
-  holdings: [{ symbol: "NVDA", weight: 30, cappedFrom: 45 }, { symbol: "SNDK", weight: 30 }, {
-    symbol: "MSFT",
-    weight: 25
-  }],
-  unavailable: ["AMD", "TSM"],
-  facts: [
-    { text: "Nvidia gets most of its revenue from data center chips.", source: FILING },
-    { text: "Memory prices rose this quarter as AI servers need more of it.", source: NEWS },
-    { text: "Nvidia trades at $181.42 right now.", source: PRICE }
-  ],
-  assumptions: ["You'll hold for months, not days.", "You're fine with daily swings of 5% or more."],
-  opinions: ["Memory makers could gain if AI spending keeps growing. It may not."]
-}
 
 export const SUGGESTIONS = [
   "Create an agent that only rebalances my portfolio",

@@ -24,7 +24,7 @@ import {
   PaginationPrevious,
   paginationRange
 } from "@bluechip/ui/components/pagination"
-import { Tabs, TabsCount, TabsList, TabsPanel, TabsTab } from "@bluechip/ui/components/tabs"
+import { Tabs, TabsCount, TabsLink, TabsList, TabsNav, TabsPanel, TabsTab } from "@bluechip/ui/components/tabs"
 import { toast } from "@bluechip/ui/components/toast"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useState } from "react"
@@ -82,7 +82,7 @@ export function TabsSection() {
       id="tabs"
       title="Tabs"
       base="Tabs"
-      purpose="Switch between views of the same thing. Arrow keys move, Home and End jump."
+      purpose="Switch between views of the same thing. Arrow keys move, Home and End jump. When each view is a page of its own, the links variant (TabsNav) keeps the segmented look as links."
     >
       <Tabs defaultValue="overview">
         <TabsList aria-label="Agent">
@@ -128,6 +128,11 @@ export function TabsSection() {
         </TabsPanel>
         <TabsPanel value="agents">3 agents running, 1 paused.</TabsPanel>
       </Tabs>
+      <TabsNav aria-label="Rebalancer's pages">
+        <TabsLink href="#tabs" aria-current="page">Overview</TabsLink>
+        <TabsLink href="#tabs">Journal</TabsLink>
+        <TabsLink href="#tabs">Usage</TabsLink>
+      </TabsNav>
     </Section>
   )
 }

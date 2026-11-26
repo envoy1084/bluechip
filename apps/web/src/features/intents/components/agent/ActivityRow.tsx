@@ -1,27 +1,22 @@
 import { describeLeg } from "@bluechip/domain/intents/Describe"
 import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { ButtonLink } from "@bluechip/ui/components/button"
-import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { Link } from "@tanstack/react-router"
+import { WhoChip } from "../../../../components/WhoChip.tsx"
+import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
 import { nothingMoved } from "../../../../lib/tradeOutcome.ts"
 import { useLatestIntent } from "../../hooks/useLatestIntent.ts"
-import { clockTime, shownDecision, SOURCE, STATUS } from "../../model/intentText.ts"
+import { clockTime, shownDecision } from "../../model/intentText.ts"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { FilledTrade } from "../FilledTrade.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
-
-const SOURCE_ICON: Readonly<Record<Intent["source"], IconName>> = {
-  owner: "user",
-  assistant: "chat",
-  automation: "zap",
-  channel: "send",
-  mcp: "link"
-}
 
 /**
  * One trade the agent was asked for: the stock, the trade and where it stands, who asked and why, what its policies
@@ -35,7 +30,7 @@ export function ActivityRow(
   }>
 ) {
   const intent = useLatestIntent(listed)
-  const status = STATUS[intent.status]
+  const status = INTENT_STATUS[intent.status]
   const decision = shownDecision(intent)
   const stopped = intent.status === "blocked" || intent.status === "failed" || intent.status === "declined" ||
     intent.status === "expired" || intent.status === "cancelled"
@@ -54,22 +49,13 @@ export function ActivityRow(
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
           <span className="flex flex-wrap items-center gap-2">
             <b className="text-[14.5px] font-semibold tracking-[-0.01em]">{describeLeg(intent.leg, nameOf)}</b>
-            {waitingForYou ? null : (
-              <span
-                className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", status.tone)}
-              >
-                {status.label}
-              </span>
-            )}
+            {waitingForYou ? null : <StatusPill tone={status.tone}>{status.label}</StatusPill>}
           </span>
           <span className="text-label-sm text-g-500 tabular-nums">{clockTime(intent.createdAt)}</span>
         </div>
 
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-g-500">
-          <span className="inline-flex items-center gap-1 rounded-full bg-g-100 px-2 py-px text-[11.5px] font-medium text-g-700">
-            <Icon name={SOURCE_ICON[intent.source]} size={12} />
-            {SOURCE[intent.source]}
-          </span>
+          <WhoChip who={{ _tag: "source", source: intent.source }} />
           {intent.reason === "" ? null : <span className="min-w-0">{intent.reason}</span>}
         </span>
 

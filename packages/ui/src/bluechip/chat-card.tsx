@@ -3,22 +3,23 @@ import { createPortal } from "react-dom"
 import { Button } from "../components/button.tsx"
 import { Icon, type IconName } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
+import { StatusPill, type StatusTone } from "./status-pill.tsx"
 
 /** How a card's state reads: waiting for you, done, left as it was, or something to look at twice. */
 export type ChatCardTone = "waiting" | "done" | "quiet" | "warn"
 
-const STATE_TONE: Readonly<Record<ChatCardTone, string>> = {
-  waiting: "bg-blue-50 text-blue",
-  done: "bg-gain-wash text-gain",
-  quiet: "bg-g-100 text-g-600",
-  warn: "bg-warn-wash text-warn"
+const STATE_TONE: Readonly<Record<ChatCardTone, StatusTone>> = {
+  waiting: "pending",
+  done: "positive",
+  quiet: "neutral",
+  warn: "attention"
 }
 
 export interface ChatCardProps extends Omit<ComponentProps<"section">, "children"> {
   /** What kind of card: "Your trade", "Draft agent", "Memory". Also its accessible name. */
   readonly tag: string
   readonly icon: IconName
-  /** Where it stands, as a short pill: "Needs Face ID", "Done". */
+  /** Where it stands, as a short pill: "Waiting for Face ID", "Done". */
   readonly state?: ReactNode
   readonly tone?: ChatCardTone
   readonly children: ReactNode
@@ -61,17 +62,9 @@ export function ChatCard(
           <Icon name={icon} size={14} />
           <span className="truncate">{tag}</span>
         </span>
-        {state === undefined ? null : (
-          <span
-            data-slot="chat-card-state"
-            className={cn(
-              "shrink-0 rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap",
-              STATE_TONE[tone]
-            )}
-          >
-            {state}
-          </span>
-        )}
+        {state === undefined
+          ? null
+          : <StatusPill data-slot="chat-card-state" tone={STATE_TONE[tone]}>{state}</StatusPill>}
         <span ref={setSlot} data-slot="chat-card-state-slot" className="contents" />
       </header>
       <div className="grid gap-3 px-4 pt-2.5 pb-4">

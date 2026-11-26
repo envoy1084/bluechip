@@ -3,13 +3,13 @@ import type { StockSymbol } from "@bluechip/domain/market/Market"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ComponentType, useState } from "react"
 import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
+import { agentState } from "../../../lib/agentState.ts"
 import { useAgentPage } from "../components/detail/AgentPageContext.ts"
 import { JournalSection } from "../components/detail/journal/JournalSection.tsx"
 import { PoliciesSection } from "../components/detail/PoliciesSection.tsx"
 import { AgentResults } from "../components/detail/results/AgentResults.tsx"
 import { SessionHistory } from "../components/detail/SessionHistory.tsx"
 import { UsageCard } from "../components/detail/UsageCard.tsx"
-import { agentState } from "../model/agentState.ts"
 
 /** A section another feature draws for the agent, with stock names. */
 type Section = ComponentType<{ agent: Agent; nameOf: (symbol: StockSymbol) => string }>

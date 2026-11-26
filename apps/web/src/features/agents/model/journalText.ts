@@ -2,7 +2,6 @@
 // set a run off and the illustration it leads with, a judgment's answer, what happened to its rules and who asked, and
 // what a filter that finds nothing says.
 import type { SessionAuthor } from "@bluechip/domain/agents/Agent"
-import type { RunOutcome } from "@bluechip/domain/automations/Run"
 import type { JournalKind } from "@bluechip/domain/journal/Journal"
 import type { IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import { nothingMoved } from "../../../lib/tradeOutcome.ts"
@@ -41,14 +40,6 @@ export const momentNote = (moment: TradeMoment, side: "buy" | "sell"): string | 
     case "cancelled":
       return nothingMoved(side)
   }
-}
-
-export const RUN_LABEL: Readonly<Record<RunOutcome, string>> = {
-  proposed: "Proposed trades",
-  asked: "Asked you first",
-  notified: "Let you know",
-  skipped: "Skipped",
-  failed: "Failed"
 }
 
 const TRIGGER_ILLUSTRATION: Readonly<Record<string, IllustrationName>> = {

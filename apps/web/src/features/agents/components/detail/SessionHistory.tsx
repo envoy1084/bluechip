@@ -6,8 +6,8 @@ import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import { StatusPill, type StatusTone } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
-import { Button } from "@bluechip/ui/components/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@bluechip/ui/components/collapsible"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -16,18 +16,20 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
+import { SectionHeader } from "../../../../components/layout/SectionHeader.tsx"
+import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { agentSessionsAtom } from "../../atoms/agents.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { SpecChangeRows } from "../spec/SpecChangeRows.tsx"
 
-const STATUS: Readonly<Record<SessionStatus, { readonly label: string; readonly tone: string }>> = {
-  draft: { label: "Not locked", tone: "bg-g-100 text-g-600" },
-  locking: { label: "Locking", tone: "bg-blue-50 text-blue" },
-  active: { label: "In force", tone: "bg-gain-wash text-gain" },
-  replaced: { label: "Replaced", tone: "bg-g-100 text-g-600" },
-  revoked: { label: "Revoked", tone: "bg-g-100 text-g-600" },
-  expired: { label: "Ran out", tone: "bg-warn-wash text-warn" },
-  failed: { label: "Didn't land", tone: "bg-loss-wash text-loss" }
+const STATUS: Readonly<Record<SessionStatus, { readonly label: string; readonly tone: StatusTone }>> = {
+  draft: { label: "Not locked yet", tone: "neutral" },
+  locking: { label: "On its way", tone: "pending" },
+  active: { label: "In force", tone: "positive" },
+  replaced: { label: "Replaced", tone: "neutral" },
+  revoked: { label: "Revoked", tone: "neutral" },
+  expired: { label: "Ran out", tone: "neutral" },
+  failed: { label: "Didn't land", tone: "negative" }
 }
 
 const AUTHOR: Readonly<Record<SessionAuthor, string>> = {
@@ -118,9 +120,7 @@ function SessionRow(
             <span className="text-[14px] font-semibold tracking-[-0.01em]">{when(session)}</span>
             <p className="text-label-sm text-g-500">{changeLine(changes)}</p>
           </div>
-          <span className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", status.tone)}>
-            {status.label}
-          </span>
+          <StatusPill tone={status.tone}>{status.label}</StatusPill>
         </div>
         <Rules spec={session.spec} nameOf={nameOf} />
         {detailed ?
@@ -167,12 +167,7 @@ export function SessionHistory(
       )
     }
     if (!AsyncResult.isSuccess(sessions)) {
-      return (
-        <div className="grid justify-items-start gap-2 rounded-lg bg-white p-[18px] shadow-e2">
-          <p className="text-body-sm text-g-600">We couldn't load its history. Check your connection and try again.</p>
-          <Button variant="secondary" size="sm" onClick={refresh}>Try again</Button>
-        </div>
-      )
+      return <LoadProblem what="its history" onRetry={refresh} variant="card" size="sm" />
     }
     if (sessions.value.length === 0) {
       return (
@@ -202,12 +197,12 @@ export function SessionHistory(
 
   return (
     <section aria-labelledby={`history-${agent.id}`} className="grid content-start gap-3">
-      <div className="grid gap-0.5 px-0.5">
-        <h3 id={`history-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">
-          Its rules over time
-        </h3>
-        <p className="text-label-sm text-g-500">Each time its rules were locked with Face ID, newest first.</p>
-      </div>
+      <SectionHeader
+        id={`history-${agent.id}`}
+        level="h3"
+        title="Its rules over time"
+        description="Each time its rules were locked with Face ID, newest first."
+      />
       {body()}
     </section>
   )

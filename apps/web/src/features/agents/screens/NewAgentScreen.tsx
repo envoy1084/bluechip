@@ -4,13 +4,13 @@ import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { agentAtom, removeAgentAtom } from "../atoms/agents.ts"
 import { templatesAtom } from "../atoms/policies.ts"
 import { LockStep } from "../components/new/LockStep.tsx"
@@ -54,10 +54,7 @@ export function NewAgentScreen(
 
   return (
     <AppPage title="New agent">
-      <div className="grid justify-items-center gap-3 py-10 text-center">
-        <p className="text-body-sm text-g-600">We couldn't load the stocks. Check your connection and try again.</p>
-        <Button variant="secondary" onClick={refresh}>Try again</Button>
-      </div>
+      <LoadProblem what="the stocks" onRetry={refresh} />
     </AppPage>
   )
 }

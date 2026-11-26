@@ -1,12 +1,21 @@
-import { cva } from "class-variance-authority"
-import type { ComponentProps } from "react"
-import { TextMorph } from "../components/text-morph.tsx"
-import { Icon, type IconName } from "../icons/icon.tsx"
+import type { IconName } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import type { AgentStatus as AvatarStatus } from "./agent-avatar.tsx"
+import { StatusPill, type StatusPillProps, type StatusTone } from "./status-pill.tsx"
 
-/** What an agent is doing. Never "error": each state says what stopped it. */
-export type AgentState = "active" | "paused" | "needs-approval" | "stopped" | "expired" | "removed"
+/**
+ * What an agent is doing. Never "error": each state says what stopped it. `unlocked` is a draft whose limits aren't
+ * locked yet; `sending` a lock, change or removal on its way to Base.
+ */
+export type AgentState =
+  | "active"
+  | "paused"
+  | "needs-approval"
+  | "stopped"
+  | "expired"
+  | "removed"
+  | "unlocked"
+  | "sending"
 
 export interface AgentStateInfo {
   readonly label: string
@@ -14,81 +23,92 @@ export interface AgentStateInfo {
   readonly description: string
   /** The matching dot on the agent's avatar. */
   readonly dot: AvatarStatus
+  readonly tone: StatusTone
+  /** Its icon, so it reads without color too; an active agent has a dot instead. */
+  readonly icon: IconName | undefined
 }
 
 export const AGENT_STATES: Readonly<Record<AgentState, AgentStateInfo>> = {
-  active: { label: "Active", description: "Trading within its limits.", dot: "active" },
-  paused: { label: "Paused", description: "You paused it. It won't trade until you resume it.", dot: "paused" },
+  active: {
+    label: "Active",
+    description: "Trading within its limits.",
+    dot: "active",
+    tone: "positive",
+    icon: undefined
+  },
+  paused: {
+    label: "Paused",
+    description: "You paused it. It won't trade until you resume it.",
+    dot: "paused",
+    tone: "attention",
+    icon: "pause"
+  },
   "needs-approval": {
     label: "Needs your approval",
     description: "A trade is waiting for your approval.",
-    dot: "waiting"
+    dot: "waiting",
+    tone: "pending",
+    icon: "hand"
   },
   stopped: {
     label: "Done for today",
     description: "It used one of today's limits. It starts again at midnight UTC.",
-    dot: "idle"
+    dot: "idle",
+    tone: "neutral",
+    icon: "clock"
   },
   expired: {
-    label: "Expired",
-    description: "Its limits ran out on 21 Feb. Renew them to keep it running.",
-    dot: "idle"
+    label: "Ran out",
+    description: "Its limits ran out. Renew them to keep it running.",
+    dot: "idle",
+    tone: "neutral",
+    icon: "hourglass"
   },
-  removed: { label: "Removed", description: "Removed for good. It can never trade again.", dot: "idle" }
-}
-
-const STATE_ICON: Readonly<Record<AgentState, IconName | undefined>> = {
-  active: undefined,
-  paused: "pause",
-  "needs-approval": "hand",
-  stopped: "clock",
-  expired: "hourglass",
-  removed: "trash"
-}
-
-export const agentStatusVariants = cva(
-  "inline-flex items-center gap-1.5 rounded-full py-[3px] pr-[9px] pl-[7px] text-label-sm font-[550] whitespace-nowrap",
-  {
-    variants: {
-      state: {
-        active: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]",
-        paused: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]",
-        "needs-approval": "bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]",
-        stopped: "bg-g-50 text-g-700 shadow-[inset_0_0_0_1px_var(--color-g-200)]",
-        expired: "bg-g-50 text-g-600 shadow-[inset_0_0_0_1px_var(--color-g-200)]",
-        removed: "bg-g-50 text-g-600 line-through shadow-[inset_0_0_0_1px_var(--color-g-200)]"
-      }
-    },
-    defaultVariants: { state: "active" }
+  removed: {
+    label: "Removed",
+    description: "Removed for good. It can never trade again.",
+    dot: "idle",
+    tone: "neutral",
+    icon: "trash"
+  },
+  unlocked: {
+    label: "Not locked yet",
+    description: "A draft. It can't trade until you lock its limits with Face ID.",
+    dot: "idle",
+    tone: "neutral",
+    icon: "unlock"
+  },
+  sending: {
+    label: "On its way",
+    description: "Its limits are on their way to Base. It trades once they land.",
+    dot: "waiting",
+    tone: "pending",
+    icon: "clock"
   }
-)
+}
 
-export interface AgentStatusProps extends Omit<ComponentProps<"span">, "children"> {
+export interface AgentStatusProps extends Omit<StatusPillProps, "tone" | "children" | "icon" | "dot"> {
   readonly state: AgentState
 }
 
 /**
- * One word for what an agent is doing. Each state has its own color and icon, so it reads without color too. A new
- * state morphs the label in place.
+ * One word for what an agent is doing, on the kit's status pill. A new state morphs the label in place; the first
+ * one shows as it is.
  */
 export function AgentStatus({ state, className, ...props }: AgentStatusProps) {
-  const icon = STATE_ICON[state]
+  const { label, tone, icon } = AGENT_STATES[state]
   return (
-    <span
+    <StatusPill
       data-slot="agent-status"
       data-state={state}
-      className={cn(agentStatusVariants({ state }), className)}
+      tone={tone}
+      morph
+      dot={icon === undefined}
+      {...(icon === undefined ? {} : { icon })}
+      className={cn(state === "removed" && "line-through", className)}
       {...props}
     >
-      {icon ?
-        <Icon name={icon} size={13} /> :
-        (
-          <i
-            aria-hidden
-            className="size-1.5 rounded-full bg-current shadow-[0_0_0_3px_color-mix(in_srgb,currentColor_18%,transparent)]"
-          />
-        )}
-      <TextMorph>{AGENT_STATES[state].label}</TextMorph>
-    </span>
+      {label}
+    </StatusPill>
   )
 }

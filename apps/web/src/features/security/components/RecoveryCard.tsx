@@ -125,6 +125,7 @@ export function RecoveryCard() {
         landing={action === undefined ? undefined : landingOf(action, sent, recovery.value)}
         words={action === "remove" ?
           {
+            danger: true,
             title: "Remove your recovery key?",
             description: "Without it, losing every passkey means losing access to your account. A recovery under " +
               "way ends too.",
@@ -136,6 +137,7 @@ export function RecoveryCard() {
           } :
           {
             title: "Set up a recovery key",
+            keep: "Not now",
             description: "Make a passkey on another device (scan the code with your phone) or a hardware key, and " +
               "keep it somewhere safe. Then lock it with Face ID. It can only ask to replace your passkeys, and " +
               "the change waits 48 hours, so you can always cancel it.",

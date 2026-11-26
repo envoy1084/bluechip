@@ -94,7 +94,7 @@ test.describe("approvals", () => {
     await request(page).getByRole("button", { name: "Approve with Face ID" }).click()
 
     await expect(
-      request(page).getByText("Face ID was cancelled or the trade couldn't be sent. Nothing was bought.")
+      request(page).getByText("You cancelled Face ID. Nothing was bought.")
     ).toBeVisible()
     await expect(request(page).getByRole("button", { name: "Approve with Face ID" })).toBeEnabled()
     await expect(page.getByLabel("1 waiting")).toBeVisible()

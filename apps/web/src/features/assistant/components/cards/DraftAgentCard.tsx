@@ -2,6 +2,7 @@ import { type AgentRequest, SESSION_DAYS } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { AgentDraftCard } from "@bluechip/ui/bluechip/agent-draft-card"
+import { AGENT_STATES } from "@bluechip/ui/bluechip/agent-status"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { WorstCaseCard } from "@bluechip/ui/bluechip/worst-case-card"
@@ -10,9 +11,10 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
+import { useAgentState } from "../../../../hooks/useAgentState.ts"
 import { confirmAgentAtom, lockAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
-import { AGENT_STANDING, agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
+import { agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
 import { worstCaseLines, worstCaseOf } from "../../model/worstCase.ts"
 import { DraftAutomations } from "./DraftAutomations.tsx"
 import { SpecGlance } from "./SpecGlance.tsx"
@@ -25,6 +27,7 @@ import { SpecGlance } from "./SpecGlance.tsx"
  */
 export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: "DraftAgent" }> }>) {
   const agent = useLiveAgent(card.agent)
+  const standing = useAgentState(agent)
   const lock = useAtomSet(lockAgentAtom, { mode: "promise" })
   const confirm = useAtomSet(confirmAgentAtom, { mode: "promise" })
   const [request, setRequest] = useState<AgentRequest>(card.request)
@@ -56,7 +59,7 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
       never={card.description.never}
       glance={<SpecGlance spec={agent.spec} />}
       worstCase={<WorstCaseCard tone="quiet">{worstCaseLines(worstCaseOf(agent.spec)).join(" ")}</WorstCaseCard>}
-      state={AGENT_STANDING[agent.status]}
+      state={standing === undefined ? undefined : AGENT_STATES[standing].label}
       tone={draft ? "waiting" : agent.status === "active" ? "done" : "quiet"}
       problem={problem}
       automations={<DraftAutomations card={card} agent={agent} />}

@@ -1,5 +1,5 @@
 import { Group } from "../agents/layout.tsx"
-import { AgentSummarySection, HoldingSection, PortfolioSection, ReceiptSection, StatSection } from "./summaries.tsx"
+import { HoldingSection, PortfolioSection, ReceiptSection, StatSection } from "./summaries.tsx"
 
 export function KitTrading() {
   return (
@@ -8,8 +8,8 @@ export function KitTrading() {
         <span className="text-label font-medium text-blue">bluechip</span>
         <h1 className="text-display-3 font-semibold">Portfolio & trading</h1>
         <p className="max-w-[64ch] text-body-lg text-g-600">
-          What you own and how it moves: the portfolio at a glance, one holding up close, a kept trade, an agent at a
-          glance, and the empty and loading states around them. Every amount is an example.
+          What you own and how it moves: the portfolio at a glance, one holding up close, a kept trade, and the empty
+          and loading states around them. Every amount is an example.
         </p>
       </div>
       <Group n="01" title="Your money">
@@ -17,8 +17,7 @@ export function KitTrading() {
         <HoldingSection />
         <ReceiptSection />
       </Group>
-      <Group n="02" title="Agents and building blocks">
-        <AgentSummarySection />
+      <Group n="02" title="Building blocks">
         <StatSection />
       </Group>
     </div>

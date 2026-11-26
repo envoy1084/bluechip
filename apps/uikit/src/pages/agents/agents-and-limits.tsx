@@ -5,6 +5,7 @@ import { AGENT_STATES, type AgentState, AgentStatus } from "@bluechip/ui/bluechi
 import { LimitEditor } from "@bluechip/ui/bluechip/limit-editor"
 import { PermissionCard } from "@bluechip/ui/bluechip/permission-card"
 import { PresetPicker } from "@bluechip/ui/bluechip/preset-picker"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { AGENT_TEMPLATES, type AgentTemplate, TemplatePicker } from "@bluechip/ui/bluechip/template-picker"
 import { UsageDial } from "@bluechip/ui/bluechip/usage-dial"
 import { UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
@@ -26,6 +27,24 @@ import {
   WEEKLY_BUYER_PRESETS
 } from "./data.ts"
 import { Demo, Section, States } from "./layout.tsx"
+
+export function StatusPillSection() {
+  return (
+    <Section
+      title="Status pill"
+      purpose="A short state in a pill, one size and shape everywhere: trades, transfers, agents, automations and their runs. The tone says what the state means for you; an icon or dot lets it read without color."
+    >
+      <Demo className="flex-wrap justify-center gap-2">
+        <StatusPill tone="positive" icon="check">Filled</StatusPill>
+        <StatusPill tone="pending" dot="live">On its way</StatusPill>
+        <StatusPill tone="attention" icon="warning">Needs attention</StatusPill>
+        <StatusPill tone="negative">Didn't go through</StatusPill>
+        <StatusPill tone="neutral">Ended</StatusPill>
+        <StatusPill tone="info">This device</StatusPill>
+      </Demo>
+    </Section>
+  )
+}
 
 export function StatusSection() {
   const [state, setState] = useState<AgentState>("active")

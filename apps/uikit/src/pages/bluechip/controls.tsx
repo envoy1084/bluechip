@@ -18,12 +18,12 @@ export function DemoControls(
       "market",
       market === "open" ? "moon" : "sun",
       market === "open" ? "Close the market" : "Open the market",
-      "Market pills, stock rows, marquee"
+      "Market pills, marquee"
     ],
     ["drop", "chart-down", "Drop TSLA 10%", "Prices, holdings, donut, stop-loss"],
     ["deposit", "cash", "Deposit arrives", "Deposit card, balances, activity"],
-    ["blocked", "stop-sign", "Trigger a blocked trade", "Blocked card, activity"],
-    ["approval", "hand", "Request approval", "Approval sheet, activity"]
+    ["blocked", "stop-sign", "Trigger a blocked trade", "Activity"],
+    ["approval", "hand", "Request approval", "Activity"]
   ]
   return (
     <div className={cn(card, "mt-8 overflow-hidden")}>

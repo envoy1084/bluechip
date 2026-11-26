@@ -1,20 +1,21 @@
 import type { Automation } from "@bluechip/domain/automations/Automation"
-import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatRelative } from "@bluechip/ui/lib/format"
 import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
+import { StandingPill } from "../../../../components/StandingPill.tsx"
+import { WhoChip } from "../../../../components/WhoChip.tsx"
+import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { useAutomationActions } from "../../hooks/useAutomationActions.ts"
 import type { ListedAutomation } from "../../hooks/useListedAutomations.ts"
-import { OUTCOME } from "../../model/automationText.ts"
 import { stocksIn } from "../../model/sentence.ts"
 import { nowLine } from "../../model/standing.ts"
 import { AutomationSentence } from "../AutomationSentence.tsx"
 import { RunStrip } from "../RunStrip.tsx"
-import { StandingPill, StatusPill } from "../StatusPill.tsx"
 import { TriggerArt } from "../TriggerArt.tsx"
 
 const NOW_ICON: Readonly<Record<ReturnType<typeof nowLine>["kind"], IconName>> = {
@@ -24,26 +25,14 @@ const NOW_ICON: Readonly<Record<ReturnType<typeof nowLine>["kind"], IconName>> =
   ended: "flag"
 }
 
-/** Who trades, small: the agent's avatar and name, or you with Face ID. */
+/** Who trades, as the chip rows use: you with Face ID, or the agent with its butterfly. */
 function Trader({ row }: Readonly<{ row: ListedAutomation }>) {
-  if (row.automation.agentId === null) {
-    return (
-      <span className="inline-flex items-center gap-1.5 font-medium text-g-700">
-        <span className="grid size-[26px] place-items-center rounded-sm bg-g-50 text-g-600 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08)]">
-          <Icon name="face-id" size={15} />
-        </span>
-        You, with Face ID
-      </span>
-    )
-  }
-
+  const { agentId } = row.automation
+  if (agentId === null) return <WhoChip who={{ _tag: "source", source: "owner" }}>You, with Face ID</WhoChip>
   return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 font-medium text-g-700">
-      <AgentAvatar agentId={row.automation.agentId} size="sm" removed={row.agent === null} />
-      <span className="truncate">
-        {row.agent === null ? "A removed agent" : row.agent?.name ?? "Its agent"}
-      </span>
-    </span>
+    <WhoChip who={{ _tag: "agent", id: agentId, name: row.agent?.name }}>
+      {row.agent === null ? "A removed agent" : undefined}
+    </WhoChip>
   )
 }
 
@@ -130,7 +119,9 @@ export function AutomationRow(
             (
               <span className="inline-flex items-center gap-1.5">
                 Last ran {formatRelative(DateTime.toDateUtc(lastAt), now, { timeZone: zone })}
-                {last === undefined ? null : <StatusPill {...OUTCOME[last.outcome]} />}
+                {last === undefined ?
+                  null :
+                  <StatusPill tone={RUN_OUTCOME[last.outcome].tone}>{RUN_OUTCOME[last.outcome].label}</StatusPill>}
               </span>
             )}
         </span>

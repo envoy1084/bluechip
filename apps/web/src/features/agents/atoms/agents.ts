@@ -1,13 +1,13 @@
 import type { AgentId, SigningRequestId } from "@bluechip/domain/Ids"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
+import { agentUsageAtom } from "../../../atoms/agents.ts"
 import {
   agentsReactivityKey,
   automationsReactivityKey,
   BluechipApiClient,
   intentsReactivityKey,
-  liveReactivityKey,
-  usageReactivityKey
+  liveReactivityKey
 } from "../../../lib/api/client.ts"
 import { signWithPasskey } from "../../../lib/passkey.ts"
 
@@ -16,14 +16,6 @@ const reactivityKeys = [agentsReactivityKey, liveReactivityKey]
 /** One agent, removed ones included. */
 export const agentAtom = Atom.family((id: AgentId) =>
   BluechipApiClient.query("agents", "agent", { params: { id }, reactivityKeys })
-)
-
-/** What an agent has used, policy by policy, read from its session onchain; refetched when its trades fill. */
-export const agentUsageAtom = Atom.family((id: AgentId) =>
-  BluechipApiClient.query("agents", "usage", {
-    params: { id },
-    reactivityKeys: [...reactivityKeys, usageReactivityKey]
-  })
 )
 
 /** The size of a page of an agent's journal. */

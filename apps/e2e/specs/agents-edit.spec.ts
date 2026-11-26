@@ -165,7 +165,7 @@ test.describe("edit rules: lock with Face ID", () => {
 
     await page.getByRole("button", { name: "Lock new rules with Face ID" }).click()
 
-    await expect(page.getByText("Face ID was cancelled or the request couldn't be sent. Nothing changed."))
+    await expect(page.getByText("You cancelled Face ID. Nothing changed."))
       .toBeVisible()
     await expect(page.getByRole("button", { name: "Try Face ID again" })).toBeVisible()
     await page.getByRole("main").getByRole("link", { name: "Edited one" }).click()

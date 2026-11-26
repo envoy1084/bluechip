@@ -1,4 +1,4 @@
-import { usageLevel, UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
+import { UsageBar, usageLevel, UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
 import { describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
 
@@ -68,5 +68,26 @@ describe("UsageMeter", () => {
   it("is named for what it measures", async () => {
     const screen = await render(<UsageMeter used={3} limit={10} label="Trades today" />)
     await expect.element(screen.getByRole("meter", { name: "Trades today" })).toBeInTheDocument()
+  })
+})
+
+describe("UsageBar", () => {
+  it("is a meter when it has a name", async () => {
+    const screen = await render(<UsageBar used={3} limit={10} label="Trades today" valueText="3 of 10" />)
+    await expect.element(screen.getByRole("meter", { name: "Trades today" })).toHaveAttribute(
+      "aria-valuetext",
+      "3 of 10"
+    )
+  })
+
+  it("is hidden without a name", async () => {
+    const screen = await render(<UsageBar used={3} limit={10} />)
+    expect(screen.container.querySelector("[role=meter]")).toBeNull()
+  })
+
+  it("marks how much of the day has gone", async () => {
+    const screen = await render(<UsageBar used={3} limit={10} dayGone={0.25} />)
+    const tick = screen.container.querySelector<HTMLElement>("[data-slot=usage-bar-day]")
+    expect(tick?.style.left).toBe("25%")
   })
 })

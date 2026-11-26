@@ -247,7 +247,7 @@ test.describe("new agent: lock with Face ID", () => {
     await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
 
     await expect(page.getByRole("alert")).toHaveText(
-      "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+      "You cancelled Face ID. Nothing changed."
     )
     await expect(page.getByText("Face ID didn't work. Try again.")).toBeVisible()
     await expect(page.getByRole("textbox", { name: "Name" })).toBeDisabled()

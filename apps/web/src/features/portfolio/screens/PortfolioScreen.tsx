@@ -1,15 +1,14 @@
-import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { performanceAtom } from "../atoms/performance.ts"
 import { CashCard } from "../components/CashCard.tsx"
@@ -56,34 +55,23 @@ export function PortfolioScreen() {
         </div>
       )}
 
-      {AsyncResult.isFailure(portfolio) && (
-        <Alert variant="destructive">
-          <AlertTitle>We couldn't load your portfolio</AlertTitle>
-          <AlertDescription>
-            Your money is safe; this is only the page. Check your connection and try again.
-          </AlertDescription>
-          <Button variant="secondary" size="sm" onClick={refresh}>
-            <Icon name="refresh" size={14} />Try again
-          </Button>
-        </Alert>
-      )}
+      {AsyncResult.isFailure(portfolio) && <LoadProblem what="your portfolio" onRetry={refresh} safe variant="card" />}
 
       {AsyncResult.isSuccess(portfolio) && portfolio.value.value === BigInt(0) && (
-        <Empty className="py-14">
-          <EmptyMedia>
-            <Illustration name="seedling" size={64} />
-          </EmptyMedia>
-          <EmptyTitle>No stocks yet</EmptyTitle>
-          <EmptyDescription>
-            Add cash, then buy a stock you like. Your chart starts with your first deposit.
-          </EmptyDescription>
-          <EmptyContent className="flex-row">
-            <Button onClick={() => openCash("add")}>
-              <Icon name="plus" size={16} />Add cash
-            </Button>
-            <ButtonLink variant="ghost" render={<Link to="/stocks" />}>See stocks</ButtonLink>
-          </EmptyContent>
-        </Empty>
+        <IllustratedEmpty
+          illustration="seedling"
+          title="No stocks yet"
+          action={
+            <>
+              <Button onClick={() => openCash("add")}>
+                <Icon name="plus" size={16} />Add cash
+              </Button>
+              <ButtonLink variant="ghost" render={<Link to="/stocks" />}>See stocks</ButtonLink>
+            </>
+          }
+        >
+          Add cash, then buy a stock you like. Your chart starts with your first deposit.
+        </IllustratedEmpty>
       )}
 
       {AsyncResult.isSuccess(portfolio) && portfolio.value.value > BigInt(0) && (

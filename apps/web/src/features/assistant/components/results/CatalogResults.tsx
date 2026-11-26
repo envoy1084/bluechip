@@ -8,10 +8,11 @@ import type { SavedTemplate, TemplateInfo } from "@bluechip/domain/policies/Temp
 import { ChatResultRow, ChatResultRows, ChatResultStat, ChatResultStats } from "@bluechip/ui/bluechip/chat-result"
 import { OutcomeLink } from "@bluechip/ui/bluechip/outcome"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { formatDate, formatMoney } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
+import { StandingPill } from "../../../../components/StandingPill.tsx"
 import { usdcDollars } from "../../../../lib/amounts.ts"
+import { RUN_OUTCOME, standingOf } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import type { ResultState } from "../../model/resultCards.ts"
 import { RESULT_LOOK } from "../../model/resultText.ts"
@@ -21,14 +22,6 @@ import { more, OpenLink } from "./OpenLink.tsx"
 const SHOWN = 4
 
 const day = (at: DateTime.Utc) => formatDate(DateTime.toDateUtc(at), { timeZone: localTimeZone(), time: false })
-
-const AUTOMATION_STATUS: Readonly<Record<Automation["status"], { readonly label: string; readonly tone: string }>> = {
-  active: { label: "On", tone: "bg-gain-wash text-gain" },
-  paused: { label: "Paused", tone: "bg-warn-wash text-warn" },
-  done: { label: "Done", tone: "bg-g-100 text-g-600" },
-  expired: { label: "Ran out", tone: "bg-g-100 text-g-600" },
-  deleted: { label: "Deleted", tone: "bg-g-100 text-g-600" }
-}
 
 /** Your automations as compact rows: what each does in a sentence, and whether it's on. */
 export function AutomationsResult(
@@ -49,16 +42,7 @@ export function AutomationsResult(
             media={<Icon name="zap" size={16} className="text-g-500" />}
             title={automation.name}
             detail={automation.description.sentence}
-            valueDetail={
-              <span
-                className={cn(
-                  "rounded-full px-2 py-px text-[11px] font-semibold",
-                  AUTOMATION_STATUS[automation.status].tone
-                )}
-              >
-                {AUTOMATION_STATUS[automation.status].label}
-              </span>
-            }
+            valueDetail={<StandingPill standing={standingOf(automation, [])} />}
           />
         ))}
       </ChatResultRows>
@@ -66,20 +50,12 @@ export function AutomationsResult(
   )
 }
 
-const OUTCOME: Readonly<Record<AutomationPerformance["outcomes"][number]["outcome"], string>> = {
-  proposed: "traded",
-  asked: "asked you",
-  notified: "told you",
-  skipped: "skipped",
-  failed: "failed"
-}
-
 /** How one automation's runs ended and what its trades moved. */
 export function AutomationPerformanceResult(
   { performance, state }: Readonly<{ performance: AutomationPerformance; state: ResultState }>
 ) {
   const outcomes = performance.outcomes.filter((row) => row.count > 0).map((row) =>
-    `${row.count} ${OUTCOME[row.outcome]}`
+    `${row.count} ${RUN_OUTCOME[row.outcome].word}`
   )
   return (
     <LookedResult

@@ -101,7 +101,7 @@ describe("intentProblem", () => {
     {
       name: "another conflict: as a trade problem",
       error: new Conflict({ reason: "requestIdReused" }),
-      expected: "Face ID was cancelled or the trade couldn't be sent. Nothing was bought."
+      expected: "Face ID didn't finish, or the request couldn't be sent. Nothing was bought."
     },
     {
       name: "a trade problem",

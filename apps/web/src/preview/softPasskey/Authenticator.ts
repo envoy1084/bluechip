@@ -178,7 +178,8 @@ export const makeAuthenticator = (config: SoftAuthenticatorConfig) => {
     const allowed = new Set((request.allowCredentials ?? []).map((descriptor) => toBase64Url(bytesOf(descriptor.id))))
     const candidates = config.keyring.list()
       .filter((credential) => credential.rpId === rpId && (allowed.size === 0 || allowed.has(credential.id)))
-      .toSorted((a, b) => b.createdAt - a.createdAt)
+      // Kept in the order they were made: newest first, even when two share a millisecond.
+      .toReversed()
     if (candidates.length === 0) throw notAllowed(`No software passkey for ${rpId} matches this request.`)
 
     // An allow list names the credentials the site expects: the newest of them answers. A discoverable sign-in asks.

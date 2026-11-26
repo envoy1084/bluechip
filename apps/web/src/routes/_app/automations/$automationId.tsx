@@ -1,7 +1,7 @@
 import { AutomationId } from "@bluechip/domain/Ids"
 import { createFileRoute } from "@tanstack/react-router"
 import * as Schema from "effect/Schema"
-import { AgentStateNow } from "../../../features/agents/components/AgentStatePill.tsx"
+import { AgentStateNow } from "../../../components/AgentStatePill.tsx"
 import { AutomationNotFound } from "../../../features/automations/components/ScreenState.tsx"
 import { AutomationScreen } from "../../../features/automations/screens/AutomationScreen.tsx"
 import { IntentLine } from "../../../features/intents/components/IntentLine.tsx"

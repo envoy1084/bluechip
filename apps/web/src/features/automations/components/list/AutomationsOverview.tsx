@@ -1,7 +1,7 @@
-import { Tabs, TabsCount, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { cn } from "@bluechip/ui/lib/cn"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
+import { FilterTabs as SharedFilterTabs } from "../../../../components/FilterTabs.tsx"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import type { ListedAutomation } from "../../hooks/useListedAutomations.ts"
 import { type Filter, filterCounts, FILTERS, runsToday, summaryDetail, summaryHeadline } from "../../model/standing.ts"
@@ -97,17 +97,15 @@ export function FilterTabs(
   const counts = filterCounts(listed)
 
   return (
-    <Tabs variant="segmented" value={filter} onValueChange={(value) => onChange(value as Filter)}>
-      <TabsList aria-label="Show" className="[&_[role=tab]]:h-[28px] [&_[role=tab]]:px-3 [&_[role=tab]]:text-label-sm">
-        {FILTERS.map((option) => (
-          <TabsTab key={option.value} value={option.value} className="gap-1.5">
-            {option.label}
-            <TabsCount className={option.value === "attention" && counts.attention > 0 ? "bg-warn-wash text-warn" : ""}>
-              {counts[option.value]}
-            </TabsCount>
-          </TabsTab>
-        ))}
-      </TabsList>
-    </Tabs>
+    <SharedFilterTabs
+      label="Show"
+      value={filter}
+      onChange={onChange}
+      options={FILTERS.map((option) => ({
+        ...option,
+        count: counts[option.value],
+        warn: option.value === "attention"
+      }))}
+    />
   )
 }

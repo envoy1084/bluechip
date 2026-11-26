@@ -186,6 +186,11 @@ Code is organized so a maintainer can find and review any change quickly.
   (queries several features read: the user, stocks, portfolio, agents, activity), `lib/` (the API client and live
   events, passkey signing, amounts, wallet config: the chain is read through the server's `/api/rpc`, never a node
   of its own) and `providers/`.
+- Screens build on the shared pieces rather than their own copies: `StatusPill` (`@bluechip/ui`) for every state,
+  with its words from one map per concept in `lib/` (`intentStatus.ts`, `agentState.ts`, `automationWords.ts`,
+  `activityText.ts`); `useAgentState` for an agent's pill and dot; `LoadProblem`, `IllustratedEmpty`,
+  `SectionHeader` (`layout/`), `ConfirmDialog`, `WhoChip`, `FilterTabs` and `fields/`; `passkeyProblem` for a
+  Face ID that didn't finish; times in the viewer's zone, named (`yourTime`, `dailyResetText` in `lib/localTime.ts`).
 
 Imports flow one way: shared → `features` → `routes`. Features never import each other or routes, and shared code
 never imports features. When a screen shows another feature's piece, its route composes them, passing the piece in

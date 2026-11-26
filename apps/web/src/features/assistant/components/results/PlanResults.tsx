@@ -7,16 +7,17 @@ import { ChatCardNote } from "@bluechip/ui/bluechip/chat-card"
 import { ChatResult, ChatResultHeadline, ChatResultRow, ChatResultRows } from "@bluechip/ui/bluechip/chat-result"
 import { MixCompare } from "@bluechip/ui/bluechip/mix-bar"
 import { PriceChange } from "@bluechip/ui/bluechip/price-change"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { usdcDollars } from "../../../../lib/amounts.ts"
+import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
 import { useAgentName } from "../../hooks/useAgentName.ts"
 import { actorLine, type DailyBrief, isQuietDay } from "../../model/dailyBrief.ts"
 import { mixShifts } from "../../model/rebalancePlan.ts"
 import type { ResultState } from "../../model/resultCards.ts"
-import { INTENT_STATUS, RESULT_LOOK } from "../../model/resultText.ts"
+import { RESULT_LOOK } from "../../model/resultText.ts"
 import { LookedResult } from "./MoneyResults.tsx"
 import { OpenLink } from "./OpenLink.tsx"
 
@@ -24,11 +25,7 @@ type NameOf = (symbol: StockSymbol) => string
 
 function Pill({ intent }: Readonly<{ intent: Intent }>) {
   const status = INTENT_STATUS[intent.status]
-  return (
-    <span className={cn("rounded-full px-2 py-px text-[11px] font-semibold whitespace-nowrap", status.tone)}>
-      {status.label}
-    </span>
-  )
+  return <StatusPill tone={status.tone}>{status.label}</StatusPill>
 }
 
 /**

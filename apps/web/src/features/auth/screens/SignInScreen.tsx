@@ -6,17 +6,18 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
+import { passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { signInAtom } from "../atoms/auth.ts"
 
 export function SignInScreen() {
   const signIn = useAtomSet(signInAtom, { mode: "promise" })
   const navigate = useNavigate()
-  const [state, setState] = useState<"idle" | "waiting" | "failed">("idle")
+  const [state, setState] = useState<"idle" | "waiting" | "failed" | "cancelled">("idle")
   const start = () => {
     setState("waiting")
     signIn().then(
       (me) => navigate({ to: me.user.eligibility === "outsideUs" ? "/home" : "/welcome/eligibility" }),
-      () => setState("failed")
+      (error: unknown) => setState(passkeyProblem(error).cancelled ? "cancelled" : "failed")
     )
   }
   return (
@@ -30,6 +31,8 @@ export function SignInScreen() {
             <AlertDescription>Try again, or create an account if this device has no bluechip passkey.</AlertDescription>
           </Alert>
         ) :
+        state === "cancelled" ?
+        <output className="block text-label text-g-600">You cancelled Face ID. Sign in when you're ready.</output> :
         null}
       <div className="mt-2.5 grid w-full gap-2.5">
         <Button size="lg" className="w-full" loading={state === "waiting"} onClick={start}>

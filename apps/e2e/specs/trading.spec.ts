@@ -142,7 +142,7 @@ test.describe("buying on a stock's page", () => {
 
     await box.getByRole("button", { name: "Buy with Face ID" }).click()
 
-    await expect(box.getByText("Face ID was cancelled or the trade couldn't be sent. Nothing was bought."))
+    await expect(box.getByText("You cancelled Face ID. Nothing was bought."))
       .toBeVisible()
     expect(confirms).toEqual([])
     await expect(box.getByText("$1,000.00 cash available")).toBeVisible()

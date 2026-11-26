@@ -238,7 +238,7 @@ export function PolicyChangeSection() {
           looser
           glance={PICKER_GLANCE}
           {...PICKER_RULES}
-          state="Needs Face ID"
+          state="Waiting for Face ID"
           footer={<PasskeyButton doneLabel="Sent" onAuthenticate={faceId}>Approve with Face ID</PasskeyButton>}
         />
       </Demo>
@@ -249,7 +249,7 @@ export function PolicyChangeSection() {
             agentId="nimbus"
             name="Nimbus"
             note="Locks the same rules with a new key for 90 more days."
-            state="Needs Face ID"
+            state="Waiting for Face ID"
             footer={<PasskeyButton doneLabel="Sent" onAuthenticate={faceId}>Renew with Face ID</PasskeyButton>}
           />
         </Demo>
@@ -259,7 +259,7 @@ export function PolicyChangeSection() {
             agentId="nimbus"
             name="Nimbus"
             note="It stops for good. Your stocks and cash stay in your account."
-            state="Needs Face ID"
+            state="Waiting for Face ID"
             footer={<PasskeyButton doneLabel="Sent" onAuthenticate={faceId}>Remove with Face ID</PasskeyButton>}
           />
         </Demo>

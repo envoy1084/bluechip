@@ -1,7 +1,7 @@
 import type { ActivityKind, ActivityPeriod } from "@bluechip/domain/activity/Activity"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
-import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { FilterTabs } from "../../../components/FilterTabs.tsx"
 
 type Kind = typeof ActivityKind.Type
 type Period = typeof ActivityPeriod.Type
@@ -29,19 +29,7 @@ export function ActivityFilters(
 ) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2.5">
-      <Tabs variant="segmented" value={kind} onValueChange={(value) => onKind(value as Kind)}>
-        <TabsList
-          aria-label="Filter by type"
-          className="[&_[role=tab]]:h-[30px] [&_[role=tab]]:gap-1.5 [&_[role=tab]]:px-3 [&_[role=tab]]:text-label-sm"
-        >
-          {KINDS.map((option) => (
-            <TabsTab key={option.value} value={option.value}>
-              <Icon name={option.icon} size={14} />
-              {option.label}
-            </TabsTab>
-          ))}
-        </TabsList>
-      </Tabs>
+      <FilterTabs label="Filter by type" value={kind} onChange={onKind} options={KINDS} />
       <Select items={PERIODS} value={period} onValueChange={(value) => value !== null && onPeriod(value as Period)}>
         <SelectTrigger size="sm" aria-label="Period" className="w-[160px] bg-white">
           <span className="flex items-center gap-1.5">

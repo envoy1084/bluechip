@@ -3,6 +3,7 @@ import { Conflict, SignatureRejected, Unavailable } from "@bluechip/domain/Error
 import type { AccountRecovery } from "@bluechip/domain/recovery/Recovery"
 import { formatDate } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
+import { passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 
 const day = (date: DateTime.Utc, timeZone: string) => formatDate(DateTime.toDateUtc(date), { time: false, timeZone })
@@ -91,5 +92,5 @@ export const changeProblem = (error: unknown): string => {
       "The passkey's answer didn't check out. Nothing changed. Try again."
   }
   if (error instanceof Unavailable) return unavailableProblem(error)
-  return "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+  return passkeyProblem(error, "Nothing changed.").text
 }

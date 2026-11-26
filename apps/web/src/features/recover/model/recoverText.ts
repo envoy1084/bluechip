@@ -3,6 +3,7 @@ import { isDue, type Recovering } from "@bluechip/domain/recovery/Recovery"
 import type { OutcomeTone } from "@bluechip/ui/bluechip/outcome"
 import { formatDate } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
+import { passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 
 /** Where the recovery page is, from what the server says: what to show and what it offers. */
@@ -83,5 +84,5 @@ export const recoverProblem = (error: unknown): string => {
       "This recovery can't go on. Sign in with your recovery key again."
   }
   if (error instanceof Unavailable) return unavailableProblem(error)
-  return "The passkey prompt was cancelled or the request couldn't be sent. Nothing changed."
+  return passkeyProblem(error, "Nothing changed.").text
 }

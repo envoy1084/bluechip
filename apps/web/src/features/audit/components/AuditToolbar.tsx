@@ -4,8 +4,8 @@ import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { Input } from "@bluechip/ui/components/input"
 import { InputGroup, InputGroupButton, InputGroupInput } from "@bluechip/ui/components/input-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
-import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { FilterTabs } from "../../../components/FilterTabs.tsx"
 import { AUDIT_RANGES, type AuditDays, type AuditRangePreset } from "../model/auditRange.ts"
 import { AUDIT_TYPES } from "../model/auditText.ts"
 
@@ -35,27 +35,12 @@ export function AuditToolbar(
 
   return (
     <div className="grid gap-3">
-      <Tabs
-        variant="segmented"
+      <FilterTabs<string>
+        label="Kind"
         value={type ?? ALL}
-        onValueChange={(value) => onType(value === ALL ? null : value as AuditType)}
-      >
-        <TabsList
-          aria-label="Kind"
-          className="[&_[role=tab]]:h-7 [&_[role=tab]]:gap-1.5 [&_[role=tab]]:px-2.5 [&_[role=tab]]:text-label-sm"
-        >
-          <TabsTab value={ALL}>
-            <Icon name="layers" size={14} />
-            Everything
-          </TabsTab>
-          {AUDIT_TYPES.map((option) => (
-            <TabsTab key={option.value} value={option.value}>
-              <Icon name={option.icon} size={14} />
-              {option.label}
-            </TabsTab>
-          ))}
-        </TabsList>
-      </Tabs>
+        onChange={(value) => onType(value === ALL ? null : value as AuditType)}
+        options={[{ value: ALL, label: "Everything", icon: "layers" }, ...AUDIT_TYPES]}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <InputGroup size="sm" className="min-w-[200px] flex-1 bg-white">

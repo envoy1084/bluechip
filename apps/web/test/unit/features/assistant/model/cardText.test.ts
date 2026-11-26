@@ -76,7 +76,7 @@ describe("signingProblem", () => {
     {
       name: "anything else: Face ID cancelled",
       error: new QuoteUnavailable({ symbol: "NVDA", reason: "noPrice" }),
-      expected: "Face ID was cancelled or the request couldn't be sent. Nothing changed."
+      expected: "Face ID didn't finish, or the request couldn't be sent. Nothing changed."
     }
   ])("$name", ({ error, expected }) => {
     assert.strictEqual(signingProblem(error), expected)

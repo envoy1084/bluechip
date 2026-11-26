@@ -128,7 +128,7 @@ describe("needsYou", () => {
       [{
         key: "automations",
         tone: "warn",
-        title: "Monthly split needs a look",
+        title: "Monthly split needs attention",
         detail: "Its last run didn't go through.",
         action: { _tag: "automation", automationId: SPLIT },
         actionLabel: "Look"
@@ -150,7 +150,7 @@ describe("needsYou", () => {
     )
 
     assert.deepStrictEqual([need?.title, need?.detail, need?.action], [
-      "2 automations need a look",
+      "2 automations need attention",
       "Weekly Apple and Monthly split.",
       { _tag: "automations" }
     ])

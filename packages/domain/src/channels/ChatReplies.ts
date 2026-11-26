@@ -6,6 +6,7 @@
  */
 import type { Agent } from "../agents/Agent.ts"
 import type { StockSymbol } from "../market/Market.ts"
+import { formatShareCount } from "../policies/Format.ts"
 import type { Portfolio } from "../portfolio/Portfolio.ts"
 
 /**
@@ -86,8 +87,6 @@ export const HELP = [
   "Face ID."
 ].join("\n")
 
-const sharesFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
-
 const centsFormat = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
 const dollars = (usdc: bigint) => centsFormat.format(Number(usdc) / 1e6)
@@ -113,8 +112,7 @@ export const chatPortfolio = (
   stock: (symbol: StockSymbol) => string
 ): string => {
   const lines = portfolio.holdings.map((holding) => {
-    const shares = Number(holding.shares) / 1e8
-    return `${stock(holding.symbol)}: ${sharesFormat.format(shares)} ${shares === 1 ? "share" : "shares"}, ` +
+    return `${stock(holding.symbol)}: ${formatShareCount(Number(holding.shares) / 1e8)}, ` +
       dollars(holding.value)
   })
   return [

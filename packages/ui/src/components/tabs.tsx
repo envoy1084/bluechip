@@ -1,5 +1,6 @@
 import { Tabs as BaseTabs } from "@base-ui/react/tabs"
-import type { ComponentProps } from "react"
+import { useRender } from "@base-ui/react/use-render"
+import type { ComponentProps, ReactNode } from "react"
 import { cn } from "../lib/cn.ts"
 
 export interface TabsProps extends BaseTabs.Root.Props {
@@ -89,4 +90,45 @@ export function TabsPanel({ className, ...props }: BaseTabs.Panel.Props) {
       {...props}
     />
   )
+}
+
+/**
+ * Tabs that are links, for pages of their own (an agent's overview, journal, usage): the segmented look, as a `nav`
+ * of links. Each `TabsLink` takes the router's link as `render`; the router marks the current one
+ * (`data-status="active"` or `aria-current="page"`).
+ */
+export function TabsNav(
+  { className, children, ...props }: ComponentProps<"nav"> & { readonly children: ReactNode }
+) {
+  return (
+    <nav
+      data-slot="tabs-nav"
+      className={cn("-mx-1 max-w-full overflow-x-auto px-1 [scrollbar-width:none]", className)}
+      {...props}
+    >
+      <ul className="flex w-max gap-0.5 rounded-[11px] bg-g-100 p-[3px] shadow-[inset_0_0_0_1px_rgba(10,11,13,.04)]">
+        {children}
+      </ul>
+    </nav>
+  )
+}
+
+export function TabsLink({ className, render, ...props }: useRender.ComponentProps<"a">) {
+  const link = useRender({
+    defaultTagName: "a",
+    render,
+    props: {
+      ...props,
+      "data-slot": "tabs-link",
+      className: cn(
+        "inline-flex h-[30px] items-center gap-[7px] rounded-[8px] px-3.5 text-[13.5px] font-[550] whitespace-nowrap text-g-500 outline-none",
+        "transition-[background,color,box-shadow] duration-fast ease-brand hover:text-ink",
+        "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue",
+        "data-[status=active]:bg-[linear-gradient(180deg,#fff,#f9fafb)] data-[status=active]:text-ink aria-[current=page]:bg-[linear-gradient(180deg,#fff,#f9fafb)] aria-[current=page]:text-ink",
+        "data-[status=active]:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.08),0_1px_2px_rgba(10,11,13,.06)] aria-[current=page]:shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_0_0_1px_rgba(10,11,13,.08),0_1px_2px_rgba(10,11,13,.06)]",
+        className
+      )
+    }
+  })
+  return <li>{link}</li>
 }

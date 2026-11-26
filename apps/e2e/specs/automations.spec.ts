@@ -20,7 +20,7 @@ test.describe("automations list", () => {
     const list = page.getByRole("list", { name: "Automations" })
     await expect(list.getByRole("link", { name: /^Monday buy Active .*You, with Face ID/ })).toBeVisible()
     await expect(list.getByRole("link", { name: /^Monday buy / })).toContainText(
-      /Next run \w{3} \d+ \w{3}, \d{2}:\d{2}, (in \d+ (days|h|min)|tomorrow|now)/
+      /Next run \w{3} \d+ \w{3}, \d{2}:\d{2} your time, (in \d+ (days|h|min)|tomorrow|now)/
     )
   })
 
@@ -31,7 +31,7 @@ test.describe("automations list", () => {
 
     await expect(page.getByRole("region", { name: "Overview" })).toContainText("1 automation watching for you")
     await page.getByRole("tab", { name: /^Needs attention/ }).click()
-    await expect(page.getByRole("heading", { name: "Nothing needs a look" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Nothing needs attention" })).toBeVisible()
   })
 
   test("Pause on its row pauses it there", async ({ page, user: _user }) => {

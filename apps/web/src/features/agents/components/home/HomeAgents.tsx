@@ -1,7 +1,6 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import type { AgentId } from "@bluechip/domain/Ids"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
-import { Button, ButtonLink } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
@@ -11,15 +10,16 @@ import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentsAtom } from "../../../../atoms/agents.ts"
+import { AgentStatePill } from "../../../../components/AgentStatePill.tsx"
 import { PageSection } from "../../../../components/layout/PageSection.tsx"
+import { LoadProblem } from "../../../../components/LoadProblem.tsx"
+import { agentDot } from "../../../../lib/agentState.ts"
 import { usdcDollars } from "../../../../lib/amounts.ts"
 import { agentPerformanceAtom } from "../../atoms/performance.ts"
 import { useListedAgents } from "../../hooks/useListedAgents.ts"
 import { glanceOf } from "../../model/agentGlance.ts"
 import { featuredAgents, type ListedAgent } from "../../model/agentList.ts"
-import { agentDot } from "../../model/agentState.ts"
 import { weekContribution } from "../../model/results.ts"
-import { AgentStatePill } from "../AgentStatePill.tsx"
 import { GlanceLine } from "../list/AgentListCard.tsx"
 
 const SHOWN = 4
@@ -50,7 +50,7 @@ function WeekLine({ agent, now }: Readonly<{ agent: Agent; now: Date }>) {
 }
 
 function AgentTile({ listed, now }: Readonly<{ listed: ListedAgent; now: Date }>) {
-  const { agent, state } = listed
+  const { agent, state, settled } = listed
 
   return (
     <li>
@@ -60,14 +60,14 @@ function AgentTile({ listed, now }: Readonly<{ listed: ListedAgent; now: Date }>
         className="grid h-full gap-3 rounded-lg bg-white p-4 shadow-e2 transition-shadow duration-fast ease-brand hover:shadow-e3 focus-visible:shadow-[0_0_0_2px_var(--color-blue)] focus-visible:outline-none"
       >
         <span className="flex items-center gap-3">
-          <AgentAvatar agentId={agent.id} size="md" status={agentDot(state)} />
+          <AgentAvatar agentId={agent.id} size="md" {...(settled ? { status: agentDot(state) } : {})} />
           <span className="grid min-w-0 flex-1 gap-0.5">
             <b className="truncate text-[15px] font-semibold tracking-[-0.01em]">{agent.name}</b>
             {state === "unlocked" ?
               <span className="text-label-sm text-g-500">A draft</span> :
               <WeekLine agent={agent} now={now} />}
           </span>
-          <AgentStatePill state={state} />
+          <AgentStatePill state={settled ? state : undefined} />
         </span>
         <GlanceLine glance={glanceOf(listed)} />
       </Link>
@@ -75,11 +75,9 @@ function AgentTile({ listed, now }: Readonly<{ listed: ListedAgent; now: Date }>
   )
 }
 
-function AgentTiles(
-  { agents, awaiting }: Readonly<{ agents: ReadonlyArray<Agent>; awaiting: ReadonlyMap<AgentId, number> }>
-) {
+function AgentTiles({ agents }: Readonly<{ agents: ReadonlyArray<Agent> }>) {
   const [now] = useState(() => new Date())
-  const listed = useListedAgents(agents, awaiting, now)
+  const listed = useListedAgents(agents, now)
   const kept = listed.filter((each) => each.state !== "removed").length
 
   return (
@@ -104,9 +102,9 @@ function AgentTiles(
 /**
  * Your agents at a glance for home: up to four, those waiting for you first, each with its state, what it made this
  * week and today's budget, with the way to the rest and to a new one. Nothing before your first agent (home's
- * checklist leads there). `awaiting` is how many of each agent's trades wait for you, from the route.
+ * checklist leads there).
  */
-export function HomeAgents({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentId, number> }>) {
+export function HomeAgents() {
   const agents = useAtomValue(agentsAtom)
   const refresh = useAtomRefresh(agentsAtom)
 
@@ -121,14 +119,11 @@ export function HomeAgents({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentI
   if (!AsyncResult.isSuccess(agents)) {
     return (
       <PageSection title="Your agents">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3.5 shadow-e2">
-          <p className="text-body-sm text-g-600">We couldn't load your agents. Check your connection and try again.</p>
-          <Button variant="secondary" size="sm" onClick={refresh}>Try again</Button>
-        </div>
+        <LoadProblem what="your agents" onRetry={refresh} variant="card" size="sm" />
       </PageSection>
     )
   }
   if (agents.value.every((agent) => agent.status === "removed")) return null
 
-  return <AgentTiles agents={agents.value} awaiting={awaiting} />
+  return <AgentTiles agents={agents.value} />
 }

@@ -118,7 +118,7 @@ const automationsNeed = (automations: NeedsFacts["automations"]): ReadonlyArray<
       {
         key: "automations",
         tone: "warn",
-        title: `${first.automation.name} needs a look`,
+        title: `${first.automation.name} needs attention`,
         detail: first.attention!,
         action: { _tag: "automation", automationId: first.automation.id },
         actionLabel: "Look"
@@ -126,7 +126,7 @@ const automationsNeed = (automations: NeedsFacts["automations"]): ReadonlyArray<
       {
         key: "automations",
         tone: "warn",
-        title: `${needLook.length} automations need a look`,
+        title: `${needLook.length} automations need attention`,
         detail: `${names(needLook.map((each) => each.automation.name))}.`,
         action: { _tag: "automations" },
         actionLabel: "Look"

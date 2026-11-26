@@ -17,6 +17,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hoo
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { stocksAtom } from "../../../../atoms/market.ts"
+import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { changedKeys, updateAutomationAtom } from "../../atoms/automations.ts"
@@ -34,14 +35,7 @@ function SheetEditor(
   const { nameOf } = useStockLookup()
 
   if (AsyncResult.isFailure(stocks)) {
-    return (
-      <p className="text-label text-g-600">
-        We couldn't load the stocks just now.{" "}
-        <button type="button" className="cursor-pointer font-semibold text-blue underline" onClick={refresh}>
-          Try again
-        </button>
-      </p>
-    )
+    return <LoadProblem what="the stocks" onRetry={refresh} size="sm" />
   }
   if (!AsyncResult.isSuccess(stocks)) return <Spinner label="Loading the stocks" className="justify-self-center" />
 

@@ -7,6 +7,7 @@ import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
+import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { dayHeading } from "../../../../lib/localTime.ts"
 import { agentIntentsAtom } from "../../atoms/intents.ts"
 import { ActivityRow } from "./ActivityRow.tsx"
@@ -34,12 +35,7 @@ function IntentPage(
     )
   }
   if (!AsyncResult.isSuccess(page)) {
-    return (
-      <div className="grid justify-items-center gap-2.5 p-[18px] text-center">
-        <p className="text-body-sm text-g-600">We couldn't load its trades. Check your connection and try again.</p>
-        <Button variant="secondary" size="sm" onClick={refresh}>Try again</Button>
-      </div>
-    )
+    return <LoadProblem what="its trades" onRetry={refresh} size="sm" />
   }
 
   const { items, nextPageToken } = page.value

@@ -5,18 +5,19 @@ import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { JournalEntry } from "@bluechip/domain/journal/Journal"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { ChatResultRow, ChatResultRows } from "@bluechip/ui/bluechip/chat-result"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { formatDate, formatTime } from "@bluechip/ui/lib/format"
 import { UsdcLogo } from "@bluechip/ui/logos/usdc"
 import * as DateTime from "effect/DateTime"
 import { activityAt, activityDetail, activityStatus, activityTitle } from "../../../../lib/activityText.ts"
+import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { useAgentName } from "../../hooks/useAgentName.ts"
 import { decisionFacts } from "../../model/decisionText.ts"
 import type { ResultState } from "../../model/resultCards.ts"
-import { INTENT_STATUS, RESULT_LOOK } from "../../model/resultText.ts"
+import { RESULT_LOOK } from "../../model/resultText.ts"
 import { LookedResult } from "./MoneyResults.tsx"
 import { more, OpenLink } from "./OpenLink.tsx"
 
@@ -25,18 +26,6 @@ type NameOf = (symbol: StockSymbol) => string
 const SHOWN = 5
 
 const when = (at: DateTime.Utc) => formatDate(DateTime.toDateUtc(at), { timeZone: localTimeZone() })
-
-const PILL: Readonly<Record<"done" | "pending" | "failed", string>> = {
-  done: "bg-gain-wash text-gain",
-  pending: "bg-g-100 text-g-600",
-  failed: "bg-loss-wash text-loss"
-}
-
-function Pill({ label, tone }: Readonly<{ label: string; tone: string }>) {
-  return (
-    <span className={cn("rounded-full px-2 py-px text-[11px] font-semibold whitespace-nowrap", tone)}>{label}</span>
-  )
-}
 
 /** Your latest trades and transfers, a few rows with their stocks, who traded and where each stands. */
 export function ActivityResult(
@@ -68,7 +57,7 @@ export function ActivityResult(
               detail={item._tag === "Trade" ?
                 `${agentName(item.trade.agentId)}, ${when(activityAt(item))}` :
                 `${activityDetail(item)}, ${when(activityAt(item))}`}
-              valueDetail={<Pill label={status.label} tone={PILL[status.tone]} />}
+              valueDetail={<StatusPill tone={status.tone}>{status.label}</StatusPill>}
             />
           )
         })}
@@ -103,7 +92,9 @@ export function HistoryResult(
             media={<TickerChip symbol={intent.leg.symbol} size="sm" />}
             title={describeLeg(intent.leg, nameOf)}
             detail={intent.reason === "" ? when(intent.createdAt) : intent.reason}
-            valueDetail={<Pill {...INTENT_STATUS[intent.status]} />}
+            valueDetail={
+              <StatusPill tone={INTENT_STATUS[intent.status].tone}>{INTENT_STATUS[intent.status].label}</StatusPill>
+            }
           />
         ))}
       </ChatResultRows>
@@ -159,7 +150,7 @@ export function DecisionResult(
       <div className="flex items-center gap-2.5">
         <TickerChip symbol={intent.leg.symbol} size="sm" />
         <b className="min-w-0 flex-1 truncate text-[14px] font-semibold">{describeLeg(intent.leg, nameOf)}</b>
-        <Pill {...INTENT_STATUS[intent.status]} />
+        <StatusPill tone={INTENT_STATUS[intent.status].tone}>{INTENT_STATUS[intent.status].label}</StatusPill>
       </div>
       <p className="text-label text-g-700">{explanation}</p>
       {facts === null || (facts.policy === null && facts.limit === null && facts.wouldPass === null) ?

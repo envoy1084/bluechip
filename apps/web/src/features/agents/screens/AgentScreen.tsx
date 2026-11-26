@@ -1,21 +1,24 @@
 import type { Agent, AgentUsage } from "@bluechip/domain/agents/Agent"
 import { NotFound as NotFoundError } from "@bluechip/domain/Errors"
 import type { AgentId } from "@bluechip/domain/Ids"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
+import { TabsLink, TabsNav } from "@bluechip/ui/components/tabs"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as Option from "effect/Option"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import { type ComponentType, type ReactNode, useState } from "react"
+import { agentUsageAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
-import { agentAtom, agentUsageAtom } from "../atoms/agents.ts"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
+import { useAgentState } from "../../../hooks/useAgentState.ts"
+import { hasSession, limitLine } from "../../../lib/agentState.ts"
+import { agentAtom } from "../atoms/agents.ts"
 import { AgentAlerts } from "../components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "../components/detail/AgentHeader.tsx"
 import { RemoveConfirm } from "../components/detail/RemoveConfirm.tsx"
 import { useRemoveAgent } from "../hooks/useRemoveAgent.ts"
-import { agentState, hasSession, limitLine } from "../model/agentState.ts"
 
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { AgentNotFound } from "../components/detail/AgentNotFound.tsx"
@@ -54,12 +57,7 @@ export function AgentScreen(
             <SkeletonBlock className="h-64 w-full rounded-lg" />
           </div>
         ) :
-        (
-          <div className="grid justify-items-center gap-3 py-10 text-center">
-            <p className="text-body-sm text-g-600">We couldn't load this agent. Check your connection and try again.</p>
-            <Button variant="secondary" onClick={refresh}>Try again</Button>
-          </div>
-        )}
+        <LoadProblem what="this agent" onRetry={refresh} />}
     </AppPage>
   )
 }
@@ -80,11 +78,7 @@ function AgentContent(
   const [now] = useState(() => new Date())
   const removal = useRemoveAgent(agent)
   const { nameOf } = useStockLookup()
-  const state = agentState(
-    agent,
-    now,
-    usage !== undefined && AsyncResult.isSuccess(usage) ? usage.value : undefined
-  )
+  const state = useAgentState(agent)
 
   const removable = agent.status === "draft" || agent.status === "active" || agent.status === "expired"
   const keep = () => {
@@ -124,22 +118,16 @@ function AgentContent(
         {agent.status === "draft" ?
           null :
           (
-            <nav aria-label={`${agent.name}'s pages`} className="-mx-1 overflow-x-auto px-1">
-              <ul className="flex w-max gap-1 rounded-[12px] bg-g-100/80 p-1">
-                {TABS.map((tab) => (
-                  <li key={tab.to}>
-                    <Link
-                      to={tab.to}
-                      params={{ agentId: agent.id }}
-                      activeOptions={{ exact: tab.exact }}
-                      className="block rounded-[9px] px-3.5 py-1.5 text-label font-medium whitespace-nowrap text-g-600 transition-[background,color,box-shadow] duration-fast ease-brand hover:text-ink data-[status=active]:bg-white data-[status=active]:text-ink data-[status=active]:shadow-e1"
-                    >
-                      {tab.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+            <TabsNav aria-label={`${agent.name}'s pages`}>
+              {TABS.map((tab) => (
+                <TabsLink
+                  key={tab.to}
+                  render={<Link to={tab.to} params={{ agentId: agent.id }} activeOptions={{ exact: tab.exact }} />}
+                >
+                  {tab.label}
+                </TabsLink>
+              ))}
+            </TabsNav>
           )}
         <AgentPageContext value={{ agent, usage, nameOf }}>{children}</AgentPageContext>
       </div>

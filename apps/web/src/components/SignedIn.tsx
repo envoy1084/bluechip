@@ -11,6 +11,7 @@ import * as Option from "effect/Option"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { meAtom } from "../atoms/account.ts"
+import { LoadProblem } from "./LoadProblem.tsx"
 
 /**
  * Renders its children for the signed-in user. Without a session it sends the visitor to sign in; if the session ends
@@ -50,10 +51,5 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
       </Dialog>
     )
   }
-  return (
-    <div className="mx-auto grid max-w-md gap-4 px-4 py-24 text-center">
-      <p className="text-body text-g-600">We couldn't load your account. Check your connection and try again.</p>
-      <Button variant="secondary" onClick={refresh}>Try again</Button>
-    </div>
-  )
+  return <LoadProblem what="your account" onRetry={refresh} className="mx-auto mt-16 max-w-md" />
 }

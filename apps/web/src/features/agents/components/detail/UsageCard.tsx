@@ -1,12 +1,12 @@
 import type { Agent, AgentUsage } from "@bluechip/domain/agents/Agent"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { SectionHeader } from "../../../../components/layout/SectionHeader.tsx"
 import { useNow } from "../../../../hooks/useNow.ts"
-import { dayGone, nextReset, shownLimits } from "../../model/usage.ts"
+import { nextDailyReset, yourTime } from "../../../../lib/localTime.ts"
+import { dayGone, shownLimits } from "../../model/usage.ts"
 import { LimitCard } from "./usage/LimitCard.tsx"
 import { UsageHero } from "./usage/UsageHero.tsx"
-
-const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" })
 
 /**
  * What a locked agent has used, read from its session onchain: how much room it has left today, then each limit as a
@@ -16,17 +16,16 @@ export function UsageCard(
   { agent, usage }: Readonly<{ agent: Agent; usage: AsyncResult.AsyncResult<AgentUsage, unknown> }>
 ) {
   const now = useNow(60_000)
-  const resetAt = clock.format(nextReset(now))
+  const resetAt = yourTime(nextDailyReset(now))
 
   return (
     <section aria-labelledby={`usage-${agent.id}`} className="grid content-start gap-4">
-      <div className="grid gap-0.5 px-0.5">
-        <h3 id={`usage-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">Today's usage</h3>
-        <p className="text-label-sm text-g-500">
-          Read from Base: the counts its policies check before every trade. The tick on a bar is how much of the day has
-          gone.
-        </p>
-      </div>
+      <SectionHeader
+        id={`usage-${agent.id}`}
+        level="h3"
+        title="Today's usage"
+        description="Read from Base: the counts its policies check before every trade. The tick on a bar is how much of the day has gone."
+      />
 
       {AsyncResult.isSuccess(usage) ?
         (

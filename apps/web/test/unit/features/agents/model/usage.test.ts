@@ -3,7 +3,6 @@ import { assert, describe, it } from "@effect/vitest"
 import {
   countdown,
   dayGone,
-  nextReset,
   shownLimits,
   standingOf,
   todayRoom
@@ -52,20 +51,6 @@ describe("standingOf", () => {
     { name: "a limit of $0", used: 0, limit: 0, expected: "open" }
   ])("$name: $expected", ({ expected, limit, used }) => {
     assert.strictEqual(standingOf(budget(used, limit)), expected)
-  })
-})
-
-describe("nextReset", () => {
-  it("midday: the coming midnight UTC", () => {
-    assert.deepStrictEqual(nextReset(new Date("2026-11-26T12:00:00Z")), new Date("2026-11-27T00:00:00Z"))
-  })
-
-  it("on midnight: the next one", () => {
-    assert.deepStrictEqual(nextReset(new Date("2026-11-27T00:00:00Z")), new Date("2026-11-28T00:00:00Z"))
-  })
-
-  it("the last day of the month", () => {
-    assert.deepStrictEqual(nextReset(new Date("2026-11-30T23:00:00Z")), new Date("2026-12-01T00:00:00Z"))
   })
 })
 
@@ -135,7 +120,7 @@ describe("todayRoom", () => {
     assert.deepStrictEqual(todayRoom(usage, "Weekly buyer", MIDDAY), {
       standing: "used",
       headline: "Done for today",
-      detail: "Weekly buyer used all of today's $500 budget, so it waits for midnight UTC."
+      detail: "Weekly buyer used all of today's $500 budget, so it waits until 00:00 your time, midnight UTC."
     })
   })
 
@@ -145,7 +130,7 @@ describe("todayRoom", () => {
     assert.deepStrictEqual(todayRoom(usage, "Weekly buyer", MIDDAY), {
       standing: "used",
       headline: "Done for today",
-      detail: "Weekly buyer made all 5 trades it may today, so it waits for midnight UTC."
+      detail: "Weekly buyer made all 5 trades it may today, so it waits until 00:00 your time, midnight UTC."
     })
   })
 

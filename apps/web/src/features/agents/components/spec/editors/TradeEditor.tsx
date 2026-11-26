@@ -2,6 +2,8 @@ import { configOf } from "@bluechip/domain/policies/Policy"
 import { setDirection, setStocks, withConfig } from "@bluechip/domain/policies/SpecEdits"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { StockField } from "../../../../../components/fields/StockField.tsx"
+import { useNow } from "../../../../../hooks/useNow.ts"
+import { dailyResetText } from "../../../../../lib/localTime.ts"
 import { DirectionField } from "../fields/DirectionField.tsx"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
 import type { EditorProps } from "./editorProps.ts"
@@ -17,6 +19,7 @@ export function TradeEditor(
     readonly parts?: ReadonlyArray<TradePart>
   }
 ) {
+  const now = useNow(60_000)
   const config = configOf(context.spec.policies, trade)
   if (config === undefined) return null
 
@@ -46,7 +49,7 @@ export function TradeEditor(
             field={trade.fields.dailyBudget}
             value={config.dailyBudget}
             context={context}
-            help="The most it can spend on buys in a day. Resets at midnight UTC."
+            help={`The most it can spend on buys in a day. Resets at ${dailyResetText(now)}.`}
             problem={problemOf("dailyBudget")}
             onChange={(dailyBudget) => onSpecChange(withConfig(context.spec, "trade", { ...config, dailyBudget }))}
           />

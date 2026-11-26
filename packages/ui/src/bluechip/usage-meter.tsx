@@ -20,6 +20,66 @@ const FILL: Readonly<Record<UsageLevel, string>> = {
   full: "bg-[linear-gradient(180deg,#ef5a3a,var(--color-loss))]"
 }
 
+export interface UsageBarProps extends Omit<ComponentProps<"div">, "children"> {
+  /** How much is used, in any unit. */
+  readonly used: number
+  /** The limit, in the same unit. */
+  readonly limit: number
+  /** The meter's name for screen readers; without one the bar is decoration beside words that say the same. */
+  readonly label?: string
+  /** What the meter reads aloud: "$140 of $200". */
+  readonly valueText?: string
+  /** How much of the day has gone, 0 to 1: a tick on the bar, so you can tell spending ahead of the day. */
+  readonly dayGone?: number
+}
+
+/**
+ * The bar of a usage meter on its own, for compact places (a list card, a limit's card): blue, amber from 80%, red
+ * when it's all used, with an optional tick where the day stands.
+ */
+export function UsageBar({ used, limit, label, valueText, dayGone, className, ...props }: UsageBarProps) {
+  const level = usageLevel(used, limit)
+  const percent = limit > 0 ? Math.min(100, (used / limit) * 100) : 100
+  const meter = label === undefined ?
+    { "aria-hidden": true } :
+    {
+      role: "meter",
+      "aria-label": label,
+      "aria-valuemin": 0,
+      "aria-valuemax": limit,
+      "aria-valuenow": Math.min(used, limit),
+      ...(valueText === undefined ? {} : { "aria-valuetext": valueText })
+    }
+
+  return (
+    <div data-slot="usage-bar" data-level={level} className={cn("relative h-2", className)} {...props}>
+      <div
+        {
+          // A native <meter> can't take the kit's gradient fill in every browser, so a div carries the meter role.
+          ...meter
+        }
+        className="h-full overflow-hidden rounded-full bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.04)]"
+      >
+        <div
+          className={cn(
+            "h-full rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,.35)] transition-[width] duration-slow ease-brand motion-reduce:transition-none",
+            FILL[level]
+          )}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {dayGone === undefined ? null : (
+        <i
+          aria-hidden
+          data-slot="usage-bar-day"
+          className="absolute -top-1 h-[calc(100%+8px)] w-0.5 -translate-x-1/2 rounded-full bg-g-400"
+          style={{ left: `${Math.min(1, Math.max(0, dayGone)) * 100}%` }}
+        />
+      )}
+    </div>
+  )
+}
+
 export interface UsageMeterProps extends Omit<ComponentProps<"div">, "children"> {
   /** Dollars used so far. */
   readonly used: number
@@ -29,14 +89,15 @@ export interface UsageMeterProps extends Omit<ComponentProps<"div">, "children">
   readonly label?: string
   /** When the limit resets, said when it's reached. */
   readonly resetsAt?: string
+  /** How much of the day has gone, 0 to 1, as a tick on the bar. */
+  readonly dayGone?: number
 }
 
 /** How much of today's spending limit an agent has used, with what's left and when it resets. Amounts roll. */
 export function UsageMeter(
-  { used, limit, label = "Spent today", resetsAt = "midnight UTC", className, ...props }: UsageMeterProps
+  { used, limit, label = "Spent today", resetsAt = "midnight UTC", dayGone, className, ...props }: UsageMeterProps
 ) {
   const level = usageLevel(used, limit)
-  const percent = limit > 0 ? Math.min(100, (used / limit) * 100) : 100
   const summary = `${formatDollars(used)} of ${formatDollars(limit)}`
   return (
     <div data-slot="usage-meter" data-level={level} className={cn("grid w-full gap-[7px]", className)} {...props}>
@@ -47,25 +108,13 @@ export function UsageMeter(
           {formatDollars(limit)}
         </span>
       </div>
-      <div
-        // A native <meter> can't take the kit's gradient fill in every browser, so a div carries the meter role.
-        // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
-        role="meter"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={limit}
-        aria-valuenow={Math.min(used, limit)}
-        aria-valuetext={summary}
-        className="h-2 overflow-hidden rounded-[4px] bg-g-100 shadow-[inset_0_1px_1px_rgba(10,11,13,.04)]"
-      >
-        <div
-          className={cn(
-            "h-full rounded-[4px] shadow-[inset_0_1px_0_rgba(255,255,255,.35)] transition-[width] duration-slow ease-brand",
-            FILL[level]
-          )}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
+      <UsageBar
+        used={used}
+        limit={limit}
+        label={label}
+        valueText={summary}
+        {...(dayGone === undefined ? {} : { dayGone })}
+      />
       <span
         data-slot="usage-meter-note"
         className={cn(

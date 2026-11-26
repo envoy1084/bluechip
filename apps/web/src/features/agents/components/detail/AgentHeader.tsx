@@ -1,15 +1,16 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { TEMPLATES } from "@bluechip/domain/policies/Templates"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import type { AgentState } from "@bluechip/ui/bluechip/agent-status"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { AgentStatePill } from "../../../../components/AgentStatePill.tsx"
 import { isPausable } from "../../../../hooks/usePauseAll.ts"
+import { agentDot } from "../../../../lib/agentState.ts"
 import { usePauseAgent } from "../../hooks/usePauseAgent.ts"
 import { useTemplateLabel } from "../../hooks/useTemplateLabel.ts"
-import { type AgentDisplayState, agentDot } from "../../model/agentState.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { isTemplateId } from "../../model/templateLabel.ts"
-import { AgentStatePill } from "../AgentStatePill.tsx"
 
 /** "Rebalancer template, created 24 Aug, locked until 22 Feb"; "Custom, created 24 Aug" for one built from scratch. */
 const summary = (agent: Agent, templateLabel: string): string =>
@@ -27,7 +28,8 @@ const summary = (agent: Agent, templateLabel: string): string =>
 export function AgentHeader(
   { agent, state, limit, onRemove }: Readonly<{
     agent: Agent
-    state: AgentDisplayState
+    /** `undefined` until its usage and approvals have loaded. */
+    state: AgentState | undefined
     /** Why it's done for today and when it starts again, while a limit stops it. */
     limit: string | null
     onRemove: () => void
@@ -41,7 +43,13 @@ export function AgentHeader(
 
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-lg bg-white p-5 shadow-e2">
-      <AgentAvatar agentId={agent.id} size="xl" status={agentDot(state)} removed={removed} className="self-start" />
+      <AgentAvatar
+        agentId={agent.id}
+        size="xl"
+        {...(state === undefined ? {} : { status: agentDot(state) })}
+        removed={removed}
+        className="self-start"
+      />
       <div className="grid min-w-0 flex-[1_1_260px] gap-1">
         <div className="flex flex-wrap items-center gap-2.5">
           <h2 className="truncate text-[22px] font-semibold tracking-[-0.025em]">{agent.name}</h2>

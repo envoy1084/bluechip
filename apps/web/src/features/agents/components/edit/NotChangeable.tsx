@@ -1,7 +1,7 @@
 import type { Agent, AgentStatus } from "@bluechip/domain/agents/Agent"
 import { ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Link } from "@tanstack/react-router"
+import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 
 const WHY: Readonly<Record<Exclude<AgentStatus, "active">, { readonly title: string; readonly say: string }>> = {
   draft: {
@@ -37,15 +37,17 @@ export function NotChangeable(
   const why = WHY[status]
 
   return (
-    <Empty>
-      <EmptyTitle>{why.title}</EmptyTitle>
-      <EmptyDescription>{why.say}</EmptyDescription>
-      <ButtonLink
-        variant="secondary"
-        render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
-      >
-        Back to {agent.name}
-      </ButtonLink>
-    </Empty>
+    <IllustratedEmpty
+      illustration="lock"
+      size={120}
+      title={why.title}
+      action={
+        <ButtonLink variant="secondary" render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}>
+          Back to {agent.name}
+        </ButtonLink>
+      }
+    >
+      {why.say}
+    </IllustratedEmpty>
   )
 }

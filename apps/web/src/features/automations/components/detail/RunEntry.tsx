@@ -2,16 +2,16 @@ import type { Automation } from "@bluechip/domain/automations/Automation"
 import type { AutomationRun, Judgment, RunOutcome } from "@bluechip/domain/automations/Run"
 import type { IntentId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
+import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import type { ComponentType } from "react"
+import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
-import { OUTCOME } from "../../model/automationText.ts"
 import { catalogEntry } from "../../model/drafts.ts"
 import { AutomationSentence } from "../AutomationSentence.tsx"
-import { StatusPill } from "../StatusPill.tsx"
 import { JudgmentCard } from "./JudgmentCard.tsx"
 
 /** Each outcome's mark on the timeline: its icon on its color. */
@@ -46,7 +46,7 @@ export function RunEntry(
   }>
 ) {
   const node = NODE[run.outcome]
-  const outcome = OUTCOME[run.outcome]
+  const outcome = RUN_OUTCOME[run.outcome]
 
   return (
     <li
@@ -69,7 +69,7 @@ export function RunEntry(
           <b className="text-[14px] font-semibold text-ink tabular-nums">
             {formatTime(DateTime.toDateUtc(run.firedAt), { timeZone: localTimeZone() })}
           </b>
-          <StatusPill label={outcome.label} tone={outcome.tone} />
+          <StatusPill tone={outcome.tone}>{outcome.label}</StatusPill>
         </div>
 
         <AutomationSentence sentence={run.trigger.summary} symbols={symbols} className="text-label text-g-700" />

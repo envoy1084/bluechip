@@ -9,6 +9,7 @@ import { useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { SettingsRow } from "../../../components/layout/SettingsSection.tsx"
 import { type Landing, SignedChangeDialog } from "../../../components/SignedChangeDialog.tsx"
+import { passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 import { removeAllAgentsAtom } from "../atoms/settings.ts"
 
@@ -45,7 +46,7 @@ export function RemoveAllAgents() {
           unavailableProblem(error) :
           error instanceof Conflict ?
           "An agent has another change on its way. Try again once it lands." :
-          "Face ID was cancelled or the request couldn't be sent. Nothing changed.",
+          passkeyProblem(error, "Nothing changed.").text,
         { cause: error }
       )
     }
@@ -72,6 +73,8 @@ export function RemoveAllAgents() {
         send={send}
         landing={landingOf(sent, list)}
         words={{
+          danger: true,
+          keep: count === 1 ? "Keep it" : "Keep them",
           title: count === 1 ? "Remove your agent?" : `Remove all ${count} agents?`,
           description: "One Face ID revokes every agent's session onchain, so none of them can ever trade again. " +
             "Your stocks and cash stay where they are.",

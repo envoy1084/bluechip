@@ -1,17 +1,6 @@
 import type { Conversation } from "@bluechip/domain/assistant/Conversation"
 import type { ConversationId } from "@bluechip/domain/Ids"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogIcon,
-  AlertDialogTitle
-} from "@bluechip/ui/components/alert-dialog"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import {
   DropdownMenu,
@@ -41,6 +30,8 @@ import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { ConfirmDialog } from "../../../components/ConfirmDialog.tsx"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { assistantReactivityKey, conversationsAtom, deleteConversationAtom } from "../atoms/assistant.ts"
 
@@ -72,28 +63,19 @@ function DeleteChatDialog(
     )
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogIcon name="trash" />
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete “{conversation?.title ?? "New chat"}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Its messages and cards go for good, and an answer still coming stops. What bluechip remembers from it stays
-            on the memory page, and trades it made stay in your activity.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep it</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              if (conversation !== null) void confirm(conversation.id)
-            }}
-          >
-            Delete chat
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={`Delete “${conversation?.title ?? "New chat"}”?`}
+      consequence="Its messages and cards go for good, and an answer still coming stops. What bluechip remembers from it stays on the memory page, and trades it made stay in your activity."
+      action={{
+        _tag: "danger",
+        label: "Delete chat",
+        onConfirm: () => {
+          if (conversation !== null) void confirm(conversation.id)
+        }
+      }}
+    />
   )
 }
 
@@ -113,12 +95,7 @@ function Threads({ current }: Readonly<{ current: ConversationId | null }>) {
     )
   }
   if (!AsyncResult.isSuccess(conversations)) {
-    return (
-      <div className="grid justify-items-start gap-2 px-2.5 py-2">
-        <p className="text-label-sm text-g-600">We couldn't load your chats.</p>
-        <Button variant="secondary" size="xs" onClick={refresh}>Try again</Button>
-      </div>
-    )
+    return <LoadProblem what="your chats" onRetry={refresh} size="sm" />
   }
   if (conversations.value.items.length === 0) {
     return <p className="px-2.5 py-2 text-label-sm text-g-500">No chats yet. Your first message starts one.</p>

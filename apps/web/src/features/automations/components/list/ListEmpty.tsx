@@ -58,7 +58,7 @@ const FILTER_EMPTY: Readonly<
   paused: { illustration: "sun", title: "Nothing paused", body: "Every one of these automations is running or over." },
   attention: {
     illustration: "shield",
-    title: "Nothing needs a look",
+    title: "Nothing needs attention",
     body: "Every running automation's last run went through, and nothing is stopping it from trading."
   }
 }

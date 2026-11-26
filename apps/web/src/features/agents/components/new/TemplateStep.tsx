@@ -7,10 +7,11 @@ import { RadioCard, RadioGroup } from "@bluechip/ui/components/radio-group"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
-import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useId, useState } from "react"
+import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { templatesReactivityKey } from "../../../../lib/api/client.ts"
 import { deleteTemplateAtom, templatesAtom } from "../../atoms/policies.ts"
 import { DIRECTION_LABELS } from "../../model/fieldText.ts"
@@ -76,6 +77,7 @@ export function TemplateStep(
   }>
 ) {
   const templates = useAtomValue(templatesAtom)
+  const refreshTemplates = useAtomRefresh(templatesAtom)
   const remove = useAtomSet(deleteTemplateAtom, { mode: "promise" })
   const [deleting, setDeleting] = useState(false)
   const [deleteFailed, setDeleteFailed] = useState(false)
@@ -143,7 +145,7 @@ export function TemplateStep(
         <SkeletonBlock aria-busy className="h-[86px] w-full rounded-lg sm:w-1/2" /> :
         null}
       {AsyncResult.isFailure(templates) ?
-        <p className="text-label-sm text-g-500">We couldn't load your saved templates just now.</p> :
+        <LoadProblem what="your saved templates" onRetry={refreshTemplates} size="sm" /> :
         null}
       {deleteFailed ?
         <p role="alert" className="text-label-sm text-loss">We couldn't delete that template. Try again.</p> :

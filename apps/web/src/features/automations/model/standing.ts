@@ -1,34 +1,13 @@
-// Where an automation stands for its lists and page: running, failing, paused or ended; whether it needs a look and
-// why; the list's counts and filters; and when it runs next.
+// How automations read in their lists and page, beyond their standing (`lib/automationWords.ts`): whether one needs
+// attention and why; the list's counts and filters; and when it runs next.
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { type Automation, triggerOf } from "@bluechip/domain/automations/Automation"
 import type { AutomationRun, RunOutcome } from "@bluechip/domain/automations/Run"
 import type { Watcher } from "@bluechip/domain/automations/Trigger"
 import type { AgentId } from "@bluechip/domain/Ids"
-import { formatDate } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
-import { dayHeading } from "../../../lib/localTime.ts"
-
-export type Standing = "active" | "failing" | "paused" | "ended"
-
-export const STANDING: Readonly<
-  Record<Standing, { readonly label: string; readonly tone: "done" | "quiet" | "warn" }>
-> = {
-  active: { label: "Active", tone: "done" },
-  failing: { label: "Failing", tone: "warn" },
-  paused: { label: "Paused", tone: "quiet" },
-  ended: { label: "Ended", tone: "quiet" }
-}
-
-/** Running and watching, its last run failed, paused by you, or over (done, expired or deleted). */
-export const standingOf = (
-  automation: Pick<Automation, "status">,
-  runs: ReadonlyArray<Pick<AutomationRun, "outcome">>
-): Standing => {
-  if (automation.status === "paused") return "paused"
-  if (automation.status !== "active") return "ended"
-  return runs[0]?.outcome === "failed" ? "failing" : "active"
-}
+import { RUN_OUTCOME, type Standing } from "../../../lib/automationWords.ts"
+import { dayHeading, yourDateTime } from "../../../lib/localTime.ts"
 
 /**
  * Why a running automation needs a look, or `null`: its last run failed, or its agent can't trade for it (paused,
@@ -126,14 +105,15 @@ export const summaryHeadline = (counts: Readonly<Record<Filter, number>>): strin
 }
 
 /**
- * The line under it: which need a look ("Weekly Apple needs a look." or "2 need a look: Weekly Apple and Stop-loss."),
+ * The line under it: which need attention ("Weekly Apple needs attention." or "2 need attention: Weekly Apple and
+ * Stop-loss."),
  * else how often they ran today.
  */
 export const summaryDetail = (needLook: ReadonlyArray<string>, today: number): string => {
-  if (needLook.length === 1) return `${needLook[0]} needs a look.`
+  if (needLook.length === 1) return `${needLook[0]} needs attention.`
   if (needLook.length > 1) {
     const names = `${needLook.slice(0, -1).join(", ")} and ${needLook.at(-1)}`
-    return `${needLook.length} need a look: ${names}.`
+    return `${needLook.length} need attention: ${names}.`
   }
   if (today === 0) return "Nothing has run yet today."
   return today === 1 ? "They ran once today." : `They ran ${today} times today.`
@@ -158,7 +138,7 @@ const WATCHING: Readonly<Record<Watcher, string>> = {
 
 /**
  * What it's doing now, in a line: when a schedule runs next ("Next run Mon 30 Nov, 10:00, in 2 days"), what a running
- * trigger watches, or that it's paused or over. Times are the viewer's, in `zone`.
+ * trigger watches, or that it's paused or over. Times are the viewer's, in `zone`, and say so.
  */
 export const nowLine = (
   automation: Pick<Automation, "status" | "nextRunAt" | "trigger">,
@@ -171,7 +151,7 @@ export const nowLine = (
         { kind: "watching", text: WATCHING[triggerOf(automation.trigger).watcher] } :
         {
           kind: "next",
-          text: `Next run ${formatDate(DateTime.toDateUtc(automation.nextRunAt), { timeZone: zone })}, ${
+          text: `Next run ${yourDateTime(DateTime.toDateUtc(automation.nextRunAt), zone)}, ${
             untilText(automation.nextRunAt, now)
           }`
         }
@@ -186,19 +166,11 @@ export const nowLine = (
   }
 }
 
-const OUTCOME_WORDS: Readonly<Record<RunOutcome, string>> = {
-  proposed: "traded",
-  asked: "asked you",
-  notified: "told you",
-  skipped: "skipped",
-  failed: "didn't run"
-}
-
 /** The recent runs' outcomes in words, for a strip of dots: "Last 3 runs: 2 traded, 1 skipped". */
 export const stripLabel = (outcomes: ReadonlyArray<RunOutcome>): string => {
   if (outcomes.length === 0) return "No runs yet"
   const counts = new Map<RunOutcome, number>()
   for (const outcome of outcomes) counts.set(outcome, (counts.get(outcome) ?? 0) + 1)
-  const parts = [...counts].map(([outcome, count]) => `${count} ${OUTCOME_WORDS[outcome]}`)
+  const parts = [...counts].map(([outcome, count]) => `${count} ${RUN_OUTCOME[outcome].word}`)
   return `${outcomes.length === 1 ? "Last run" : `Last ${outcomes.length} runs`}: ${parts.join(", ")}`
 }

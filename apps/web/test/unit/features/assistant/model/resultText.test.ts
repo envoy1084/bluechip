@@ -1,11 +1,5 @@
 import { assert, describe, it } from "@effect/vitest"
-import {
-  agentDot,
-  agentStanding,
-  failedText,
-  resetText,
-  waitsForYou
-} from "../../../../../src/features/assistant/model/resultText.ts"
+import { failedText, resetText, waitsForYou } from "../../../../../src/features/assistant/model/resultText.ts"
 
 describe("failedText", () => {
   it.each([
@@ -32,42 +26,33 @@ describe("failedText", () => {
 
 describe("resetText", () => {
   it.each([
-    { name: "hours and minutes", now: "2026-11-27T18:40:00Z", expected: "Starts again at midnight UTC, in 5 h 20 min" },
-    { name: "whole hours", now: "2026-11-27T19:00:00Z", expected: "Starts again at midnight UTC, in 5 h" },
-    { name: "under an hour", now: "2026-11-27T23:15:00Z", expected: "Starts again at midnight UTC, in 45 min" },
+    {
+      name: "hours and minutes",
+      now: "2026-11-27T18:40:00Z",
+      expected: "Starts again at 00:00 your time, midnight UTC, in 5 h 20 min"
+    },
+    {
+      name: "whole hours",
+      now: "2026-11-27T19:00:00Z",
+      expected: "Starts again at 00:00 your time, midnight UTC, in 5 h"
+    },
+    {
+      name: "under an hour",
+      now: "2026-11-27T23:15:00Z",
+      expected: "Starts again at 00:00 your time, midnight UTC, in 45 min"
+    },
     {
       name: "seconds before midnight",
       now: "2026-11-27T23:59:30Z",
-      expected: "Starts again at midnight UTC, in 1 min"
+      expected: "Starts again at 00:00 your time, midnight UTC, in 1 min"
     },
-    { name: "just after midnight", now: "2026-11-28T00:00:00Z", expected: "Starts again at midnight UTC, in 24 h" }
+    {
+      name: "just after midnight",
+      now: "2026-11-28T00:00:00Z",
+      expected: "Starts again at 00:00 your time, midnight UTC, in 24 h"
+    }
   ])("$name", ({ expected, now }) => {
     assert.strictEqual(resetText(new Date(now)), expected)
-  })
-})
-
-describe("agentStanding", () => {
-  it.each(
-    [
-      { name: "running", agent: { status: "active", paused: false }, expected: "Running" },
-      { name: "paused", agent: { status: "active", paused: true }, expected: "Paused" },
-      { name: "ran out while paused", agent: { status: "expired", paused: true }, expected: "Ran out" },
-      { name: "a draft", agent: { status: "draft", paused: false }, expected: "Draft" }
-    ] as const
-  )("$name", ({ agent, expected }) => {
-    assert.strictEqual(agentStanding(agent), expected)
-  })
-})
-
-describe("agentDot", () => {
-  it.each(
-    [
-      { name: "running", agent: { status: "active", paused: false }, expected: "active" },
-      { name: "paused", agent: { status: "active", paused: true }, expected: "paused" },
-      { name: "not running", agent: { status: "locking", paused: false }, expected: "idle" }
-    ] as const
-  )("$name", ({ agent, expected }) => {
-    assert.strictEqual(agentDot(agent), expected)
   })
 })
 

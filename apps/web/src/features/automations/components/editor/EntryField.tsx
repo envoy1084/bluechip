@@ -8,15 +8,15 @@ import { ChoiceField } from "../../../../components/fields/ChoiceField.tsx"
 import { NumberField } from "../../../../components/fields/NumberField.tsx"
 import { PriceField } from "../../../../components/fields/PriceField.tsx"
 import { StockField } from "../../../../components/fields/StockField.tsx"
+import { TimeField } from "../../../../components/fields/TimeField.tsx"
 import { ToggleField } from "../../../../components/fields/ToggleField.tsx"
+import { ZoneField } from "../../../../components/fields/ZoneField.tsx"
 import { choiceLabel } from "../../model/automationText.ts"
 import { type CatalogEntry, choicesOf, evenSplit } from "../../model/drafts.ts"
 import type { EditorContext } from "./editorContext.ts"
 import { StockPicker } from "./fields/StockPicker.tsx"
 import { TextField } from "./fields/TextField.tsx"
-import { TimeField } from "./fields/TimeField.tsx"
 import { WeekdaysField } from "./fields/WeekdaysField.tsx"
-import { ZoneField } from "./fields/ZoneField.tsx"
 
 const USDC = 1_000_000
 const SHARE = 100_000_000

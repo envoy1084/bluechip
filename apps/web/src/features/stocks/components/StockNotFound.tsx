@@ -1,6 +1,6 @@
 import { ButtonLink } from "@bluechip/ui/components/button"
-import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Link } from "@tanstack/react-router"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
 
@@ -8,11 +8,14 @@ import { MarketPill } from "../../../components/MarketPill.tsx"
 export function StockNotFound() {
   return (
     <AppPage title="Stock not found" actions={<MarketPill className="hidden sm:inline-flex" />}>
-      <Empty>
-        <EmptyTitle>We don't have that stock</EmptyTitle>
-        <EmptyDescription>Check the symbol, or pick one from the list.</EmptyDescription>
-        <ButtonLink variant="secondary" render={<Link to="/stocks" />}>See all stocks</ButtonLink>
-      </Empty>
+      <IllustratedEmpty
+        illustration="magnifier"
+        size={120}
+        title="We don't have that stock"
+        action={<ButtonLink variant="secondary" render={<Link to="/stocks" />}>See all stocks</ButtonLink>}
+      >
+        Check the symbol, or pick one from the list.
+      </IllustratedEmpty>
     </AppPage>
   )
 }

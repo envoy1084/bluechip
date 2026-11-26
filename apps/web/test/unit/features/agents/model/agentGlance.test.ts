@@ -63,7 +63,7 @@ describe("glanceOf", () => {
           ]
         })
       }),
-      expected: { _tag: "line", text: "Starts again at midnight UTC", tone: "quiet" }
+      expected: { _tag: "line", text: "Starts again at 00:00 your time, midnight UTC", tone: "quiet" }
     },
     {
       name: "an active agent with a daily budget",

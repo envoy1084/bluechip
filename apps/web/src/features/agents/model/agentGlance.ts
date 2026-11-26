@@ -4,6 +4,7 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import { formatDollars } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
+import { dailyResetText } from "../../../lib/localTime.ts"
 import type { ListedAgent } from "./agentList.ts"
 import { dayLabel } from "./fieldText.ts"
 
@@ -52,7 +53,7 @@ export const glanceOf = ({ agent, state, usage, awaiting }: ListedAgent): Glance
     case "needs-approval":
       return line(`${plural(awaiting, "trade waits", "trades wait")} for your approval`, "attention")
     case "stopped":
-      return line("Starts again at midnight UTC")
+      return line(`Starts again at ${dailyResetText(new Date())}`)
     case "removed":
       return line("Removed for good")
     case "active":

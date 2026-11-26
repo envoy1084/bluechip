@@ -21,9 +21,6 @@ export const agentIntentsAtom = Atom.family((key: string) => {
   })
 })
 
-/** Agents' trades waiting for your Face ID, newest first. */
-export const approvalsAtom = BluechipApiClient.query("intents", "approvals", { reactivityKeys })
-
 /** One intent. */
 export const intentAtom = Atom.family((id: IntentId) =>
   BluechipApiClient.query("intents", "intent", { params: { id }, reactivityKeys })

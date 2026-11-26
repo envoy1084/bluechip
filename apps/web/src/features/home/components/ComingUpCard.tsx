@@ -1,8 +1,7 @@
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatTime } from "@bluechip/ui/lib/format"
 import { Link } from "@tanstack/react-router"
 import { PageSection } from "../../../components/layout/PageSection.tsx"
-import { localTimeZone } from "../../../lib/localTime.ts"
+import { localTimeZone, yourTime } from "../../../lib/localTime.ts"
 import type { ComingUp, Upcoming } from "../model/comingUp.ts"
 import { dayWord } from "../model/time.ts"
 
@@ -49,7 +48,7 @@ export function ComingUpCard({ comingUp, now }: Readonly<{ comingUp: ComingUp; n
                 <i aria-hidden className="absolute top-[19px] bottom-0.5 left-[5px] w-px bg-g-200" />
                 <span className="grid min-w-0 gap-0.5">
                   <span className="text-label-sm text-g-500 tabular-nums">
-                    {dayWord(upcoming.at, now, zone)}, {formatTime(upcoming.at, { timeZone: zone })}
+                    {dayWord(upcoming.at, now, zone)}, {yourTime(upcoming.at, zone)}
                   </span>
                   <UpcomingLink upcoming={upcoming} />
                   {upcoming.detail === "" ? null : <span className="text-label-sm text-g-600">{upcoming.detail}</span>}
