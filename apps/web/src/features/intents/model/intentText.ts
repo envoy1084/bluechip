@@ -14,6 +14,18 @@ import { tradeProblem } from "../../../lib/tradeProblem.ts"
 export const shownDecision = (intent: Intent): Decision | null =>
   intent.decision?._tag === "Wait" && intent.status !== "waiting" ? null : intent.decision
 
+const ASKED_BY: Readonly<Record<Intent["source"], string>> = {
+  owner: "You",
+  assistant: "The assistant",
+  automation: "Your automation",
+  channel: "Your chat",
+  mcp: "An app you connected"
+}
+
+/** Who asks for a trade: its agent's name, or, for a trade of your own, where it came from. */
+export const askedBy = (intent: Pick<Intent, "source">, agentName: string | undefined): string =>
+  agentName ?? ASKED_BY[intent.source]
+
 /** When it was asked, for its row: "2 min ago", "Yesterday", then the date. */
 export const askedAt = (intent: Intent, now: Date): string =>
   formatRelative(DateTime.toDateUtc(intent.createdAt), now, { timeZone: localTimeZone() })

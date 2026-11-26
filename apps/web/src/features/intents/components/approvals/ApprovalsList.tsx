@@ -9,6 +9,7 @@ import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { useNow } from "../../../../hooks/useNow.ts"
 import { type ApprovalGroup, approvalGroups } from "../../model/approvalGroups.ts"
+import { askedBy } from "../../model/intentText.ts"
 import { ApprovalRequest } from "./ApprovalRequest.tsx"
 
 /**
@@ -42,8 +43,10 @@ export function ApprovalsList() {
     ...handled
   ].sort((a, b) => b.intent.id.localeCompare(a.intent.id))
   const agentName = (intent: Intent) =>
-    (AsyncResult.isSuccess(agents) ? agents.value.find((agent) => agent.id === intent.agentId)?.name : undefined) ??
-      "Your agent"
+    askedBy(
+      intent,
+      AsyncResult.isSuccess(agents) ? agents.value.find((agent) => agent.id === intent.agentId)?.name : undefined
+    )
 
   if (shown.length === 0) {
     return (

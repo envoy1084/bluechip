@@ -123,7 +123,8 @@ export const usageOf = (parts: ReadonlyArray<Response.AnyPart>): TokenUsage => {
 /**
  * A stored conversation as the model reads it. Each tool result is given as the model was first given it, except
  * that a card's words are written again from the card as it stands now, so the model knows what the user did with
- * it (confirmed, dismissed). Cards and errors themselves are the user's view and are left out.
+ * it (confirmed, dismissed). Cards and errors themselves are the user's view and are left out, and so is thinking,
+ * which the provider takes back only under the system prompt it was made with.
  */
 export const promptOf = (messages: ReadonlyArray<Message>): Prompt.Prompt => {
   const encoded: Array<Prompt.MessageEncoded> = []
@@ -148,7 +149,8 @@ export const promptOf = (messages: ReadonlyArray<Message>): Prompt.Prompt => {
           assistant.push({ type: "text", text: part.text })
           break
         case "reasoning":
-          assistant.push({ type: "reasoning", text: part.text, options: part.options as Prompt.ProviderOptions })
+          // Earlier turns' thinking is left out: the provider binds it to the system prompt it was made under, and
+          // ours changes between turns (memories, agents), so sending it back fails the whole turn.
           break
         case "toolCall":
           assistant.push({

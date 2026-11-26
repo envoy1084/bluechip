@@ -98,8 +98,16 @@ const splitProblems = (config: BuyConfig, context: CheckContext): ReadonlyArray<
   }
   const smallest = context.asking === true ? null : limitsOf(context.spec)?.minPerTrade ?? null
   const parts = config.split.map((part) => (config.amount * BigInt(part.weight)) / BigInt(10_000))
-  if (smallest !== null && parts.some((part) => part < smallest)) {
-    return [{ field: "split", message: `Each stock's part has to be at least ${formatDollars(smallest)}.` }]
+  // The agent's rule values what a buy brings in at Chainlink's price, after the pool's fee and the price: a buy of
+  // exactly the smallest trade lands under it. 1% over is the most the fair-price check lets a trade lose.
+  const needed = smallest === null ? null : smallest + smallest / BigInt(100)
+  if (smallest !== null && needed !== null && parts.some((part) => part < needed)) {
+    return [{
+      field: "split",
+      message: `Each stock's part has to be at least ${formatUsd(needed)}, so it's still ${
+        formatDollars(smallest)
+      } after the trade's costs.`
+    }]
   }
   return stockProblems("split", symbols, context)
 }

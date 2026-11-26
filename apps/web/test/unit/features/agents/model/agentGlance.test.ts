@@ -1,7 +1,8 @@
 import { Agent, AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
+import { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { draftSpec } from "@bluechip/domain/policies/Templates"
 import { assert, describe, it } from "@effect/vitest"
-import { type Glance, glanceOf, tradesWord } from "../../../../../src/features/agents/model/agentGlance.ts"
+import { type Glance, glanceOf, limitsLine, tradesWord } from "../../../../../src/features/agents/model/agentGlance.ts"
 import { listedAgent } from "../../../../../src/features/agents/model/agentList.ts"
 import { agent, PICKER } from "../../../../fixtures/Agents.ts"
 
@@ -17,6 +18,32 @@ describe("tradesWord", () => {
       tradesWord({ spec: draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA"], targets: [] }) }),
       "Only buys"
     )
+  })
+})
+
+describe("limitsLine", () => {
+  it("a template's count of trades is no limit of its own", () => {
+    assert.strictEqual(limitsLine(PICKER), "$250 a day, $100 a trade")
+  })
+
+  it("a count of trades of its own", () => {
+    const spec = new AgentSpec({
+      policies: PICKER.policies.map((policy) =>
+        policy.id === "tradesPerDay" ? { id: "tradesPerDay", config: { count: 12 } } : policy
+      )
+    })
+
+    assert.strictEqual(limitsLine(spec), "$250 a day, $100 a trade, 12 trades a day")
+  })
+
+  it("one trade a day", () => {
+    const spec = new AgentSpec({
+      policies: PICKER.policies.map((policy) =>
+        policy.id === "tradesPerDay" ? { id: "tradesPerDay", config: { count: 1 } } : policy
+      )
+    })
+
+    assert.strictEqual(limitsLine(spec), "$250 a day, $100 a trade, 1 trade a day")
   })
 })
 

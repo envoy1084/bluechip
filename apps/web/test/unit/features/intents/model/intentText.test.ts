@@ -4,6 +4,7 @@ import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import {
   askedAt,
+  askedBy,
   clockTime,
   expiresIn,
   intentProblem,
@@ -13,6 +14,24 @@ import {
 import { nvidiaBuy } from "../../../../fixtures/Intents.ts"
 
 const NOW = new Date("2026-11-26T12:00:00Z")
+
+describe("askedBy", () => {
+  it.each<{ name: string; source: Intent["source"]; agentName: string | undefined; expected: string }>([
+    {
+      name: "an agent's trade, by its name",
+      source: "automation",
+      agentName: "Weekly buyer",
+      expected: "Weekly buyer"
+    },
+    { name: "your automation's, through you", source: "automation", agentName: undefined, expected: "Your automation" },
+    { name: "the assistant's", source: "assistant", agentName: undefined, expected: "The assistant" },
+    { name: "from a chat", source: "channel", agentName: undefined, expected: "Your chat" },
+    { name: "from an app you connected", source: "mcp", agentName: undefined, expected: "An app you connected" },
+    { name: "your own", source: "owner", agentName: undefined, expected: "You" }
+  ])("$name", ({ agentName, expected, source }) => {
+    assert.strictEqual(askedBy({ source }, agentName), expected)
+  })
+})
 
 describe("shownDecision", () => {
   const wait = { _tag: "Wait", reason: "noGas", until: DateTime.makeUnsafe("2026-11-26T05:34:00Z") } as const

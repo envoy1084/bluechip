@@ -1,5 +1,4 @@
 import type { Me } from "@bluechip/domain/Account"
-import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import { Logo } from "@bluechip/ui/bluechip/logo"
 import { Button } from "@bluechip/ui/components/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@bluechip/ui/components/dialog"
@@ -8,10 +7,9 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Navigate } from "@tanstack/react-router"
-import * as Option from "effect/Option"
-import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { meAtom } from "../atoms/account.ts"
+import { accountView } from "../lib/accountView.ts"
 import { IllustratedEmpty } from "./IllustratedEmpty.tsx"
 import { LoadProblem } from "./LoadProblem.tsx"
 import { PasskeySignIn } from "./PasskeySignIn.tsx"
@@ -29,14 +27,15 @@ function Standalone({ children }: Readonly<{ children: ReactNode }>) {
 /**
  * Renders its children for the signed-in user. Without a session it sends the visitor to the landing page to sign
  * in; if the session ends while they are here (expired or signed out elsewhere), it offers to sign in again on the
- * spot instead of yanking the page away. An app older than the server asks for a reload.
+ * spot instead of yanking the page away. An app older than the server asks for a reload; any other failure keeps
+ * the account already shown.
  */
 export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNode }>) {
-  const result = useAtomValue(meAtom)
+  const view = accountView(useAtomValue(meAtom))
   const refresh = useAtomRefresh(meAtom)
 
-  if (AsyncResult.isSuccess(result)) return children(result.value)
-  if (AsyncResult.isInitial(result)) {
+  if (view._tag === "signedIn") return children(view.me)
+  if (view._tag === "loading") {
     return (
       <div className="mx-auto grid max-w-md gap-3 px-4 py-24" aria-busy>
         <SkeletonBlock className="h-8 w-40" />
@@ -45,8 +44,7 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
     )
   }
 
-  const error = AsyncResult.error(result)
-  if (Option.exists(error, (cause) => cause instanceof ClientOutdated)) {
+  if (view._tag === "outdated") {
     return (
       <Standalone>
         <IllustratedEmpty
@@ -65,11 +63,8 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
     )
   }
 
-  const unauthenticated = Option.exists(error, (cause) => cause instanceof Unauthenticated)
-  // A failure keeps the last success: a user we already showed was signed in a moment ago.
-  const wasSignedIn = Option.isSome(AsyncResult.value(result))
-  if (unauthenticated && !wasSignedIn) return <Navigate to="/" />
-  if (unauthenticated) {
+  if (view._tag === "signIn") return <Navigate to="/" />
+  if (view._tag === "signInAgain") {
     return (
       <Dialog open>
         <DialogContent showCloseButton={false} className="grid justify-items-center gap-2 p-8 text-center">

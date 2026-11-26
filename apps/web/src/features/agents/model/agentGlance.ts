@@ -5,6 +5,8 @@ import { compareSpecs } from "@bluechip/domain/policies/Catalog"
 import { formatDollars } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
+import { tradeSize } from "@bluechip/domain/policies/TradeSize"
+import { isNoTradeLimit, tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { dailyResetText } from "../../../lib/localTime.ts"
 import type { ListedAgent } from "./agentList.ts"
 import { dayLabel, DIRECTION_WORDS } from "./fieldText.ts"
@@ -14,6 +16,24 @@ import { limitOf } from "./usage.ts"
 export const tradesWord = (agent: Pick<Agent, "spec">): string | null => {
   const config = configOf(agent.spec.policies, trade)
   return config === undefined ? null : DIRECTION_WORDS[config.direction]
+}
+
+/**
+ * The limits most people look for, in a line: "$250 a day, $100 a trade, 12 trades a day"; a count of trades that is
+ * no limit of its own isn't one. `null` when it has none of them.
+ */
+export const limitsLine = (spec: Agent["spec"]): string | null => {
+  const traded = configOf(spec.policies, trade)
+  const size = configOf(spec.policies, tradeSize)
+  const count = configOf(spec.policies, tradesPerDay)
+  const limits = [
+    traded === undefined || traded.dailyBudget === BigInt(0) ? null : `${formatDollars(traded.dailyBudget)} a day`,
+    size === undefined ? null : `${formatDollars(size.maxPerTrade)} a trade`,
+    count === undefined || isNoTradeLimit(count)
+      ? null
+      : `${count.count} ${count.count === 1 ? "trade" : "trades"} a day`
+  ].filter((limit) => limit !== null)
+  return limits.length === 0 ? null : limits.join(", ")
 }
 
 /** Today's budget used, as a bar with its words, or a line saying what the agent's state means now. */

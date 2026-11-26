@@ -8,7 +8,7 @@
 import type { PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import * as GasPolicy from "@namera-ai/contracts/GasPolicy"
 import * as RateLimitPolicy from "@namera-ai/contracts/RateLimitPolicy"
-import { type Abi, type Address, decodeErrorResult, type Hex, isAddressEqual, parseAbi } from "viem"
+import { type Abi, type Address, decodeErrorResult, type Hex, isAddressEqual, parseAbi, zeroAddress } from "viem"
 import { stocks } from "../Contracts.ts"
 import { aerodromeTradePolicy, tradeGuard, tradeGuardAbi } from "./Deployed.ts"
 import { RULES } from "./Rules.ts"
@@ -101,8 +101,16 @@ export const refusalOf = (data: Hex): Refusal | undefined => {
     const found = decode(rule.abi, reason)
     const message = found === undefined ? undefined : rule.errors[found.errorName]
     if (found === undefined || message === undefined) continue
-    const stock = stockNamed(found.args?.[0])
-    return { policy: rule.policy, error: found.errorName, stock, message: message(stock ?? "a stock") }
+    const asset = found.args?.[0]
+    const stock = stockNamed(asset)
+    // The rebalance rule names cash as the zero address.
+    const cash = typeof asset === "string" && isAddressEqual(asset as Address, zeroAddress)
+    return {
+      policy: rule.policy,
+      error: found.errorName,
+      stock,
+      message: message(stock ?? (cash ? "your cash" : "a stock"))
+    }
   }
   return undefined
 }

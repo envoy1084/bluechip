@@ -15,6 +15,7 @@ describe("journalOfIntent", () => {
         decision: { _tag: "Passes", callGasLimit: 1n },
         expected: "Buy $50.00 of NVIDIA, sent within its policies. Why: Dip."
       },
+
       {
         status: "needsApproval",
         decision: { _tag: "OverLargestTrade", maxPerTrade: Usdc.make(25_000_000n) },
@@ -51,6 +52,17 @@ describe("journalOfIntent", () => {
     const entry = journalOfIntent({ status, leg: LEG, reason: "Dip.", decision } as never, () => "NVIDIA")
 
     assert.strictEqual(entry, expected)
+  })
+
+  it("says nothing when a trade you approved is sent", () => {
+    const entry = journalOfIntent({
+      status: "sending",
+      leg: LEG,
+      reason: "Dip.",
+      decision: { _tag: "OverLargestTrade", maxPerTrade: Usdc.make(25_000_000n) }
+    } as never, () => "NVIDIA")
+
+    assert.strictEqual(entry, undefined)
   })
 })
 

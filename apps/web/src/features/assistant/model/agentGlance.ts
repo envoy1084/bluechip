@@ -4,7 +4,7 @@ import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
-import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import { isNoTradeLimit, tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { usdcDollars } from "../../../lib/amounts.ts"
 
@@ -25,7 +25,10 @@ const DIRECTION: Readonly<Record<string, string>> = {
 // Budgets are whole dollars: "$250", not "$250.00".
 const dollars = (units: bigint) => formatMoney(usdcDollars(units)).replace(/\.00$/u, "")
 
-/** `spec`'s stocks, direction, and its daily budget, largest trade and trades a day ("Any" when nothing caps one). */
+/**
+ * `spec`'s stocks, direction, and its daily budget, largest trade and trades a day ("Any" when nothing caps one, "No
+ * limit" for a count that is no limit of its own, as the agent's page says).
+ */
 export const agentGlance = (spec: AgentSpec): AgentGlance => {
   const trading = configOf(spec.policies, trade)
   const size = configOf(spec.policies, tradeSize)
@@ -40,7 +43,10 @@ export const agentGlance = (spec: AgentSpec): AgentGlance => {
         value: trading === undefined || trading.dailyBudget === BigInt(0) ? "None" : dollars(trading.dailyBudget)
       },
       { label: "Per trade", value: size === undefined ? "Any" : dollars(size.maxPerTrade) },
-      { label: "Trades a day", value: perDay === undefined ? "Any" : String(perDay.count) }
+      {
+        label: "Trades a day",
+        value: perDay === undefined ? "Any" : isNoTradeLimit(perDay) ? "No limit" : String(perDay.count)
+      }
     ]
   }
 }

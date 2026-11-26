@@ -121,9 +121,35 @@ describe("checkAutomation", () => {
       }),
       spec: WEEKLY_BUYER,
       expected: [
-        ["action", null, "split", "Each stock's part has to be at least $5."],
+        [
+          "action",
+          null,
+          "split",
+          "Each stock's part has to be at least $5.05, so it's still $5 after the trade's costs."
+        ],
         ["action", null, "amount", "Takes 2 trades of at most $100, more than the agent's 1 a day."]
       ]
+    },
+    {
+      name: "a buy of exactly the agent's $5 smallest trade, which lands under it after its costs",
+      draft: draft({
+        action: { type: "buy", config: { amount: Usdc.make(5_000_000n), split: [{ symbol: "AAPL", weight: 10_000 }] } }
+      }),
+      spec: WEEKLY_BUYER,
+      expected: [[
+        "action",
+        null,
+        "split",
+        "Each stock's part has to be at least $5.05, so it's still $5 after the trade's costs."
+      ]]
+    },
+    {
+      name: "a buy of $5.05, the agent's $5 smallest trade and its costs",
+      draft: draft({
+        action: { type: "buy", config: { amount: Usdc.make(5_050_000n), split: [{ symbol: "AAPL", weight: 10_000 }] } }
+      }),
+      spec: WEEKLY_BUYER,
+      expected: []
     },
     {
       name: "$100 split across two stocks: a trade each, for an agent that makes one a day",

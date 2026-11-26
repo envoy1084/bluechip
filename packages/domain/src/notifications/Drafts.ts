@@ -284,9 +284,11 @@ export const notificationOfRun = (run: AutomationRun, automationName: string): N
   if (run.outcome === "notified") {
     return { ...base, kind: "automationMessage", title: automationName, body: run.reason }
   }
+  // Watchers write the summary as a sentence ("Its scheduled time came.") or without its stop (a headline).
+  const summary = run.trigger.summary.replace(/\.$/, "")
   const said = {
-    proposed: `${run.trigger.summary}. It proposed trades to its agent.`,
-    asked: `${run.trigger.summary}. It asks you first: approve it in bluechip.`,
+    proposed: `${summary}. It proposed trades to its agent.`,
+    asked: `${summary}. It asks you first: approve it in bluechip.`,
     failed: `It failed: ${run.reason}`
   } as const
   return { ...base, kind: "automationFired", title: `${automationName} ran`, body: said[run.outcome] }

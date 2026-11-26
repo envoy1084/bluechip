@@ -31,7 +31,7 @@ export function SavedTemplateAutomations(
   const save = (index: number) => {
     const { id, draft, edited } = kept[index]!
     setSaving((all) => all.map((each, at) => at === index ? { status: "saving" } : each))
-    create({
+    return create({
       payload: {
         requestId: id,
         draft: new AutomationDraft({ ...draft, agentId: agent.id }, { disableChecks: true }),
@@ -50,7 +50,8 @@ export function SavedTemplateAutomations(
   useEffect(() => {
     if (started.current) return
     started.current = true
-    kept.forEach((_, index) => save(index))
+    // One at a time: overlapping calls of one mutation atom interrupt each other and settle with the last one's result.
+    kept.reduce((previous, _, index) => previous.then(() => save(index)), Promise.resolve())
   })
 
   if (kept.length === 0) return null

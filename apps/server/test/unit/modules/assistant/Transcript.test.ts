@@ -128,6 +128,29 @@ describe("promptOf", () => {
     )
   })
 
+  it("leaves an earlier turn's thinking out, since it's bound to the system prompt of its turn", () => {
+    const prompt = promptOf([
+      new Message({
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
+        role: "assistant",
+        parts: [
+          { type: "reasoning", text: "", options: { anthropic: { info: { type: "thinking", signature: "sig" } } } },
+          { type: "text", text: "Your picker is paused." }
+        ],
+        model: "claude-sonnet-5-5",
+        createdAt: AT
+      })
+    ])
+
+    assert.deepStrictEqual(
+      prompt.content.map((message) => [
+        message.role,
+        typeof message.content === "string" ? message.content : message.content.map((part) => part.type)
+      ]),
+      [["assistant", ["text"]]]
+    )
+  })
+
   it("keeps a search Anthropic ran inside the assistant's message", () => {
     const prompt = promptOf([
       new Message({

@@ -292,6 +292,15 @@ describe("notificationOfRun", () => {
         ]
       },
       {
+        name: "proposed trades, from a summary that ends its sentence",
+        run: run({ outcome: "proposed", trigger: { summary: "Your mix drifted from its target." } as never }),
+        expected: [
+          "automationFired",
+          "Dip buyer ran",
+          "Your mix drifted from its target. It proposed trades to its agent."
+        ]
+      },
+      {
         name: "a message for you",
         run: run({ outcome: "notified", reason: "Apple is up 5% today." }),
         expected: ["automationMessage", "Dip buyer", "Apple is up 5% today."]

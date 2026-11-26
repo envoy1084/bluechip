@@ -134,11 +134,14 @@ export const suggestedName = (action: string): string => {
 export const toDraft = (fields: DraftFields, action: string): AutomationDraft =>
   new AutomationDraft({ ...fields, name: fields.name.trim() || suggestedName(action) }, { disableChecks: true })
 
-/** A saved automation as the editor holds it. */
+/**
+ * A saved automation as the editor holds it. A name it was given from what it does is left empty again, so it follows
+ * what it does once you change that.
+ */
 export const draftFieldsOf = (
-  automation: Pick<Automation, "name" | "agentId" | "trigger" | "conditions" | "action" | "settings">
+  automation: Pick<Automation, "name" | "agentId" | "trigger" | "conditions" | "action" | "settings" | "description">
 ): DraftFields => ({
-  name: automation.name,
+  name: automation.name === suggestedName(automation.description.action) ? "" : automation.name,
   agentId: automation.agentId,
   trigger: automation.trigger,
   conditions: automation.conditions,

@@ -24,8 +24,8 @@ default `http://localhost:8080`); `localhost:3000/dev/connection` shows the conn
 
 The fork keeps Base's chain id (8453), so contracts, Namera and signatures behave as on mainnet, with fake money.
 
-- `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1` sets an address's balances (refuses unless
-  `NETWORK=local`).
+- `pnpm --filter @bluechip/server dev:fund <address> --usdc 1000 --eth 1` sets an address's ETH and sends it USDC in a
+  real transfer, so it arrives as a deposit (refuses unless `NETWORK=local`).
 - Set `BASE_FORK_RPC_URL` in the root `.env.local` to a Base RPC you control: the public endpoint rate-limits the fork. Pin `BASE_FORK_BLOCK`
   so Anvil's cache (the `foundry-cache` volume) serves restarts without RPC; restart at a newer weekday block to
   refresh prices, which freeze at the fork block.

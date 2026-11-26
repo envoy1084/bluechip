@@ -1,3 +1,4 @@
+import { AutomationDescription } from "@bluechip/domain/automations/Automation"
 import { DEFAULT_SETTINGS } from "@bluechip/domain/automations/Settings"
 import type { AgentId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
@@ -9,6 +10,7 @@ import {
   catalogEntry,
   changeField,
   choicesOf,
+  draftFieldsOf,
   evenSplit,
   freshEntry,
   newDraft,
@@ -252,6 +254,27 @@ describe("toDraft", () => {
     const fields = { ...newDraft(null, "AAPL", DEFAULT_SETTINGS), name: typed }
 
     assert.strictEqual(toDraft(fields, "buy $50 of Apple").name, expected)
+  })
+})
+
+describe("draftFieldsOf", () => {
+  it.each([
+    { name: "a name it was given from what it does is left empty", saved: "Buy $10 of Apple", expected: "" },
+    { name: "a name of your own is kept", saved: "Weekly Apple", expected: "Weekly Apple" }
+  ])("$name", ({ saved, expected }) => {
+    const automation = {
+      ...newDraft(null, "AAPL", DEFAULT_SETTINGS),
+      name: saved,
+      description: new AutomationDescription({
+        sentence: "Every Monday at 10:00 New York time, buy $10 of Apple.",
+        trigger: "every Monday at 10:00 New York time",
+        conditions: [],
+        action: "buy $10 of Apple",
+        settings: []
+      })
+    }
+
+    assert.strictEqual(draftFieldsOf(automation).name, expected)
   })
 })
 

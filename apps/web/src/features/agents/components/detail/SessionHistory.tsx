@@ -1,11 +1,8 @@
 import type { Agent, AgentSession, SessionAuthor, SessionStatus } from "@bluechip/domain/agents/Agent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { compareSpecs, policyOf, type SpecChanges } from "@bluechip/domain/policies/Catalog"
-import { formatDollars } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
-import { tradeSize } from "@bluechip/domain/policies/TradeSize"
-import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { StatusPill, type StatusTone } from "@bluechip/ui/bluechip/status-pill"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@bluechip/ui/components/collapsible"
@@ -19,6 +16,7 @@ import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 import { SectionHeader } from "../../../../components/layout/SectionHeader.tsx"
 import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { agentSessionsAtom } from "../../atoms/agents.ts"
+import { limitsLine } from "../../model/agentGlance.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { SpecChangeRows } from "../spec/SpecChangeRows.tsx"
 
@@ -75,16 +73,10 @@ const DOT: Readonly<Record<SessionStatus, string>> = {
   failed: "bg-loss"
 }
 
-/** Its stocks and the limits most people look for: "$100 a day, $100 a trade, 500 trades a day". */
+/** Its stocks and the limits most people look for: "$100 a day, $100 a trade, 12 trades a day". */
 function Rules({ spec, nameOf }: Readonly<{ spec: AgentSession["spec"]; nameOf: (symbol: StockSymbol) => string }>) {
   const traded = configOf(spec.policies, trade)
-  const size = configOf(spec.policies, tradeSize)
-  const count = configOf(spec.policies, tradesPerDay)
-  const limits = [
-    traded === undefined || traded.dailyBudget === BigInt(0) ? null : `${formatDollars(traded.dailyBudget)} a day`,
-    size === undefined ? null : `${formatDollars(size.maxPerTrade)} a trade`,
-    count === undefined ? null : `${count.count} ${count.count === 1 ? "trade" : "trades"} a day`
-  ].filter((limit) => limit !== null)
+  const limits = limitsLine(spec)
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -93,7 +85,7 @@ function Rules({ spec, nameOf }: Readonly<{ spec: AgentSession["spec"]; nameOf: 
           <TickerChip symbol={symbol} size="sm" />
         </span>
       ))}
-      {limits.length === 0 ? null : <span className="ml-1 text-label-sm text-g-600">{limits.join(", ")}</span>}
+      {limits === null ? null : <span className="ml-1 text-label-sm text-g-600">{limits}</span>}
     </div>
   )
 }

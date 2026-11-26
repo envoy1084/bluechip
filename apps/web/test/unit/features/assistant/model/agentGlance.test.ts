@@ -22,6 +22,23 @@ describe("agentGlance", () => {
       }
     },
     {
+      name: "a template's count of trades, which is no limit of its own",
+      spec: specOf([
+        { id: "trade", config: { stocks: ["TSLA"], direction: "both", dailyBudget: usd(100) } },
+        { id: "tradeSize", config: { maxPerTrade: usd(50), minPerTrade: usd(5) } },
+        { id: "tradesPerDay", config: { count: 500 } }
+      ]),
+      expected: {
+        stocks: ["TSLA"],
+        direction: "Buys and sells",
+        stats: [
+          { label: "A day", value: "$100" },
+          { label: "Per trade", value: "$50" },
+          { label: "Trades a day", value: "No limit" }
+        ]
+      }
+    },
+    {
       name: "a seller spends nothing a day, and nothing caps its trades",
       spec: specOf([{ id: "trade", config: { stocks: ["TSLA"], direction: "sell", dailyBudget: usd(0) } }]),
       expected: {

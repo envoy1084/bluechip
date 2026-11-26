@@ -66,7 +66,7 @@ export class JournalEntry extends Schema.Class<JournalEntry>("@bluechip/domain/j
 
 /**
  * The entry for an agent's intent reaching `intent.status`, or `undefined` for steps on the way (proposed, deciding,
- * confirming) that say nothing new. A decision carries the intent's reason.
+ * confirming, and sending a trade you approved) that say nothing new. A decision carries the intent's reason.
  *
  * **Example** (A refusal)
  *
@@ -100,7 +100,8 @@ export const journalOfIntent = (
     case "confirming":
       return undefined
     case "sending":
-      return `${trade}, sent within its policies. ${why}`
+      // An approved trade is sent with your passkey, not by the agent: its approval already said so.
+      return intent.decision?._tag === "Passes" ? `${trade}, sent within its policies. ${why}` : undefined
     case "needsApproval":
     case "waiting":
       return `${trade}. ${decided} ${why}`

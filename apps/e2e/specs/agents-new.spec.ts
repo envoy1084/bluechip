@@ -72,6 +72,19 @@ test.describe("new agent: from each template to live", () => {
     await expect(page.getByRole("list", { name: "It can" }).getByRole("listitem").first()).toHaveText("Buy Tesla")
   })
 
+  test("a Weekly buyer of two stocks starts both of its automations", async ({ page, funded: _funded }) => {
+    await startAgent(page, "Weekly buyer")
+    await page.getByRole("button", { name: "AMZN Amazon" }).click()
+    await page.getByRole("button", { name: "GOOGL Alphabet" }).click()
+    await page.getByRole("button", { name: "Review" }).click()
+
+    await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
+
+    const saved = page.getByRole("list", { name: "Its automations" })
+    await expect(saved.getByRole("link", { name: "Weekly buy of AMZN" })).toBeVisible()
+    await expect(saved.getByRole("link", { name: "Weekly buy of GOOGL" })).toBeVisible()
+  })
+
   test("a Stop-loss guard of Apple is live", async ({ page, funded: _funded }) => {
     await startAgent(page, "Stop-loss guard")
     await page.getByRole("button", { name: "AAPL Apple" }).click()
