@@ -16,6 +16,8 @@ export interface AgentSummaryProps {
   /** Spent on buys today, and its daily budget; a sell-only agent has no budget (0). */
   readonly spentToday: number
   readonly dailyBudget: number
+  /** When today's budget starts again: "midnight UTC". */
+  readonly resetsAt?: string
   /** Trades made today and the most it may make. */
   readonly tradesToday: number
   readonly tradesPerDay: number
@@ -40,6 +42,7 @@ export function AgentSummary(
     does,
     spentToday,
     dailyBudget,
+    resetsAt,
     tradesToday,
     tradesPerDay,
     lastTrade,
@@ -66,7 +69,9 @@ export function AgentSummary(
         {actions === undefined ? null : <span className="flex gap-2">{actions}</span>}
       </header>
 
-      {dailyBudget > 0 ? <UsageMeter used={spentToday} limit={dailyBudget} /> : null}
+      {dailyBudget > 0 ?
+        <UsageMeter used={spentToday} limit={dailyBudget} {...(resetsAt === undefined ? {} : { resetsAt })} /> :
+        null}
 
       <StatGrid>
         <StatTile label="Trades today" value={`${tradesToday} of ${tradesPerDay}`} />
