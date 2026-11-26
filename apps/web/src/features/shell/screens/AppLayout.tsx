@@ -23,12 +23,21 @@ import { liveEventAtom } from "../../../lib/api/events.ts"
 
 const NAV: ReadonlyArray<
   {
-    readonly to: "/home" | "/portfolio" | "/stocks" | "/agents" | "/activity" | "/approvals" | "/settings"
+    readonly to:
+      | "/home"
+      | "/chat/{-$conversationId}"
+      | "/portfolio"
+      | "/stocks"
+      | "/agents"
+      | "/activity"
+      | "/approvals"
+      | "/settings"
     readonly label: string
     readonly icon: IconName
   }
 > = [
   { to: "/home", label: "Home", icon: "home" },
+  { to: "/chat/{-$conversationId}", label: "Chat", icon: "chat" },
   { to: "/portfolio", label: "Portfolio", icon: "portfolio" },
   { to: "/stocks", label: "Stocks", icon: "stocks" },
   { to: "/agents", label: "Agents", icon: "agents" },
@@ -69,9 +78,9 @@ export function AppLayout(
                       {NAV.map((item) => (
                         <SidebarMenuItem key={item.to}>
                           <SidebarMenuButton
-                            isActive={matchRoute({ to: item.to }) !== false}
+                            isActive={matchRoute({ to: item.to, fuzzy: item.label === "Chat" }) !== false}
                             tooltip={item.label}
-                            render={<Link to={item.to} />}
+                            render={<Link to={item.to} params={{ conversationId: undefined }} />}
                           >
                             <Icon name={item.icon} />
                             <span>{item.label}</span>

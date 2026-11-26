@@ -6,6 +6,7 @@ test.skip(process.env["BLUECHIP_E2E_LIVE"] !== "1", "live model only with BLUECH
 
 test.describe("the assistant on the live model", () => {
   test("answers a price question with the market's price", async ({ page, user: _user }) => {
+    await page.goto("/chat")
     const composer = page.getByRole("textbox", { name: "Message bluechip" })
 
     await composer.fill("What is Apple's price right now? Answer in one short sentence.")

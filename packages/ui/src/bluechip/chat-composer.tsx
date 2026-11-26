@@ -14,6 +14,8 @@ export interface ChatComposerProps {
   /** Prompts shown above the box. Picking one fills the box for you to edit or send. */
   readonly suggestions?: ReadonlyArray<string>
   readonly placeholder?: string
+  /** What the box starts with, to edit or send. */
+  readonly defaultMessage?: string | undefined
   /** Beside the send button, in place of the keyboard hint: a picker for who the message is for, say. */
   readonly leading?: ReactNode
   readonly className?: string
@@ -30,12 +32,13 @@ export function ChatComposer({
   onStop,
   suggestions = NO_SUGGESTIONS,
   placeholder = "Ask anything, or describe the agent you want…",
+  defaultMessage = "",
   leading,
   className
 }: ChatComposerProps) {
   const id = useId()
   const textarea = useRef<HTMLTextAreaElement>(null)
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState(defaultMessage)
   const empty = message.trim() === ""
 
   const submit = (event?: FormEvent) => {

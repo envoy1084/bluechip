@@ -1,6 +1,6 @@
 import { expect, test } from "../fixtures/test.ts"
 import { apiHeaders } from "../fixtures/users.ts"
-import { ask, composer, lastTurn, unique } from "../utils/assistant.ts"
+import { ask, composer, conversationId, lastTurn, unique } from "../utils/assistant.ts"
 
 test.describe("when the assistant stops early", () => {
   test("a spent day's budget stops the next answer and says when it resets", async ({ page, user: _user, replies }) => {
@@ -58,10 +58,11 @@ test.describe("when the assistant stops early", () => {
   test("an answer cut off by leaving the page is kept, and says the connection dropped", async ({ page, user: _user, replies }) => {
     const to = unique("Explain index funds")
     await replies.record({ to, rounds: [[{ text: "An index fund holds", partial: true }, { hang: true }]] })
+    await page.goto("/chat")
     await composer(page).fill(to)
     await composer(page).press("Enter")
     await expect(lastTurn(page).getByText("An index fund holds")).toBeVisible()
-    const conversation = new URL(page.url()).searchParams.get("conversation")!
+    const conversation = conversationId(page)
 
     // Leaving the page drops the answer's stream; the server keeps the round as far as it got.
     await page.goto("/portfolio")

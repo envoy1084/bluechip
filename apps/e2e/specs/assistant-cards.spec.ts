@@ -5,7 +5,7 @@ import { ask, lastTurn, unique } from "../utils/assistant.ts"
 test.describe("trade cards", () => {
   test("a buy through an agent, within its policies, is filled on the card", async ({ page, funded: _funded, replies }) => {
     const agent = await createAgent(page, { name: "Chip buyer" })
-    await page.goto("/home")
+    await page.goto("/chat")
     const to = unique("Buy $20 of Nvidia with Chip buyer")
 
     await ask(page, replies, {

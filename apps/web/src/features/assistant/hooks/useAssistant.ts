@@ -202,5 +202,9 @@ export function useAssistant(
 
   const reload = () => setState((now) => ({ ...now, load: "loading" }))
 
-  return { state, running: state.runId !== null, send, cancel, retry, updateCard, reload }
+  // Who the conversation is for can change until it starts; the server keeps it fixed after that.
+  const chooseAgent = (agentId: AgentId | null) =>
+    setState((now) => now.conversationId === null ? { ...now, agentId } : now)
+
+  return { state, running: state.runId !== null, send, cancel, retry, updateCard, reload, chooseAgent }
 }

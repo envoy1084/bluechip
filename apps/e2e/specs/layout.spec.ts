@@ -2,6 +2,7 @@ import { expect, test } from "../fixtures/test.ts"
 
 const pages = [
   { path: "/home", heading: "Home" },
+  { path: "/chat", heading: "New chat" },
   { path: "/portfolio", heading: "Portfolio" },
   { path: "/stocks", heading: "Stocks" },
   { path: "/stocks/NVDA", heading: "NVIDIA" },
@@ -12,7 +13,7 @@ const pages = [
 ] as const
 
 test.describe("sidebar navigation", () => {
-  for (const { path, heading } of pages.filter((entry) => entry.path !== "/stocks/NVDA")) {
+  for (const { path, heading } of pages.filter((entry) => entry.path !== "/stocks/NVDA" && entry.path !== "/chat")) {
     test(`${heading} opens ${path}`, async ({ page, user: _user }) => {
       await page.goto(path === "/home" ? "/settings" : "/home")
 
@@ -25,6 +26,13 @@ test.describe("sidebar navigation", () => {
 })
 
 test.describe("sidebar", () => {
+  test("Chat opens a new chat", async ({ page, user: _user }) => {
+    await page.getByRole("complementary", { name: "App navigation" }).getByRole("link", { name: "Chat" }).click()
+
+    await expect(page).toHaveURL(/\/chat$/)
+    await expect(page.getByRole("heading", { name: "New chat", level: 1 })).toBeVisible()
+  })
+
   test("its trigger folds it to icons, and the current page stays marked", async ({ page, user: _user }) => {
     await page.goto("/portfolio")
     const sidebar = page.getByRole("complementary", { name: "App navigation" })

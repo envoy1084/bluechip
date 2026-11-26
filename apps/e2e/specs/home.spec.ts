@@ -63,8 +63,23 @@ test.describe("home", () => {
     }
   )
 
-  test("the assistant's composer is there", async ({ page, user: _user }) => {
-    await expect(page.getByRole("textbox", { name: "Message bluechip" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Send" })).toBeDisabled()
+  test("home has no chat of its own", async ({ page, user: _user }) => {
+    await expect(page.getByRole("heading", { name: "Ask bluechip" })).toBeVisible()
+    await expect(page.getByRole("textbox", { name: "Message bluechip" })).toBeHidden()
+  })
+
+  test("a suggestion opens a new chat with it in the box, not sent", async ({ page, user: _user }) => {
+    await page.getByRole("link", { name: "How did I do this week?" }).click()
+
+    await expect(page).toHaveURL(/\/chat\?ask=/)
+    await expect(page.getByRole("textbox", { name: "Message bluechip" })).toHaveValue("How did I do this week?")
+    await expect(page.locator("[data-slot=\"chat-message\"]")).toHaveCount(0)
+  })
+
+  test("New chat opens the chat page", async ({ page, user: _user }) => {
+    await page.getByRole("region", { name: "Ask bluechip" }).getByRole("link", { name: "New chat" }).click()
+
+    await expect(page).toHaveURL(/\/chat$/)
+    await expect(page.getByRole("heading", { name: "New chat", level: 1 })).toBeVisible()
   })
 })

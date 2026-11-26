@@ -1,7 +1,12 @@
 import { expect, test } from "../fixtures/test.ts"
+import { createAgent } from "../utils/agents.ts"
 import { ask, composer, lastTurn, unique } from "../utils/assistant.ts"
 
-test.describe("the assistant on home", () => {
+test.describe("the chat page", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/chat")
+  })
+
   test("Enter sends a message and bluechip's answer streams in", async ({ page, user: _user, replies }) => {
     const to = unique("Hello there")
     await replies.record({ to, rounds: [[{ text: "Hello! Ask me about your money or your agents." }]] })
@@ -11,7 +16,7 @@ test.describe("the assistant on home", () => {
 
     await expect(page.getByText(to, { exact: true })).toBeVisible()
     await expect(lastTurn(page).getByText("Hello! Ask me about your money or your agents.")).toBeVisible()
-    await expect(page).toHaveURL(/\/home\?conversation=conversation_[0-9a-z]+$/)
+    await expect(page).toHaveURL(/\/chat\/conversation_[0-9a-z]+$/)
     await expect(composer(page)).toHaveValue("")
   })
 
@@ -111,8 +116,8 @@ test.describe("tool rows", () => {
   })
 })
 
-test.describe("conversations", () => {
-  test("the sheet lists each conversation by the title bluechip gave it", async ({ page, user: _user, replies }) => {
+test.describe("chats sidebar", () => {
+  test("it lists each chat by the title bluechip gave it", async ({ page, user: _user, replies }) => {
     const to = unique("I'm saving for a flat in Porto")
 
     await ask(page, replies, {
@@ -120,23 +125,23 @@ test.describe("conversations", () => {
       rounds: [[{ text: "Good luck with the flat." }]],
       notes: { title: "Saving for a flat in Porto", memories: [] }
     })
-    await page.getByRole("button", { name: "Conversations" }).click()
 
-    const sheet = page.getByRole("dialog", { name: "Conversations" })
-    await expect(sheet.getByRole("link", { name: /^Saving for a flat in Porto/ })).toHaveAttribute(
+    const chats = page.getByRole("complementary", { name: "Chats" })
+    await expect(chats.getByRole("link", { name: /^Saving for a flat in Porto/ })).toHaveAttribute(
       "aria-current",
       "page"
     )
+    await expect(page.getByRole("heading", { name: "Saving for a flat in Porto", level: 1 })).toBeVisible()
   })
 
-  test("an older conversation opens with its thread", async ({ page, user: _user, replies }) => {
+  test("an older chat opens with its thread", async ({ page, user: _user, replies }) => {
     const older = unique("Tell me about Apple")
     await ask(page, replies, {
       to: older,
       rounds: [[{ text: "Apple makes phones." }]],
       notes: { title: "About Apple", memories: [] }
     })
-    await page.goto("/home")
+    await page.goto("/chat")
     const newer = unique("Tell me about Tesla")
     await ask(page, replies, {
       to: newer,
@@ -144,29 +149,62 @@ test.describe("conversations", () => {
       notes: { title: "About Tesla", memories: [] }
     })
 
-    await page.getByRole("button", { name: "Conversations" }).click()
-    await page.getByRole("dialog", { name: "Conversations" }).getByRole("link", { name: /^About Apple/ }).click()
+    await page.getByRole("complementary", { name: "Chats" }).getByRole("link", { name: /^About Apple/ }).click()
 
     await expect(page.getByText(older, { exact: true })).toBeVisible()
     await expect(page.getByText("Apple makes phones.")).toBeVisible()
     await expect(page.getByText(newer, { exact: true })).toBeHidden()
   })
 
-  test("New conversation starts again from an empty thread", async ({ page, user: _user, replies }) => {
+  test("New chat starts again from an empty thread", async ({ page, user: _user, replies }) => {
     const to = unique("Hi bluechip")
     await ask(page, replies, { to, rounds: [[{ text: "Hi!" }]] })
 
-    await page.getByRole("button", { name: "Conversations" }).click()
-    await page.getByRole("dialog", { name: "Conversations" }).getByRole("link", { name: "New conversation" }).click()
+    await page.getByRole("complementary", { name: "Chats" }).getByRole("link", { name: "New chat" }).click()
 
-    await expect(page).toHaveURL(/\/home$/)
+    await expect(page).toHaveURL(/\/chat$/)
     await expect(page.getByText(to, { exact: true })).toBeHidden()
     await expect(page.getByRole("button", { name: "What did my agents do today?" })).toBeVisible()
   })
 
-  test("with no conversations yet, the sheet says where to start", async ({ page, user: _user }) => {
-    await page.getByRole("button", { name: "Conversations" }).click()
+  test("with no chats yet, it says where they come from", async ({ page, user: _user }) => {
+    await page.goto("/chat")
 
-    await expect(page.getByText("No conversations yet. Ask bluechip anything on Home.")).toBeVisible()
+    await expect(page.getByText("No chats yet. Your first message starts one.")).toBeVisible()
+  })
+
+  test("its trigger slides it away", async ({ page, user: _user }) => {
+    await page.goto("/chat")
+
+    await page.getByRole("button", { name: "Toggle chats" }).click()
+
+    await expect(page.getByRole("complementary", { name: "Chats" })).toHaveAttribute("data-collapsible", "offcanvas")
+  })
+})
+
+test.describe("who trades in a chat", () => {
+  test("a new chat goes through your account until you pick an agent", async ({ page, funded: _funded }) => {
+    await createAgent(page, { name: "Chip picker" })
+    await page.goto("/chat")
+    const picker = page.getByRole("combobox", { name: "Trades go through" })
+    await expect(picker).toHaveText("My account")
+
+    await picker.click()
+    await page.getByRole("option", { name: "Chip picker" }).click()
+
+    await expect(picker).toHaveText("Chip picker")
+    await expect(page.getByRole("button", { name: "What has this agent done this week?" })).toBeVisible()
+  })
+
+  test("a started chat keeps its agent", async ({ page, funded: _funded, replies }) => {
+    await createAgent(page, { name: "Chip picker" })
+    await page.goto("/chat")
+    await page.getByRole("combobox", { name: "Trades go through" }).click()
+    await page.getByRole("option", { name: "Chip picker" }).click()
+
+    await ask(page, replies, { to: unique("Who trades here?"), rounds: [[{ text: "Chip picker." }]] })
+
+    await expect(page.getByRole("combobox", { name: "Trades go through" })).toBeHidden()
+    await expect(page.locator("header").getByText("Chip picker")).toBeVisible()
   })
 })

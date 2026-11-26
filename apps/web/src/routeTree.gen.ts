@@ -27,6 +27,7 @@ import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/ind
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
 import { Route as AppAgentsAgentIdRouteImport } from './routes/_app/agents/$agentId'
 import { Route as AppAgentsNewRouteImport } from './routes/_app/agents/new'
+import { Route as AppChatChar123ConversationIdChar125RouteImport } from './routes/_app/chat/{-$conversationId}'
 import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
@@ -121,6 +122,12 @@ const AppAgentsNewRoute = AppAgentsNewRouteImport.update({
   path: '/agents/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppChatChar123ConversationIdChar125Route =
+  AppChatChar123ConversationIdChar125RouteImport.update({
+    id: '/chat/{-$conversationId}',
+    path: '/chat/{-$conversationId}',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppPortfolioIndexRoute = AppPortfolioIndexRouteImport.update({
   id: '/portfolio/',
   path: '/portfolio/',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/welcome/': typeof WelcomeIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/agents/new': typeof AppAgentsNewRoute
+  '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity/': typeof AppActivityIndexRoute
   '/agents/': typeof AppAgentsIndexRoute
@@ -181,6 +189,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/agents/new': typeof AppAgentsNewRoute
+  '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity': typeof AppActivityIndexRoute
   '/agents': typeof AppAgentsIndexRoute
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/welcome/': typeof WelcomeIndexRoute
   '/_app/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/_app/agents/new': typeof AppAgentsNewRoute
+  '/_app/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/welcome/'
     | '/agents/$agentId'
     | '/agents/new'
+    | '/chat/{-$conversationId}'
     | '/stocks/$symbol'
     | '/activity/'
     | '/agents/'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/agents/$agentId'
     | '/agents/new'
+    | '/chat/{-$conversationId}'
     | '/stocks/$symbol'
     | '/activity'
     | '/agents'
@@ -278,6 +290,7 @@ export interface FileRouteTypes {
     | '/welcome/'
     | '/_app/agents/$agentId'
     | '/_app/agents/new'
+    | '/_app/chat/{-$conversationId}'
     | '/_app/stocks/$symbol'
     | '/_app/activity/'
     | '/_app/agents/'
@@ -427,6 +440,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/chat/{-$conversationId}': {
+      id: '/_app/chat/{-$conversationId}'
+      path: '/chat/{-$conversationId}'
+      fullPath: '/chat/{-$conversationId}'
+      preLoaderRoute: typeof AppChatChar123ConversationIdChar125RouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/portfolio/': {
       id: '/_app/portfolio/'
       path: '/portfolio'
@@ -465,6 +485,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
   AppAgentsNewRoute: typeof AppAgentsNewRoute
+  AppChatChar123ConversationIdChar125Route: typeof AppChatChar123ConversationIdChar125Route
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
@@ -480,6 +501,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
   AppAgentsNewRoute: AppAgentsNewRoute,
+  AppChatChar123ConversationIdChar125Route:
+    AppChatChar123ConversationIdChar125Route,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,

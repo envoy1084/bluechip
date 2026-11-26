@@ -20,10 +20,10 @@ const draftAppleWeekly = async (page: Page, replies: Replies) => {
   return page.getByRole("region", { name: "Draft from chat" })
 }
 
-/** Makes "Chip picker" through the new agent flow, then comes back to home. */
+/** Makes "Chip picker" through the new agent flow, then opens a new chat. */
 const chipPicker = async (page: Page) => {
   const agent = await createAgent(page, { name: "Chip picker" })
-  await page.goto("/home")
+  await page.goto("/chat")
   return agent
 }
 
@@ -194,12 +194,11 @@ test.describe("ask about this agent", () => {
 
     await page.getByRole("link", { name: "Ask about this agent" }).click()
 
-    await expect(page).toHaveURL(/\/home\?agent=agent_[0-9a-z]+$/)
-    await expect(page.getByText("About Chip picker")).toBeVisible()
+    await expect(page).toHaveURL(/\/chat\?agent=agent_[0-9a-z]+$/)
+    await expect(page.getByRole("combobox", { name: "Trades go through" })).toHaveText("Chip picker")
     await expect(page.getByRole("button", { name: "What has this agent done this week?" })).toBeVisible()
     await ask(page, replies, { to: unique("How is it doing?"), rounds: [[{ text: "It hasn't traded yet." }]] })
-    await page.getByRole("button", { name: "Conversations" }).click()
-    await expect(page.getByRole("dialog", { name: "Conversations" }).getByText("About Chip picker, Just now"))
-      .toBeVisible()
+    await expect(page.locator("header").getByText("Chip picker")).toBeVisible()
+    await expect(page.getByRole("complementary", { name: "Chats" }).getByText("Chip picker, Just now")).toBeVisible()
   })
 })

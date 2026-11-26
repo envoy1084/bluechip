@@ -356,7 +356,8 @@ export interface SidebarTriggerProps extends ButtonProps {
   readonly label?: string
 }
 
-export function SidebarTrigger({ onClick, label = "Toggle sidebar", ...props }: SidebarTriggerProps) {
+/** Toggles the nearest sidebar. Its icon is the sidebar's unless `children` gives another. */
+export function SidebarTrigger({ onClick, label = "Toggle sidebar", children, ...props }: SidebarTriggerProps) {
   const { toggleSidebar, open, isMobile, openMobile } = useSidebar()
   return (
     <Button
@@ -371,7 +372,7 @@ export function SidebarTrigger({ onClick, label = "Toggle sidebar", ...props }: 
       }}
       {...props}
     >
-      <Icon name="sidebar" size={18} />
+      {children ?? <Icon name="sidebar" size={18} />}
     </Button>
   )
 }
