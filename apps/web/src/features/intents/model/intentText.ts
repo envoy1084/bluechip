@@ -2,7 +2,7 @@
 // wait for you.
 import { Conflict } from "@bluechip/domain/Errors"
 import type { Decision, Intent, IntentStatus } from "@bluechip/domain/intents/Intent"
-import { formatRelative, formatTime } from "@bluechip/ui/lib/format"
+import { formatDate, formatRelative, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { tradeProblem } from "../../../lib/tradeProblem.ts"
@@ -62,3 +62,24 @@ export const intentProblem = (error: unknown, side: "buy" | "sell"): string => {
 /** "2 trades waiting for you", or that nothing is. */
 export const waitingText = (count: number) =>
   count === 0 ? "Nothing waiting for you" : count === 1 ? "1 trade waiting for you" : `${count} trades waiting for you`
+
+const dayKey = (date: Date, timeZone: string) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date)
+
+/** The day an intent was asked, as its heading in a list: "Today", "Yesterday", then the date, in the viewer's zone. */
+export const askedOn = (intent: Intent, now: Date, timeZone = localTimeZone()): string => {
+  const asked = DateTime.toDateUtc(intent.createdAt)
+  const day = dayKey(asked, timeZone)
+  if (day === dayKey(now, timeZone)) return "Today"
+  if (day === dayKey(new Date(now.getTime() - 86_400_000), timeZone)) return "Yesterday"
+  return formatDate(asked, { timeZone, time: false })
+}
+
+/** Who asked for it, as its row says it. */
+export const SOURCE: Readonly<Record<Intent["source"], string>> = {
+  owner: "You",
+  assistant: "Assistant",
+  automation: "Automation",
+  channel: "Telegram",
+  mcp: "An app"
+}

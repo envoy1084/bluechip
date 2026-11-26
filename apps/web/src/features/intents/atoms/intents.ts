@@ -1,4 +1,4 @@
-import type { AgentId, IntentId, SigningRequestId } from "@bluechip/domain/Ids"
+import type { AgentId, IntentId, SigningRequestId, TradeId } from "@bluechip/domain/Ids"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
 import { BluechipApiClient, intentsReactivityKey, liveReactivityKey } from "../../../lib/api/client.ts"
@@ -27,6 +27,11 @@ export const approvalsAtom = BluechipApiClient.query("intents", "approvals", { r
 /** One intent. */
 export const intentAtom = Atom.family((id: IntentId) =>
   BluechipApiClient.query("intents", "intent", { params: { id }, reactivityKeys })
+)
+
+/** The trade an intent carried out: what it filled at. */
+export const tradeAtom = Atom.family((id: TradeId) =>
+  BluechipApiClient.query("trades", "trade", { params: { id }, reactivityKeys })
 )
 
 /** What an agent's policies would decide for a trade, without trading. */

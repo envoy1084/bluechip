@@ -1,6 +1,6 @@
-import { BlockedBy } from "@bluechip/domain/performance/Performance"
+import { BlockedBy, Costs } from "@bluechip/domain/performance/Performance"
 import { assert, describe, it } from "@effect/vitest"
-import { blockedSentence } from "../../../../../src/features/agents/model/results.ts"
+import { blockedSentence, costShare } from "../../../../../src/features/agents/model/results.ts"
 
 describe("blockedSentence", () => {
   it.each(
@@ -35,5 +35,32 @@ describe("blockedSentence", () => {
     const titles: Record<string, string> = { stockCap: "Max in one stock", tradesPerDay: "Trades a day" }
 
     assert.strictEqual(blockedSentence(performance, (policy) => titles[policy] ?? policy), expected)
+  })
+})
+
+describe("costShare", () => {
+  it.each<{ name: string; fees: bigint; slippage: bigint; bought: bigint; sold: bigint; expected: unknown }>([
+    { name: "nothing moved", fees: 0n, slippage: 0n, bought: 0n, sold: 0n, expected: { dollars: 0n, percent: null } },
+    {
+      name: "a $100 buy costing 9 cents",
+      fees: 50_000n,
+      slippage: 40_000n,
+      bought: 100_000_000n,
+      sold: 0n,
+      expected: { dollars: 90_000n, percent: 0.09 }
+    },
+    {
+      name: "slippage that beat Chainlink takes some back",
+      fees: 100_000n,
+      slippage: -40_000n,
+      bought: 50_000_000n,
+      sold: 50_000_000n,
+      expected: { dollars: 60_000n, percent: 0.06 }
+    }
+  ])("$name", ({ bought, expected, fees, slippage, sold }) => {
+    assert.deepStrictEqual(
+      costShare({ costs: new Costs({ fees, slippage, gasWei: 0n }), bought, sold }),
+      expected
+    )
   })
 })

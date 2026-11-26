@@ -4,6 +4,7 @@ import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import {
   askedAt,
+  askedOn,
   clockTime,
   expiresIn,
   intentProblem,
@@ -120,5 +121,21 @@ describe("waitingText", () => {
     { count: 2, expected: "2 trades waiting for you" }
   ])("$count", ({ count, expected }) => {
     assert.strictEqual(waitingText(count), expected)
+  })
+})
+
+describe("askedOn", () => {
+  it.each<{ name: string; createdAt: string; timeZone: string; expected: string }>([
+    { name: "earlier today", createdAt: "2026-11-26T01:00:00Z", timeZone: "UTC", expected: "Today" },
+    { name: "late yesterday", createdAt: "2026-11-25T23:59:00Z", timeZone: "UTC", expected: "Yesterday" },
+    { name: "two days ago: the date", createdAt: "2026-11-24T10:00:00Z", timeZone: "UTC", expected: "Tue 24 Nov" },
+    {
+      name: "yesterday in UTC, today in India",
+      createdAt: "2026-11-25T20:00:00Z",
+      timeZone: "Asia/Kolkata",
+      expected: "Today"
+    }
+  ])("$name", ({ createdAt, expected, timeZone }) => {
+    assert.strictEqual(askedOn(nvidiaBuy(createdAt), new Date("2026-11-26T12:00:00Z"), timeZone), expected)
   })
 })

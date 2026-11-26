@@ -88,7 +88,7 @@ test.describe("renew", () => {
 
     await page.getByRole("button", { name: "Renew", exact: true }).click()
 
-    const history = page.getByRole("region", { name: "History" }).locator("li")
+    const history = page.getByRole("region", { name: "Its rules over time" }).locator("li")
     await expect(history).toHaveText([
       new RegExp(`^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*In force\\s*The same rules, renewed\\.$`),
       /Replaced\s*Its first rules\.$/
@@ -105,7 +105,7 @@ test.describe("renew", () => {
     await expect(page.getByRole("alert")).toHaveText(
       "Face ID was cancelled or the request couldn't be sent. Nothing changed."
     )
-    await expect(page.getByRole("region", { name: "History" }).locator("li")).toHaveCount(1)
+    await expect(page.getByRole("region", { name: "Its rules over time" }).locator("li")).toHaveCount(1)
   })
 })
 
@@ -205,7 +205,7 @@ test.describe("expired", () => {
     )
     await expect(page.getByText(`Ran out on ${ended}. Renew it to keep these rules`)).toBeVisible()
     await expect(page.getByRole("button", { name: "Edit rules" })).toBeHidden()
-    await expect(page.getByRole("region", { name: "History" }).locator("li")).toHaveText([
+    await expect(page.getByRole("region", { name: "Its rules over time" }).locator("li")).toHaveText([
       /Ran out\s*Its first rules\.$/
     ])
   })

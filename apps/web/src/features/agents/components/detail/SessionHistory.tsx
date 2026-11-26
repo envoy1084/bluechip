@@ -1,6 +1,12 @@
 import type { Agent, AgentSession, SessionAuthor, SessionStatus } from "@bluechip/domain/agents/Agent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { compareSpecs, policyOf, type SpecChanges } from "@bluechip/domain/policies/Catalog"
+import { formatDollars } from "@bluechip/domain/policies/Format"
+import { configOf } from "@bluechip/domain/policies/Policy"
+import { trade } from "@bluechip/domain/policies/Trade"
+import { tradeSize } from "@bluechip/domain/policies/TradeSize"
+import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Button } from "@bluechip/ui/components/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@bluechip/ui/components/collapsible"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
@@ -56,6 +62,40 @@ const changeLine = (changes: SpecChanges | null): string => {
   }.`
 }
 
+// The dot on the timeline for a session: the one in force green, one on its way blue, the rest grey.
+const DOT: Readonly<Record<SessionStatus, string>> = {
+  draft: "bg-g-300",
+  locking: "bg-blue",
+  active: "bg-gain shadow-[0_0_0_4px_var(--color-gain-wash)]",
+  replaced: "bg-g-300",
+  revoked: "bg-g-300",
+  expired: "bg-warn",
+  failed: "bg-loss"
+}
+
+/** Its stocks and the limits most people look for: "$100 a day, $100 a trade, 500 trades a day". */
+function Rules({ spec, nameOf }: Readonly<{ spec: AgentSession["spec"]; nameOf: (symbol: StockSymbol) => string }>) {
+  const traded = configOf(spec.policies, trade)
+  const size = configOf(spec.policies, tradeSize)
+  const count = configOf(spec.policies, tradesPerDay)
+  const limits = [
+    traded === undefined || traded.dailyBudget === BigInt(0) ? null : `${formatDollars(traded.dailyBudget)} a day`,
+    size === undefined ? null : `${formatDollars(size.maxPerTrade)} a trade`,
+    count === undefined ? null : `${count.count} ${count.count === 1 ? "trade" : "trades"} a day`
+  ].filter((limit) => limit !== null)
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {(traded?.stocks ?? []).map((symbol) => (
+        <span key={symbol} title={nameOf(symbol)} className="inline-flex">
+          <TickerChip symbol={symbol} size="sm" />
+        </span>
+      ))}
+      {limits.length === 0 ? null : <span className="ml-1 text-label-sm text-g-600">{limits.join(", ")}</span>}
+    </div>
+  )
+}
+
 function SessionRow(
   { session, previous, nameOf }: Readonly<{
     session: AgentSession
@@ -69,33 +109,40 @@ function SessionRow(
   const status = STATUS[session.status]
 
   return (
-    <li className="grid gap-1.5 border-b border-g-100 px-[18px] py-3.5 last:border-b-0">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[13.5px] font-semibold">{when(session)}</span>
-        <span className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", status.tone)}>
-          {status.label}
-        </span>
+    <li className="group/session relative grid grid-cols-[20px_minmax(0,1fr)] gap-3 pb-5 last:pb-0">
+      <span aria-hidden className="absolute top-5 bottom-0 left-[9px] w-px bg-g-200 group-last/session:hidden" />
+      <span aria-hidden className={cn("relative mt-[7px] ml-[5px] size-2.5 rounded-full", DOT[session.status])} />
+      <div className="grid gap-2.5 rounded-lg bg-white p-4 shadow-e2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="grid gap-0.5">
+            <span className="text-[14px] font-semibold tracking-[-0.01em]">{when(session)}</span>
+            <p className="text-label-sm text-g-500">{changeLine(changes)}</p>
+          </div>
+          <span className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", status.tone)}>
+            {status.label}
+          </span>
+        </div>
+        <Rules spec={session.spec} nameOf={nameOf} />
+        {detailed ?
+          (
+            <Collapsible>
+              <CollapsibleTrigger className="group/chg inline-flex cursor-pointer items-center gap-1 text-label-sm font-semibold text-blue">
+                What changed
+                <Icon
+                  name="chevron-down"
+                  size={14}
+                  className="transition-transform group-data-panel-open/chg:rotate-180"
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 overflow-hidden rounded-md shadow-[inset_0_0_0_1px_var(--color-g-100)]">
+                  <SpecChangeRows before={previous.spec} after={session.spec} changes={changes} nameOf={nameOf} />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ) :
+          null}
       </div>
-      <p className="text-label-sm text-g-600">{changeLine(changes)}</p>
-      {detailed ?
-        (
-          <Collapsible>
-            <CollapsibleTrigger className="group/chg inline-flex cursor-pointer items-center gap-1 text-label-sm font-semibold text-blue">
-              What changed
-              <Icon
-                name="chevron-down"
-                size={14}
-                className="transition-transform group-data-panel-open/chg:rotate-180"
-              />
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="mt-2 overflow-hidden rounded-md shadow-[inset_0_0_0_1px_var(--color-g-100)]">
-                <SpecChangeRows before={previous.spec} after={session.spec} changes={changes} nameOf={nameOf} />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        ) :
-        null}
     </li>
   )
 }
@@ -113,7 +160,7 @@ export function SessionHistory(
   const body = () => {
     if (AsyncResult.isInitial(sessions)) {
       return (
-        <div aria-busy className="grid gap-3 p-[18px]">
+        <div aria-busy className="grid gap-3 rounded-lg bg-white p-[18px] shadow-e2">
           <SkeletonBlock className="h-10 w-full" />
           <SkeletonBlock className="h-10 w-full" />
         </div>
@@ -121,7 +168,7 @@ export function SessionHistory(
     }
     if (!AsyncResult.isSuccess(sessions)) {
       return (
-        <div className="grid justify-items-start gap-2 p-[18px]">
+        <div className="grid justify-items-start gap-2 rounded-lg bg-white p-[18px] shadow-e2">
           <p className="text-body-sm text-g-600">We couldn't load its history. Check your connection and try again.</p>
           <Button variant="secondary" size="sm" onClick={refresh}>Try again</Button>
         </div>
@@ -145,18 +192,23 @@ export function SessionHistory(
     const newestFirst = oldestFirst.map((session, index) => ({ session, previous: previousOf(index) })).toReversed()
 
     return (
-      <ul className="grid">
+      <ol className="grid">
         {newestFirst.map(({ previous, session }) => (
           <SessionRow key={session.id} session={session} previous={previous} nameOf={nameOf} />
         ))}
-      </ul>
+      </ol>
     )
   }
 
   return (
-    <section aria-labelledby={`history-${agent.id}`} className="grid content-start gap-2.5">
-      <h3 id={`history-${agent.id}`} className="px-0.5 text-label-sm font-semibold text-g-500">History</h3>
-      <div className="overflow-hidden rounded-lg bg-white shadow-e2">{body()}</div>
+    <section aria-labelledby={`history-${agent.id}`} className="grid content-start gap-3">
+      <div className="grid gap-0.5 px-0.5">
+        <h3 id={`history-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">
+          Its rules over time
+        </h3>
+        <p className="text-label-sm text-g-500">Each time its rules were locked with Face ID, newest first.</p>
+      </div>
+      {body()}
     </section>
   )
 }

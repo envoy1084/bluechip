@@ -5,7 +5,7 @@ import { type ComponentType, useState } from "react"
 import { useAgentPage } from "../components/detail/AgentPageContext.ts"
 import { JournalSection } from "../components/detail/JournalSection.tsx"
 import { PoliciesSection } from "../components/detail/PoliciesSection.tsx"
-import { ResultsCard } from "../components/detail/ResultsCard.tsx"
+import { AgentResults } from "../components/detail/results/AgentResults.tsx"
 import { SessionHistory } from "../components/detail/SessionHistory.tsx"
 import { UsageCard } from "../components/detail/UsageCard.tsx"
 import { agentState } from "../model/agentState.ts"
@@ -41,7 +41,7 @@ export function AgentJournalScreen() {
 /** What it contributed: profit, what it bought and sold, its costs and what its policies held back. */
 export function AgentResultsScreen() {
   const { agent } = useAgentPage()
-  return <ResultsCard agent={agent} />
+  return <AgentResults agent={agent} />
 }
 
 /** How much of each limit it has used today. */

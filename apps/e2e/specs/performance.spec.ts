@@ -32,8 +32,9 @@ test.describe("performance", () => {
     await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
     await askToBuy(page, 50)
 
-    const card = results(page, "Results")
-    await expect(card.getByText("$50.00", { exact: true })).toBeVisible()
-    await expect(card.getByText("Its policies haven't blocked any of the 1 trade it tried.")).toBeVisible()
+    await page.getByRole("link", { name: "Results" }).click()
+
+    await expect(results(page, "Money moved").getByText("$50.00", { exact: true })).toBeVisible()
+    await expect(results(page, "Its policies").getByText("None of its trades were blocked.")).toBeVisible()
   })
 })

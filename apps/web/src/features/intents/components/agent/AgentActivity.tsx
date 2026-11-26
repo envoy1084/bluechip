@@ -1,89 +1,15 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
-import { describeLeg } from "@bluechip/domain/intents/Describe"
-import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
-import { ActivityItem, type ActivityKind } from "@bluechip/ui/bluechip/activity-item"
-import { Button, ButtonLink } from "@bluechip/ui/components/button"
+import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
-import { Link } from "@tanstack/react-router"
+import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
-import { nothingMoved } from "../../../../lib/tradeOutcome.ts"
 import { agentIntentsAtom } from "../../atoms/intents.ts"
-import { useLatestIntent } from "../../hooks/useLatestIntent.ts"
-import { askedAt, shownDecision, STATUS } from "../../model/intentText.ts"
-import { DecisionLine } from "../DecisionLine.tsx"
-import { CancelIntentButton } from "./CancelIntentButton.tsx"
-
-const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
-
-const kindOf = (intent: Intent): ActivityKind => {
-  if (intent.status === "blocked" || intent.status === "failed") return "blocked"
-  if (intent.status === "needsApproval" || intent.status === "awaitingSignature") return "approval"
-  return "trade"
-}
-
-/**
- * One trade the agent was asked for: the trade in words, where it stands, what its policies decided, and the trades
- * planned with it (`plannedWith`, those on the same page).
- */
-function IntentRow(
-  { intent: listed, plannedWith, now, nameOf }: Readonly<{
-    intent: Intent
-    plannedWith: ReadonlyArray<Intent>
-    now: Date
-    nameOf: (symbol: StockSymbol) => string
-  }>
-) {
-  const intent = useLatestIntent(listed)
-  const status = STATUS[intent.status]
-  const decision = shownDecision(intent)
-  const trade = describeLeg(intent.leg, nameOf)
-  const stopped = intent.status === "blocked" || intent.status === "failed" || intent.status === "declined" ||
-    intent.status === "expired" || intent.status === "cancelled"
-
-  const actions = intent.status === "waiting" || intent.status === "proposed" ?
-    <CancelIntentButton intent={intent} /> :
-    intent.status === "needsApproval" || intent.status === "awaitingSignature" ?
-    (
-      <ButtonLink size="sm" render={<Link to="/approvals" />}>
-        <Icon name="face-id" size={14} />Review and approve
-      </ButtonLink>
-    ) :
-    undefined
-
-  return (
-    <ActivityItem
-      kind={kindOf(intent)}
-      icon={intent.leg.side === "buy" ? "arrow-down-right" : "arrow-up-right"}
-      title={intent.status === "blocked" ? `${trade}, blocked` : trade}
-      time={askedAt(intent, now)}
-      {...(actions === undefined ? {} : { actions })}
-    >
-      <span className="mt-0.5 grid gap-1">
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", status.tone)}>
-            {status.label}
-          </span>
-          {intent.reason === "" ? null : <span className="text-label-sm text-g-500">{intent.reason}</span>}
-        </span>
-        {decision === null ? null : <DecisionLine decision={decision} />}
-        {stopped ? <span className="text-label-sm text-g-600">{nothingMoved(intent.leg.side)}</span> : null}
-        {plannedWith.length === 0 ?
-          null :
-          (
-            <span className="text-label-sm text-g-500">
-              Planned with {plannedWith.map((other) => lowerFirst(describeLeg(other.leg, nameOf))).join(", ")}
-            </span>
-          )}
-      </span>
-    </ActivityItem>
-  )
-}
+import { askedOn } from "../../model/intentText.ts"
+import { ActivityRow } from "./ActivityRow.tsx"
 
 /** One page of the agent's intents; the last one loaded offers the next. */
 function IntentPage(
@@ -125,21 +51,29 @@ function IntentPage(
     )
   }
 
+  // Each day's trades under its heading; a day split across pages keeps its heading on each.
+  const days = Array.groupBy(items, (intent) => askedOn(intent, now))
   return (
     <>
-      <ul>
-        {items.map((intent) => (
-          <IntentRow
-            key={intent.id}
-            intent={intent}
-            plannedWith={intent.batch === null ?
-              [] :
-              items.filter((other) => other.id !== intent.id && other.batch?.id === intent.batch!.id)}
-            now={now}
-            nameOf={nameOf}
-          />
-        ))}
-      </ul>
+      {Object.entries(days).map(([day, intents]) => (
+        <section key={day} aria-label={day}>
+          <h4 className="border-b border-g-100 bg-g-50/70 px-5 py-2 text-caption font-semibold tracking-[0.02em] text-g-500 uppercase">
+            {day}
+          </h4>
+          <ul>
+            {intents.map((intent) => (
+              <ActivityRow
+                key={intent.id}
+                intent={intent}
+                plannedWith={intent.batch === null ?
+                  [] :
+                  items.filter((other) => other.id !== intent.id && other.batch?.id === intent.batch!.id)}
+                nameOf={nameOf}
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
       {last && nextPageToken !== null ?
         (
           <div className="grid border-t border-g-100 p-2.5">
@@ -159,8 +93,13 @@ export function AgentActivity(
   const [now] = useState(() => new Date())
 
   return (
-    <section aria-labelledby={`activity-${agent.id}`} className="grid content-start gap-2.5">
-      <h3 id={`activity-${agent.id}`} className="px-0.5 text-label-sm font-semibold text-g-500">Activity</h3>
+    <section aria-labelledby={`activity-${agent.id}`} className="grid content-start gap-3">
+      <div className="grid gap-0.5 px-0.5">
+        <h3 id={`activity-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">Activity</h3>
+        <p className="text-label-sm text-g-500">
+          Every trade it was asked for, what its policies decided, and how it ended.
+        </p>
+      </div>
       <div className="overflow-hidden rounded-lg bg-white shadow-e2">
         {pageTokens.map((pageToken, index) => (
           <IntentPage

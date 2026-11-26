@@ -41,7 +41,7 @@ export function AgentHeader(
 
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-lg bg-white p-5 shadow-e2">
-      <AgentAvatar agentId={agent.id} size="xl" status={agentDot(state)} removed={removed} />
+      <AgentAvatar agentId={agent.id} size="xl" status={agentDot(state)} removed={removed} className="self-start" />
       <div className="grid min-w-0 flex-[1_1_260px] gap-1">
         <div className="flex flex-wrap items-center gap-2.5">
           <h2 className="truncate text-[22px] font-semibold tracking-[-0.025em]">{agent.name}</h2>
