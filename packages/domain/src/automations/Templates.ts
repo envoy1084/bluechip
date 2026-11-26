@@ -19,7 +19,7 @@ const WEEKDAYS: ReadonlyArray<Weekday> = ["monday", "tuesday", "wednesday", "thu
 
 /**
  * The default automations for an agent made from `template` with `spec`: none for a Stock picker, a custom spec or
- * a saved template.
+ * a saved template. `agentId` is `null` while the agent isn't saved yet (the new agent's flow sets it once it is).
  *
  * **Example** (A Weekly buyer of NVIDIA)
  *
@@ -39,7 +39,7 @@ const WEEKDAYS: ReadonlyArray<Weekday> = ["monday", "tuesday", "wednesday", "thu
 export const defaultAutomations = (
   template: string | null,
   spec: AgentSpec,
-  agentId: AgentId
+  agentId: AgentId | null
 ): ReadonlyArray<AutomationDraft> => {
   const limits = limitsOf(spec)!
   switch (template) {
