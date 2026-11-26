@@ -9,29 +9,26 @@ import { TestAgents } from "../../utils/TestAgents.ts"
 
 // A swap's deadline is checked against `block.timestamp`, so it must count from the chain's clock, not the server's:
 // each test runs the chain an hour ahead of the server (as a chain behind on its clock, or a fork moved forward, would
-// be) and puts it back after. Feeds updated at the real time are still fresh an hour later.
+// be). On Base's hardfork Anvil never moves its clock back, so these tests run on a devnet of their own. Feeds updated
+// at the real time are still fresh an hour later.
 // The server runs on the real clock (see `TestServer`).
 const AHEAD_MS = 60 * 60 * 1000
 
-layer(TestAgents.layer, { excludeTestServices: true })("swap deadlines", (it) => {
+layer(TestAgents.layerIsolated, { excludeTestServices: true })("swap deadlines", (it) => {
   describe("with the chain's clock an hour ahead of the server's", () => {
     it.effect("an agent's buy is sent and filled", () =>
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked
-        const chain = yield* DevChain
-        yield* chain.setTime(new Date(Date.now() + AHEAD_MS))
+        yield* Effect.orDie((yield* DevChain).setTime(new Date(Date.now() + AHEAD_MS)))
 
-        const filled = yield* Effect.gen(function*() {
-          const created = yield* user.api.intents.create({
-            payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("AAPL", 20) }
-          })
-          assert.instanceOf(created, Intent)
-          const { intent } = yield* user.events.next(
-            "IntentChanged",
-            ({ intent }) => intent.id === created.id && (intent.status === "filled" || intent.status === "waiting")
-          )
-          return intent
-        }).pipe(Effect.ensuring(Effect.orDie(chain.setTime(new Date()))))
+        const created = yield* user.api.intents.create({
+          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("AAPL", 20) }
+        })
+        assert.instanceOf(created, Intent)
+        const { intent: filled } = yield* user.events.next(
+          "IntentChanged",
+          ({ intent }) => intent.id === created.id && (intent.status === "filled" || intent.status === "waiting")
+        )
 
         assert.deepStrictEqual([filled.status, filled.decision?._tag], ["filled", "Passes"])
       }))
@@ -39,25 +36,20 @@ layer(TestAgents.layer, { excludeTestServices: true })("swap deadlines", (it) =>
     it.effect("your own buy signed with your passkey is filled", () =>
       Effect.gen(function*() {
         const { user } = yield* (yield* TestAgents).locked
-        const chain = yield* DevChain
-        yield* chain.setTime(new Date(Date.now() + AHEAD_MS))
+        yield* Effect.orDie((yield* DevChain).setTime(new Date(Date.now() + AHEAD_MS)))
 
-        const filled = yield* Effect.gen(function*() {
-          const request = yield* user.api.intents.create({
-            payload: { requestId: RequestId.make(randomUUID()), agentId: null, leg: buy("AAPL", 20) }
-          })
-          assert.instanceOf(request, IntentRequest)
-          yield* user.api.intents.confirm({
-            params: { id: request.id },
-            payload: { credential: user.authenticator.authenticate(request.options) }
-          })
-          const { intent } = yield* user.events.next(
-            "IntentChanged",
-            ({ intent }) =>
-              intent.id === request.intent.id && (intent.status === "filled" || intent.status === "failed")
-          )
-          return intent
-        }).pipe(Effect.ensuring(Effect.orDie(chain.setTime(new Date()))))
+        const request = yield* user.api.intents.create({
+          payload: { requestId: RequestId.make(randomUUID()), agentId: null, leg: buy("AAPL", 20) }
+        })
+        assert.instanceOf(request, IntentRequest)
+        yield* user.api.intents.confirm({
+          params: { id: request.id },
+          payload: { credential: user.authenticator.authenticate(request.options) }
+        })
+        const { intent: filled } = yield* user.events.next(
+          "IntentChanged",
+          ({ intent }) => intent.id === request.intent.id && (intent.status === "filled" || intent.status === "failed")
+        )
 
         assert.strictEqual(filled.status, "filled")
       }))

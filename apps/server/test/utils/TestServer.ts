@@ -38,9 +38,13 @@ export const TelegramTest = ChatTest.layer({
  * `ChainClient`) for arranging the chain.
  *
  * The server runs on the real clock: its engine, crons and the chain advance with time, so files using it build their
- * layer with `excludeTestServices`.
+ * layer with `excludeTestServices`. `devnet` is the worker's shared devnet unless a file needs one of its own
+ * (`DevnetTest.layerIsolated`, to move the chain's clock).
  */
-export const testServer = <A, E, R>(chat: Layer.Layer<A | Chat.Chat | ChatAdapter.Registry, E, R>) =>
+export const testServer = <A, E, R>(
+  chat: Layer.Layer<A | Chat.Chat | ChatAdapter.Registry, E, R>,
+  devnet: typeof DevnetTest.layer = DevnetTest.layer
+) =>
   HttpRouter.serve(Layer.mergeAll(ApiRoutes, OriginCheckMiddleware), {
     disableListenLog: true,
     disableLogger: true
@@ -53,8 +57,11 @@ export const testServer = <A, E, R>(chat: Layer.Layer<A | Chat.Chat | ChatAdapte
     Layer.provideMerge(Database.layer),
     Layer.provideMerge(EngineTest),
     Layer.provide(TestConfig),
-    Layer.provideMerge(DevnetTest.layer)
+    Layer.provideMerge(devnet)
   )
 
 /** The test server with Telegram in memory. */
 export const TestServer = testServer(TelegramTest)
+
+/** The test server with Telegram in memory, on a devnet of the file's own: its chain's clock can move. */
+export const IsolatedTestServer = testServer(TelegramTest, DevnetTest.layerIsolated)

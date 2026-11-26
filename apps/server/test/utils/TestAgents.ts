@@ -81,4 +81,7 @@ export class TestAgents extends Context.Service<TestAgents, {
 
   /** The agents of the test server's users, served by this layer too. */
   static readonly layer = this.layerNoDeps.pipe(Layer.provideMerge(TestUsers.layer))
+
+  /** The agents of a test server on a devnet of the file's own (`TestUsers.layerIsolated`). */
+  static readonly layerIsolated = this.layerNoDeps.pipe(Layer.provideMerge(TestUsers.layerIsolated))
 }

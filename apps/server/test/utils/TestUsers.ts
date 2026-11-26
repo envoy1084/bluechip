@@ -14,7 +14,7 @@ import type * as Scope from "effect/Scope"
 import * as Authenticator from "./Authenticator.ts"
 import { origin } from "./TestConfig.ts"
 import * as TestEvents from "./TestEvents.ts"
-import { TestServer } from "./TestServer.ts"
+import { IsolatedTestServer, TestServer } from "./TestServer.ts"
 
 /** The typed client of `BluechipApi`. */
 export type Api = HttpApiClient.ForApi<typeof BluechipApi>
@@ -101,4 +101,7 @@ export class TestUsers extends Context.Service<TestUsers, {
 
   /** The users of the test server, which this layer also serves. */
   static readonly layer = this.layerNoDeps.pipe(Layer.provideMerge(TestServer))
+
+  /** The users of a test server on a devnet of the file's own (`IsolatedTestServer`), which this layer also serves. */
+  static readonly layerIsolated = this.layerNoDeps.pipe(Layer.provideMerge(IsolatedTestServer))
 }
