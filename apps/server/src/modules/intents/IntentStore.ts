@@ -13,7 +13,7 @@ import {
 } from "@bluechip/domain/intents/Intent"
 import { journalOfIntent } from "@bluechip/domain/journal/Journal"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
-import { and, desc, eq, inArray, isNotNull, lt, or } from "drizzle-orm"
+import { and, desc, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -99,8 +99,10 @@ export class IntentStore extends Context.Service<IntentStore, {
    */
   readonly approvals: (owner: Owner) => Effect.Effect<ReadonlyArray<Intent>>
   /**
-   * Moves an intent on by `event` (and saves `changes` with it). Fails with `Conflict` when the intent has already
-   * moved past where `event` applies, so a repeated step (after a restart, or a double click) changes nothing.
+   * Moves an intent on by `event` (and saves `changes` with it), from the status `row` was read in. Fails with
+   * `Conflict`: `intentClosed` when that status doesn't take `event`, so a repeated step (after a restart, or a double
+   * click) changes nothing; `intentChanged` when the intent moved since it was read, so of two moves racing from one
+   * status (a decline landing during a send) only the first counts.
    */
   readonly advance: (
     row: IntentRow,
@@ -208,13 +210,16 @@ export class IntentStore extends Context.Service<IntentStore, {
           const next = transition(row.status, event)
           if (Result.isFailure(next)) return yield* new Conflict({ reason: "intentClosed" })
 
+          // Set only from the status it was read in: of two moves from one status (a decline and a send), the second
+          // finds the status changed and loses.
           const decision = event._tag === "Decided" ? { decision: event.decision } : {}
           const [updated] = yield* db.update(intents)
             .set({ ...changes, ...decision, status: next.success, updatedAt: yield* DateTime.now })
-            .where(eq(intents.id, row.id)).returning().pipe(Effect.orDie)
+            .where(and(eq(intents.id, row.id), eq(intents.status, row.status))).returning().pipe(Effect.orDie)
+          if (updated === undefined) return yield* new Conflict({ reason: "intentChanged" })
 
           // The agent's journal first, so whoever hears of the change can read it there.
-          const intent = toIntent(updated!)
+          const intent = toIntent(updated)
           const entry = intent.agentId === null ? undefined : journalOfIntent(intent, nameOf)
           if (entry !== undefined) {
             yield* journal.write({
@@ -243,7 +248,7 @@ export class IntentStore extends Context.Service<IntentStore, {
               : {}
           })
 
-          return updated!
+          return updated
         }
       )
 
@@ -255,12 +260,23 @@ export class IntentStore extends Context.Service<IntentStore, {
       })
 
       const expire = Effect.fn("IntentStore.expire")(function*(options: { readonly userId?: UserId | undefined } = {}) {
+        const now = yield* DateTime.now
         const stale = yield* db.select().from(intents).where(and(
           inArray(intents.status, ["needsApproval", "awaitingSignature", "waiting"]),
-          lt(intents.expiresAt, yield* DateTime.now),
+          lt(intents.expiresAt, now),
           options.userId === undefined ? undefined : eq(intents.userId, options.userId as `user_${string}`)
         )).pipe(Effect.orDie)
         for (const row of stale) yield* advance(row, { _tag: "Expired" }).pipe(Effect.ignore)
+
+        // Your own trade claimed for sending, then never sent (the server stopped in between): nothing was traded.
+        const unsent = yield* db.select().from(intents).where(and(
+          eq(intents.status, "sending"),
+          eq(intents.executor, "owner"),
+          isNull(intents.userOpHash),
+          lt(intents.expiresAt, DateTime.subtract(now, { hours: 1 })),
+          options.userId === undefined ? undefined : eq(intents.userId, options.userId as `user_${string}`)
+        )).pipe(Effect.orDie)
+        for (const row of unsent) yield* advance(row, { _tag: "Failed" }).pipe(Effect.ignore)
       })
 
       return IntentStore.of({

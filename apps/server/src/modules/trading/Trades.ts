@@ -254,7 +254,14 @@ export class Trades extends Context.Service<Trades, {
         if (waiting !== undefined && waiting.status !== "awaitingSignature") {
           return yield* new Conflict({ reason: "intentClosed" })
         }
-        const userOpHash = yield* operations.send(passkey, request.userOperation, credential)
+        // Claimed for sending first: a decline or an expiry landing during the send then loses with a conflict, and
+        // never the reverse (a trade sent for an intent that says declined).
+        const sending = waiting === undefined ? undefined : yield* intents.advance(waiting, { _tag: "Signed" })
+        const userOpHash = yield* operations.send(passkey, request.userOperation, credential).pipe(
+          Effect.tapError(() =>
+            sending === undefined ? Effect.void : intents.advance(sending, { _tag: "Failed" }).pipe(Effect.ignore)
+          )
+        )
 
         const row = yield* ledger.record({
           id: typeid("trade").toString() as `trade_${string}`,
@@ -274,13 +281,10 @@ export class Trades extends Context.Service<Trades, {
           userOpHash,
           createdAt: yield* DateTime.now
         })
-
-        // Read again: the send takes a moment, and an expiry or a decline may have landed meanwhile.
-        const intent = yield* intents.find(payload["intentId"]!)
-        if (intent !== undefined) {
-          yield* intents.advance(intent, { _tag: "Signed" }, { userOpHash, tradeId: row.id }).pipe(
-            Effect.flatMap((sent) => intents.advance(sent, { _tag: "Accepted" })),
-            Effect.catchTag("Conflict", () => Effect.logWarning(`Intent ${intent.id} had moved on before it was sent`))
+        if (sending !== undefined) {
+          // Sent: the trade is followed whatever the intent says now.
+          yield* intents.advance(sending, { _tag: "Accepted" }, { userOpHash, tradeId: row.id }).pipe(
+            Effect.catchTag("Conflict", () => Effect.logWarning(`Intent ${sending.id} moved on while it was sent`))
           )
         }
 

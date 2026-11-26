@@ -83,6 +83,11 @@ describe("intentProblem", () => {
       expected: "This trade has already moved on, so there's nothing to do."
     },
     {
+      name: "the trade changed while you answered",
+      error: new Conflict({ reason: "intentChanged" }),
+      expected: "This trade changed while you answered (declined, expired or sent elsewhere), so nothing more was done."
+    },
+    {
       name: "Base unreachable",
       error: new Unavailable({ dependency: "chain", retryAfterSeconds: null }),
       expected: "We couldn't reach Base just now. Nothing changed, so try again in a moment."

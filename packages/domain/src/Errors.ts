@@ -81,6 +81,7 @@ export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Err
       "staleUpdate",
       "agentBusy",
       "intentClosed",
+      "intentChanged",
       "cardClosed",
       "runActive",
       "automationEnded",

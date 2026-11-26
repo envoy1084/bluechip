@@ -52,6 +52,9 @@ export const intentProblem = (error: unknown, side: "buy" | "sell"): string => {
       return "This agent can't trade right now: it's paused, its rules ran out, or it isn't locked or is changing."
     }
     if (error.reason === "intentClosed") return "This trade has already moved on, so there's nothing to do."
+    if (error.reason === "intentChanged") {
+      return "This trade changed while you answered (declined, expired or sent elsewhere), so nothing more was done."
+    }
   }
   return tradeProblem(error, side)
 }
