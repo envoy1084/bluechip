@@ -12,6 +12,15 @@ import { Price, Shares, Usdc } from "../market/Units.ts"
 import { CeremonyOptions } from "../WebAuthn.ts"
 
 /**
+ * The smallest buy you can make: $1 of USDC. Smaller buys aren't quoted or sent.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const MINIMUM_BUY: Usdc = Usdc.make(BigInt(1_000_000))
+
+/**
  * Where a trade is: sent to the bundler, waiting for Base, done (`filled`) or not (`failed`, the money stays).
  *
  * @stability unstable

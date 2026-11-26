@@ -1,4 +1,5 @@
 import { Devnet } from "@bluechip/devnet/Devnet"
+import { QuoteUnavailable } from "@bluechip/domain/Errors"
 import { Usdc } from "@bluechip/domain/market/Units"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
@@ -52,6 +53,28 @@ layer(TestUsers.layer, { excludeTestServices: true })("market API", (it) => {
         assert.isTrue(quote.shares > BigInt(0))
         // The devnet's pools start at the feed's price, so the gap is the pool's fee and spread.
         assert.isAtMost(Math.abs(quote.gapBps), 20)
+      }))
+
+    it.effect("200: a $1 buy, the smallest", () =>
+      Effect.gen(function*() {
+        const { api } = yield* (yield* TestUsers).browser
+
+        const quote = yield* api.market.quote({
+          payload: { symbol: "NVDA", side: "buy", amount: { usdc: Usdc.make(BigInt(1_000_000)) } }
+        })
+
+        assert.deepStrictEqual([quote.side, quote.usdc], ["buy", BigInt(1_000_000)])
+      }))
+
+    it.effect("422 QuoteUnavailable: a buy of $0.99, under the smallest", () =>
+      Effect.gen(function*() {
+        const { api } = yield* (yield* TestUsers).browser
+
+        const error = yield* Effect.flip(api.market.quote({
+          payload: { symbol: "NVDA", side: "buy", amount: { usdc: Usdc.make(BigInt(990_000)) } }
+        }))
+
+        assert.deepStrictEqual({ ...error }, { ...new QuoteUnavailable({ symbol: "NVDA", reason: "belowMinimum" }) })
       }))
   })
 

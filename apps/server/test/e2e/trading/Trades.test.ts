@@ -1,5 +1,5 @@
 import { Devnet } from "@bluechip/devnet/Devnet"
-import { InsufficientCash, InsufficientShares, SignatureRejected } from "@bluechip/domain/Errors"
+import { InsufficientCash, InsufficientShares, QuoteUnavailable, SignatureRejected } from "@bluechip/domain/Errors"
 import { RequestId } from "@bluechip/domain/Ids"
 import { Shares, Usdc } from "@bluechip/domain/market/Units"
 import { assert, describe, layer } from "@effect/vitest"
@@ -24,6 +24,22 @@ layer(TestUsers.layer, { excludeTestServices: true })("trades", (it) => {
         }))
 
         assert.deepStrictEqual({ ...error }, { ...new InsufficientCash({ available: BigInt(0) }) })
+      }))
+
+    it.effect("QuoteUnavailable: a buy of $0.99, under the smallest", () =>
+      Effect.gen(function*() {
+        const { api } = yield* (yield* TestUsers).signUp
+
+        const error = yield* Effect.flip(api.trades.prepare({
+          payload: {
+            requestId: RequestId.make(randomUUID()),
+            symbol: "NVDA",
+            side: "buy",
+            amount: { usdc: Usdc.make(BigInt(990_000)) }
+          }
+        }))
+
+        assert.deepStrictEqual({ ...error }, { ...new QuoteUnavailable({ symbol: "NVDA", reason: "belowMinimum" }) })
       }))
 
     it.effect("InsufficientShares: a sell with no shares", () =>

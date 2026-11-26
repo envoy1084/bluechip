@@ -94,7 +94,8 @@ export class NotTradable extends Schema.TaggedError<NotTradable>("@bluechip/doma
 ) {}
 
 /**
- * No quote right now: the amount is more than the pool can fill, or the price couldn't be read.
+ * No quote right now: the amount is more than the pool can fill, under the smallest buy (`belowMinimum`), or the
+ * price couldn't be read.
  *
  * @stability unstable
  * @category errors
@@ -102,7 +103,7 @@ export class NotTradable extends Schema.TaggedError<NotTradable>("@bluechip/doma
  */
 export class QuoteUnavailable extends Schema.TaggedError<QuoteUnavailable>("@bluechip/domain/Errors/QuoteUnavailable")(
   "QuoteUnavailable",
-  { symbol: Schema.String, reason: Schema.Literals(["tooLarge", "tooSmall", "noPrice", "poolError"]) },
+  { symbol: Schema.String, reason: Schema.Literals(["tooLarge", "tooSmall", "belowMinimum", "noPrice", "poolError"]) },
   { httpApiStatus: 422 }
 ) {}
 

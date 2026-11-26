@@ -8,14 +8,14 @@ import {
   type NotFound,
   NotTradable,
   PriceCheckFailed,
-  type QuoteUnavailable,
+  QuoteUnavailable,
   type SignatureRejected,
   Unavailable
 } from "@bluechip/domain/Errors"
 import type { Address, SigningRequestId, UserId } from "@bluechip/domain/Ids"
 import { Quote, type StockSymbol } from "@bluechip/domain/market/Market"
 import { bpsBetween, type Shares, type Usdc } from "@bluechip/domain/market/Units"
-import { type Trade, TradeRequest, type TradeWarning, transition } from "@bluechip/domain/trading/Trade"
+import { MINIMUM_BUY, type Trade, TradeRequest, type TradeWarning, transition } from "@bluechip/domain/trading/Trade"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import { and, eq, inArray, isNotNull } from "drizzle-orm"
 import * as Context from "effect/Context"
@@ -155,6 +155,9 @@ export class Trades extends Context.Service<Trades, {
         const stock = stocks.find((candidate) => candidate.symbol === input.symbol)
         if (stock?.pool == null) return yield* new NotTradable({ symbol: input.symbol })
         const amountIn = "usdc" in input.amount ? input.amount.usdc : input.amount.shares
+        if ("usdc" in input.amount && input.amount.usdc < MINIMUM_BUY) {
+          return yield* new QuoteUnavailable({ symbol: input.symbol, reason: "belowMinimum" })
+        }
 
         const existing = yield* signing.findPrepared(
           owner,
