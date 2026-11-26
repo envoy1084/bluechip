@@ -8,6 +8,7 @@ import { notificationSettingsAtom } from "../atoms/notifications.ts"
 import { KindRules } from "../components/settings/KindRules.tsx"
 import { PushCard } from "../components/settings/PushCard.tsx"
 import { QuietHoursCard } from "../components/settings/QuietHoursCard.tsx"
+import { TelegramCard } from "../components/settings/TelegramCard.tsx"
 
 /** Where each kind of notification goes (the app, push, Telegram), quiet hours, this device's push and Telegram. */
 export function NotificationSettingsScreen() {
@@ -23,6 +24,7 @@ export function NotificationSettingsScreen() {
         </ButtonLink>
       }
     >
+      <TelegramCard />
       <PushCard />
       {AsyncResult.isSuccess(settings) ?
         (
