@@ -25,9 +25,11 @@ export const minutesAgo = (now: Date, minutes: number): DateTime.Utc =>
 
 const DAY = 24 * 60
 
-/** How many days ago the scenario's person signed up: a little before their oldest agent. */
+/** How many days ago the scenario's person signed up: a little before their oldest agent (the day before, when new). */
 export const accountAgeDays = (cast: Cast): number =>
-  cast.agents.length === 0 ? 0 : Math.max(...cast.agents.map((agent) => agent.ageDays)) + 5
+  cast.agents.length === 0 ?
+    0 :
+    Math.max(...cast.agents.map((agent) => agent.ageDays)) + (cast.scenario === "starter" ? 1 : 5)
 
 const PASSKEYS: ReadonlyArray<{ readonly label: string; readonly synced: boolean; readonly usedMinutesAgo: number }> = [
   { label: "iCloud Keychain on Mac", synced: true, usedMinutesAgo: 3 },

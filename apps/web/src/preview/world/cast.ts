@@ -5,7 +5,7 @@ import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { TemplateId } from "@bluechip/domain/policies/Templates"
 import { previewId } from "./ids.ts"
 
-export type ScenarioId = "newPerson" | "typical" | "heavy"
+export type ScenarioId = "newPerson" | "starter" | "typical" | "heavy"
 
 /** The scenarios the panel offers. */
 export const SCENARIOS: ReadonlyArray<
@@ -15,6 +15,11 @@ export const SCENARIOS: ReadonlyArray<
     id: "newPerson",
     label: "New person",
     description: "Just signed up: no money, agents, automations, chats or notifications. Every empty state."
+  },
+  {
+    id: "starter",
+    label: "Just started",
+    description: "Signed up two days ago: $200 in, one agent, a first trade or two, a stop-loss that hasn't run yet."
   },
   {
     id: "typical",
@@ -65,6 +70,8 @@ export interface CastAutomation {
   readonly kind: "weeklyBuy" | "stopLoss" | "rebalance" | "newsSell" | "priceAlert" | "monthlySplit"
   readonly state: "active" | "paused" | "done" | "failing"
   readonly asks: boolean
+  /** How many days ago it was set up, for one newer than its kind's usual runs: it has only the runs since. */
+  readonly ageDays?: number
 }
 
 export interface CastConversation {
@@ -295,6 +302,40 @@ const newPerson: Cast = {
   conversations: []
 }
 
+// Signed up two days ago: a $200 deposit, a small Apple buy of their own, and yesterday's first agent, which bought
+// some Nvidia and has a second buy waiting for gas.
+const starter: Cast = {
+  scenario: "starter",
+  userId: USER_ID,
+  displayName: "Jordan",
+  cash: 150,
+  holdings: [
+    { symbol: "AAPL", shares: 0.105, costPerShare: 236.9 },
+    { symbol: "NVDA", shares: 0.17, costPerShare: 146.2 }
+  ],
+  agents: [{
+    id: agentId(1),
+    name: "Tech picker",
+    template: "stockPicker",
+    preset: "conservative",
+    stocks: ["NVDA", "MSFT"],
+    targets: [],
+    state: "active",
+    ageDays: 1
+  }],
+  automations: [{
+    id: automationId(1),
+    name: "Nvidia stop-loss",
+    agentId: agentId(1),
+    kind: "stopLoss",
+    state: "active",
+    asks: false,
+    ageDays: 0.3
+  }],
+  conversations: []
+}
+
+const CASTS: Readonly<Record<ScenarioId, Cast>> = { newPerson, starter, typical, heavy }
+
 /** The cast of `scenario`. */
-export const castOf = (scenario: ScenarioId): Cast =>
-  scenario === "heavy" ? heavy : scenario === "typical" ? typical : newPerson
+export const castOf = (scenario: ScenarioId): Cast => CASTS[scenario]

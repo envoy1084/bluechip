@@ -314,7 +314,9 @@ export const automationPerformanceOf = (
   )
 
   const asked = intents.filter((intent) => intent.decision?._tag === "Ask").length
-  const extras = cast.scenario === "newPerson" ? { skipped: 0, failed: 0 } : RUN_EXTRAS[automation.state]
+  const extras = cast.scenario === "newPerson" || cast.scenario === "starter" ?
+    { skipped: 0, failed: 0 } :
+    RUN_EXTRAS[automation.state]
   const counts = {
     proposed: intents.length - asked,
     asked,

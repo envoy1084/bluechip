@@ -20,7 +20,7 @@ const SHARE = 100_000_000
 export const OWN_WALLET = "0x7a3b000000000000000000000000000000c0ffee" as Address
 
 // Agents that have a session and so have traded; a draft or one still locking hasn't.
-const hasTraded = (agent: CastAgent) => agent.state !== "draft" && agent.state !== "locking" && agent.ageDays >= 2
+const hasTraded = (agent: CastAgent) => agent.state !== "draft" && agent.state !== "locking" && agent.ageDays >= 1
 
 const REASONS: Readonly<Record<CastAgent["template"], string>> = {
   stockPicker: "Strong results and the price pulled back.",
@@ -52,22 +52,26 @@ interface Slot {
   readonly at: number
 }
 
-/** Who bought a holding and when: you, then each agent trading the stock, in proportion. */
+/**
+ * Who bought a holding and when: you, then each agent trading the stock, in proportion. Someone who just started
+ * bought only what their agent doesn't trade, in the day and a half since their deposit.
+ */
 const slotsOf = (cast: Cast, symbol: StockSymbol, now: number): ReadonlyArray<Slot> => {
-  const window = cast.scenario === "heavy" ? 170 : 25
+  const traders = cast.agents.filter((candidate) => candidate.stocks.includes(symbol) && hasTraded(candidate))
+  const window = cast.scenario === "heavy" ? 170 : cast.scenario === "starter" ? 1.5 : 25
   const spread = (from: number, count: number, index: number) => {
     const start = Math.max(now - window * DAY, from)
     return start + ((now - 6 * HOUR - start) * (index + 0.5)) / count
   }
 
-  const ownBuys = cast.scenario === "heavy" ? 2 : 1
+  const ownBuys = cast.scenario === "heavy" ? 2 : cast.scenario === "starter" && traders.length > 0 ? 0 : 1
   const slots: Array<Slot> = Array.from({ length: ownBuys }, (_, index) => ({
     agent: null,
     weight: 3,
     at: spread(now - window * DAY, ownBuys * 2, index) - 3 * HOUR
   }))
 
-  for (const agent of cast.agents.filter((candidate) => candidate.stocks.includes(symbol) && hasTraded(candidate))) {
+  for (const agent of traders) {
     const born = now - agent.ageDays * DAY + HOUR
     // An expired or removed agent stopped trading a while ago.
     const retired = agent.state === "expired" || agent.state === "removed"
@@ -231,7 +235,7 @@ export const makeHistory = (
   return { trades, intents, transfers: transfersOf(cast, now, trades, n), nextId: n + 50 }
 }
 
-/** Deposits (and, for the heavy user, a withdrawal) that leave the cast's cash after its trades. */
+/** Deposits (and, for the heavy user, a withdrawal) that leave the cast's cash after its trades: one for a starter. */
 const transfersOf = (cast: Cast, now: number, trades: ReadonlyArray<TradeRecord>, from: number): Array<Transfer> => {
   if (trades.length === 0 && cast.cash === 0) return []
 
@@ -249,6 +253,8 @@ const transfersOf = (cast: Cast, now: number, trades: ReadonlyArray<TradeRecord>
       { kind: "withdrawal", amount: dollars(1_200), at: now - 20 * DAY },
       { kind: "deposit", amount: dollars(0.5), at: now - 2 * DAY }
     ] :
+    cast.scenario === "starter" ?
+    [] :
     [{ kind: "deposit", amount: dollars(1_000), at: now - 12 * DAY }]
   const net = later.reduce((sum, move) => sum + (move.kind === "deposit" ? move.amount : -move.amount), BigInt(0))
   const first = trades[0]?.trade.createdAt.epochMilliseconds ?? now - 3 * DAY

@@ -1,6 +1,6 @@
 // What a preview agent's journal says: its trades in the server's words (`journalOfIntent`), varied the way a real
-// agent's are (filled, sent, blocked by a policy, waiting for you, declined, expired) and sized by its limits, plus
-// its automations' runs and judgments.
+// agent's are (filled, sent, blocked by a policy, waiting for you or for prices, approved, failed, declined, expired,
+// cancelled) and sized by its limits, plus its automations' runs and judgments.
 import type { AgentLimits } from "@bluechip/domain/automations/AgentLimits"
 import type { AutomationRun, Judgment } from "@bluechip/domain/automations/Run"
 import type { AgentId, AutomationId, JournalEntryId } from "@bluechip/domain/Ids"
@@ -40,27 +40,51 @@ export const TRADE_MOMENTS = [
   { value: "sent", label: "Sent" },
   { value: "blocked", label: "Blocked" },
   { value: "approval", label: "Needs approval" },
+  { value: "waiting", label: "Waiting" },
+  { value: "approved", label: "Approved" },
+  { value: "failed", label: "Failed" },
   { value: "declined", label: "Declined" },
-  { value: "expired", label: "Expired" }
+  { value: "expired", label: "Expired" },
+  { value: "cancelled", label: "Cancelled" }
 ] as const
 
 export type TradeMoment = (typeof TRADE_MOMENTS)[number]["value"]
 
-// What the intent was at that moment; a trade over its largest one needs your approval.
-const momentOf = (moment: TradeMoment, maxPerTrade: Usdc): Pick<Intent, "status" | "decision"> => {
+// What the intent was at that moment; a trade over its largest one needs your approval, and a refusal comes from one
+// of two policies (`turn` picks which).
+const momentOf = (
+  moment: TradeMoment,
+  options: { readonly maxPerTrade: Usdc; readonly at: DateTime.Utc; readonly turn: number }
+): Pick<Intent, "status" | "decision"> => {
   switch (moment) {
     case "filled":
       return { status: "filled", decision: null }
     case "sent":
       return { status: "sending", decision: { _tag: "Passes", callGasLimit: BigInt(420_000) } }
     case "blocked":
-      return { status: "blocked", decision: refused("cashReserve", "It keeps some of your money in cash.") }
+      return {
+        status: "blocked",
+        decision: options.turn % 2 === 0 ?
+          refused("cashReserve", "It keeps some of your money in cash.") :
+          refused("trade", "It has used today's budget.")
+      }
     case "approval":
-      return { status: "needsApproval", decision: { _tag: "OverLargestTrade", maxPerTrade } }
+      return { status: "needsApproval", decision: { _tag: "OverLargestTrade", maxPerTrade: options.maxPerTrade } }
+    case "waiting":
+      return {
+        status: "waiting",
+        decision: { _tag: "Wait", reason: "pricesStale", until: DateTime.add(options.at, { minutes: 5 }) }
+      }
+    case "approved":
+      return { status: "awaitingSignature", decision: null }
+    case "failed":
+      return { status: "failed", decision: null }
     case "declined":
       return { status: "declined", decision: null }
     case "expired":
       return { status: "expired", decision: null }
+    case "cancelled":
+      return { status: "cancelled", decision: null }
   }
 }
 
@@ -74,8 +98,15 @@ const CYCLE: ReadonlyArray<readonly [TradeMoment, Leg["side"]]> = [
   ["approval", "buy"],
   ["filled", "sell"],
   ["declined", "buy"],
+  ["waiting", "buy"],
   ["filled", "buy"],
-  ["expired", "sell"]
+  ["blocked", "buy"],
+  ["approved", "buy"],
+  ["filled", "sell"],
+  ["expired", "sell"],
+  ["failed", "buy"],
+  ["filled", "buy"],
+  ["cancelled", "sell"]
 ]
 
 /** One journal entry. */
@@ -105,14 +136,14 @@ export const tradeEntry = (
   const { direction } = options.limits
   const side = direction === "buy" ? "buy" : direction === "sell" ? "sell" : options.side
   const largest = Usdc.make(options.limits.maxPerTrade ?? BigInt(100_000_000))
-  const share = options.moment === "approval" ? 1.5 : options.share
+  const share = options.moment === "approval" || options.moment === "approved" ? 1.5 : options.share
   const amount = Usdc.make(BigInt(Math.round(Number(largest) * share / 1_000_000)) * BigInt(1_000_000))
   const why = WHY[side]
 
   return journalEntry(ids, record.id, options.at, {
     kind: "intent",
     entry: journalOfIntent({
-      ...momentOf(options.moment, largest),
+      ...momentOf(options.moment, { maxPerTrade: largest, at: options.at, turn: ids.next }),
       leg: { symbol: options.symbol, side, amount: { usdc: amount } },
       reason: why[ids.next % why.length]!
     }, stockName)!,

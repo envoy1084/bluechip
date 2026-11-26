@@ -33,6 +33,7 @@ describe("preview account API", () => {
     it.effect.each(
       [
         { scenario: "newPerson" as const, expected: [null, false, 1, 1, false, 0, 0, 0, 0, 0, 24] },
+        { scenario: "starter" as const, expected: ["Jordan", true, 1, 1, false, 2, 1, 0, 0, 1, 24] },
         { scenario: "typical" as const, expected: ["Alex", true, 2, 2, false, 8, 3, 0, 1, 4, 24] },
         { scenario: "heavy" as const, expected: ["Sam Rivera", true, 4, 5, true, 46, 12, 1, 2, 13, 24] }
       ]
@@ -66,7 +67,7 @@ describe("preview account API", () => {
         ], expected)
       }))
 
-    it.effect.each(["newPerson", "typical", "heavy"] as const)(
+    it.effect.each(["newPerson", "starter", "typical", "heavy"] as const)(
       "the rest decode in %s",
       (scenario) =>
         Effect.gen(function*() {

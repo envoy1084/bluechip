@@ -12,7 +12,7 @@ import type { PreviewStore } from "../../../src/preview/store.ts"
 import { castOf, type ScenarioId } from "../../../src/preview/world/cast.ts"
 import { previewApi } from "../../utils/PreviewApi.ts"
 
-const SCENARIOS: ReadonlyArray<ScenarioId> = ["newPerson", "typical", "heavy"]
+const SCENARIOS: ReadonlyArray<ScenarioId> = ["newPerson", "starter", "typical", "heavy"]
 
 const decodeCardEvent = Schema.decodeUnknownSync(Schema.toCodecJson(CardEvent))
 
@@ -20,7 +20,7 @@ describe("preview assistant", () => {
   for (const scenario of SCENARIOS) {
     it.effect(`${scenario}: every read of the assistant decodes`, () =>
       Effect.gen(function*() {
-        const { client } = yield* previewApi(scenario)
+        const { client, store } = yield* previewApi(scenario)
         const cast = castOf(scenario)
 
         const page = yield* client.assistant.conversations({ query: { pageSize: 100 } })
@@ -32,7 +32,13 @@ describe("preview assistant", () => {
 
         assert.deepStrictEqual(
           [page.items.map((conversation) => conversation.id).sort(), exported.memories.length],
-          [cast.conversations.map((conversation) => conversation.id).sort(), memories.length]
+          [
+            [
+              ...cast.conversations.map((conversation) => conversation.id),
+              ...store.world.assistant.showcase.map((entry) => entry.id)
+            ].sort(),
+            memories.length
+          ]
         )
       }))
   }
@@ -344,7 +350,9 @@ describe("cards and memories", () => {
   it.effect("confirming a memory from the memory page confirms it and answers its card", () =>
     Effect.gen(function*() {
       const { client } = yield* previewApi("typical")
-      const waiting = (yield* client.assistant.memories({ query: {} })).find((memory) => memory.confirmedAt === null)!
+      const waiting = (yield* client.assistant.memories({ query: {} })).find((memory) =>
+        memory.text === "You prefer to buy on Monday mornings."
+      )!
 
       const confirmed = yield* client.assistant.confirmMemory({ params: { id: waiting.id } })
       const thread = yield* client.assistant.conversation({ params: { id: castOf("typical").conversations[1]!.id } })

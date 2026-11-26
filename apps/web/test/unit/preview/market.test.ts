@@ -29,7 +29,7 @@ const credential: typeof AuthenticationCredential.Type = {
   response: { clientDataJSON: "e30", authenticatorData: "AA", signature: "AA" }
 }
 
-const SCENARIOS: ReadonlyArray<ScenarioId> = ["newPerson", "typical", "heavy"]
+const SCENARIOS: ReadonlyArray<ScenarioId> = ["newPerson", "starter", "typical", "heavy"]
 
 describe("preview market", () => {
   for (const scenario of SCENARIOS) {
@@ -78,6 +78,26 @@ describe("preview market", () => {
         [BigInt(0), 0, 0, 0, 0]
       )
       assert.deepStrictEqual([performance.trades, performance.series.length], [0, 0])
+    }))
+
+  it.effect("starter: two small buys, one waiting for gas, and charts from the deposit", () =>
+    Effect.gen(function*() {
+      const { client } = yield* previewApi("starter")
+
+      const portfolio = yield* client.portfolio.portfolio()
+      const history = yield* client.portfolio.history()
+      const intents = yield* client.intents.list({ query: { pageSize: 100 } })
+      const performance = yield* client.performance.portfolio()
+
+      assert.deepStrictEqual(
+        [portfolio.cash, portfolio.holdings.map((holding) => holding.symbol).sort()],
+        [Usdc.make(BigInt(150_000_000)), ["AAPL", "NVDA"]]
+      )
+      assert.deepStrictEqual(intents.items.map((intent) => intent.status).sort(), ["filled", "filled", "waiting"])
+      assert.isTrue(history.length >= 8 && history.length <= 10)
+      assert.isTrue(history.every((point) => point.value > BigInt(150_000_000)))
+      assert.strictEqual(performance.trades, 2)
+      assert.isTrue(performance.series.length >= 2 && performance.series.length <= 3)
     }))
 
   it.effect("typical: holdings match the cast, the chart has 30 days and an approval waits", () =>

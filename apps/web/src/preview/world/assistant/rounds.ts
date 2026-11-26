@@ -23,6 +23,8 @@ export type Beat =
     readonly cards: ReadonlyArray<Card>
     /** Tools Anthropic runs (web search). */
     readonly providerExecuted: boolean
+    /** The tool answered with a problem instead of a result. */
+    readonly failed?: boolean
   }
   /** A card the assistant makes itself (research, memories, errors). */
   | { readonly _tag: "Card"; readonly card: Card }
@@ -36,6 +38,8 @@ export interface ThreadContext {
   readonly mint: Mint
   readonly conversation: CastConversation
   readonly memories: ReadonlyArray<Memory>
+  /** Keeps memories a thread's cards are about, so the memory page lists them. */
+  readonly keep: (memories: ReadonlyArray<Memory>) => void
 }
 
 /** One turn of a scripted thread: what you said, then the rounds that answered it. */
@@ -71,6 +75,18 @@ export const read = <A>(
   result: encodeResult(schema, value),
   cards: [],
   providerExecuted: false
+})
+
+/** A tool call that answered with a problem (`ToolProblem`), as its row shows: "Didn't finish …". */
+export const fails = (mint: Mint, name: string, params: unknown, message: string): Beat => ({
+  _tag: "Tool",
+  id: mint.id("toolu"),
+  name,
+  params,
+  result: { _tag: "ToolProblem", problem: message },
+  cards: [],
+  providerExecuted: false,
+  failed: true
 })
 
 /** A tool call whose answer is a card (or several). */
@@ -115,7 +131,7 @@ export const partsOf = (round: Round): Array<MessagePart> => {
         id: beat.id,
         name: beat.name,
         result: beat.result,
-        isFailure: false,
+        isFailure: beat.failed === true,
         providerExecuted: beat.providerExecuted,
         modelOutput: null
       }

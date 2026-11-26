@@ -264,7 +264,10 @@ export const sampleDraft = (kind: NotificationKind, cast: Cast, when: Date, n: n
         variant === 0 ? "unlinked" : "blocked"
       )
     case "deposit":
-      return notificationOfTransfer(transferOf(n, at, "deposit", 500 + (n % 3) * 250, "confirmed"), stockName)!
+      return notificationOfTransfer(
+        transferOf(n, at, "deposit", cast.scenario === "starter" ? 200 : 500 + (n % 3) * 250, "confirmed"),
+        stockName
+      )!
     case "withdrawal":
       return notificationOfTransfer(
         transferOf(n, at, "withdrawal", 200, variant === 0 ? "confirmed" : "failed"),
@@ -322,6 +325,11 @@ export const notificationOf = (
 const HOUR = 60
 
 // What each scenario was told, newest first: [kind, minutes ago, read].
+const STARTER: ReadonlyArray<readonly [NotificationKind, number, boolean]> = [
+  ["intentFilled", 14.5 * HOUR, false],
+  ["deposit", 33.5 * HOUR, true]
+]
+
 const TYPICAL: ReadonlyArray<readonly [NotificationKind, number, boolean]> = [
   ["approvalNeeded", 20, false],
   ["intentFilled", 2 * HOUR, false],
@@ -384,7 +392,7 @@ const HEAVY: ReadonlyArray<readonly [NotificationKind, number, boolean]> = [
 
 /** The notifications a scenario starts with, newest first. */
 export const makeNotifications = (cast: Cast, now: Date): Array<Notification> => {
-  const told = cast.scenario === "heavy" ? HEAVY : cast.scenario === "typical" ? TYPICAL : []
+  const told = { newPerson: [], starter: STARTER, typical: TYPICAL, heavy: HEAVY }[cast.scenario]
   return told.map(([kind, minutes, read], index) => {
     const createdAt = minutesAgo(now, minutes)
     const draft = sampleDraft(kind, cast, DateTime.toDateUtc(createdAt), index)

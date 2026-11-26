@@ -7,6 +7,7 @@ import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
+import { storyOf } from "../../../src/features/agents/model/journalStory.ts"
 import {
   addAgentFromTemplate,
   addAutomationRun,
@@ -15,6 +16,7 @@ import {
   setAgentUsage,
   setAutomationState
 } from "../../../src/preview/panel/actions/agents.ts"
+import { stockName } from "../../../src/preview/world/agents/stockName.ts"
 import { previewUuid } from "../../../src/preview/world/ids.ts"
 import { previewApi } from "../../utils/PreviewApi.ts"
 
@@ -27,7 +29,7 @@ const credential: typeof AuthenticationCredential.Type = {
 }
 
 describe("preview agents, policies and automations", () => {
-  it.effect.each(["newPerson", "typical", "heavy"] as const)(
+  it.effect.each(["newPerson", "starter", "typical", "heavy"] as const)(
     "every read decodes for %s",
     (scenario) =>
       Effect.gen(function*() {
@@ -89,6 +91,24 @@ describe("preview agents, policies and automations", () => {
       assert.deepStrictEqual(budget.used, budget.limit)
     }))
 
+  it.effect("starter: one agent with a little of today's budget used, and a stop-loss that hasn't run", () =>
+    Effect.gen(function*() {
+      const { client, store } = yield* previewApi("starter")
+      const agentId = store.cast.agents[0]!.id
+
+      const agents = yield* client.agents.list()
+      const usage = yield* client.agents.usage({ params: { id: agentId } })
+      const automations = yield* client.automations.list({ query: {} })
+
+      const budget = usage.policies.find((counted) => counted.policy === "trade")!
+      assert.deepStrictEqual(agents.map((agent) => [agent.status, agent.paused]), [["active", false]])
+      assert.deepStrictEqual([budget.used, budget.limit], [BigInt(30_000_000), BigInt(100_000_000)])
+      assert.deepStrictEqual(
+        automations.map((automation) => [automation.status, automation.fires, automation.lastFiredAt]),
+        [["active", 0, null]]
+      )
+    }))
+
   it.effect("heavy: a long journal pages through every entry once", () =>
     Effect.gen(function*() {
       const { client, store } = yield* previewApi("heavy")
@@ -103,6 +123,36 @@ describe("preview agents, policies and automations", () => {
       assert.deepStrictEqual(
         new Set([...first.items, ...second.items].map((entry) => entry.id)).size,
         store.world.agents.agents[2]!.journal.length
+      )
+    }))
+
+  it.effect("heavy: every journal entry reads into its parts, and the trades show every moment", () =>
+    Effect.gen(function*() {
+      const { store } = yield* previewApi("heavy")
+      const stories = store.world.agents.agents.flatMap((record) =>
+        record.journal.map((entry) => storyOf(entry, stockName))
+      )
+
+      assert.deepStrictEqual(
+        [
+          stories.filter((story) => story._tag === "Note"),
+          new Set(stories.flatMap((story) => story._tag === "Trade" ? [story.moment] : []))
+        ],
+        [
+          [],
+          new Set([
+            "filled",
+            "sent",
+            "blocked",
+            "needsApproval",
+            "waiting",
+            "approved",
+            "failed",
+            "declined",
+            "expired",
+            "cancelled"
+          ])
+        ]
       )
     }))
 

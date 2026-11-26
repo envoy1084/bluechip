@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
 import * as Layer from "effect/Layer"
 import * as Result from "effect/Result"
+import { chatTrade } from "../../world/assistant.ts"
 import type { MarketWorld } from "../../world/market/model.ts"
 import { confirmPlan, prepareIntents, prepareTrade } from "../../world/market/signing.ts"
 import { addIntent, advanceIntent, agentOf, canTrade, checkFunds, decide } from "../../world/market/trading.ts"
@@ -49,10 +50,11 @@ const TradesHandlers = HttpApiBuilder.group(
         }),
       trade: ({ params }) =>
         Effect.suspend(() => {
-          const record = preview.world.market.trades.find((candidate) => candidate.trade.id === params.id)
-          return record === undefined ?
+          const trade = preview.world.market.trades.find((candidate) => candidate.trade.id === params.id)?.trade ??
+            chatTrade(preview.world.assistant, params.id)
+          return trade === undefined ?
             Effect.fail(new NotFound({ resource: "trade", id: params.id })) :
-            Effect.succeed(record.trade)
+            Effect.succeed(trade)
         })
     })
   })

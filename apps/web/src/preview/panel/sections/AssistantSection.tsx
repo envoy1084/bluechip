@@ -62,8 +62,32 @@ export function AssistantSection() {
     else goTo(store.world.assistant.threads[0]!.conversation.id)
   }
 
+  const current = openConversation()
+  const showcase = slice.showcase.filter((entry) => slice.threads.some((thread) => thread.conversation.id === entry.id))
+
   return (
     <>
+      {showcase.length === 0 ?
+        null :
+        (
+          <Group title="Showcase chats" hint="One chat per part of the chat's UI, every card and state in context.">
+            <div className="grid gap-1">
+              {showcase.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => goTo(entry.id)}
+                  aria-current={entry.id === current ? "page" : undefined}
+                  className={`cursor-pointer rounded-[8px] px-2.5 py-1.5 text-left text-[12.5px] font-medium transition-colors ${
+                    entry.id === current ? "bg-blue-50 text-blue" : "text-ink hover:bg-g-50"
+                  }`}
+                >
+                  {entry.title}
+                </button>
+              ))}
+            </div>
+          </Group>
+        )}
       <Group
         title="Today's budget"
         hint={`$${(slice.budget.costMicros / 1e6).toFixed(2)} of $${

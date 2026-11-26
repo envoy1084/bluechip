@@ -91,7 +91,7 @@ const dailyCloses = (symbol: StockSymbol, cast: Cast): ReadonlyArray<number> => 
   const profile = PROFILES[symbol]
   const random = seeded(`${symbol} daily`)
   const holding = cast.holdings.find((candidate) => candidate.symbol === symbol)
-  const anchorDay = HISTORY_DAYS - (cast.scenario === "heavy" ? 70 : 14)
+  const anchorDay = HISTORY_DAYS - (cast.scenario === "heavy" ? 70 : cast.scenario === "starter" ? 1 : 14)
   const anchors: ReadonlyArray<readonly [number, number]> = [
     [0, profile.close * profile.start],
     ...(holding === undefined ? [] : [[anchorDay, holding.costPerShare] as const]),

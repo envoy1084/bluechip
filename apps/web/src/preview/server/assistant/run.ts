@@ -160,7 +160,8 @@ const turn = (preview: PreviewStore, context: {
             type: "TOOL_CALL_RESULT",
             messageId: mint.uuid(),
             toolCallId: beat.id,
-            content: JSON.stringify(beat.result)
+            content: JSON.stringify(beat.result),
+            ...(beat.failed === true ? { metadata: { "effect/ai": { isFailure: true } } } : {})
           })
           for (const card of beat.cards) yield* emit(cardEvent(beat.id, card))
           waiting.push(...beat.cards.filter(isPending))

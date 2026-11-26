@@ -66,6 +66,13 @@ const guess = (kind: MemoryKind, text: string, confidence: number, hoursAgo: num
 /** The scenario's memories, newest first. */
 export const memoriesOf = (mint: Mint, cast: Cast): Array<Memory> => {
   if (cast.scenario === "newPerson") return []
+  if (cast.scenario === "starter") {
+    const drafts: ReadonlyArray<MemoryDraft> = [
+      guess("goal", "You'd like to put in about $50 a week.", 0.62, 20),
+      said("fact", "You're new to investing.", 40, 3)
+    ]
+    return drafts.map((draft) => memoryOf(mint, draft))
+  }
   const [picker, weekly, keeper, guard] = cast.agents
 
   const typical: ReadonlyArray<MemoryDraft> = [

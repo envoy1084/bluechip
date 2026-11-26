@@ -1,6 +1,6 @@
 // The intents that didn't simply fill: trades blocked by each policy, left waiting for each reason, declined,
-// expired, cancelled or failed, and the approvals the cast's asking agents wait on. The typical account has a few, the
-// heavy user one of every kind.
+// expired, cancelled or failed, and the approvals the cast's asking agents wait on. Someone who just started has one
+// buy waiting for gas, the typical account a few, the heavy user one of every kind.
 import type { AgentId } from "@bluechip/domain/Ids"
 import type { Decision, IntentSource, IntentStatus, WaitReason } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
@@ -272,12 +272,28 @@ const STORIES: ReadonlyArray<Story> = [
   }
 ]
 
+// A starter's agent tried a second small Nvidia buy a few minutes ago, while gas was high.
+const STARTER_STORIES: ReadonlyArray<Story> = [
+  {
+    agent: 1,
+    symbol: "NVDA",
+    side: "buy",
+    dollars: 15,
+    status: "waiting",
+    decision: waited("gasPrice", 40),
+    daysAgo: 0.01,
+    heavyOnly: false,
+    source: "assistant",
+    reason: "NVIDIA dipped this morning."
+  }
+]
+
 /** Adds the cast's stories and its asking agents' approvals to the world. */
 export const addStories = (world: MarketWorld, now: number) => {
   const { cast, market } = world
   if (cast.scenario === "newPerson") return
 
-  for (const story of STORIES) {
+  for (const story of cast.scenario === "starter" ? STARTER_STORIES : STORIES) {
     if (story.heavyOnly && cast.scenario !== "heavy") continue
     const agent = story.agent === null
       ? null

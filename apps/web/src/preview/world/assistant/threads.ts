@@ -33,7 +33,7 @@ export const THREAD_KINDS: ReadonlyArray<{ readonly id: ThreadKind; readonly tit
   { id: "longThread", title: "Planning my portfolio" }
 ]
 
-const SCRIPTS: Readonly<Record<ThreadKind, (context: ThreadContext) => ReadonlyArray<Turn>>> = {
+const SCRIPTS: Readonly<Record<ThreadKind, Script>> = {
   welcome,
   buyIdea,
   newAgent,
@@ -45,13 +45,31 @@ const SCRIPTS: Readonly<Record<ThreadKind, (context: ThreadContext) => ReadonlyA
 
 const HOUR = 3_600_000
 
-/** `conversation` as stored, written for the scenario with its memories. */
-export const threadOf = (mint: Mint, conversation: CastConversation, memories: ReadonlyArray<Memory>): Thread => {
-  const turns = SCRIPTS[conversation.kind]({ mint, conversation, memories })
+export type Script = (context: ThreadContext) => ReadonlyArray<Turn>
+
+/**
+ * `conversation` as stored, written for the scenario with its memories (by its kind's script, or `script` for a
+ * showcase). Memories its cards are about join `memories`.
+ */
+export const threadOf = (
+  mint: Mint,
+  conversation: CastConversation,
+  memories: Array<Memory>,
+  script?: Script
+): Thread => {
+  const turns = (script ?? SCRIPTS[conversation.kind])({
+    mint,
+    conversation,
+    memories,
+    keep: (kept) => memories.unshift(...kept)
+  })
   const when = DateTime.toEpochMillis(mint.at(conversation.hoursAgo))
-  const guesses = memories.filter((memory) =>
-    memory.confirmedAt === null && Math.abs(DateTime.toEpochMillis(memory.createdAt) - when) < HOUR
-  )
+  // Only the cast's conversations ask about the scenario's guesses; a showcase shows its own cards.
+  const guesses = script !== undefined ?
+    [] :
+    memories.filter((memory) =>
+      memory.confirmedAt === null && Math.abs(DateTime.toEpochMillis(memory.createdAt) - when) < HOUR
+    )
   const last = turns.at(-1)
   const asked = last === undefined || guesses.length === 0 ? turns : [
     ...turns.slice(0, -1),

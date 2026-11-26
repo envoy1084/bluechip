@@ -3,7 +3,7 @@
 import { BluechipApi } from "@bluechip/domain/Api"
 import { Budget } from "@bluechip/domain/assistant/Budget"
 import { Conversation, ConversationThread } from "@bluechip/domain/assistant/Conversation"
-import { MemoryExport } from "@bluechip/domain/assistant/Memory"
+import { Memory, MemoryExport } from "@bluechip/domain/assistant/Memory"
 import { NotFound } from "@bluechip/domain/Errors"
 import type { ConversationId } from "@bluechip/domain/Ids"
 import * as AgUiServer from "effect/ai/AgUiServer"
@@ -72,6 +72,27 @@ const AssistantHandlers = HttpApiBuilder.group(
           thread(params.id),
           (found) => new ConversationThread({ conversation: found.conversation, messages: found.messages })
         ),
+
+      deleteConversation: ({ params }) =>
+        Effect.gen(function*() {
+          const deleted = yield* thread(params.id)
+          const messageIds = new Set<string>(deleted.messages.map((message) => message.id))
+          preview.update(() => {
+            for (const run of slice().runs.values()) {
+              if (run.conversationId === deleted.conversation.id) run.cancelled = true
+            }
+            slice().threads = slice().threads.filter((other) => other !== deleted)
+            slice().summaries = slice().summaries.filter((summary) =>
+              summary.conversationId !== deleted.conversation.id
+            )
+            // As on the server: what was remembered from it stays, without its message.
+            slice().memories = slice().memories.map((memory) =>
+              memory.messageId !== null && messageIds.has(memory.messageId)
+                ? new Memory({ ...memory, messageId: null })
+                : memory
+            )
+          })
+        }),
 
       run: ({ payload }) => Effect.flatMap(start(payload), (events) => AgUiServer.handler(() => events)({ payload })),
 

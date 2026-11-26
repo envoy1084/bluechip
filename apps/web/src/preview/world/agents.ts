@@ -43,7 +43,7 @@ const CREATED_BY: Readonly<Record<CastAutomation["kind"], AutomationRecord["auto
   monthlySplit: "owner"
 }
 
-// A cast automation with its runs, each written to its agent's journal.
+// A cast automation with its runs, each written to its agent's journal; a new one only has the runs since it was set up.
 const castAutomation = (
   ids: IdCounter,
   agents: ReadonlyArray<AgentRecord>,
@@ -51,8 +51,11 @@ const castAutomation = (
   now: DateTime.Utc
 ): AutomationRecord => {
   const agent = cast.agentId === null ? undefined : agents.find((record) => record.id === cast.agentId)
-  const plans = runPlans(cast.kind, cast.state)
-  const createdAt = DateTime.subtract(now, { days: Math.ceil(Math.max(...plans.map((plan) => plan.daysAgo))) + 2 })
+  const ageDays = cast.ageDays
+  const plans = runPlans(cast.kind, cast.state).filter((plan) => ageDays === undefined || plan.daysAgo < ageDays)
+  const createdAt = ageDays === undefined ?
+    DateTime.subtract(now, { days: Math.ceil(Math.max(...plans.map((plan) => plan.daysAgo))) + 2 }) :
+    DateTime.subtract(now, { hours: Math.round(ageDays * 24) })
   const record = savedAutomation({
     id: cast.id,
     draft: castDraft(cast, agent === undefined ? null : toAgent(agent).spec),
@@ -91,7 +94,7 @@ const savedTemplates = (cast: Cast, now: DateTime.Utc): Array<SavedTemplate> => 
     18
   )
   if (cast.scenario === "typical") return [careful]
-  if (cast.scenario === "newPerson") return []
+  if (cast.scenario === "newPerson" || cast.scenario === "starter") return []
   return [
     careful,
     saved(

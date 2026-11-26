@@ -19,7 +19,7 @@ const requestFor = (mint: Mint, action: AgentAction, agent: Agent, expired: bool
     action,
     agent,
     deploysAccount: false,
-    expiresAt: expired ? mint.at(1) : DateTime.add(mint.at(0), { minutes: 2 })
+    expiresAt: expired ? mint.at(1) : DateTime.add(mint.at(0), { hours: 6 })
   })
 
 /**
@@ -49,14 +49,16 @@ export const draftAgentCard = (
 }
 
 /**
- * Changing an agent's policies (tighter: a smaller preset), renewing it or removing it, for Face ID. Removing a draft
+ * Changing an agent's policies (tighter: a smaller preset, or looser), renewing it or removing it, for Face ID. Removing a draft
  * needs no signature: it is gone already.
  */
 export const policyChangeCard = (
   mint: Mint,
   cast: CastAgent,
   agent: Agent,
-  action: "update" | "renew" | "remove"
+  action: "update" | "renew" | "remove",
+  /** An update that lets it do more (a bigger preset): the card flags it as looser. */
+  looser = false
 ): Card => {
   const id = mint.id("card") as CardId
   if (action === "remove" && agent.status === "draft") {
@@ -82,7 +84,14 @@ export const policyChangeCard = (
     }
   }
 
-  const after = specOf({ ...cast, preset: cast.preset === "conservative" ? "balanced" : "conservative" })
+  // A preset further along, or (at the end already) a stock more or less.
+  const preset = looser ? "active" : "conservative"
+  const stocks = cast.preset !== preset ?
+    cast.stocks :
+    looser ?
+    [...cast.stocks, cast.stocks.includes("GOOGL") ? "META" as const : "GOOGL" as const] :
+    cast.stocks.slice(0, Math.max(1, cast.stocks.length - 1))
+  const after = specOf({ ...cast, preset, stocks })
   return {
     _tag: "PolicyChange",
     id,

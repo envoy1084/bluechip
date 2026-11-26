@@ -135,6 +135,8 @@ export const intentOf = (mint: Mint, options: {
   readonly status: IntentStatus
   readonly decision: Decision | null
   readonly hoursAgo?: number
+  /** The plan it is a leg of, and the operation it goes out in. */
+  readonly batch?: { readonly id: string; readonly wave: number } | null
 }): Intent => {
   const at = mint.at(options.hoursAgo ?? 0)
   return new Intent({
@@ -146,8 +148,10 @@ export const intentOf = (mint: Mint, options: {
     reason: options.reason,
     status: options.status,
     decision: options.decision,
-    batch: null,
-    tradeId: options.status === "filled" ? mint.id("trade") as TradeId : null,
+    batch: options.batch ?? null,
+    tradeId: ["sending", "confirming", "filled", "failed"].includes(options.status) ?
+      mint.id("trade") as TradeId :
+      null,
     expiresAt: options.status === "needsApproval" || options.status === "awaitingSignature" ?
       DateTime.add(at, { hours: 24 }) :
       null,
@@ -165,18 +169,31 @@ export const CEREMONY = {
   allowCredentials: []
 }
 
-/** Your own trade prepared for Face ID; `expired` when its two minutes ran out. */
-export const intentRequestOf = (mint: Mint, intent: Intent, expired: boolean): IntentRequest => {
+/**
+ * Your own trade prepared for Face ID; `expired` when its two minutes ran out. `together`: the other legs of its plan
+ * the same signature sends.
+ */
+export const intentRequestOf = (
+  mint: Mint,
+  intent: Intent,
+  expired: boolean,
+  options: {
+    readonly together?: ReadonlyArray<Intent>
+    readonly warnings?: IntentRequest["warnings"]
+    readonly deploysAccount?: boolean
+  } = {}
+): IntentRequest => {
   const quote = quoteOf(mint, intent.leg)
   return new IntentRequest({
     id: mint.id("signing") as SigningRequestId,
     options: CEREMONY,
     intent,
     quote,
-    warnings: [],
-    together: [],
-    deploysAccount: mint.cast.holdings.length === 0,
-    expiresAt: expired ? mint.at(0.5) : DateTime.add(mint.at(0), { minutes: 2 })
+    warnings: options.warnings ?? [],
+    together: (options.together ?? []).map((leg) => ({ intent: leg, quote: quoteOf(mint, leg.leg) })),
+    deploysAccount: options.deploysAccount ?? mint.cast.holdings.length === 0,
+    // Real requests last two minutes; a fresh one stays fresh a while here, so its Face ID state can be looked at.
+    expiresAt: expired ? mint.at(0.5) : DateTime.add(mint.at(0), { hours: 6 })
   })
 }
 

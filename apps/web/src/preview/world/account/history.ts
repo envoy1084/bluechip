@@ -120,7 +120,8 @@ export const makeAudit = (cast: Cast, now: Date, security: Security): Array<Audi
   }
 
   cast.automations.forEach((automation, index) => {
-    entries.push(owner("automation.created", "automation", automation.id, {}, minutesAgo(now, (age - 8 - index) * DAY)))
+    const daysAgo = automation.ageDays ?? age - 8 - index
+    entries.push(owner("automation.created", "automation", automation.id, {}, minutesAgo(now, daysAgo * DAY)))
   })
 
   return entries
@@ -161,6 +162,7 @@ const TRANSFERS: Readonly<
   Record<Cast["scenario"], ReadonlyArray<readonly [Transfer["kind"], number, Transfer["status"], number]>>
 > = {
   newPerson: [],
+  starter: [["deposit", 200, "confirmed", 1.4]],
   typical: [
     ["deposit", 2_000, "confirmed", 44],
     ["deposit", 1_000, "confirmed", 12],

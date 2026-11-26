@@ -4,10 +4,14 @@
 import type { Card } from "@bluechip/domain/assistant/Card"
 import { Conversation, Message } from "@bluechip/domain/assistant/Conversation"
 import type { ConversationSummary, Memory } from "@bluechip/domain/assistant/Memory"
-import type { ConversationId } from "@bluechip/domain/Ids"
+import type { ConversationId, TradeId } from "@bluechip/domain/Ids"
+import { sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
+import { Trade } from "@bluechip/domain/trading/Trade"
 import * as DateTime from "effect/DateTime"
+import { priceOf } from "./assistant/castRecords.ts"
 import { memoriesOf, summariesOf } from "./assistant/memories.ts"
 import { type Counters, makeMint } from "./assistant/mint.ts"
+import { showcasesOf } from "./assistant/showcase.ts"
 import { type Thread, threadOf } from "./assistant/threads.ts"
 import type { Cast } from "./cast.ts"
 
@@ -36,6 +40,8 @@ export interface Run {
 export interface AssistantSlice {
   /** Newest first. */
   threads: Array<Thread>
+  /** The showcase conversations, for the panel to open: one per family of the chat's UI. */
+  readonly showcase: ReadonlyArray<{ readonly id: ConversationId; readonly title: string }>
   memories: Array<Memory>
   summaries: Array<ConversationSummary>
   budget: { inputTokens: number; outputTokens: number; costMicros: number; readonly limitMicros: number }
@@ -64,11 +70,35 @@ export const makeAssistant = (cast: Cast, now: Date): AssistantSlice => {
   const mint = makeMint(cast, now, counters, "seed")
   const memories = memoriesOf(mint, cast)
 
+  const threads = cast.conversations.map((conversation) => threadOf(mint, conversation, memories))
+  const showcase = showcasesOf(cast).map((entry) => {
+    const id = mint.id("conversation") as ConversationId
+    const conversation = {
+      id,
+      title: entry.title,
+      agentId: entry.agentId,
+      kind: "welcome",
+      hoursAgo: entry.hoursAgo
+    } as const
+    return threadOf(mint, conversation, memories, entry.script)
+  })
+
   return {
-    threads: cast.conversations.map((conversation) => threadOf(mint, conversation, memories)),
+    threads: [...threads, ...showcase].sort((a, b) =>
+      DateTime.toEpochMillis(b.conversation.updatedAt) - DateTime.toEpochMillis(a.conversation.updatedAt)
+    ),
+    showcase: showcase.map((thread) => ({ id: thread.conversation.id, title: thread.conversation.title ?? "" })),
     memories,
     summaries: summariesOf(mint, cast),
-    budget: budgetAt(cast.scenario === "heavy" ? BUDGET_LEVELS.nearly : cast.scenario === "typical" ? 0.08 : 0),
+    budget: budgetAt(
+      cast.scenario === "heavy"
+        ? BUDGET_LEVELS.nearly
+        : cast.scenario === "typical"
+        ? 0.08
+        : cast.scenario === "starter"
+        ? 0.03
+        : 0
+    ),
     replies: { pace: "normal", behaviour: "fits" },
     confirms: "works",
     runs: new Map(),
@@ -84,6 +114,41 @@ export const findCard = (slice: AssistantSlice, id: string): Card | undefined =>
   for (const thread of slice.threads) {
     for (const message of thread.messages) {
       for (const part of message.parts) if (part.type === "card" && part.card.id === id) return part.card
+    }
+  }
+  return undefined
+}
+
+/**
+ * The fill of a trade a chat card shows as filled, for its receipt: made from the card's intent at the stock's price,
+ * since the scenario's threads aren't the account's trades (they'd change its money and its activity).
+ */
+export const chatTrade = (slice: AssistantSlice, id: TradeId): Trade | undefined => {
+  for (const thread of slice.threads) {
+    for (const message of thread.messages) {
+      for (const part of message.parts) {
+        if (part.type !== "card" || part.card._tag !== "Trade") continue
+        const { intent } = part.card
+        if (intent.tradeId !== id || intent.status !== "filled") continue
+        const price = priceOf(intent.leg.symbol)
+        const usdc = "usdc" in intent.leg.amount ? intent.leg.amount.usdc : valueOf(intent.leg.amount.shares, price)
+        return new Trade({
+          id,
+          agentId: intent.agentId,
+          symbol: intent.leg.symbol,
+          side: intent.leg.side,
+          status: "filled",
+          usdc: Usdc.make(usdc),
+          shares: "shares" in intent.leg.amount ? intent.leg.amount.shares : sharesFor(usdc, price),
+          price,
+          reference: price,
+          referenceStatus: "live",
+          gapBps: 8,
+          txHash: `0x${id.replace(/[^0-9a-f]/gu, "").padStart(64, "c").slice(-64)}` as Trade["txHash"],
+          createdAt: intent.createdAt,
+          settledAt: intent.updatedAt
+        })
+      }
     }
   }
   return undefined
