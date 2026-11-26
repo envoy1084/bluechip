@@ -54,6 +54,8 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
   readonly unlink: (userId: UserId, id: string) => Effect.Effect<void, NotFound>
   /** Unlinks a chat from the chat itself; `undefined` when it wasn't linked. */
   readonly unlinkChat: (platform: Platform, chatId: string) => Effect.Effect<ChannelLinkRow | undefined>
+  /** Unlinks a chat whose person blocked the bot: the platform refuses every message to it. */
+  readonly blocked: (platform: Platform, chatId: string) => Effect.Effect<void>
   /** Remembers the conversation a chat continues. */
   readonly setConversation: (id: ChannelLinkRow["id"], conversationId: ConversationId) => Effect.Effect<void>
 }>()("@bluechip/server/ChannelLinks") {
@@ -95,16 +97,16 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
         })
       })
 
-      const notify = (row: ChannelLinkRow, linked: boolean) =>
+      const notify = (row: ChannelLinkRow, change: "linked" | "unlinked" | "blocked") =>
         Effect.andThen(
-          notifications.add(row.userId as UserId, notificationOfChatLink(row, linked)),
+          notifications.add(row.userId as UserId, notificationOfChatLink(row, change)),
           audit.record({
             userId: row.userId as UserId,
-            actor: "owner",
-            action: linked ? "channel.linked" : "channel.unlinked",
+            actor: change === "blocked" ? "system" : "owner",
+            action: change === "linked" ? "channel.linked" : "channel.unlinked",
             subjectType: "channelLink",
             subjectId: row.id,
-            data: { platform: row.platform }
+            data: change === "blocked" ? { platform: row.platform, reason: "blocked" } : { platform: row.platform }
           })
         )
 
@@ -133,7 +135,7 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
           yield* db.update(channelLinks).set({ unlinkedAt: now }).where(eq(channelLinks.id, before.id)).pipe(
             Effect.orDie
           )
-          yield* notify(before, false)
+          yield* notify(before, "unlinked")
         }
         const [row] = yield* db.insert(channelLinks).values({
           id: typeid("channellink").toString() as `channellink_${string}`,
@@ -146,7 +148,7 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
           linkedAt: now,
           unlinkedAt: null
         }).returning().pipe(Effect.orDie)
-        yield* notify(row!, true)
+        yield* notify(row!, "linked")
         return row!
       })
 
@@ -158,10 +160,10 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
         )).orderBy(asc(channelLinks.linkedAt)).pipe(Effect.orDie)
       })
 
-      const close = Effect.fnUntraced(function*(row: ChannelLinkRow) {
+      const close = Effect.fnUntraced(function*(row: ChannelLinkRow, change: "unlinked" | "blocked" = "unlinked") {
         const [closed] = yield* db.update(channelLinks).set({ unlinkedAt: yield* DateTime.now })
           .where(and(eq(channelLinks.id, row.id), isNull(channelLinks.unlinkedAt))).returning().pipe(Effect.orDie)
-        if (closed !== undefined) yield* notify(closed, false)
+        if (closed !== undefined) yield* notify(closed, change)
         return closed
       })
 
@@ -180,6 +182,11 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
         return row === undefined ? undefined : yield* close(row)
       })
 
+      const blocked = Effect.fn("ChannelLinks.blocked")(function*(platform: Platform, chatId: string) {
+        const row = yield* ofChat(platform, chatId)
+        if (row !== undefined) yield* close(row, "blocked")
+      })
+
       const setConversation = (id: ChannelLinkRow["id"], conversationId: ConversationId) =>
         db.update(channelLinks).set({ conversationId: conversationId as `conversation_${string}` })
           .where(eq(channelLinks.id, id)).pipe(Effect.orDie, Effect.asVoid)
@@ -192,6 +199,7 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
         list: (userId) => Effect.map(ofUser(userId), (rows) => rows.map(toLink)),
         unlink,
         unlinkChat,
+        blocked,
         setConversation
       })
     })

@@ -294,7 +294,8 @@ export const notificationOfRun = (run: AutomationRun, automationName: string): N
 }
 
 /**
- * A chat on a platform linked to your account, or unlinked from it.
+ * A chat on a platform linked to your account, unlinked from it, or unlinked by bluechip because the bot was blocked
+ * there (`blocked`).
  *
  * @stability unstable
  * @category drafts
@@ -302,29 +303,38 @@ export const notificationOfRun = (run: AutomationRun, automationName: string): N
  */
 export const notificationOfChatLink = (
   link: { readonly id: string; readonly platform: string; readonly name: string | null },
-  linked: boolean
+  change: "linked" | "unlinked" | "blocked"
 ): NotificationDraft => {
   const platform = link.platform.charAt(0).toUpperCase() + link.platform.slice(1)
   const chat = link.name === null ? `A ${platform} chat` : `${platform} (${link.name})`
-  return linked ?
-    {
-      kind: "chatLinked",
-      title: `${platform} is linked`,
-      body: `${chat} can now talk to the assistant about your account. Unlink it in Settings if this wasn't you.`,
-      link: "/settings/notifications",
-      subjectType: "channelLink",
-      subjectId: link.id,
-      dedupeKey: `chatLinked:${link.id}`
-    } :
-    {
-      kind: "chatUnlinked",
-      title: `${platform} is unlinked`,
-      body: `${chat} can no longer reach your account.`,
-      link: "/settings/notifications",
-      subjectType: "channelLink",
-      subjectId: link.id,
-      dedupeKey: `chatUnlinked:${link.id}`
-    }
+  const about = { link: "/settings/notifications", subjectType: "channelLink", subjectId: link.id }
+  switch (change) {
+    case "linked":
+      return {
+        ...about,
+        kind: "chatLinked",
+        title: `${platform} is linked`,
+        body: `${chat} can now talk to the assistant about your account. Unlink it in Settings if this wasn't you.`,
+        dedupeKey: `chatLinked:${link.id}`
+      }
+    case "unlinked":
+      return {
+        ...about,
+        kind: "chatUnlinked",
+        title: `${platform} is unlinked`,
+        body: `${chat} can no longer reach your account.`,
+        dedupeKey: `chatUnlinked:${link.id}`
+      }
+    case "blocked":
+      return {
+        ...about,
+        kind: "chatUnlinked",
+        title: `${platform} is unlinked`,
+        body: `The bot was blocked in ${link.name === null ? `a ${platform} chat` : chat}, so bluechip unlinked it. ` +
+          "Link it again in Settings to hear from bluechip there.",
+        dedupeKey: `chatUnlinked:${link.id}`
+      }
+  }
 }
 
 /**

@@ -9,7 +9,7 @@ import { PushServiceTest } from "../../utils/PushServiceTest.ts"
 import { TestNotifications } from "../../utils/TestNotifications.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
 
-const linked = notificationOfChatLink({ id: "channellink_push", platform: "telegram", name: "Maya" }, true)
+const linked = notificationOfChatLink({ id: "channellink_push", platform: "telegram", name: "Maya" }, "linked")
 
 // The server runs on the real clock (see `TestServer`).
 layer(Layer.mergeAll(TestUsers.layer, TestNotifications.layer), { excludeTestServices: true })("web push", (it) => {

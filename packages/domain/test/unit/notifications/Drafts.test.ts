@@ -340,7 +340,7 @@ describe("notificationOfChatLink", () => {
   it.each(
     [
       {
-        linked: true,
+        change: "linked",
         expected: [
           "chatLinked",
           "Telegram is linked",
@@ -348,18 +348,27 @@ describe("notificationOfChatLink", () => {
         ]
       },
       {
-        linked: false,
+        change: "unlinked",
         expected: ["chatUnlinked", "Telegram is unlinked", "Telegram (Maya) can no longer reach your account."]
+      },
+      {
+        change: "blocked",
+        expected: [
+          "chatUnlinked",
+          "Telegram is unlinked",
+          "The bot was blocked in Telegram (Maya), so bluechip unlinked it. Link it again in Settings to hear from " +
+          "bluechip there."
+        ]
       }
     ] as const
-  )("linked: $linked", ({ expected, linked }) => {
-    const draft = notificationOfChatLink({ id: "channellink_1", platform: "telegram", name: "Maya" }, linked)
+  )("$change", ({ change, expected }) => {
+    const draft = notificationOfChatLink({ id: "channellink_1", platform: "telegram", name: "Maya" }, change)
     assert.deepStrictEqual<ReadonlyArray<unknown>>([draft.kind, draft.title, draft.body], expected)
   })
 
   it("a chat without a name", () => {
     assert.strictEqual(
-      notificationOfChatLink({ id: "channellink_1", platform: "telegram", name: null }, false).body,
+      notificationOfChatLink({ id: "channellink_1", platform: "telegram", name: null }, "unlinked").body,
       "A Telegram chat can no longer reach your account."
     )
   })

@@ -4,6 +4,7 @@
 //
 // Chats are numbered by the in-memory chat, so two test files making them would share chat ids in the one test
 // database: only `e2e/channels/Telegram.test.ts` makes them.
+import { Forbidden } from "effect/chat/ChatError"
 import type * as ChatHandler from "effect/chat/ChatHandler"
 import type * as ChatInteraction from "effect/chat/ChatInteraction"
 import * as ChatTest from "effect/chat/ChatTest"
@@ -46,6 +47,8 @@ export class TestTelegram extends Context.Service<TestTelegram, {
   readonly click: (chat: TestChat, message: BotMessage, button: string) => Effect.Effect<string>
   /** Every message the bot posted in the chat, oldest first. */
   readonly posted: (chat: TestChat) => Effect.Effect<ReadonlyArray<BotMessage>>
+  /** The person blocks the bot: Telegram refuses the bot's next message (403 "bot was blocked by the user"). */
+  readonly blocks: Effect.Effect<void>
 }>()("@bluechip/server/test/TestTelegram") {
   static readonly layerNoDeps = Layer.effect(
     TestTelegram,
@@ -101,7 +104,9 @@ export class TestTelegram extends Context.Service<TestTelegram, {
         return after?.text ?? ""
       })
 
-      return { chat, linked, say, command, click, posted }
+      const blocks = telegram.failNext("post", new Forbidden({ detail: "blocked" }))
+
+      return { chat, linked, say, command, click, posted, blocks }
     })
   )
 

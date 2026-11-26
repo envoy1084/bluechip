@@ -2,6 +2,7 @@ import { CODE_REFUSED, LINKED, NOT_LINKED, PRIVATE_ONLY, UNLINKED } from "@bluec
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import { Notifications } from "../../../src/modules/notifications/Notifications.ts"
 import { RecordedModel } from "../../utils/RecordedModel.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 import { TestNotifications } from "../../utils/TestNotifications.ts"
@@ -161,6 +162,44 @@ layer(
 
           assert.deepStrictEqual([reply, links], [{ _tag: "Respond", markdown: UNLINKED, visibility: "public" }, []])
         }))
+
+      it.effect("the person blocked the bot: the chat is unlinked, and a security notification says why", () =>
+        Effect.gen(function*() {
+          const user = yield* (yield* TestUsers).signUp
+          const telegram = yield* TestTelegram
+          yield* telegram.linked(user)
+          const [link] = yield* user.api.channels.links()
+
+          yield* telegram.blocks
+          const added = yield* (yield* Notifications).add(user.id, {
+            kind: "intentFilled",
+            title: "You bought $50.00 of NVIDIA",
+            body: "It filled.",
+            link: "/activity",
+            subjectType: null,
+            subjectId: null,
+            dedupeKey: `blocked:${link!.id}`
+          })
+          const deliveries = yield* (yield* TestNotifications).delivered(added!.id)
+          const links = yield* user.api.channels.links()
+          const { notification } = yield* user.events.next(
+            "NotificationAdded",
+            ({ notification }) => notification.kind === "chatUnlinked"
+          )
+
+          assert.deepStrictEqual(
+            [deliveries, links, [notification.severity, notification.body]],
+            [
+              [{ channel: "telegram", status: "skipped", error: null }],
+              [],
+              [
+                "security",
+                `The bot was blocked in Telegram (${link!.name}), so bluechip unlinked it. Link it again in ` +
+                "Settings to hear from bluechip there."
+              ]
+            ]
+          )
+        }))
     })
 
     describe("the assistant in a chat", () => {
@@ -236,11 +275,13 @@ layer(
           ])
         }))
 
-      it.effect("a trade over the agent's largest trade: a link to approve in the app, nothing sent", () =>
+      it.effect("a trade over the agent's largest trade: a link to approve here, and the notification only elsewhere", () =>
         Effect.gen(function*() {
           const { agent, user } = yield* (yield* TestAgents).locked
           const telegram = yield* TestTelegram
           const chat = yield* telegram.linked(user)
+          const other = yield* telegram.linked(user)
+          const notifications = yield* TestNotifications
           yield* (yield* RecordedModel).record({
             to: "Buy $150 of Nvidia with my picker",
             rounds: [
@@ -252,23 +293,38 @@ layer(
             ]
           })
 
-          const linked = (yield* telegram.posted(chat)).length
+          // Each chat hears of the other's link first.
+          const linking = yield* user.api.notifications.list({ query: {} })
+          yield* Effect.forEach(linking.items, (item) => notifications.delivered(item.id))
+          const [here, there] = [(yield* telegram.posted(chat)).length, (yield* telegram.posted(other)).length]
           yield* telegram.say(chat, "Buy $150 of Nvidia with my picker")
           const { notification } = yield* user.events.next(
             "NotificationAdded",
             ({ notification }) => notification.kind === "approvalNeeded"
           )
-          yield* (yield* TestNotifications).delivered(notification.id)
-          const posted = (yield* telegram.posted(chat)).slice(linked)
+          const deliveries = yield* notifications.delivered(notification.id)
+          const postedHere = (yield* telegram.posted(chat)).slice(here)
+          const postedThere = (yield* telegram.posted(other)).slice(there)
 
-          // The approval is also a notification, which can arrive while the turn is still writing.
-          assert.deepStrictEqual(posted.map((message) => message.text).sort(), [
-            "**Buy $150.00 of NVIDIA**. Over the agent's largest trade ($100): it needs your Face ID. Approve it in " +
-            "bluechip.\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals",
-            `**${agent.name} needs your OK**\nBuy $150.00 of NVIDIA. Approve or decline it in bluechip with Face ID.` +
-            "\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals",
-            "It needs your Face ID."
-          ])
+          assert.deepStrictEqual(
+            [postedHere.map((message) => message.text), postedThere.map((message) => message.text), deliveries],
+            [
+              [
+                "**Buy $150.00 of NVIDIA**. Over the agent's largest trade ($100): it needs your Face ID. Approve it " +
+                "in bluechip.\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals",
+                "It needs your Face ID."
+              ],
+              [
+                `**${agent.name} needs your OK**\nBuy $150.00 of NVIDIA. Approve or decline it in bluechip with Face ` +
+                "ID.\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals"
+              ],
+              [{ channel: "push", status: "skipped", error: null }, {
+                channel: "telegram",
+                status: "sent",
+                error: null
+              }]
+            ]
+          )
         }))
 
       it.effect("a trade as you: a link to the conversation in the app, where Face ID signs it", () =>
