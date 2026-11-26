@@ -1,6 +1,7 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
+import { giveShares } from "../utils/trading.ts"
 
 const list = (page: Page) => page.getByRole("region", { name: "Stocks on bluechip" })
 
@@ -110,5 +111,25 @@ test.describe("stock page", () => {
       await expect(page.getByRole("tabpanel", { name: tab })).toBeVisible()
       await expect(page.getByText(description, { exact: true })).toBeVisible()
     }
+  })
+})
+
+test.describe("stock page: your holding", () => {
+  test("a stock you hold shows your shares and their share of your money", async ({ page, user }) => {
+    await giveShares(user, { MSFT: 2 })
+    await user.fund(page)
+
+    await page.goto("/stocks/MSFT")
+
+    const holding = page.getByRole("region", { name: "Your Microsoft" })
+    await expect(holding).toContainText("2 shares at")
+    await expect(holding).toContainText("Share of your money")
+  })
+
+  test("a stock you don't hold shows no holding", async ({ page, funded: _funded }) => {
+    await page.goto("/stocks/MSFT")
+
+    await expect(page.getByRole("heading", { level: 1, name: "Microsoft" })).toBeVisible()
+    await expect(page.getByRole("region", { name: "Your Microsoft" })).toBeHidden()
   })
 })
