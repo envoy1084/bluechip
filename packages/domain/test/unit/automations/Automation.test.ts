@@ -120,7 +120,24 @@ describe("checkAutomation", () => {
         }
       }),
       spec: WEEKLY_BUYER,
-      expected: [["action", null, "split", "Each stock's part has to be at least $5."]]
+      expected: [
+        ["action", null, "split", "Each stock's part has to be at least $5."],
+        ["action", null, "amount", "Takes 2 trades of at most $100, more than the agent's 1 a day."]
+      ]
+    },
+    {
+      name: "$100 split across two stocks: a trade each, for an agent that makes one a day",
+      draft: draft({
+        action: {
+          type: "buy",
+          config: {
+            amount: Usdc.make(100_000_000n),
+            split: [{ symbol: "AAPL", weight: 5000 }, { symbol: "NVDA", weight: 5000 }]
+          }
+        }
+      }),
+      spec: WEEKLY_BUYER,
+      expected: [["action", null, "amount", "Takes 2 trades of at most $100, more than the agent's 1 a day."]]
     },
     {
       name: "drift for an agent without a target mix",

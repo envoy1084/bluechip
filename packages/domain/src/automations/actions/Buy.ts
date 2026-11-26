@@ -56,8 +56,8 @@ export const tradesFor = (amount: bigint, maxPerTrade: bigint): number =>
   maxPerTrade <= BigInt(0) ? 1 : Number((amount + maxPerTrade - BigInt(1)) / maxPerTrade)
 
 /**
- * Why the agent's policies could never pass `amount` in a day: over its daily budget (buys), or more trades than it
- * makes a day once split into its largest trade.
+ * Why the agent's policies could never pass these trades in a day (one amount per stock): over its daily budget
+ * (buys), or more trades than it makes a day once each is split into its largest trade.
  *
  * @stability unstable
  * @category validation
@@ -65,17 +65,18 @@ export const tradesFor = (amount: bigint, maxPerTrade: bigint): number =>
  */
 export const amountProblems = (
   side: "buy" | "sell",
-  amount: bigint,
+  parts: ReadonlyArray<bigint>,
   context: CheckContext
 ): ReadonlyArray<FieldProblem> => {
   const limits = limitsOf(context.spec)
   if (limits === null || context.asking === true) return []
   const problems: Array<FieldProblem> = []
+  const amount = parts.reduce((sum, part) => sum + part, BigInt(0))
   if (side === "buy" && amount > limits.dailyBudget) {
     problems.push({ field: "amount", message: `Over the agent's daily budget (${formatDollars(limits.dailyBudget)}).` })
   }
   if (limits.maxPerTrade !== null && limits.tradesPerDay !== null) {
-    const trades = tradesFor(amount, limits.maxPerTrade)
+    const trades = parts.reduce((sum, part) => sum + tradesFor(part, limits.maxPerTrade!), 0)
     if (trades > limits.tradesPerDay) {
       problems.push({
         field: "amount",
@@ -133,7 +134,11 @@ export const buy = Action.make({
     return [
       ...(config.amount < dollars(1) ? [{ field: "amount", message: "Buy at least $1." }] : []),
       ...splitProblems(config, context),
-      ...amountProblems("buy", config.amount, context)
+      ...amountProblems(
+        "buy",
+        config.split.map((part) => (config.amount * BigInt(part.weight)) / BigInt(10_000)),
+        context
+      )
     ]
   },
   describe: (config, { name }) => {

@@ -124,6 +124,37 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
       }))
   })
 
+  describe("GET /api/agents/:agentId/automations/defaults", () => {
+    it.effect("a Weekly buyer of NVIDIA comes with a weekly buy, saved as the template's", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).funded
+        const { agent } = yield* Effect.orDie((yield* TestAgents).create(user, {
+          template: "weeklyBuyer",
+          spec: draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA"], targets: [] })
+        }))
+
+        const drafts = yield* user.api.automations.defaults({ params: { agentId: agent.id } })
+        const saved = yield* user.api.automations.create({
+          payload: { requestId: requestId(), draft: drafts[0]!, createdBy: "template" }
+        })
+
+        assert.deepStrictEqual(
+          [drafts.map((draft) => draft.name), saved.createdBy, saved.agentId, saved.description.sentence],
+          [["Weekly buy of NVDA"], "template", agent.id, "Every Monday at 10:00 New York time, buy $100 of NVIDIA."]
+        )
+      }))
+
+    it.effect("a Stock picker comes with none", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).funded
+        const { agent } = yield* Effect.orDie((yield* TestAgents).create(user))
+
+        const drafts = yield* user.api.automations.defaults({ params: { agentId: agent.id } })
+
+        assert.deepStrictEqual(drafts, [])
+      }))
+  })
+
   describe("GET /api/automations", () => {
     it.effect("only one agent's, with agentId", () =>
       Effect.gen(function*() {

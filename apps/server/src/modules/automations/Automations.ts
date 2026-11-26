@@ -9,6 +9,7 @@ import {
 } from "@bluechip/domain/automations/Automation"
 import { AutomationCheck, catalogInfo, type EntryInfo } from "@bluechip/domain/automations/Catalog"
 import { AutomationDetail } from "@bluechip/domain/automations/Run"
+import { defaultAutomations } from "@bluechip/domain/automations/Templates"
 import { EMPTY_STATE, type Watcher, type WatchState } from "@bluechip/domain/automations/Trigger"
 import { nextRun } from "@bluechip/domain/automations/triggers/Schedule"
 import { Conflict, InvalidAutomation, NotFound } from "@bluechip/domain/Errors"
@@ -69,6 +70,8 @@ export class Automations extends Context.Service<Automations, {
   readonly catalog: ReadonlyArray<EntryInfo>
   /** Why a draft can't be saved, and what it does in sentences; `NotFound` when its agent isn't the owner's. */
   readonly check: (owner: Owner, draft: AutomationDraft) => Effect.Effect<AutomationCheck, NotFound>
+  /** The drafts the agent's template comes with, not saved. */
+  readonly defaults: (owner: Owner, agentId: AgentId) => Effect.Effect<ReadonlyArray<AutomationDraft>, NotFound>
   /** Saves a draft once per request id; `InvalidAutomation` with every problem when it can't run. */
   readonly create: (
     owner: Owner,
@@ -120,6 +123,11 @@ export class Automations extends Context.Service<Automations, {
           problems: checkAutomation(draft, spec),
           description: describeAutomation(draft, nameOf)
         })
+      })
+
+      const defaults = Effect.fn("Automations.defaults")(function*(owner: Owner, agentId: AgentId) {
+        const agent = yield* agents.find(owner, agentId)
+        return defaultAutomations(agent.template, complete(agent.pendingSpec ?? agent.spec), agent.id)
       })
 
       const valid = Effect.fnUntraced(function*(owner: Owner, draft: AutomationDraft) {
@@ -309,6 +317,7 @@ export class Automations extends Context.Service<Automations, {
       return Automations.of({
         catalog: catalogInfo(),
         check,
+        defaults,
         create,
         update,
         remove,

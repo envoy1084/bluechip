@@ -15,9 +15,14 @@ export const AutomationsHandlers = HttpApiBuilder.group(
       list: ({ query }) => CurrentUser.use((user) => automations.list(user, query.agentId)),
       automation: ({ params }) => CurrentUser.use((user) => automations.detail(user, params.id)),
       check: ({ payload }) => CurrentUser.use((user) => automations.check(user, payload.draft)),
+      defaults: ({ params }) => CurrentUser.use((user) => automations.defaults(user, params.agentId)),
       create: ({ payload }) =>
         CurrentUser.use((user) =>
-          automations.create(user, { requestId: payload.requestId, draft: payload.draft, createdBy: "owner" })
+          automations.create(user, {
+            requestId: payload.requestId,
+            draft: payload.draft,
+            createdBy: payload.createdBy ?? "owner"
+          })
         ),
       update: ({ params, payload }) => CurrentUser.use((user) => automations.update(user, params.id, payload)),
       remove: ({ params }) => CurrentUser.use((user) => automations.remove(user, params.id))

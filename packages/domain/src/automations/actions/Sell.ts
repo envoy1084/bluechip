@@ -62,7 +62,7 @@ export const sell = Action.make({
     return [
       ...stockProblems("symbol", [config.symbol], context),
       ...(config.amount < dollars(1) ? [{ field: "amount", message: "Sell at least $1." }] : []),
-      ...amountProblems("sell", config.amount, context)
+      ...amountProblems("sell", [config.amount], context)
     ]
   },
   describe: (config, { name }) => `sell ${formatUsd(config.amount)} of ${name(config.symbol)}`,
