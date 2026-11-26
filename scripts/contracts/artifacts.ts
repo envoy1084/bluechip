@@ -21,6 +21,7 @@ export const RULES = [
   "StockCapRule",
   "CashReserveRule",
   "RebalanceRule",
+  "StopLossFloorRule",
   "SlippageBudgetRule"
 ] as const
 

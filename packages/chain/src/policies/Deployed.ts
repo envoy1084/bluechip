@@ -601,6 +601,65 @@ export const rebalanceRuleAbi = [
 ] as const
 
 /**
+ * `StopLossFloorRule` (`bluechip.stop-loss-floor-rule`): its address on Base and the devnet.
+ *
+ * @stability unstable
+ * @category contracts
+ * @since 0.0.0
+ */
+export const stopLossFloorRule: Address = "0x40303065601832aED92bB4fad1d6425631ddD47e"
+
+/**
+ * `StopLossFloorRule`'s ABI.
+ *
+ * @stability unstable
+ * @category abis
+ * @since 0.0.0
+ */
+export const stopLossFloorRuleAbi = [{
+  "type": "function",
+  "name": "check",
+  "inputs": [
+    {
+      "name": "valuation",
+      "type": "tuple",
+      "internalType": "struct Valuation",
+      "components": [
+        { "name": "cashBefore", "type": "uint256", "internalType": "uint256" },
+        { "name": "cashAfter", "type": "uint256", "internalType": "uint256" },
+        {
+          "name": "holdings",
+          "type": "tuple[]",
+          "internalType": "struct Holding[]",
+          "components": [
+            { "name": "index", "type": "uint256", "internalType": "uint256" },
+            { "name": "token", "type": "address", "internalType": "address" },
+            { "name": "before", "type": "uint256", "internalType": "uint256" },
+            { "name": "afterward", "type": "uint256", "internalType": "uint256" },
+            { "name": "price", "type": "uint256", "internalType": "uint256" }
+          ]
+        },
+        { "name": "totalBefore", "type": "uint256", "internalType": "uint256" },
+        { "name": "totalAfter", "type": "uint256", "internalType": "uint256" },
+        { "name": "lost", "type": "uint256", "internalType": "uint256" },
+        { "name": "traded", "type": "uint256", "internalType": "uint256" },
+        { "name": "paused", "type": "bool", "internalType": "bool" },
+        { "name": "time", "type": "uint256", "internalType": "uint256" }
+      ]
+    },
+    { "name": "config", "type": "bytes", "internalType": "bytes" },
+    { "name": "", "type": "bytes32", "internalType": "bytes32" },
+    { "name": "", "type": "address", "internalType": "address" }
+  ],
+  "outputs": [],
+  "stateMutability": "pure"
+}, {
+  "type": "error",
+  "name": "AboveFloor",
+  "inputs": [{ "name": "token", "type": "address", "internalType": "address" }]
+}, { "type": "error", "name": "FloorsMismatch", "inputs": [] }] as const
+
+/**
  * `SlippageBudgetRule` (`bluechip.slippage-budget-rule`): its address on Base and the devnet.
  *
  * @stability unstable

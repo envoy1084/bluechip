@@ -1,5 +1,6 @@
 {
   "enable": "642547",
   "postCheck": "221425",
-  "preCheck": "117739"
+  "preCheck": "117768",
+  "stopLossPostCheck": "217270"
 }
