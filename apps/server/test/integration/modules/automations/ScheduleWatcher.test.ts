@@ -4,7 +4,7 @@ import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
 import { ScheduleWatcher } from "../../../../src/modules/automations/watchers/ScheduleWatcher.ts"
-import { weeklyNvidia } from "../../../fixtures/Automations.ts"
+import { GUARDED, weeklyBuy } from "../../../fixtures/Automations.ts"
 import { TestUsers } from "../../../utils/TestUsers.ts"
 
 // The server runs on the real clock (see `TestServer`); each test names the time it runs the watcher at.
@@ -14,7 +14,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("ScheduleWatcher", (it) =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).funded
         const saved = yield* user.api.automations.create({
-          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyNvidia(null) }
+          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyBuy(null) }
         })
         const due = saved.nextRunAt!
 
@@ -45,7 +45,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("ScheduleWatcher", (it) =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).signUp
         const saved = yield* user.api.automations.create({
-          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyNvidia(null) }
+          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyBuy(null) }
         })
 
         yield* (yield* ScheduleWatcher).runDue(DateTime.subtract(saved.nextRunAt!, { minutes: 1 }), { userId: user.id })
@@ -58,7 +58,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("ScheduleWatcher", (it) =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).funded
         const saved = yield* user.api.automations.create({
-          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyNvidia(null) }
+          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyBuy(null, GUARDED) }
         })
         yield* (yield* ScheduleWatcher).runDue(DateTime.add(saved.nextRunAt!, { seconds: 1 }), { userId: user.id })
         const { intent } = yield* user.events.next(

@@ -3,7 +3,7 @@ import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { AutomationRunner } from "../../../../src/modules/automations/AutomationRunner.ts"
 import { AutomationRuns } from "../../../../src/modules/automations/AutomationRuns.ts"
-import { AROUND_THE_CLOCK, nvidiaStopLoss, TEST_FIRE } from "../../../fixtures/Automations.ts"
+import { AROUND_THE_CLOCK, GUARDED, stopLoss, TEST_FIRE } from "../../../fixtures/Automations.ts"
 import { TestAutomations } from "../../../utils/TestAutomations.ts"
 
 // The server runs on the real clock (see `TestServer`).
@@ -12,7 +12,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
     it.effect("fired twice for one window (a restart mid-fire), it proposes its two sales once", () =>
       Effect.gen(function*() {
         const { automation, user } = yield* (yield* TestAutomations).guarded((agentId) =>
-          nvidiaStopLoss(agentId, { settings: AROUND_THE_CLOCK })
+          stopLoss(agentId, { symbol: GUARDED, settings: AROUND_THE_CLOCK })
         )
         const runner = yield* AutomationRunner
 
@@ -34,7 +34,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
     it.effect("a run a restart left running is finished, proposing once", () =>
       Effect.gen(function*() {
         const { automation, user } = yield* (yield* TestAutomations).guarded((agentId) =>
-          nvidiaStopLoss(agentId, { settings: AROUND_THE_CLOCK })
+          stopLoss(agentId, { symbol: GUARDED, settings: AROUND_THE_CLOCK })
         )
         yield* (yield* AutomationRuns).start({
           automationId: automation.id,
@@ -52,7 +52,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
     it.effect("its agent paused: skipped, saying why", () =>
       Effect.gen(function*() {
         const { agent, automation, user } = yield* (yield* TestAutomations).guarded((agentId) =>
-          nvidiaStopLoss(agentId, { settings: AROUND_THE_CLOCK })
+          stopLoss(agentId, { symbol: GUARDED, settings: AROUND_THE_CLOCK })
         )
         yield* user.api.agents.pause({ params: { id: agent.id } })
 
@@ -68,7 +68,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
     it.effect("a second window within its hour's cooldown: skipped", () =>
       Effect.gen(function*() {
         const { automation, user } = yield* (yield* TestAutomations).guarded((agentId) =>
-          nvidiaStopLoss(agentId, { settings: AROUND_THE_CLOCK })
+          stopLoss(agentId, { symbol: GUARDED, settings: AROUND_THE_CLOCK })
         )
         const runner = yield* AutomationRunner
 
@@ -85,7 +85,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
     it.effect("its only fire done: the automation ends", () =>
       Effect.gen(function*() {
         const { automation, user } = yield* (yield* TestAutomations).guarded((agentId) =>
-          nvidiaStopLoss(agentId, { settings: { ...AROUND_THE_CLOCK, maxFires: 1 } })
+          stopLoss(agentId, { symbol: GUARDED, settings: { ...AROUND_THE_CLOCK, maxFires: 1 } })
         )
 
         yield* (yield* AutomationRunner).fire(automation.id, "test:1", TEST_FIRE)
@@ -97,9 +97,10 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
     it.effect("a condition that fails: skipped, with the condition's reason", () =>
       Effect.gen(function*() {
         const { automation, user } = yield* (yield* TestAutomations).guarded((agentId) =>
-          nvidiaStopLoss(agentId, {
+          stopLoss(agentId, {
+            symbol: GUARDED,
             settings: AROUND_THE_CLOCK,
-            conditions: [{ type: "holdingAtLeast", config: { symbol: "NVDA", shares: Shares.make(300_000_000n) } }]
+            conditions: [{ type: "holdingAtLeast", config: { symbol: GUARDED, shares: Shares.make(300_000_000n) } }]
           })
         )
 
@@ -108,7 +109,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
 
         assert.deepStrictEqual(
           detail.runs.map((run) => [run.outcome, run.reason, run.conditions.map((record) => record.pass)]),
-          [["skipped", "You hold 2.5 shares of NVDA.", [false]]]
+          [["skipped", "You hold 2.5 shares of META.", [false]]]
         )
       }))
   })

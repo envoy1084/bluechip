@@ -8,13 +8,13 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import type * as Scope from "effect/Scope"
 import { randomUUID } from "node:crypto"
-import { STOP_LOSS_GUARD } from "../fixtures/Automations.ts"
+import { GUARDED, STOP_LOSS_GUARD } from "../fixtures/Automations.ts"
 import { TestAgents } from "./TestAgents.ts"
 import { type TestUser, TestUsers } from "./TestUsers.ts"
 
 export class TestAutomations extends Context.Service<TestAutomations, {
   /**
-   * A funded user with a Stop-loss guard on NVIDIA (locked), 2.5 NVIDIA shares, and the automation `draft` makes for
+   * A funded user with a Stop-loss guard on `GUARDED` (locked), 2.5 of its shares, and the automation `draft` makes for
    * that agent, saved (and paused with `paused`).
    */
   readonly guarded: (
@@ -40,7 +40,7 @@ export class TestAutomations extends Context.Service<TestAutomations, {
         const user = yield* users.funded
         const request = yield* Effect.orDie(agents.create(user, { template: "stopLossGuard", spec: STOP_LOSS_GUARD }))
         const { agent } = yield* agents.sign(user, request, "active")
-        yield* devnet.mintShares(user.account, "NVDA", 250_000_000n)
+        yield* devnet.mintShares(user.account, GUARDED, 250_000_000n)
         const automation = yield* user.api.automations.create({
           payload: { requestId: RequestId.make(randomUUID()), draft: draft(agent.id) }
         }).pipe(Effect.orDie)

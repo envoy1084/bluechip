@@ -6,7 +6,7 @@ import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
 import { typeid } from "typeid-js"
-import { nvidiaStopLoss, weeklyNvidia } from "../../fixtures/Automations.ts"
+import { stopLoss, weeklyBuy } from "../../fixtures/Automations.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
 
@@ -54,7 +54,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         const user = yield* (yield* TestUsers).funded
         const { agent } = yield* Effect.orDie((yield* TestAgents).create(user))
 
-        const check = yield* user.api.automations.check({ payload: { draft: nvidiaStopLoss(agent.id) } })
+        const check = yield* user.api.automations.check({ payload: { draft: stopLoss(agent.id) } })
 
         assert.deepStrictEqual([check.problems, check.description.sentence], [
           [],
@@ -69,7 +69,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         const { agent } = yield* Effect.orDie((yield* TestAgents).create(someone))
         const user = yield* users.signUp
 
-        const error = yield* Effect.flip(user.api.automations.check({ payload: { draft: weeklyNvidia(agent.id) } }))
+        const error = yield* Effect.flip(user.api.automations.check({ payload: { draft: weeklyBuy(agent.id) } }))
 
         assert.deepStrictEqual(error, new NotFound({ resource: "agent", id: agent.id }))
       }))
@@ -80,7 +80,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
       Effect.gen(function*() {
         const { api } = yield* (yield* TestUsers).signUp
 
-        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyNvidia(null) } })
+        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyBuy(null) } })
 
         assert.match(saved.id, /^automation_/)
         assert.deepStrictEqual(
@@ -94,8 +94,8 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         const { api } = yield* (yield* TestUsers).signUp
         const id = requestId()
 
-        const first = yield* api.automations.create({ payload: { requestId: id, draft: weeklyNvidia(null) } })
-        const again = yield* api.automations.create({ payload: { requestId: id, draft: weeklyNvidia(null) } })
+        const first = yield* api.automations.create({ payload: { requestId: id, draft: weeklyBuy(null) } })
+        const again = yield* api.automations.create({ payload: { requestId: id, draft: weeklyBuy(null) } })
         const listed = yield* api.automations.list({ query: {} })
 
         assert.deepStrictEqual([again.id, listed.map((automation) => automation.id)], [first.id, [first.id]])
@@ -110,7 +110,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         }))
 
         const error = yield* Effect.flip(
-          user.api.automations.create({ payload: { requestId: requestId(), draft: weeklyNvidia(agent.id) } })
+          user.api.automations.create({ payload: { requestId: requestId(), draft: weeklyBuy(agent.id) } })
         )
 
         assert.deepStrictEqual(
@@ -160,9 +160,9 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).funded
         const { agent } = yield* Effect.orDie((yield* TestAgents).create(user))
-        yield* user.api.automations.create({ payload: { requestId: requestId(), draft: weeklyNvidia(null) } })
+        yield* user.api.automations.create({ payload: { requestId: requestId(), draft: weeklyBuy(null) } })
         const agents = yield* user.api.automations.create({
-          payload: { requestId: requestId(), draft: nvidiaStopLoss(agent.id) }
+          payload: { requestId: requestId(), draft: stopLoss(agent.id) }
         })
 
         const listed = yield* user.api.automations.list({ query: { agentId: agent.id } })
@@ -175,7 +175,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
     it.effect("a new automation has no runs yet", () =>
       Effect.gen(function*() {
         const { api } = yield* (yield* TestUsers).signUp
-        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyNvidia(null) } })
+        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyBuy(null) } })
 
         const detail = yield* api.automations.automation({ params: { id: saved.id } })
 
@@ -187,7 +187,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         const users = yield* TestUsers
         const someone = yield* users.signUp
         const saved = yield* someone.api.automations.create({
-          payload: { requestId: requestId(), draft: weeklyNvidia(null) }
+          payload: { requestId: requestId(), draft: weeklyBuy(null) }
         })
         const { api } = yield* users.signUp
 
@@ -201,7 +201,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
     it.effect("paused, then resumed", () =>
       Effect.gen(function*() {
         const { api } = yield* (yield* TestUsers).signUp
-        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyNvidia(null) } })
+        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyBuy(null) } })
 
         const paused = yield* api.automations.update({ params: { id: saved.id }, payload: { status: "paused" } })
         const resumed = yield* api.automations.update({ params: { id: saved.id }, payload: { status: "active" } })
@@ -213,12 +213,12 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
       Effect.gen(function*() {
         const { api } = yield* (yield* TestUsers).signUp
         const saved = yield* api.automations.create({
-          payload: { requestId: requestId(), draft: nvidiaStopLoss(null) }
+          payload: { requestId: requestId(), draft: stopLoss(null) }
         })
 
         const edited = yield* api.automations.update({
           params: { id: saved.id },
-          payload: { draft: nvidiaStopLoss(null, { bps: 800 }) }
+          payload: { draft: stopLoss(null, { bps: 800 }) }
         })
 
         assert.strictEqual(edited.description.sentence, "When NVIDIA falls 8% from its high, sell half your NVIDIA.")
@@ -229,11 +229,11 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         const user = yield* (yield* TestUsers).funded
         const { agent } = yield* Effect.orDie((yield* TestAgents).create(user))
         const saved = yield* user.api.automations.create({
-          payload: { requestId: requestId(), draft: nvidiaStopLoss(null) }
+          payload: { requestId: requestId(), draft: stopLoss(null) }
         })
 
         const error = yield* Effect.flip(
-          user.api.automations.update({ params: { id: saved.id }, payload: { draft: nvidiaStopLoss(agent.id) } })
+          user.api.automations.update({ params: { id: saved.id }, payload: { draft: stopLoss(agent.id) } })
         )
 
         assert.deepStrictEqual(
@@ -251,7 +251,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
     it.effect("deleted: no longer listed or found", () =>
       Effect.gen(function*() {
         const { api } = yield* (yield* TestUsers).signUp
-        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyNvidia(null) } })
+        const saved = yield* api.automations.create({ payload: { requestId: requestId(), draft: weeklyBuy(null) } })
 
         yield* api.automations.remove({ params: { id: saved.id } })
         const listed = yield* api.automations.list({ query: {} })

@@ -2,7 +2,7 @@ import { RequestId } from "@bluechip/domain/Ids"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
-import { nvidiaStopLoss } from "../../fixtures/Automations.ts"
+import { stopLoss } from "../../fixtures/Automations.ts"
 import { RecordedModel } from "../../utils/RecordedModel.ts"
 import { TestAssistant } from "../../utils/TestAssistant.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
@@ -70,7 +70,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("the assistant's autom
         const user = yield* (yield* TestUsers).signUp
         const assistant = yield* TestAssistant
         const saved = yield* user.api.automations.create({
-          payload: { requestId: RequestId.make(randomUUID()), draft: nvidiaStopLoss(null) }
+          payload: { requestId: RequestId.make(randomUUID()), draft: stopLoss(null) }
         })
         const text = `Make it 8% ${randomUUID()}`
         yield* (yield* RecordedModel).record({
@@ -146,7 +146,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("the assistant's autom
         const user = yield* (yield* TestUsers).signUp
         const assistant = yield* TestAssistant
         const saved = yield* user.api.automations.create({
-          payload: { requestId: RequestId.make(randomUUID()), draft: nvidiaStopLoss(null) }
+          payload: { requestId: RequestId.make(randomUUID()), draft: stopLoss(null) }
         })
         const text = `Pause my stop-loss ${randomUUID()}`
         yield* (yield* RecordedModel).record({

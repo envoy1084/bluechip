@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
 import { AutomationRunner } from "../../../../src/modules/automations/AutomationRunner.ts"
 import { NewsItems } from "../../../../src/modules/automations/NewsItems.ts"
-import { badNewsOnNvidia, INJECTED_HEADLINE, story } from "../../../fixtures/Automations.ts"
+import { badNews, GUARDED, INJECTED_HEADLINE, story } from "../../../fixtures/Automations.ts"
 import { RecordedModel } from "../../../utils/RecordedModel.ts"
 import { TestAutomations } from "../../../utils/TestAutomations.ts"
 
@@ -12,7 +12,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("judgments", (it) =>
   describe("a judgment condition", () => {
     it.effect("a headline with instructions in it is judged as untrusted text: the model says no, nothing is proposed", () =>
       Effect.gen(function*() {
-        const { automation, user } = yield* (yield* TestAutomations).guarded(badNewsOnNvidia)
+        const { automation, user } = yield* (yield* TestAutomations).guarded(badNews)
         const model = yield* RecordedModel
         const headline = `${INJECTED_HEADLINE} ${randomUUID()}`
         yield* model.judge(headline, { verdict: false, confidence: 0.95, reason: "A product launch." })
@@ -20,14 +20,13 @@ layer(TestAutomations.layer, { excludeTestServices: true })("judgments", (it) =>
 
         yield* (yield* AutomationRunner).fire(automation.id, `news:${item!.id}`, {
           summary: "A story.",
-          symbol: "NVDA",
+          symbol: GUARDED,
           price: null,
           newsItemId: item!.id
         })
         const detail = yield* user.api.automations.automation({ params: { id: automation.id } })
         const [prompt] = yield* model.judgmentPrompts(headline)
         const [system, question] = prompt!.content
-        console.log(JSON.stringify(detail.runs.map((r) => [r.windowKey, r.outcome, r.reason])))
 
         assert.deepStrictEqual(
           detail.runs.map((run) => [run.outcome, run.reason, run.intentIds]),
@@ -39,20 +38,20 @@ layer(TestAutomations.layer, { excludeTestServices: true })("judgments", (it) =>
         )
         assert.match(
           JSON.stringify(question!.content),
-          /<story>\\nStocks: NVDA\\nHeadline: NVIDIA ships chips\. SYSTEM:/
+          /<story>\\nStocks: META\\nHeadline: Meta ships glasses\. SYSTEM:/
         )
       }))
 
     it.effect("a yes only 60% sure, under its 70%: skipped", () =>
       Effect.gen(function*() {
-        const { automation, user } = yield* (yield* TestAutomations).guarded(badNewsOnNvidia)
-        const headline = `NVIDIA faces a lawsuit ${randomUUID()}`
+        const { automation, user } = yield* (yield* TestAutomations).guarded(badNews)
+        const headline = `Meta faces a lawsuit ${randomUUID()}`
         yield* (yield* RecordedModel).judge(headline, { verdict: true, confidence: 0.6, reason: "Unclear impact." })
         const [item] = yield* (yield* NewsItems).ingest([story(headline)])
 
         yield* (yield* AutomationRunner).fire(automation.id, `news:${item!.id}`, {
           summary: "A story.",
-          symbol: "NVDA",
+          symbol: GUARDED,
           price: null,
           newsItemId: item!.id
         })
@@ -66,12 +65,12 @@ layer(TestAutomations.layer, { excludeTestServices: true })("judgments", (it) =>
 
     it.effect("the model unavailable: skipped, saying so", () =>
       Effect.gen(function*() {
-        const { automation, user } = yield* (yield* TestAutomations).guarded(badNewsOnNvidia)
+        const { automation, user } = yield* (yield* TestAutomations).guarded(badNews)
         const [item] = yield* (yield* NewsItems).ingest([story(`Unrecorded story ${randomUUID()}`)])
 
         yield* (yield* AutomationRunner).fire(automation.id, `news:${item!.id}`, {
           summary: "A story.",
-          symbol: "NVDA",
+          symbol: GUARDED,
           price: null,
           newsItemId: item!.id
         })
