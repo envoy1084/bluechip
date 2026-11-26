@@ -4,6 +4,7 @@ import {
   type AutomationDraft,
   checkAutomation,
   describeAutomation,
+  Trigger,
   TRIGGERS
 } from "@bluechip/domain/automations/Automation"
 import { AutomationCheck, catalogInfo, type EntryInfo } from "@bluechip/domain/automations/Catalog"
@@ -20,6 +21,7 @@ import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { Agents } from "../agents/Agents.ts"
@@ -219,7 +221,7 @@ export class Automations extends Context.Service<Automations, {
           updatedAt: now
         }).where(eq(automations.id, row.id)).returning().pipe(Effect.orDie)
 
-        if (draft !== undefined && JSON.stringify(draft.trigger) !== JSON.stringify(row.trigger)) {
+        if (draft !== undefined && !Schema.toEquivalence(Trigger)(draft.trigger, row.trigger)) {
           yield* saveState(row.id, EMPTY_STATE)
         }
         yield* record(updated!, draft === undefined ? (changes.status === "paused" ? "paused" : "resumed") : "edited")

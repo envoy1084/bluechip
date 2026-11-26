@@ -187,7 +187,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
 
         const edited = yield* api.automations.update({
           params: { id: saved.id },
-          payload: { draft: nvidiaStopLoss(null, 800) }
+          payload: { draft: nvidiaStopLoss(null, { bps: 800 }) }
         })
 
         assert.strictEqual(edited.description.sentence, "When NVIDIA falls 8% from its high, sell half your NVIDIA.")

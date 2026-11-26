@@ -1,0 +1,96 @@
+import { stocks } from "@bluechip/chain/Contracts"
+import { formatPrice } from "@bluechip/domain/automations/Format"
+import type { TriggerData } from "@bluechip/domain/automations/Run"
+import { type PriceTick, sameState, type Step } from "@bluechip/domain/automations/Trigger"
+import { stepPriceCross } from "@bluechip/domain/automations/triggers/PriceCross"
+import { stepPriceMove } from "@bluechip/domain/automations/triggers/PriceMove"
+import type { MarketPrice } from "@bluechip/domain/market/Market"
+import * as Singleton from "effect/cluster/Singleton"
+import * as Context from "effect/Context"
+import * as DateTime from "effect/DateTime"
+import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
+import * as Schedule from "effect/Schedule"
+import * as Stream from "effect/Stream"
+import * as WorkflowEngine from "effect/workflow/WorkflowEngine"
+import { MarketPrices } from "../../market/MarketPrices.ts"
+import { Automations } from "../Automations.ts"
+import { FireAutomation } from "../FireAutomation.ts"
+
+const NEW_YORK = DateTime.zoneMakeNamedUnsafe("America/New_York")
+
+const newYorkDay = (at: DateTime.Utc) => {
+  const { day, month, year } = DateTime.toParts(DateTime.setZone(at, NEW_YORK))
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+}
+
+/**
+ * The watcher of `priceMove` and `priceCross` automations: one subscription to market prices serves them all. Each
+ * change moves the automations on that stock (their extremes, the day's first price, the side of a level, kept in
+ * their state) and starts a fire for each window crossed, once.
+ */
+export class PriceWatcher extends Context.Service<PriceWatcher, {
+  /** Market prices that changed. */
+  readonly observe: (prices: ReadonlyArray<MarketPrice>) => Effect.Effect<void>
+}>()("@bluechip/server/PriceWatcher") {
+  static readonly layer = Layer.effect(
+    PriceWatcher,
+    Effect.gen(function*() {
+      const automations = yield* Automations
+      const engine = yield* WorkflowEngine.WorkflowEngine
+
+      const observe = Effect.fn("PriceWatcher.observe")(function*(prices: ReadonlyArray<MarketPrice>) {
+        if (prices.length === 0) return
+        for (const row of yield* automations.watched("price")) {
+          const config = row.trigger.config as { readonly symbol: string }
+          const price = prices.find((candidate) => candidate.symbol === config.symbol)
+          if (price === undefined) continue
+
+          const tick: PriceTick = {
+            price: price.price,
+            previousClose: price.previousClose,
+            day: newYorkDay(price.tradedAt),
+            at: DateTime.formatIso(price.tradedAt)
+          }
+          const state = yield* automations.state(row.id)
+          const step: Step = row.trigger.type === "priceMove" ?
+            stepPriceMove(row.trigger.config, state, tick) :
+            row.trigger.type === "priceCross" ?
+            stepPriceCross(row.trigger.config, state, tick) :
+            { state, fire: null }
+          if (!sameState(step.state, state)) yield* automations.saveState(row.id, step.state)
+          if (step.fire === null) continue
+
+          const name = stocks.find((stock) => stock.symbol === price.symbol)?.name ?? price.symbol
+          const trigger: TriggerData = {
+            summary: `${name} is at ${formatPrice(price.price)}.`,
+            symbol: price.symbol,
+            price: price.price,
+            newsItemId: null
+          }
+          yield* FireAutomation.execute({ automationId: row.id, windowKey: step.fire, trigger }, { discard: true })
+            .pipe(Effect.provideService(WorkflowEngine.WorkflowEngine, engine))
+        }
+      })
+
+      return PriceWatcher.of({ observe })
+    })
+  )
+
+  /** Follows market prices on one runner of the cluster, again after a failure. */
+  static readonly watch = Singleton.make(
+    "automations.prices",
+    Effect.gen(function*() {
+      const watcher = yield* PriceWatcher
+      const market = yield* MarketPrices
+      yield* market.changes.pipe(
+        Stream.runForEach((prices) =>
+          watcher.observe(prices).pipe(
+            Effect.catchCause((cause) => Effect.logWarning("Price watcher failed on a tick", cause))
+          )
+        ),
+        Effect.retry(Schedule.spaced("5 seconds"))
+      )
+    })
+  )
+}

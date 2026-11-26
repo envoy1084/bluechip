@@ -49,6 +49,8 @@ export const describeDecision = (decision: Decision): string => {
       return "Within the agent's policies: it sends this itself."
     case "OverLargestTrade":
       return `Over the agent's largest trade (${formatDollars(decision.maxPerTrade)}): it needs your Face ID.`
+    case "Ask":
+      return "It asks you first: it needs your Face ID."
     case "Refused":
       return `Blocked by ${policyOf(decision.policy).title}: ${decision.message}`
     case "Wait": {

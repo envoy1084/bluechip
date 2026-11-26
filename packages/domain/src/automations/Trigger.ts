@@ -116,3 +116,12 @@ export interface PriceTick {
   readonly day: string
   readonly at: string
 }
+
+/**
+ * Whether two states are the same, so a watcher saves only a state that changed.
+ *
+ * @stability unstable
+ * @category equivalence
+ * @since 0.0.0
+ */
+export const sameState = Schema.toEquivalence(WatchState)

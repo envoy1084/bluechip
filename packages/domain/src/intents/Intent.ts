@@ -96,7 +96,8 @@ export type WaitReason = typeof WaitReason.Type
 
 /**
  * What the pipeline decided: the agent may send it (with the gas the simulation needs), it is bigger than the agent's
- * largest trade (your Face ID), a policy refused it, or it has to wait.
+ * largest trade (your Face ID), it asks you first (an automation that asks, or one proposing your own trade: your
+ * Face ID), a policy refused it, or it has to wait.
  *
  * @stability unstable
  * @category schemas
@@ -105,6 +106,7 @@ export type WaitReason = typeof WaitReason.Type
 export const Decision = Schema.TaggedUnion({
   Passes: { callGasLimit: Schema.BigInt },
   OverLargestTrade: { maxPerTrade: Usdc },
+  Ask: {},
   Refused: {
     policy: PolicyId,
     error: Schema.NullOr(Schema.String),
@@ -210,6 +212,7 @@ export const transition = (status: IntentStatus, event: IntentEvent): Result.Res
       const decided: Readonly<Record<Decision["_tag"], IntentStatus>> = {
         Passes: "sending",
         OverLargestTrade: "needsApproval",
+        Ask: "needsApproval",
         Refused: "blocked",
         Wait: "waiting"
       }

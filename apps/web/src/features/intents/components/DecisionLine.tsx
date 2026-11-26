@@ -7,6 +7,7 @@ import { clockTime } from "../model/intentText.ts"
 const LOOK: Readonly<Record<Decision["_tag"], { readonly icon: IconName; readonly tone: string }>> = {
   Passes: { icon: "check-circle", tone: "text-gain" },
   OverLargestTrade: { icon: "face-id", tone: "text-blue" },
+  Ask: { icon: "face-id", tone: "text-blue" },
   Refused: { icon: "stop-sign", tone: "text-loss" },
   Wait: { icon: "clock", tone: "text-warn" }
 }

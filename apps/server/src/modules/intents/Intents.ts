@@ -21,7 +21,7 @@ import { AgentStore } from "../agents/AgentStore.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { type TradeLink, Trades } from "../trading/Trades.ts"
 import { AgentExecutor } from "./AgentExecutor.ts"
-import { ExecuteIntent } from "./Desk.ts"
+import { AccountDesk, ExecuteIntent } from "./Desk.ts"
 import { type IntentInput, type IntentRow, IntentStore, toIntent } from "./IntentStore.ts"
 
 type TradeError =
@@ -46,6 +46,11 @@ export class Intents extends Context.Service<Intents, {
     leg: Leg
   ) => Effect.Effect<Decision, NotFound | Conflict | Unavailable>
   readonly create: (owner: Owner, input: IntentInput) => Effect.Effect<Intent | IntentRequest, TradeError>
+  /**
+   * An intent an automation proposes: an agent's trade its desk decides (asking you first when `ask`), or your own
+   * trade, which always waits for your approval. Created once per dedupe key; nothing is checked before the desk.
+   */
+  readonly propose: (owner: Owner, input: IntentInput) => Effect.Effect<Intent>
   readonly list: IntentStore["Service"]["list"]
   readonly find: (owner: Owner, id: IntentId) => Effect.Effect<Intent, NotFound>
   readonly approvals: (owner: Owner) => Effect.Effect<ReadonlyArray<Intent>>
@@ -66,6 +71,7 @@ export class Intents extends Context.Service<Intents, {
       const trades = yield* Trades
       const executor = yield* AgentExecutor
       const engine = yield* WorkflowEngine.WorkflowEngine
+      const desk = yield* AccountDesk.client
 
       // The agent, and its session in force, while it can trade.
       // The agent, and its session in force, while it can trade.
@@ -134,6 +140,16 @@ export class Intents extends Context.Service<Intents, {
         return toIntent(row)
       })
 
+      const propose = Effect.fn("Intents.propose")(function*(owner: Owner, input: IntentInput) {
+        const { created, row } = yield* store.insert(owner, input)
+        if (created) {
+          yield* ExecuteIntent.execute({ intentId: row.id, userId: row.userId as UserId }, { discard: true }).pipe(
+            Effect.provideService(WorkflowEngine.WorkflowEngine, engine)
+          )
+        }
+        return toIntent(row)
+      })
+
       const find = Effect.fn("Intents.find")(function*(owner: Owner, id: IntentId) {
         return toIntent(yield* store.owned(owner, id))
       })
@@ -143,7 +159,8 @@ export class Intents extends Context.Service<Intents, {
         if (row.status !== "needsApproval" && row.status !== "awaitingSignature") {
           return yield* new Conflict({ reason: "intentClosed" })
         }
-        yield* tradingAgent(owner, row.agentId! as AgentId)
+        // Your own trade an automation proposed has no agent to check.
+        if (row.agentId !== null) yield* tradingAgent(owner, row.agentId as AgentId)
         return yield* prepareForOwner(owner, row, requestId, {
           intentId: row.id,
           agentId: row.agentId,
@@ -156,7 +173,21 @@ export class Intents extends Context.Service<Intents, {
         id: SigningRequestId,
         credential: typeof AuthenticationCredential.Type
       ) {
-        const trade = yield* trades.confirm(owner, id, credential)
+        // Sent on the account's desk, after any of its agents' trades already on their way.
+        const trade = yield* desk(owner.id).Send({
+          userId: owner.id,
+          account: owner.account,
+          signingRequestId: id,
+          credential
+        }).pipe(
+          Effect.catchTag(
+            ["EntityNotAssignedToRunner", "PersistenceError", "MailboxFull", "AlreadyProcessingMessage"],
+            (error) =>
+              Effect.logWarning("The account's desk didn't take a send", error).pipe(
+                Effect.andThen(Effect.fail(new Unavailable({ dependency: "database", retryAfterSeconds: 5 })))
+              )
+          )
+        )
         const row = yield* store.byTrade(trade.id)
         if (row === undefined) return yield* new NotFound({ resource: "intent", id })
         return toIntent(row)
@@ -171,6 +202,7 @@ export class Intents extends Context.Service<Intents, {
       return Intents.of({
         preview,
         create,
+        propose,
         list: store.list,
         find,
         approvals: store.approvals,

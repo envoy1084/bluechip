@@ -19,8 +19,15 @@ import { AuditLog } from "./modules/audit/AuditLog.ts"
 import { Challenges } from "./modules/auth/Challenges.ts"
 import { Sessions } from "./modules/auth/Sessions.ts"
 import { WebAuthn } from "./modules/auth/WebAuthn.ts"
+import { AutomationRunner } from "./modules/automations/AutomationRunner.ts"
 import { AutomationRuns } from "./modules/automations/AutomationRuns.ts"
 import { Automations } from "./modules/automations/Automations.ts"
+import { FireAutomationLive } from "./modules/automations/FireAutomation.ts"
+import { Judgments } from "./modules/automations/Judgments.ts"
+import { NewsItems } from "./modules/automations/NewsItems.ts"
+import { PortfolioWatcher } from "./modules/automations/watchers/PortfolioWatcher.ts"
+import { PriceWatcher } from "./modules/automations/watchers/PriceWatcher.ts"
+import { ScheduleWatcher } from "./modules/automations/watchers/ScheduleWatcher.ts"
 import { Transfers } from "./modules/funding/Transfers.ts"
 import { Withdrawals } from "./modules/funding/Withdrawals.ts"
 import { AgentExecutor } from "./modules/intents/AgentExecutor.ts"
@@ -55,9 +62,17 @@ export const ServicesLive = Layer.mergeAll(
   ExpireIntentsCron,
   ExpireAgentsCron,
   PortfolioSnapshotCron,
-  Assistant.layer
+  Assistant.layer,
+  FireAutomationLive,
+  PriceWatcher.watch,
+  ScheduleWatcher.watch,
+  PortfolioWatcher.watch
 ).pipe(
-  Layer.provideMerge(Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer)),
+  Layer.provideMerge(Layer.mergeAll(PriceWatcher.layer, ScheduleWatcher.layer, PortfolioWatcher.layer)),
+  Layer.provideMerge(AutomationRunner.layer),
+  Layer.provideMerge(
+    Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer, Judgments.layer, NewsItems.layer)
+  ),
   Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),
   Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer, Automations.layer)),

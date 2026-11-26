@@ -9,6 +9,7 @@ import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as PubSub from "effect/PubSub"
 import * as Ref from "effect/Ref"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
@@ -29,6 +30,8 @@ export const toTokenPrice = (dollars: number, multiplier: bigint): Price =>
 export class MarketPrices extends Context.Service<MarketPrices, {
   readonly prices: Effect.Effect<ReadonlyMap<StockSymbol, MarketPrice>>
   readonly multipliers: Effect.Effect<ReadonlyMap<string, bigint>>
+  /** The prices that changed, at most once a second (as `PriceTick` announces them), from when it is run. */
+  readonly changes: Stream.Stream<ReadonlyArray<MarketPrice>>
   /** Every stock's price now, read afresh: its multiplier from the chain and one Alpaca snapshot request. */
   readonly read: Effect.Effect<ReadonlyMap<StockSymbol, MarketPrice>, ChainError | AlpacaError>
 }>()("@bluechip/server/MarketPrices") {
@@ -42,6 +45,7 @@ export class MarketPrices extends Context.Service<MarketPrices, {
       const multipliers = yield* Ref.make<ReadonlyMap<string, bigint>>(new Map())
       const prices = yield* Ref.make<ReadonlyMap<StockSymbol, MarketPrice>>(new Map())
       const changed = yield* Ref.make<ReadonlySet<StockSymbol>>(new Set())
+      const ticks = yield* PubSub.unbounded<ReadonlyArray<MarketPrice>>()
 
       // Every stock's latest market price from one Alpaca snapshot request, converted with the given multipliers.
       const readWith = Effect.fnUntraced(function*(known: ReadonlyMap<string, bigint>) {
@@ -108,6 +112,7 @@ export class MarketPrices extends Context.Service<MarketPrices, {
         const current = yield* Ref.get(prices)
         const moved = [...symbolsChanged].flatMap((symbol) => current.get(symbol) ?? [])
         yield* live.publish(LiveEvent.cases.PriceTick.make({ prices: moved }))
+        yield* PubSub.publish(ticks, moved)
       })
 
       yield* refreshMultipliers
@@ -122,6 +127,7 @@ export class MarketPrices extends Context.Service<MarketPrices, {
       return MarketPrices.of({
         prices: Ref.get(prices),
         multipliers: Ref.get(multipliers),
+        changes: Stream.fromPubSub(ticks),
         read: readMultipliers(chain).pipe(Effect.flatMap(readWith), Effect.withSpan("MarketPrices.read"))
       })
     })

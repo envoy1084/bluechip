@@ -10,7 +10,7 @@ import {
   type Leg,
   transition
 } from "@bluechip/domain/intents/Intent"
-import { and, desc, eq, inArray, isNotNull, lt } from "drizzle-orm"
+import { and, desc, eq, inArray, isNotNull, lt, or } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -34,6 +34,10 @@ export type IntentInput = {
   readonly reason?: string | undefined
   readonly source?: IntentSource | undefined
   readonly sourceId?: string | undefined
+  /** What makes it one intent, instead of the request id: an automation's window and leg. */
+  readonly dedupeKey?: string | undefined
+  /** Waits for your approval whatever the agent's policies allow (an automation that asks you first). */
+  readonly ask?: boolean | undefined
 }
 
 /** An intent as the API returns it. */
@@ -83,7 +87,10 @@ export class IntentStore extends Context.Service<IntentStore, {
     readonly pageSize?: number | undefined
     readonly pageToken?: string | undefined
   }) => Effect.Effect<{ readonly items: ReadonlyArray<Intent>; readonly nextPageToken: string | null }>
-  /** Agent trades waiting for you: over their largest trade, or approved and waiting for your signature. */
+  /**
+   * Trades waiting for you: an agent's over its largest trade, one an automation asks you about, or one you approved
+   * and that waits for your signature.
+   */
   readonly approvals: (owner: Owner) => Effect.Effect<ReadonlyArray<Intent>>
   /**
    * Moves an intent on by `event` (and saves `changes` with it). Fails with `Conflict` when the intent has already
@@ -131,7 +138,8 @@ export class IntentStore extends Context.Service<IntentStore, {
 
       const insert = Effect.fn("IntentStore.insert")(function*(owner: Owner, input: IntentInput) {
         const now = yield* DateTime.now
-        const dedupeKey = `request:${input.requestId}`
+        const dedupeKey = input.dedupeKey ?? `request:${input.requestId}`
+        const ask = input.ask ?? false
         const [created] = yield* db.insert(intents).values({
           id: typeid("intent").toString() as `intent_${string}`,
           userId: owner.id as `user_${string}`,
@@ -139,11 +147,12 @@ export class IntentStore extends Context.Service<IntentStore, {
           source: input.source ?? "owner",
           sourceId: input.sourceId ?? null,
           executor: input.agentId === null ? "owner" : "agent",
+          ask,
           dedupeKey,
           leg: input.leg,
           reason: input.reason ?? (input.agentId === null ? "You traded." : "You asked this agent to trade."),
           status: "proposed",
-          expiresAt: input.agentId === null ? null : DateTime.add(now, { hours: OPEN_HOURS }),
+          expiresAt: input.agentId === null && !ask ? null : DateTime.add(now, { hours: OPEN_HOURS }),
           createdAt: now,
           updatedAt: now
         }).onConflictDoNothing().returning().pipe(Effect.orDie)
@@ -181,7 +190,7 @@ export class IntentStore extends Context.Service<IntentStore, {
       const approvals = Effect.fn("IntentStore.approvals")(function*(owner: Owner) {
         const rows = yield* db.select().from(intents).where(and(
           eq(intents.userId, owner.id as `user_${string}`),
-          isNotNull(intents.agentId),
+          or(isNotNull(intents.agentId), eq(intents.source, "automation")),
           inArray(intents.status, ["needsApproval", "awaitingSignature"])
         )).orderBy(desc(intents.id)).pipe(Effect.orDie)
         return rows.map(toIntent)

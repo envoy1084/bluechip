@@ -1,6 +1,9 @@
 import { refusalFrom } from "@bluechip/chain/policies/Refusals"
-import type { UserId } from "@bluechip/domain/Ids"
+import { NotFound, SignatureRejected, Unavailable } from "@bluechip/domain/Errors"
+import type { Address, SigningRequestId, UserId } from "@bluechip/domain/Ids"
 import { isEnded } from "@bluechip/domain/intents/Intent"
+import { Trade } from "@bluechip/domain/trading/Trade"
+import { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import * as ClusterSchema from "effect/cluster/ClusterSchema"
 import * as Entity from "effect/cluster/Entity"
 import * as DateTime from "effect/DateTime"
@@ -17,6 +20,7 @@ import { Accounts } from "../accounts/Accounts.ts"
 import type { SessionRow } from "../agents/AgentSessions.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
 import { TradeLedger } from "../trading/TradeLedger.ts"
+import { Trades } from "../trading/Trades.ts"
 import { AgentExecutor } from "./AgentExecutor.ts"
 import { type IntentRow, IntentStore } from "./IntentStore.ts"
 
@@ -29,12 +33,24 @@ export const StepResult = Schema.TaggedUnion({
 export type StepResult = typeof StepResult.Type
 
 /**
- * One account's trading desk: an entity per user, so its intents are decided and sent one at a time (an agent's
- * buy and another agent's sell never race on the same balances). `Step` runs one intent as far as it can go now.
+ * One account's trading desk: an entity per user, so its intents are decided and sent one at a time, yours and its
+ * agents' alike (an agent's buy and your own sale never race on the same balances). `Step` runs one intent as far as
+ * it can go now; `Send` sends a trade you signed with your passkey. A send is never replayed after a restart: the
+ * passkey's signature is claimed once.
  */
 export const AccountDesk = Entity.make("AccountDesk", [
   Rpc.make("Step", { payload: { intentId: Schema.String }, success: StepResult })
-    .annotate(ClusterSchema.Persisted, true)
+    .annotate(ClusterSchema.Persisted, true),
+  Rpc.make("Send", {
+    payload: {
+      userId: Schema.String,
+      account: Schema.String,
+      signingRequestId: Schema.String,
+      credential: AuthenticationCredential
+    },
+    success: Trade,
+    error: Schema.Union([NotFound, SignatureRejected, Unavailable])
+  })
 ])
 
 /**
@@ -49,6 +65,7 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
   const accounts = yield* Accounts
   const executor = yield* AgentExecutor
   const ledger = yield* TradeLedger
+  const trades = yield* Trades
   const done: StepResult = StepResult.cases.Done.make({})
 
   // Follows an agent's sent operation to its receipt, records the fill, and ends the intent.
@@ -63,9 +80,25 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     return done
   })
 
+  // An intent that asks you first (an automation's, or one proposing your own trade) goes to your approvals; an
+  // agent's is cancelled instead when the agent can't trade.
+  const ask = Effect.fnUntraced(function*(row: IntentRow) {
+    if (row.status !== "proposed") return done
+    if (row.agentId !== null && !(yield* agentStore.tradingState(row.agentId)).canTrade) {
+      yield* intents.advance(row, { _tag: "Cancelled" }).pipe(Effect.ignore)
+      return done
+    }
+    const deciding = yield* intents.advance(row, { _tag: "Decide" })
+    yield* intents.advance(deciding, { _tag: "Decided", decision: { _tag: "Ask" } }, {
+      expiresAt: DateTime.add(yield* DateTime.now, { hours: 6 })
+    })
+    return done
+  })
+
   const step = Effect.fn("AccountDesk.step")(function*(intentId: string) {
     let row = yield* intents.find(intentId)
-    if (row === undefined || isEnded(row.status) || row.executor !== "agent") return done
+    if (row === undefined || isEnded(row.status)) return done
+    if (row.ask || row.executor === "owner") return yield* ask(row)
 
     const { agent, canTrade, session } = yield* agentStore.tradingState(row.agentId!)
     const address = (yield* accounts.me(row.userId as UserId)).account.address as Hex
@@ -143,6 +176,12 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
   })
 
   return AccountDesk.of({
+    Send: ({ payload }) =>
+      trades.confirm(
+        { id: payload.userId as UserId, account: payload.account as Address },
+        payload.signingRequestId as SigningRequestId,
+        payload.credential
+      ),
     Step: ({ payload }) =>
       step(payload.intentId).pipe(
         // A step that failed (the database, a bug) is tried again in a minute, not straight away.

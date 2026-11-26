@@ -55,6 +55,12 @@ describe("transition", () => {
       expected: Result.succeed("needsApproval")
     },
     {
+      name: "deciding, asking you first: needsApproval",
+      status: "deciding",
+      event: { _tag: "Decided", decision: { _tag: "Ask" } },
+      expected: Result.succeed("needsApproval")
+    },
+    {
       name: "deciding, refused: blocked",
       status: "deciding",
       event: { _tag: "Decided", decision: REFUSED },
@@ -197,6 +203,11 @@ describe("describeDecision", () => {
       name: "over the largest trade",
       decision: OVER,
       expected: "Over the agent's largest trade ($100): it needs your Face ID."
+    },
+    {
+      name: "asking you first",
+      decision: { _tag: "Ask" } as const,
+      expected: "It asks you first: it needs your Face ID."
     },
     {
       name: "refused",
