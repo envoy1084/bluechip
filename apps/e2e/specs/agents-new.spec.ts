@@ -107,7 +107,7 @@ test.describe("new agent: from each template to live", () => {
     await page.getByRole("link", { name: "See all agents" }).click()
 
     await expect(page).toHaveURL(/\/agents$/)
-    await expect(page.getByRole("link", { name: /^Stock picker Stock picker Active/ })).toBeVisible()
+    await expect(page.getByRole("link", { name: /^Stock picker Active / })).toBeVisible()
   })
 
   test("Done: Go to opens the agent's page", async ({ page, funded: _funded }) => {

@@ -33,7 +33,7 @@ test.describe("pause and resume", () => {
 
     await page.goto("/agents")
 
-    await expect(page.getByRole("link", { name: /^Paused card / })).toContainText("Paused cardStock pickerPaused")
+    await expect(page.getByRole("link", { name: /^Paused card / })).toContainText("Paused cardPaused")
   })
 })
 
@@ -259,7 +259,7 @@ test.describe("expired", () => {
 
     await page.getByRole("main").getByRole("button", { name: "Renew", exact: true }).click()
 
-    await expect(page.getByRole("link", { name: /^Card renew / })).toContainText("Card renewStock pickerActive")
+    await expect(page.getByRole("link", { name: /^Card renew / })).toContainText("Card renewActive")
     await expect(page.getByRole("main").getByRole("button", { name: "Renew", exact: true })).toBeHidden()
   })
 

@@ -94,7 +94,7 @@ test.describe("saved templates", () => {
       `Apple daily template, created ${dayFromNow(0)}, locked until ${dayFromNow(90)}`
     )
     await page.goto("/agents")
-    await expect(page.getByRole("link", { name: /^Apple daily / })).toContainText("Apple dailyApple dailyActive")
+    await expect(page.getByRole("link", { name: /^Apple daily / })).toContainText("Apple dailyActive")
   })
 
   test("deleting it takes it off the template step", async ({ page, user: _user }) => {

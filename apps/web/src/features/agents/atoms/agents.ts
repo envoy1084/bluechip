@@ -4,6 +4,7 @@ import * as Atom from "effect/reactivity/Atom"
 import {
   agentsReactivityKey,
   BluechipApiClient,
+  intentsReactivityKey,
   liveReactivityKey,
   usageReactivityKey
 } from "../../../lib/api/client.ts"
@@ -59,5 +60,13 @@ export const confirmAgentAtom = BluechipApiClient.runtime.fn(
       params: { id: request.id },
       payload: { credential }
     })
+  })
+)
+
+/** An agent's last filled trade (a page of one), refetched as its trades change. */
+export const agentLastTradeAtom = Atom.family((id: AgentId) =>
+  BluechipApiClient.query("intents", "list", {
+    query: { agentId: id, status: "filled", pageSize: 1 },
+    reactivityKeys: [...reactivityKeys, intentsReactivityKey]
   })
 )

@@ -30,16 +30,19 @@ test.describe("agents list", () => {
     await expect(page).toHaveURL(/\/agents\/new$/)
   })
 
-  test("a live agent's card shows its name, template, state, budget and lock", async ({ page, funded: _ }) => {
+  test("a live agent's summary shows its name, state, what it does, today's use and lock", async ({ page, funded: _ }) => {
     await createAgent(page, { template: "Weekly buyer", name: "Tuesday buys" })
 
     await page.goto("/agents")
 
     const card = page.getByRole("link", { name: /^Tuesday buys / })
-    await expect(card).toContainText("Tuesday buysWeekly buyerActive")
+    await expect(card).toContainText("Tuesday buysActive")
+    await expect(card).toContainText(/Buys \w+/)
     await expect(card.getByRole("meter", { name: "Spent today" })).toBeVisible()
     await expect.poll(() => card.ariaSnapshot()).toContain("$250 left today")
-    await expect(card).toContainText(`Locked until ${dayFromNow(90)}`)
+    await expect(card).toContainText("Trades today0 of 1")
+    await expect(card).toContainText(`Locked until${dayFromNow(90)}`)
+    await expect(card).toContainText("No trades yet.")
   })
 
   test("a draft's card says it isn't locked yet", async ({ page, authenticator, funded: _ }) => {
