@@ -44,6 +44,15 @@ export class AssistantApi extends HttpApiGroup.make("assistant").add(
     success: ConversationThread,
     error: NotFound
   }),
+  /**
+   * Deletes the conversation with its messages, cards and summary, stopping a run going in it first. What the assistant
+   * remembers from it stays (the memory page manages that).
+   */
+  HttpApiEndpoint.delete("deleteConversation", "/assistant/conversations/:id", {
+    params: { id: ConversationId },
+    success: Schema.Void,
+    error: NotFound
+  }),
   AgUiServer.endpoint("run", "/assistant/run"),
   HttpApiEndpoint.post("cancel", "/assistant/runs/:id/cancel", {
     params: { id: RunId },

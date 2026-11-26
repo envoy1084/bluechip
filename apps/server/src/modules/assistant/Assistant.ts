@@ -85,6 +85,11 @@ export class Assistant extends Context.Service<Assistant, {
   ) => Effect.Effect<Stream.Stream<AgUiSchema.Event>, HttpApiError.BadRequest>
   /** Stops a run of the user's: the round in progress is stored as far as it got. */
   readonly cancel: (owner: Owner, runId: string) => Effect.Effect<void, NotFound>
+  /**
+   * Deletes one of the user's conversations. A run going in it is stopped as if cancelled and waited for while it
+   * stores what it got to, and no new run starts in it meanwhile.
+   */
+  readonly deleteConversation: (owner: Owner, conversationId: string) => Effect.Effect<void, NotFound>
 }>()("@bluechip/server/Assistant") {
   static readonly layer = Layer.effect(
     Assistant,
@@ -100,6 +105,7 @@ export class Assistant extends Context.Service<Assistant, {
       const titles = yield* Titles
       const toolkit = yield* AssistantToolkit
       const runs = new Map<string, Run>()
+      const deleting = new Set<ConversationId>()
       const scope = yield* Effect.scope
 
       const cardEvent = (toolCallId: string | null, card: Card): AgUiSchema.Event => ({
@@ -361,7 +367,7 @@ export class Assistant extends Context.Service<Assistant, {
         const conversation = yield* conversations.owned(owner, input.threadId).pipe(
           Effect.mapError(() => new HttpApiError.BadRequest({}))
         )
-        if (runs.has(input.runId)) return yield* new HttpApiError.BadRequest({})
+        if (runs.has(input.runId) || deleting.has(conversation.id)) return yield* new HttpApiError.BadRequest({})
         const active = [...runs.values()].find((other) => other.conversationId === conversation.id)
         if (active !== undefined) {
           // A reconnect right after the client dropped finds the cut-off turn still storing: wait for it.
@@ -428,7 +434,23 @@ export class Assistant extends Context.Service<Assistant, {
         yield* Deferred.succeed(active.stopped, "cancelled")
       })
 
-      return Assistant.of({ run, cancel })
+      const deleteConversation = Effect.fn("Assistant.deleteConversation")(
+        function*(owner: Owner, conversationId: string) {
+          const conversation = yield* conversations.owned(owner, conversationId)
+          deleting.add(conversation.id)
+
+          yield* Effect.gen(function*() {
+            for (const active of runs.values()) {
+              if (active.conversationId !== conversation.id) continue
+              yield* Deferred.succeed(active.stopped, "cancelled")
+              yield* Deferred.await(active.done)
+            }
+            yield* conversations.remove(owner, conversation.id)
+          }).pipe(Effect.ensuring(Effect.sync(() => deleting.delete(conversation.id))))
+        }
+      )
+
+      return Assistant.of({ run, cancel, deleteConversation })
     })
   )
 }

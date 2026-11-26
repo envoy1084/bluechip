@@ -23,6 +23,7 @@ export const AssistantHandlers = HttpApiBuilder.group(
       conversations: ({ query }) => CurrentUser.use((user) => conversations.list(user, query)),
       startConversation: ({ payload }) => CurrentUser.use((user) => conversations.start(user, payload)),
       conversation: ({ params }) => CurrentUser.use((user) => conversations.thread(user, params.id)),
+      deleteConversation: ({ params }) => CurrentUser.use((user) => assistant.deleteConversation(user, params.id)),
       run: Effect.fnUntraced(function*({ payload }) {
         const events = yield* assistant.run(yield* CurrentUser, payload)
         return yield* AgUiServer.handler(() => events)({ payload })

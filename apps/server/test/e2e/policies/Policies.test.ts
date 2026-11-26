@@ -39,7 +39,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("policies", (it) => {
         const templates = yield* api.policies.templates()
 
         assert.deepStrictEqual([templates.builtIn.map((template) => template.id), templates.saved], [
-          ["rebalancer", "stockPicker", "weeklyBuyer", "stopLossGuard"],
+          ["stockPicker", "weeklyBuyer", "stopLossGuard", "rebalancer"],
           []
         ])
       }))

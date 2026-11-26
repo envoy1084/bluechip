@@ -77,6 +77,11 @@ export class Conversations extends Context.Service<Conversations, {
     readonly usage?: MessageUsage | undefined
   }) => Effect.Effect<Message>
   readonly setTitle: (id: ConversationId, title: string) => Effect.Effect<void>
+  /**
+   * Deletes one of the owner's conversations with what belongs only to it: messages, cards, summary and recall entries
+   * (`on delete cascade`). Memories learned from it stay, without their message; a chat linked to it starts afresh.
+   */
+  readonly remove: (owner: Owner, id: string) => Effect.Effect<void, NotFound>
 }>()("@bluechip/server/Conversations") {
   static readonly layer = Layer.effect(
     Conversations,
@@ -170,6 +175,11 @@ export class Conversations extends Context.Service<Conversations, {
           .where(eq(conversations.id, id as `conversation_${string}`)).pipe(Effect.orDie)
       })
 
+      const remove = Effect.fn("Conversations.remove")(function*(owner: Owner, id: string) {
+        const row = yield* ownedRow(owner, id)
+        yield* db.delete(conversations).where(eq(conversations.id, row.id)).pipe(Effect.orDie)
+      })
+
       return Conversations.of({
         start,
         list,
@@ -178,7 +188,8 @@ export class Conversations extends Context.Service<Conversations, {
         }),
         thread,
         append,
-        setTitle
+        setTitle,
+        remove
       })
     })
   )

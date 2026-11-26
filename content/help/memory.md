@@ -17,3 +17,10 @@ everything as JSON, and delete one or all. Deleting a memory also deletes the co
 message and the assistant's answer leave the conversation, the assistant can no longer recall them, and a summary of
 that conversation that included them is written again without them. Deleting everything forgets every memory, the
 summaries and what it could recall from earlier conversations, while your conversations stay in your history.
+
+## Deleting a chat
+
+Each chat in the chat page's list has a menu with Delete. Deleting a chat deletes its messages, its cards and its
+summary, and the assistant can no longer recall what was said in it; an answer still being written stops first. What
+the assistant remembers from it stays on the memory page, to keep or delete there, and trades it made stay in your
+activity.
