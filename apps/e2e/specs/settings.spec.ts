@@ -1,4 +1,5 @@
 import { expect, test } from "../fixtures/test.ts"
+import { createAgent } from "../utils/agents.ts"
 
 test.describe("settings", () => {
   test("a saved name greets you on home and in the sidebar", async ({ page, user: _user }) => {
@@ -41,12 +42,22 @@ test.describe("settings", () => {
     await expect(page.getByText("Confirmed", { exact: true })).toBeVisible()
   })
 
-  test("the passkey you signed up with is listed as this device", async ({ page, user: _user }) => {
+  test("Security settings opens your passkeys, recovery and devices", async ({ page, user: _user }) => {
     await page.goto("/settings")
 
-    const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-    await expect(page.getByText("This device", { exact: true })).toBeVisible()
-    await expect(page.getByText(`On this device only, added ${today}, last used ${today}`)).toBeVisible()
+    await page.getByRole("link", { name: "Security settings" }).click()
+
+    await expect(page).toHaveURL(/\/settings\/security$/)
+    await expect(page.getByRole("heading", { name: "Security", level: 1 })).toBeVisible()
+    await expect(page.getByText("This device", { exact: true }).first()).toBeVisible()
+  })
+
+  test("Open the audit log opens it", async ({ page, user: _user }) => {
+    await page.goto("/settings")
+
+    await page.getByRole("link", { name: "Open the audit log" }).click()
+
+    await expect(page).toHaveURL(/\/settings\/audit$/)
   })
 
   test("See memories opens an empty memory page for a new person", async ({ page, user: _user }) => {
@@ -69,5 +80,19 @@ test.describe("settings", () => {
     await expect(page.getByRole("heading", { name: "Assistant" })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Danger zone" })).toBeHidden()
     await expect(page.getByRole("button", { name: "Pause all" })).toBeHidden()
+  })
+
+  test("Remove all agents revokes every agent with one Face ID", async ({ page, funded: _funded }) => {
+    await createAgent(page, { name: "First picker" })
+    await createAgent(page, { name: "Second picker" })
+    await page.goto("/settings")
+
+    await page.getByRole("button", { name: "Remove all" }).click()
+    await expect(page.getByRole("dialog")).toContainText("Remove all 2 agents?")
+    await page.getByRole("button", { name: "Remove with Face ID" }).click()
+
+    await expect(page.getByRole("heading", { name: "Every agent is removed" })).toBeVisible()
+    await page.getByRole("button", { name: "Done" }).click()
+    await expect(page.getByRole("heading", { name: "Danger zone" })).toBeHidden()
   })
 })

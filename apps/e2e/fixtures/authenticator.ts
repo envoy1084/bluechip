@@ -21,13 +21,20 @@ export interface Authenticator {
   readonly add: (credential: Credential) => Promise<void>
 }
 
-export const addAuthenticator = async (page: Page): Promise<Authenticator> => {
+/**
+ * Adds a virtual authenticator to the page: its platform passkey store (`internal`, the default), or a hardware key
+ * plugged in (`usb`), such as a recovery key. Chromium answers each ceremony with the first one that can.
+ */
+export const addAuthenticator = async (
+  page: Page,
+  options: { readonly transport?: "internal" | "usb" } = {}
+): Promise<Authenticator> => {
   const cdp: CDPSession = await page.context().newCDPSession(page)
   await cdp.send("WebAuthn.enable")
   const { authenticatorId } = await cdp.send("WebAuthn.addVirtualAuthenticator", {
     options: {
       protocol: "ctap2",
-      transport: "internal",
+      transport: options.transport ?? "internal",
       hasResidentKey: true,
       hasUserVerification: true,
       isUserVerified: true,
