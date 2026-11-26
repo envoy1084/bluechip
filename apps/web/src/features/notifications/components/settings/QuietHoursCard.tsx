@@ -3,12 +3,13 @@ import { Input } from "@bluechip/ui/components/input"
 import { Switch } from "@bluechip/ui/components/switch"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
-import { localTimeZone } from "../../../../lib/localTime.ts"
 import { notificationKeys, setQuietHoursAtom } from "../../atoms/notifications.ts"
 import { SettingsCard, SettingsRow } from "./SettingsCard.tsx"
 
 /** Quiet hours: push and Telegram wait until they end, in your time zone. Security notifications never wait. */
-export function QuietHoursCard({ quietHours }: Readonly<{ quietHours: QuietHours | null }>) {
+export function QuietHoursCard(
+  { quietHours, timeZone }: Readonly<{ quietHours: QuietHours | null; timeZone: string | null }>
+) {
   const setQuietHours = useAtomSet(setQuietHoursAtom, { mode: "promise" })
   const [saving, setSaving] = useState(false)
   const save = async (next: QuietHours | null) => {
@@ -16,7 +17,7 @@ export function QuietHoursCard({ quietHours }: Readonly<{ quietHours: QuietHours
     await setQuietHours({ payload: { quietHours: next }, reactivityKeys: notificationKeys })
       .finally(() => setSaving(false))
   }
-  const current = quietHours ?? { from: "22:00", to: "07:00", zone: localTimeZone() }
+  const current = quietHours ?? { from: "22:00", to: "07:00" }
 
   return (
     <SettingsCard
@@ -25,7 +26,9 @@ export function QuietHoursCard({ quietHours }: Readonly<{ quietHours: QuietHours
     >
       <SettingsRow
         title="Quiet hours"
-        description={quietHours === null ? "Off: everything goes out when it happens." : `In ${quietHours.zone} time.`}
+        description={quietHours === null ?
+          "Off: everything goes out when it happens." :
+          `In ${(timeZone ?? "UTC").replaceAll("_", " ")} time, your time zone in Settings.`}
       >
         <Switch
           checked={quietHours !== null}

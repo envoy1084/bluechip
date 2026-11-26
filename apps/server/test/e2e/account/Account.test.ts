@@ -1,4 +1,4 @@
-import { Unauthenticated } from "@bluechip/domain/Errors"
+import { InvalidRequest, Unauthenticated } from "@bluechip/domain/Errors"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Cookies from "effect/http/Cookies"
@@ -68,6 +68,28 @@ layer(TestUsers.layer, { excludeTestServices: true })("account", (it) => {
         const user = yield* api.account.setDisplayName({ payload: { displayName: "" } })
 
         assert.isNull(user.displayName)
+      }))
+  })
+
+  describe("POST /api/account/time-zone", () => {
+    it.effect("200: unset for a new user, then saved for the next session too", () =>
+      Effect.gen(function*() {
+        const { api } = yield* (yield* TestUsers).signUp
+        const before = yield* api.account.me()
+
+        yield* api.account.setTimeZone({ payload: { timeZone: "Europe/London" } })
+        const after = yield* api.account.me()
+
+        assert.deepStrictEqual([before.user.timeZone, after.user.timeZone], [null, "Europe/London"])
+      }))
+
+    it.effect("400: a name that is no time zone", () =>
+      Effect.gen(function*() {
+        const { api } = yield* (yield* TestUsers).signUp
+
+        const error = yield* Effect.flip(api.account.setTimeZone({ payload: { timeZone: "Mars/Olympus" } }))
+
+        assert.deepStrictEqual(error, new InvalidRequest({ field: "timeZone", problem: "invalid" }))
       }))
   })
 

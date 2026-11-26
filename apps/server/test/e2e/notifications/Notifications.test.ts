@@ -212,7 +212,7 @@ layer(Layer.mergeAll(TestAgents.layer, TestNotifications.layer), { excludeTestSe
       it.effect("set, then turned off", () =>
         Effect.gen(function*() {
           const user = yield* (yield* TestUsers).signUp
-          const quietHours = { from: "22:00", to: "07:00", zone: "Europe/London" }
+          const quietHours = { from: "22:00", to: "07:00" }
 
           const set = yield* user.api.notifications.setQuietHours({ payload: { quietHours } })
           const off = yield* user.api.notifications.setQuietHours({ payload: { quietHours: null } })

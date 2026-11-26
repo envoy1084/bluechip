@@ -18,6 +18,7 @@ export const AccountHandlers = HttpApiBuilder.group(
     return handlers.handleAll({
       me: () => CurrentUser.use((user) => accounts.me(user.id)),
       setDisplayName: ({ payload }) => CurrentUser.use((user) => accounts.setDisplayName(user.id, payload.displayName)),
+      setTimeZone: ({ payload }) => CurrentUser.use((user) => accounts.setTimeZone(user.id, payload.timeZone)),
       setEligibility: ({ payload }) => CurrentUser.use((user) => accounts.setEligibility(user.id, payload.answer)),
       passkeys: () => CurrentUser.use((user) => accounts.passkeys(user.id, user.passkey)),
       passkeyOptions: () => CurrentUser.use((user) => passkeys.options(user)),

@@ -13,6 +13,7 @@ import { usePauseAll } from "../../../hooks/usePauseAll.ts"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { setDisplayNameAtom, signOutAtom } from "../atoms/settings.ts"
 import { RemoveAllAgents } from "../components/RemoveAllAgents.tsx"
+import { TimeZoneRow } from "../components/TimeZoneRow.tsx"
 
 export function SettingsScreen() {
   const me = useAtomValue(meAtom)
@@ -25,6 +26,7 @@ export function SettingsScreen() {
     <AppPage title="Settings">
       <Section title="Account" description="Your bluechip account lives on Base. Only your Face ID can move money out.">
         <NameRow saved={me.value.user.displayName} />
+        <TimeZoneRow saved={me.value.user.timeZone} />
         <Row title="Address" description="Send USDC on Base here to add cash.">
           <AddressChip address={account.address} />
         </Row>

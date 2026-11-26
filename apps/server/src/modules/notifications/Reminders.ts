@@ -5,12 +5,14 @@ import {
   notificationOfSessionEnding,
   notificationOfWaiting
 } from "@bluechip/domain/notifications/Drafts"
+import { digestDue } from "@bluechip/domain/notifications/QuietHours"
 import { and, between, eq, gte, inArray, isNotNull, lt, or } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Database } from "../../platform/db/Database.ts"
+import { users } from "../accounts/tables.ts"
 import { agents, agentSessions } from "../agents/tables.ts"
 import { toIntent } from "../intents/IntentStore.ts"
 import { intents } from "../intents/tables.ts"
@@ -30,7 +32,10 @@ const EXPIRING_HOURS = 1
 export class Reminders extends Context.Service<Reminders, {
   /** Everyone's reminders (the cron), or one user's. */
   readonly remind: (options?: { readonly userId?: UserId | undefined }) => Effect.Effect<void>
-  /** Each user's digest of the last 24 hours (everyone's, or one user's): what the kinds they hold back held. */
+  /**
+   * The digest of the last 24 hours for each user (everyone, or one user) for whom it is now 08:00 in their time zone:
+   * what the kinds they hold back held. The cron runs it hourly; each user's local date keys it, so once a day.
+   */
   readonly digest: (options?: { readonly userId?: UserId | undefined }) => Effect.Effect<void>
 }>()("@bluechip/server/Reminders") {
   static readonly layer = Layer.effect(
@@ -97,14 +102,17 @@ export class Reminders extends Context.Service<Reminders, {
       const digest = Effect.fn("Reminders.digest")(function*(options: { readonly userId?: UserId | undefined } = {}) {
         const now = yield* DateTime.now
         const from = DateTime.subtract(now, { days: 1 })
-        const day = DateTime.formatIsoDateUtc(now)
-        const users = yield* db.selectDistinct({ userId: notificationsTable.userId }).from(notificationsTable)
+        const owners = yield* db.selectDistinct({ userId: notificationsTable.userId, timeZone: users.timeZone })
+          .from(notificationsTable)
+          .innerJoin(users, eq(users.id, notificationsTable.userId))
           .where(and(
             gte(notificationsTable.createdAt, from),
             options.userId === undefined ? undefined : eq(notificationsTable.userId, options.userId as `user_${string}`)
           )).pipe(Effect.orDie)
 
-        for (const { userId } of users) {
+        for (const { timeZone, userId } of owners) {
+          const day = digestDue(now, timeZone ?? "UTC")
+          if (day === undefined) continue
           const settings = yield* notifications.settings(userId as UserId)
           const held = new Set(settings.rules.filter((rule) => rule.digest).map((rule) => rule.kind))
           if (held.size === 0) continue

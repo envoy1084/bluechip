@@ -1,5 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { Account, type Eligibility, Me, Passkey, User } from "@bluechip/domain/Account"
+import { zoneOf } from "@bluechip/domain/automations/Time"
+import { InvalidRequest } from "@bluechip/domain/Errors"
 import type { Address, PasskeyId, UserId } from "@bluechip/domain/Ids"
 import * as SmartAccount from "@namera-ai/sdk/effect/accounts/SmartAccount"
 import { and, asc, eq, isNotNull, ne } from "drizzle-orm"
@@ -38,6 +40,7 @@ const toUser = (row: typeof users.$inferSelect) =>
     id: row.id as UserId,
     displayName: row.displayName,
     eligibility: row.eligibility,
+    timeZone: row.timeZone,
     createdAt: row.createdAt
   })
 
@@ -59,6 +62,8 @@ export class Accounts extends Context.Service<Accounts, {
   readonly me: (userId: UserId) => Effect.Effect<Me>
   readonly setEligibility: (userId: UserId, eligibility: Eligibility) => Effect.Effect<User>
   readonly setDisplayName: (userId: UserId, displayName: string | null) => Effect.Effect<User>
+  /** Sets the user's time zone; `InvalidRequest` for a name that is no IANA zone. */
+  readonly setTimeZone: (userId: UserId, timeZone: string) => Effect.Effect<User, InvalidRequest>
   /**
    * The account's owner passkeys, oldest first: those that own it and those on their way in or out (not one prepared
    * but never signed), marking the one that signed in the current session.
@@ -181,6 +186,14 @@ export class Accounts extends Context.Service<Accounts, {
         }
       )
 
+      const setTimeZone = Effect.fn("Accounts.setTimeZone")(function*(userId: UserId, timeZone: string) {
+        if (Option.isNone(zoneOf(timeZone))) return yield* new InvalidRequest({ field: "timeZone", problem: "invalid" })
+        const [row] = yield* db.update(users).set({ timeZone }).where(eq(users.id, userId as `user_${string}`))
+          .returning()
+          .pipe(Effect.orDie)
+        return toUser(row!)
+      })
+
       const listPasskeys = Effect.fn("Accounts.passkeys")(function*(userId: UserId, current: PasskeyId) {
         const rows = yield* db.select().from(passkeys).where(and(
           eq(passkeys.userId, userId as `user_${string}`),
@@ -276,6 +289,7 @@ export class Accounts extends Context.Service<Accounts, {
         me,
         setEligibility,
         setDisplayName,
+        setTimeZone,
         passkeys: listPasskeys,
         findPasskey,
         ownerPasskey,

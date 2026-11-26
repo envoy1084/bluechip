@@ -4,6 +4,7 @@ import * as Effect from "effect/Effect"
 import * as TestClock from "effect/testing/TestClock"
 import { Notifications } from "../../../../src/modules/notifications/Notifications.ts"
 import { Reminders } from "../../../../src/modules/notifications/Reminders.ts"
+import { nextUtc } from "../../../fixtures/MarketDays.ts"
 import { TestAgents } from "../../../utils/TestAgents.ts"
 import { TestUsers } from "../../../utils/TestUsers.ts"
 
@@ -73,7 +74,10 @@ layer(TestAgents.layer, { excludeTestServices: true })("Reminders", (it) => {
         yield* notifications.add(user.id, { ...held, title: "A judgment held back Dip buyer", dedupeKey: "run:d1" })
         yield* notifications.add(user.id, { ...held, title: "A judgment held back Earnings", dedupeKey: "run:d2" })
 
-        yield* (yield* Reminders).digest({ userId: user.id })
+        yield* Effect.gen(function*() {
+          yield* TestClock.setTime(DateTime.toEpochMillis(nextUtc(DateTime.nowUnsafe(), 8, 30)))
+          yield* (yield* Reminders).digest({ userId: user.id })
+        }).pipe(Effect.provide(TestClock.layer()))
         const page = yield* user.api.notifications.list({ query: {} })
 
         assert.deepStrictEqual([page.items[0]?.kind, page.items[0]?.title, page.items[0]?.body], [
@@ -96,10 +100,39 @@ layer(TestAgents.layer, { excludeTestServices: true })("Reminders", (it) => {
           dedupeKey: "run:d3"
         })
 
-        yield* (yield* Reminders).digest({ userId: user.id })
+        yield* Effect.gen(function*() {
+          yield* TestClock.setTime(DateTime.toEpochMillis(nextUtc(DateTime.nowUnsafe(), 8, 30)))
+          yield* (yield* Reminders).digest({ userId: user.id })
+        }).pipe(Effect.provide(TestClock.layer()))
         const page = yield* user.api.notifications.list({ query: {} })
 
         assert.deepStrictEqual(page.items.map((item) => item.kind), ["automationFired"])
+      }))
+
+    it.effect.each([
+      { name: "08:30 in Tokyo (23:30 UTC): the digest", hours: 23, expected: ["dailyDigest", "automationSkipped"] },
+      { name: "17:30 in Tokyo (08:30 UTC): not yet", hours: 8, expected: ["automationSkipped"] }
+    ])("in the user's time zone, $name", ({ expected, hours }) =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        yield* user.api.account.setTimeZone({ payload: { timeZone: "Asia/Tokyo" } })
+        yield* (yield* Notifications).add(user.id, {
+          kind: "automationSkipped",
+          title: "A judgment held back Dip buyer",
+          body: "The story isn't about earnings.",
+          link: null,
+          subjectType: null,
+          subjectId: null,
+          dedupeKey: "run:d4"
+        })
+
+        yield* Effect.gen(function*() {
+          yield* TestClock.setTime(DateTime.toEpochMillis(nextUtc(DateTime.nowUnsafe(), hours, 30)))
+          yield* (yield* Reminders).digest({ userId: user.id })
+        }).pipe(Effect.provide(TestClock.layer()))
+        const page = yield* user.api.notifications.list({ query: {} })
+
+        assert.deepStrictEqual(page.items.map((item) => item.kind), expected)
       }))
   })
 })

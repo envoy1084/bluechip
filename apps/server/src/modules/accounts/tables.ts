@@ -5,6 +5,8 @@ export const users = pgTable("users", {
   id: typeId("user")("id").primaryKey(),
   displayName: text("display_name"),
   eligibility: text("eligibility", { enum: ["unknown", "outsideUs", "us"] }).notNull().default("unknown"),
+  /** An IANA zone, set by the app on the first visit and in settings; `null` before (UTC until then). */
+  timeZone: text("time_zone"),
   createdAt: dateTimeUtc("created_at").notNull()
 })
 

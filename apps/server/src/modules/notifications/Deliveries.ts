@@ -11,6 +11,7 @@ import * as Schema from "effect/Schema"
 import * as Activity from "effect/workflow/Activity"
 import * as DurableClock from "effect/workflow/DurableClock"
 import { Database } from "../../platform/db/Database.ts"
+import { users } from "../accounts/tables.ts"
 import { DeliverNotification } from "./DeliverNotification.ts"
 import { toNotification } from "./Notifications.ts"
 import { Notifiers } from "./Notifiers.ts"
@@ -51,9 +52,16 @@ export class Deliveries extends Context.Service<Deliveries, {
       const quietUntilOf = Effect.fn("Deliveries.quietUntil")(function*(deliveryId: string) {
         const found = yield* find(deliveryId)
         if (found === undefined) return null
-        const [settings] = yield* db.select().from(notificationSettings)
-          .where(eq(notificationSettings.userId, found.notification.userId)).pipe(Effect.orDie)
-        return quietUntil(settings?.quietHours ?? null, found.notification.severity, yield* DateTime.now) ?? null
+        const [owner] = yield* db.select({ quietHours: notificationSettings.quietHours, timeZone: users.timeZone })
+          .from(users)
+          .leftJoin(notificationSettings, eq(notificationSettings.userId, users.id))
+          .where(eq(users.id, found.notification.userId)).pipe(Effect.orDie)
+        return quietUntil(
+          owner?.quietHours ?? null,
+          found.notification.severity,
+          yield* DateTime.now,
+          owner?.timeZone ?? "UTC"
+        ) ?? null
       })
 
       const send = Effect.fn("Deliveries.send")(function*(deliveryId: string) {

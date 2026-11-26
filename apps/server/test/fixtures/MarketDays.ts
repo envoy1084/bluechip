@@ -18,3 +18,9 @@ export const nextMarketDay = (timestamp: bigint): Date => {
   while (marketStatus(at).session !== "regular") at = DateTime.add(at, { days: 1 })
   return DateTime.toDate(at)
 }
+
+/** The next `hours:minutes` UTC after `now`: today's, or tomorrow's once today's has passed. */
+export const nextUtc = (now: DateTime.Utc, hours: number, minutes: number): DateTime.Utc => {
+  const today = DateTime.add(DateTime.startOf(now, "day"), { hours, minutes })
+  return DateTime.isLessThan(today, now) ? DateTime.add(today, { days: 1 }) : today
+}

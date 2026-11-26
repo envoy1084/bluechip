@@ -4,6 +4,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
+import { TimeZoneName } from "./automations/Time.ts"
 import { Address, PasskeyId, SessionId, SigningRequestId, UserId } from "./Ids.ts"
 import { CeremonyOptions } from "./WebAuthn.ts"
 
@@ -33,6 +34,8 @@ export class User extends Schema.Class<User>("@bluechip/domain/Account/User")({
   id: UserId,
   displayName: Schema.NullOr(Schema.String),
   eligibility: Eligibility,
+  /** Your IANA time zone, for quiet hours and the digest's morning; `null` until the app first sets it. */
+  timeZone: Schema.NullOr(TimeZoneName),
   createdAt: Schema.DateTimeUtc
 }) {}
 

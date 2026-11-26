@@ -4,3 +4,6 @@ import { accountReactivityKey, BluechipApiClient, liveReactivityKey } from "../l
 export const meAtom = BluechipApiClient.query("account", "me", {
   reactivityKeys: [accountReactivityKey, liveReactivityKey]
 })
+
+/** Saves the user's time zone (quiet hours and the digest's morning follow it). */
+export const setTimeZoneAtom = BluechipApiClient.mutation("account", "setTimeZone")

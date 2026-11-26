@@ -5,7 +5,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
-import { TimeOfDay, TimeZoneName } from "../automations/Time.ts"
+import { TimeOfDay } from "../automations/Time.ts"
 import { NotificationId } from "../Ids.ts"
 
 /**
@@ -151,7 +151,7 @@ export type NotificationRule = typeof NotificationRule.Type
  * @category schemas
  * @since 0.0.0
  */
-export const QuietHours = Schema.Struct({ from: TimeOfDay, to: TimeOfDay, zone: TimeZoneName })
+export const QuietHours = Schema.Struct({ from: TimeOfDay, to: TimeOfDay })
 
 /**
  * @stability unstable

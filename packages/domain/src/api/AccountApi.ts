@@ -7,7 +7,8 @@ import * as HttpApiSchema from "effect/http-api/HttpApiSchema"
 import * as Schema from "effect/Schema"
 import { Device, Me, Passkey, PasskeyChange, User } from "../Account.ts"
 import { Authentication } from "../Auth.ts"
-import { Conflict, NotFound, SignatureRejected, Unavailable } from "../Errors.ts"
+import { TimeZoneName } from "../automations/Time.ts"
+import { Conflict, InvalidRequest, NotFound, SignatureRejected, Unavailable } from "../Errors.ts"
 import { PasskeyId, RequestId, SessionId, SigningRequestId } from "../Ids.ts"
 import { AuthenticationCredential, Ceremony, RegistrationCredential } from "../WebAuthn.ts"
 
@@ -24,6 +25,12 @@ export class AccountApi extends HttpApiGroup.make("account").add(
   HttpApiEndpoint.post("setDisplayName", "/account/display-name", {
     payload: Schema.Struct({ displayName: Schema.NullOr(Schema.String.check(Schema.isMaxLength(64))) }),
     success: User
+  }),
+  HttpApiEndpoint.post("setTimeZone", "/account/time-zone", {
+    /** An IANA zone (`Europe/London`). */
+    payload: Schema.Struct({ timeZone: TimeZoneName }),
+    success: User,
+    error: InvalidRequest
   }),
   HttpApiEndpoint.post("setEligibility", "/account/eligibility", {
     payload: Schema.Struct({ answer: Schema.Literals(["outsideUs", "us"]) }),

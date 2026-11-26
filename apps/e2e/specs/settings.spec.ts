@@ -33,6 +33,23 @@ test.describe("settings", () => {
     await expect(page.getByRole("heading", { level: 2, name: /^Good (morning|afternoon|evening)$/ })).toBeVisible()
   })
 
+  test("the time zone: this browser's on the first visit, then changed in settings", async ({ page, user: _user }) => {
+    await page.goto("/settings")
+    const zone = page.getByRole("combobox", { name: "Time zone" })
+    const browserZone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)
+    await expect(zone).toHaveValue(browserZone)
+
+    await zone.fill("Tokyo")
+    await page.getByRole("option", { name: "Asia/Tokyo" }).click()
+
+    await expect(zone).toHaveValue("Asia/Tokyo")
+    await page.reload()
+    await expect(page.getByRole("combobox", { name: "Time zone" })).toHaveValue("Asia/Tokyo")
+    await page.goto("/settings/notifications")
+    await page.getByRole("switch", { name: "Quiet hours" }).click()
+    await expect(page.getByText("In Asia/Tokyo time, your time zone in Settings.")).toBeVisible()
+  })
+
   test("the account shows its address and eligibility", async ({ page, user }) => {
     await page.goto("/settings")
 
