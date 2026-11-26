@@ -15,7 +15,8 @@ that match the task.
   - `packages/devnet` (`@bluechip/devnet`, private): a local Base for tests, Anvil and Alto per Vitest worker,
     started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), with
     every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`), software
-    passkeys (`Passkeys`), and calls simulated at a later block time (`simulateAt`, `handleOpsCall`).
+    passkeys (`Passkeys`), calls simulated at a later block time (`simulateAt`, `handleOpsCall`), and a devnet of a
+    test file's own whose clocks can move ahead (`DevnetTest.layerIsolated`, `DevnetClock`).
   - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
     bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
@@ -244,8 +245,11 @@ is a Namera session (`account/Recovery.ts`) that may only ask for owner changes 
 bluechip's guard key (sealed like agents' keys) may only cancel a request, so any signed-in device or Telegram can
 cancel without Face ID. A compromised server can cancel recoveries, never start or speed one. Alto checks
 `validAfter` against the wall clock, so chain tests prepare a due recovery as it would be later
-(`TestAgents.sessionFor` with `secondsAhead`) and simulate the EntryPoint at that time (`Devnet.simulateAt`): never
-move the devnet's clock or revert a snapshot, which every suite sharing the worker's Anvil would see.
+(`TestAgents.sessionFor` with `secondsAhead`) and simulate the EntryPoint at that time (`Devnet.simulateAt`). Never
+move the shared devnet's clock or revert a snapshot, which every suite sharing the worker's Anvil would see (on Base's
+hardfork Anvil never moves its clock back). A test that needs time to pass runs on a devnet of its own: server tests
+on `TestUsers.layerIsolated` (or `TestAgents.layerIsolated`, `TestRecovery.layerIsolated`), whose `TestClocks` moves
+the chain, Alto and the server ahead together, as the due recovery's test does.
 
 ## Ledger and performance
 

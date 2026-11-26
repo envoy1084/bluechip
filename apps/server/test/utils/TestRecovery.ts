@@ -83,4 +83,7 @@ export class TestRecovery extends Context.Service<TestRecovery, {
 
   /** Recovery for the test server's users, served by this layer too. */
   static readonly layer = this.layerNoDeps.pipe(Layer.provideMerge(TestUsers.layer))
+
+  /** Recovery on a test server with a devnet of the file's own, whose clocks can move ahead (`TestClocks`). */
+  static readonly layerIsolated = this.layerNoDeps.pipe(Layer.provideMerge(TestUsers.layerIsolated))
 }
