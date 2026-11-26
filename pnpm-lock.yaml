@@ -310,6 +310,9 @@ importers:
       '@effect/ai-anthropic':
         specifier: 4.1.5
         version: 4.1.5(effect@4.1.5)
+      '@effect/chat-telegram':
+        specifier: 4.1.5
+        version: 4.1.5(effect@4.1.5)
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.1.5(effect@4.1.5)(redis@6.3.1(@opentelemetry/api@1.9.1))
@@ -989,6 +992,11 @@ packages:
       effect: ^4.1.5
       react: '>=19.0.0 <20.0.0'
       scheduler: '>=0.25.0 <0.29.0'
+
+  '@effect/chat-telegram@4.1.5':
+    resolution: {integrity: sha512-6xUGwkuYIPsPNRaLkVMP61nLXgHi6J2JaEuukHDnlWMm4HDHXjW7tGxAlVcgFgxcT63www42papvmbxaAtOGCw==}
+    peerDependencies:
+      effect: ^4.1.5
 
   '@effect/platform-node-shared@4.1.5':
     resolution: {integrity: sha512-JzlrYe4uKaBFTWihBRXo2pDjkUVB39kQpKdGfXdbp7Co5sKT8hbcjOmdB5pg/WOYESdGTddd3fxD4lwlZELbZQ==}
@@ -6781,6 +6789,10 @@ snapshots:
       effect: 4.1.5
       react: 19.3.1
       scheduler: 0.28.0
+
+  '@effect/chat-telegram@4.1.5(effect@4.1.5)':
+    dependencies:
+      effect: 4.1.5
 
   '@effect/platform-node-shared@4.1.5(effect@4.1.5)':
     dependencies:
