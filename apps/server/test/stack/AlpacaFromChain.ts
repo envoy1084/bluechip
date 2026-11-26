@@ -41,6 +41,8 @@ export const AlpacaFromChain = Layer.effect(
           { at: tradedAt, close: price }
         ])
       },
+      news: () => Effect.succeed([]),
+      newsStream: () => Stream.never,
       trades: () => Stream.never
     })
   })

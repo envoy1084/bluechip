@@ -85,10 +85,10 @@ export class Automations extends Context.Service<Automations, {
   /** One automation with its latest runs and their judgments. */
   readonly detail: (owner: Owner, id: AutomationId) => Effect.Effect<AutomationDetail, NotFound>
   readonly get: (id: string) => Effect.Effect<AutomationRow | undefined>
-  /** Active automations whose trigger the watcher serves. */
-  readonly watched: (watcher: Watcher) => Effect.Effect<ReadonlyArray<AutomationRow>>
-  /** Active schedules due at `now`. */
-  readonly due: (now: DateTime.Utc) => Effect.Effect<ReadonlyArray<AutomationRow>>
+  /** Active automations whose trigger the watcher serves: everyone's, or one user's. */
+  readonly watched: (watcher: Watcher, userId?: UserId | undefined) => Effect.Effect<ReadonlyArray<AutomationRow>>
+  /** Active schedules due at `now`: everyone's, or one user's. */
+  readonly due: (now: DateTime.Utc, userId?: UserId | undefined) => Effect.Effect<ReadonlyArray<AutomationRow>>
   readonly state: (id: string) => Effect.Effect<WatchState>
   readonly saveState: (id: string, state: WatchState) => Effect.Effect<void>
   /** Moves a schedule on to its next time after `after`. */
@@ -256,17 +256,21 @@ export class Automations extends Context.Service<Automations, {
         return row
       })
 
-      const watched = Effect.fn("Automations.watched")(function*(watcher: Watcher) {
+      const ofUser = (userId: UserId | undefined) =>
+        userId === undefined ? undefined : eq(automations.userId, userId as `user_${string}`)
+
+      const watched = Effect.fn("Automations.watched")(function*(watcher: Watcher, userId?: UserId | undefined) {
         const types = TRIGGERS.filter((trigger) => trigger.watcher === watcher).map((trigger) => trigger.type)
         return yield* db.select().from(automations).where(and(
           eq(automations.status, "active"),
-          inArray(sql<string>`${automations.trigger}->>'type'`, types)
+          inArray(sql<string>`${automations.trigger}->>'type'`, types),
+          ofUser(userId)
         )).pipe(Effect.orDie)
       })
 
-      const due = Effect.fn("Automations.due")(function*(now: DateTime.Utc) {
+      const due = Effect.fn("Automations.due")(function*(now: DateTime.Utc, userId?: UserId | undefined) {
         return yield* db.select().from(automations)
-          .where(and(eq(automations.status, "active"), lte(automations.nextRunAt, now)))
+          .where(and(eq(automations.status, "active"), lte(automations.nextRunAt, now), ofUser(userId)))
           .pipe(Effect.orDie)
       })
 

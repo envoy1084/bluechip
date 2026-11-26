@@ -38,7 +38,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
         )
         yield* (yield* AutomationRuns).start({
           automationId: automation.id,
-          userId: (yield* user.api.account.me()).user.id,
+          userId: user.id,
           windowKey: "test:1",
           trigger: TEST_FIRE
         })

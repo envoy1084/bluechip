@@ -1,5 +1,6 @@
 // The assistant's models in tests: recorded replies replayed by the user's message, so the loop runs exactly and free.
 import type { MemoryCandidate } from "@bluechip/domain/assistant/Memory"
+import type { JudgmentAnswer } from "@bluechip/domain/automations/conditions/Judgment"
 import { RESEARCH_TOOL } from "@bluechip/domain/tools/Toolkit"
 import * as AiError from "effect/ai/AiError"
 import * as LanguageModel from "effect/ai/LanguageModel"
@@ -64,6 +65,10 @@ export class RecordedModel extends Context.Service<RecordedModel, {
   readonly prompts: (to: string) => Effect.Effect<ReadonlyArray<Prompt.Prompt>>
   /** Waits until the run answering `to` stopped the model in a `hang` step. */
   readonly cutOff: (to: string) => Effect.Effect<void>
+  /** Records the small model's answer to judgments about the story with this headline. */
+  readonly judge: (headline: string, answer: JudgmentAnswer) => Effect.Effect<void>
+  /** The prompts the small model was sent to judge the story with this headline. */
+  readonly judgmentPrompts: (headline: string) => Effect.Effect<ReadonlyArray<Prompt.Prompt>>
 }>()("@bluechip/server/test/RecordedModel") {
   /** The recordings and the `AssistantModels` that replay them. */
   static readonly layer = Layer.unwrap(Effect.sync(() => {
@@ -72,6 +77,8 @@ export class RecordedModel extends Context.Service<RecordedModel, {
     const limits = new Map<string, number>()
     const undecoded = new Map<string, number>()
     const hangs = new Map<string, Deferred.Deferred<void>>()
+    const judgments = new Map<string, JudgmentAnswer>()
+    const judged = new Map<string, Array<Prompt.Prompt>>()
     const hangOf = (to: string) => {
       const known = hangs.get(to)
       if (known !== undefined) return known
@@ -155,7 +162,26 @@ export class RecordedModel extends Context.Service<RecordedModel, {
     const model = (modelId: string) =>
       LanguageModel.make({
         generateText: (options) =>
-          Effect.sync(() => {
+          Effect.suspend(() => {
+            // A judgment about the story whose headline the prompt carries.
+            if (options.responseFormat.type === "json" && options.responseFormat.objectName === "judgment") {
+              const prompt = options.prompt.content.map(textOf).join("\n")
+              const headline = /^Headline: (.*)$/m.exec(prompt)?.[1] ?? ""
+              judged.set(headline, [...(judged.get(headline) ?? []), options.prompt])
+              const answer = judgments.get(headline)
+              if (answer === undefined) return Effect.fail(failure(`No judgment recorded for "${headline}"`))
+              return Effect.succeed(
+                [
+                  { type: "text", text: JSON.stringify(answer) },
+                  {
+                    type: "finish",
+                    reason: "stop",
+                    usage: { inputTokens: { uncached: 300, total: 300 }, outputTokens: { total: 30 } }
+                  }
+                ] satisfies Array<Response.PartEncoded>
+              )
+            }
+
             // A turn's notes or a conversation's title, for the message quoted between the tags.
             const prompt = options.prompt.content.map(textOf).join("\n")
             const quoted = /<user_message>\n([\s\S]*)\n<\/user_message>/.exec(prompt)?.[1] ?? ""
@@ -164,14 +190,16 @@ export class RecordedModel extends Context.Service<RecordedModel, {
               options.responseFormat.type === "json" && options.responseFormat.objectName === "conversation_title" ?
                 { title: notes?.title ?? quoted.slice(0, 30) } :
                 { memories: notes?.memories ?? [] }
-            return [
-              { type: "text", text: JSON.stringify(answer) },
-              {
-                type: "finish",
-                reason: "stop",
-                usage: { inputTokens: { uncached: 200, total: 200 }, outputTokens: { total: 20 } }
-              }
-            ] satisfies Array<Response.PartEncoded>
+            return Effect.succeed(
+              [
+                { type: "text", text: JSON.stringify(answer) },
+                {
+                  type: "finish",
+                  reason: "stop",
+                  usage: { inputTokens: { uncached: 200, total: 200 }, outputTokens: { total: 20 } }
+                }
+              ] satisfies Array<Response.PartEncoded>
+            )
           }),
         streamText: (options) =>
           Stream.unwrap(Effect.sync(() => {
@@ -218,7 +246,9 @@ export class RecordedModel extends Context.Service<RecordedModel, {
       Layer.succeed(RecordedModel, {
         record: (...recorded) => Effect.sync(() => recorded.forEach((reply) => replies.set(reply.to, reply))),
         prompts: (to) => Effect.sync(() => sent.get(to) ?? []),
-        cutOff: (to) => Effect.suspend(() => Deferred.await(hangOf(to)))
+        cutOff: (to) => Effect.suspend(() => Deferred.await(hangOf(to))),
+        judge: (headline, answer) => Effect.sync(() => void judgments.set(headline, answer)),
+        judgmentPrompts: (headline) => Effect.sync(() => judged.get(headline) ?? [])
       }),
       Layer.succeed(
         AssistantModels,

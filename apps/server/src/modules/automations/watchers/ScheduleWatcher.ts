@@ -1,4 +1,5 @@
 import type { TriggerData } from "@bluechip/domain/automations/Run"
+import type { UserId } from "@bluechip/domain/Ids"
 import * as Singleton from "effect/cluster/Singleton"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -15,8 +16,8 @@ import { FireAutomation } from "../FireAutomation.ts"
  * moves the automation to its next time.
  */
 export class ScheduleWatcher extends Context.Service<ScheduleWatcher, {
-  /** Fires every schedule due at `now`. */
-  readonly runDue: (now: DateTime.Utc) => Effect.Effect<void>
+  /** Fires every schedule due at `now`: everyone's (the watcher), or one user's. */
+  readonly runDue: (now: DateTime.Utc, options?: { readonly userId?: UserId | undefined }) => Effect.Effect<void>
 }>()("@bluechip/server/ScheduleWatcher") {
   static readonly layer = Layer.effect(
     ScheduleWatcher,
@@ -24,8 +25,11 @@ export class ScheduleWatcher extends Context.Service<ScheduleWatcher, {
       const automations = yield* Automations
       const engine = yield* WorkflowEngine.WorkflowEngine
 
-      const runDue = Effect.fn("ScheduleWatcher.runDue")(function*(now: DateTime.Utc) {
-        for (const row of yield* automations.due(now)) {
+      const runDue = Effect.fn("ScheduleWatcher.runDue")(function*(
+        now: DateTime.Utc,
+        options: { readonly userId?: UserId | undefined } = {}
+      ) {
+        for (const row of yield* automations.due(now, options.userId)) {
           const at = row.nextRunAt!
           const trigger: TriggerData = {
             summary: "Its scheduled time came.",
@@ -51,7 +55,7 @@ export class ScheduleWatcher extends Context.Service<ScheduleWatcher, {
     Effect.gen(function*() {
       const watcher = yield* ScheduleWatcher
       yield* DateTime.now.pipe(
-        Effect.flatMap(watcher.runDue),
+        Effect.flatMap((now) => watcher.runDue(now)),
         Effect.catchCause((cause) => Effect.logWarning("Schedule watcher failed", cause)),
         Effect.repeat(Schedule.spaced("30 seconds"))
       )

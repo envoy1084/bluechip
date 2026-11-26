@@ -25,6 +25,7 @@ import { Automations } from "./modules/automations/Automations.ts"
 import { FireAutomationLive } from "./modules/automations/FireAutomation.ts"
 import { Judgments } from "./modules/automations/Judgments.ts"
 import { NewsItems } from "./modules/automations/NewsItems.ts"
+import { NewsWatcher } from "./modules/automations/watchers/NewsWatcher.ts"
 import { PortfolioWatcher } from "./modules/automations/watchers/PortfolioWatcher.ts"
 import { PriceWatcher } from "./modules/automations/watchers/PriceWatcher.ts"
 import { ScheduleWatcher } from "./modules/automations/watchers/ScheduleWatcher.ts"
@@ -66,9 +67,12 @@ export const ServicesLive = Layer.mergeAll(
   FireAutomationLive,
   PriceWatcher.watch,
   ScheduleWatcher.watch,
-  PortfolioWatcher.watch
+  PortfolioWatcher.watch,
+  NewsWatcher.watch
 ).pipe(
-  Layer.provideMerge(Layer.mergeAll(PriceWatcher.layer, ScheduleWatcher.layer, PortfolioWatcher.layer)),
+  Layer.provideMerge(
+    Layer.mergeAll(PriceWatcher.layer, ScheduleWatcher.layer, PortfolioWatcher.layer, NewsWatcher.layer)
+  ),
   Layer.provideMerge(AutomationRunner.layer),
   Layer.provideMerge(
     Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer, Judgments.layer, NewsItems.layer)

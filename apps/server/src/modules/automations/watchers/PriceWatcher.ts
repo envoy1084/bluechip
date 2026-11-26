@@ -4,6 +4,7 @@ import type { TriggerData } from "@bluechip/domain/automations/Run"
 import { type PriceTick, sameState, type Step } from "@bluechip/domain/automations/Trigger"
 import { stepPriceCross } from "@bluechip/domain/automations/triggers/PriceCross"
 import { stepPriceMove } from "@bluechip/domain/automations/triggers/PriceMove"
+import type { UserId } from "@bluechip/domain/Ids"
 import type { MarketPrice } from "@bluechip/domain/market/Market"
 import * as Singleton from "effect/cluster/Singleton"
 import * as Context from "effect/Context"
@@ -30,8 +31,11 @@ const newYorkDay = (at: DateTime.Utc) => {
  * their state) and starts a fire for each window crossed, once.
  */
 export class PriceWatcher extends Context.Service<PriceWatcher, {
-  /** Market prices that changed. */
-  readonly observe: (prices: ReadonlyArray<MarketPrice>) => Effect.Effect<void>
+  /** Market prices that changed, for everyone's automations (or one user's). */
+  readonly observe: (
+    prices: ReadonlyArray<MarketPrice>,
+    options?: { readonly userId?: UserId | undefined }
+  ) => Effect.Effect<void>
 }>()("@bluechip/server/PriceWatcher") {
   static readonly layer = Layer.effect(
     PriceWatcher,
@@ -39,9 +43,12 @@ export class PriceWatcher extends Context.Service<PriceWatcher, {
       const automations = yield* Automations
       const engine = yield* WorkflowEngine.WorkflowEngine
 
-      const observe = Effect.fn("PriceWatcher.observe")(function*(prices: ReadonlyArray<MarketPrice>) {
+      const observe = Effect.fn("PriceWatcher.observe")(function*(
+        prices: ReadonlyArray<MarketPrice>,
+        options: { readonly userId?: UserId | undefined } = {}
+      ) {
         if (prices.length === 0) return
-        for (const row of yield* automations.watched("price")) {
+        for (const row of yield* automations.watched("price", options.userId)) {
           const config = row.trigger.config as { readonly symbol: string }
           const price = prices.find((candidate) => candidate.symbol === config.symbol)
           if (price === undefined) continue
@@ -85,7 +92,7 @@ export class PriceWatcher extends Context.Service<PriceWatcher, {
       const market = yield* MarketPrices
       yield* market.changes.pipe(
         Stream.runForEach((prices) =>
-          watcher.observe(prices).pipe(
+          watcher.observe(prices, {}).pipe(
             Effect.catchCause((cause) => Effect.logWarning("Price watcher failed on a tick", cause))
           )
         ),

@@ -1,7 +1,7 @@
 // People using the API in tests, each with a browser of their own: a typed client, its cookie jar and a passkey.
 import { BluechipApi } from "@bluechip/domain/Api"
 import { ContractVersion, contractVersionHeader } from "@bluechip/domain/Contract"
-import type { Address } from "@bluechip/domain/Ids"
+import type { Address, UserId } from "@bluechip/domain/Ids"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as HttpApiClient from "effect/http-api/HttpApiClient"
@@ -26,8 +26,9 @@ export interface Browser {
   readonly cookies: Ref.Ref<ReadonlyArray<Cookies.Cookie>>
 }
 
-/** A signed-up user in their own browser, with their passkey, their account's address and their live events. */
+/** A signed-up user in their own browser, with their id, their passkey, their account's address and their live events. */
 export interface TestUser extends Browser {
+  readonly id: UserId
   readonly authenticator: Authenticator.Authenticator
   /** The account's address, as the API and the chain's controls both take it. */
   readonly account: Address & `0x${string}`
@@ -78,7 +79,14 @@ export class TestUsers extends Context.Service<TestUsers, {
         })
         const events = yield* TestEvents.open(api.events.watch())
 
-        return { api, cookies, authenticator, account: me.account.address as Address & `0x${string}`, events }
+        return {
+          api,
+          cookies,
+          id: me.user.id,
+          authenticator,
+          account: me.account.address as Address & `0x${string}`,
+          events
+        }
       }).pipe(Effect.orDie)
 
       const funded = Effect.tap(signUp, (user) => Effect.orDie(user.api.dev.fund()))

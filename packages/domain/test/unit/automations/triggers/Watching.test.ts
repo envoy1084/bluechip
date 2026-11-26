@@ -1,6 +1,6 @@
 import { EMPTY_STATE, type PriceTick, type WatchState } from "@bluechip/domain/automations/Trigger"
 import { stepDrift } from "@bluechip/domain/automations/triggers/Drift"
-import { matchesNews, type NewsConfig } from "@bluechip/domain/automations/triggers/News"
+import { matchesNews, type NewsConfig, subscriptionOf } from "@bluechip/domain/automations/triggers/News"
 import { type PortfolioLevelConfig, stepPortfolioLevel } from "@bluechip/domain/automations/triggers/PortfolioLevel"
 import { type PriceCrossConfig, stepPriceCross } from "@bluechip/domain/automations/triggers/PriceCross"
 import { Usdc } from "@bluechip/domain/market/Units"
@@ -165,5 +165,23 @@ describe("matchesNews", () => {
     }
   ])("$name", ({ expected, story }) => {
     assert.strictEqual(matchesNews(config, story), expected)
+  })
+})
+
+describe("subscriptionOf", () => {
+  it.each<{ name: string; configs: ReadonlyArray<NewsConfig>; expected: ReadonlyArray<string> }>([
+    { name: "no news automations: nothing", configs: [], expected: [] },
+    {
+      name: "the stocks watched, once each, sorted",
+      configs: [{ symbols: ["NVDA", "AAPL"], topics: [] }, { symbols: ["NVDA"], topics: [] }],
+      expected: ["AAPL", "NVDA"]
+    },
+    {
+      name: "a topic watched: all news",
+      configs: [{ symbols: ["NVDA"], topics: [] }, { symbols: [], topics: ["export controls"] }],
+      expected: ["*"]
+    }
+  ])("$name", ({ configs, expected }) => {
+    assert.deepStrictEqual(subscriptionOf(configs), expected)
   })
 })

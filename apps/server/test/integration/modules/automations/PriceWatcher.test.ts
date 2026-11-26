@@ -15,14 +15,14 @@ layer(TestAutomations.layer, { excludeTestServices: true })("PriceWatcher", (it)
         )
         const watcher = yield* PriceWatcher
 
-        yield* watcher.observe([nvidiaAt(100)])
-        yield* watcher.observe([nvidiaAt(89)])
+        yield* watcher.observe([nvidiaAt(100)], { userId: user.id })
+        yield* watcher.observe([nvidiaAt(89)], { userId: user.id })
         const first = yield* user.events.next("IntentChanged", ({ intent }) => intent.source === "automation")
         const second = yield* user.events.next(
           "IntentChanged",
           ({ intent }) => intent.source === "automation" && intent.id !== first.intent.id
         )
-        yield* watcher.observe([nvidiaAt(85)])
+        yield* watcher.observe([nvidiaAt(85)], { userId: user.id })
         const detail = yield* user.api.automations.automation({ params: { id: automation.id } })
         const state = yield* (yield* Automations).state(automation.id)
 
@@ -53,8 +53,8 @@ layer(TestAutomations.layer, { excludeTestServices: true })("PriceWatcher", (it)
         )
         const watcher = yield* PriceWatcher
 
-        yield* watcher.observe([nvidiaAt(100)])
-        yield* watcher.observe([nvidiaAt(80)])
+        yield* watcher.observe([nvidiaAt(100)], { userId: user.id })
+        yield* watcher.observe([nvidiaAt(80)], { userId: user.id })
         const detail = yield* user.api.automations.automation({ params: { id: automation.id } })
 
         assert.deepStrictEqual(detail.runs, [])

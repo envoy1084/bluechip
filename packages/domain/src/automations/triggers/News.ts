@@ -78,3 +78,16 @@ export const matchesNews = (
   const text = `${story.headline} ${story.summary}`.toLowerCase()
   return config.topics.some((topic) => text.includes(topic.toLowerCase()))
 }
+
+/**
+ * What a news stream subscribes to for these automations: the stocks they watch, all news (`*`) when one watches a
+ * topic (a topic can be in any story), and nothing for none.
+ *
+ * @stability unstable
+ * @category watching
+ * @since 0.0.0
+ */
+export const subscriptionOf = (configs: ReadonlyArray<NewsConfig>): ReadonlyArray<string> => {
+  if (configs.some((config) => config.topics.length > 0)) return ["*"]
+  return [...new Set(configs.flatMap((config) => config.symbols))].sort()
+}

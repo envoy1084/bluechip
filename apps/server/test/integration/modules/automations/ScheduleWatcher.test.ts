@@ -18,7 +18,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("ScheduleWatcher", (it) =>
         })
         const due = saved.nextRunAt!
 
-        yield* (yield* ScheduleWatcher).runDue(DateTime.add(due, { seconds: 1 }))
+        yield* (yield* ScheduleWatcher).runDue(DateTime.add(due, { seconds: 1 }), { userId: user.id })
         const { intent } = yield* user.events.next(
           "IntentChanged",
           ({ intent }) => intent.source === "automation" && intent.status === "needsApproval"
@@ -48,7 +48,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("ScheduleWatcher", (it) =>
           payload: { requestId: RequestId.make(randomUUID()), draft: weeklyNvidia(null) }
         })
 
-        yield* (yield* ScheduleWatcher).runDue(DateTime.subtract(saved.nextRunAt!, { minutes: 1 }))
+        yield* (yield* ScheduleWatcher).runDue(DateTime.subtract(saved.nextRunAt!, { minutes: 1 }), { userId: user.id })
         const detail = yield* user.api.automations.automation({ params: { id: saved.id } })
 
         assert.deepStrictEqual([detail.runs, detail.automation.nextRunAt], [[], saved.nextRunAt])
@@ -60,7 +60,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("ScheduleWatcher", (it) =>
         const saved = yield* user.api.automations.create({
           payload: { requestId: RequestId.make(randomUUID()), draft: weeklyNvidia(null) }
         })
-        yield* (yield* ScheduleWatcher).runDue(DateTime.add(saved.nextRunAt!, { seconds: 1 }))
+        yield* (yield* ScheduleWatcher).runDue(DateTime.add(saved.nextRunAt!, { seconds: 1 }), { userId: user.id })
         const { intent } = yield* user.events.next(
           "IntentChanged",
           ({ intent }) => intent.source === "automation" && intent.status === "needsApproval"

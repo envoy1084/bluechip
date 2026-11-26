@@ -2,6 +2,7 @@ import * as Config from "effect/Config"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import type * as Option from "effect/Option"
 import type * as Redacted from "effect/Redacted"
 
 /** Server settings, read once from the environment at startup. */
@@ -14,6 +15,14 @@ export class AppConfig extends Context.Service<AppConfig, {
   readonly databaseUrl: Redacted.Redacted
   /** Encrypts agents' session keys at rest: 32 random bytes, base64 (`openssl rand -base64 32`). */
   readonly agentKeyEncryptionKey: Redacted.Redacted<string>
+  /**
+   * Another Alpaca account's keys for the news stream (`ALPACA_NEWS_KEY_ID`, `ALPACA_NEWS_SECRET_KEY`); none, the
+   * usual case: the main Alpaca keys (the price and news streams run together on one free account).
+   */
+  readonly alpacaNewsKey: Option.Option<{
+    readonly keyId: Redacted.Redacted<string>
+    readonly secret: Redacted.Redacted<string>
+  }>
 }>()("@bluechip/server/AppConfig") {
   static readonly layer = Layer.effect(
     AppConfig,
@@ -26,7 +35,11 @@ export class AppConfig extends Context.Service<AppConfig, {
         publicOrigin: yield* Config.String("PUBLIC_ORIGIN").pipe(Config.withDefault("http://localhost:3000")),
         rpId: yield* Config.String("RP_ID").pipe(Config.withDefault("localhost")),
         databaseUrl: yield* Config.Redacted("DATABASE_URL"),
-        agentKeyEncryptionKey: yield* Config.Redacted("AGENT_KEY_ENCRYPTION_KEY")
+        agentKeyEncryptionKey: yield* Config.Redacted("AGENT_KEY_ENCRYPTION_KEY"),
+        alpacaNewsKey: yield* Config.option(Config.all({
+          keyId: Config.Redacted("ALPACA_NEWS_KEY_ID"),
+          secret: Config.Redacted("ALPACA_NEWS_SECRET_KEY")
+        }))
       }
     })
   )

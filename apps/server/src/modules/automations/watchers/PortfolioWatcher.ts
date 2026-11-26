@@ -27,7 +27,8 @@ import { FireAutomation } from "../FireAutomation.ts"
  * a fire when it crosses, once.
  */
 export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
-  readonly check: Effect.Effect<void>
+  /** Reads the portfolios of everyone's automations (or one user's). */
+  readonly check: (options?: { readonly userId?: UserId | undefined }) => Effect.Effect<void>
 }>()("@bluechip/server/PortfolioWatcher") {
   static readonly layer = Layer.effect(
     PortfolioWatcher,
@@ -39,44 +40,51 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
       const agentStore = yield* AgentStore
       const engine = yield* WorkflowEngine.WorkflowEngine
 
-      const check = Effect.gen(function*() {
-        const now = yield* DateTime.now
-        const at = DateTime.formatIso(now)
-        const prices = yield* market.prices
+      const check = Effect.fn("PortfolioWatcher.check")(
+        function*(options: { readonly userId?: UserId | undefined } = {}) {
+          const now = yield* DateTime.now
+          const at = DateTime.formatIso(now)
+          const prices = yield* market.prices
 
-        yield* Effect.forEach(yield* automations.watched("portfolio"), (row) =>
-          Effect.gen(function*() {
-            const address = (yield* accounts.me(row.userId as UserId)).account.address as Address
-            const portfolio = valueHoldings(yield* balances.of(address), prices, now)
-            const state = yield* automations.state(row.id)
+          yield* Effect.forEach(
+            yield* automations.watched("portfolio", options.userId),
+            (row) =>
+              Effect.gen(function*() {
+                const address = (yield* accounts.me(row.userId as UserId)).account.address as Address
+                const portfolio = valueHoldings(yield* balances.of(address), prices, now)
+                const state = yield* automations.state(row.id)
 
-            let step: Step = { state, fire: null }
-            if (row.trigger.type === "portfolio") {
-              step = stepPortfolioLevel(row.trigger.config, state, portfolio, at)
-            } else if (row.trigger.type === "drift" && row.agentId !== null) {
-              const { session } = yield* agentStore.tradingState(row.agentId)
-              const config = session === undefined ? undefined : configOf(session.spec.policies, rebalance)
-              if (config !== undefined) step = stepDrift(config, state, portfolio, at)
-            }
-            if (!sameState(step.state, state)) yield* automations.saveState(row.id, step.state)
-            if (step.fire === null) return
+                let step: Step = { state, fire: null }
+                if (row.trigger.type === "portfolio") {
+                  step = stepPortfolioLevel(row.trigger.config, state, portfolio, at)
+                } else if (row.trigger.type === "drift" && row.agentId !== null) {
+                  const { session } = yield* agentStore.tradingState(row.agentId)
+                  const config = session === undefined ? undefined : configOf(session.spec.policies, rebalance)
+                  if (config !== undefined) step = stepDrift(config, state, portfolio, at)
+                }
+                if (!sameState(step.state, state)) yield* automations.saveState(row.id, step.state)
+                if (step.fire === null) return
 
-            const trigger: TriggerData = {
-              summary: row.trigger.type === "drift"
-                ? "Your mix drifted from its target."
-                : "Your portfolio crossed its level.",
-              symbol: null,
-              price: null,
-              newsItemId: null
-            }
-            yield* FireAutomation.execute({ automationId: row.id, windowKey: step.fire, trigger }, { discard: true })
-              .pipe(Effect.provideService(WorkflowEngine.WorkflowEngine, engine))
-          }).pipe(
-            Effect.catchCause((cause) =>
-              Effect.logWarning(`Automation ${row.id}: its portfolio couldn't be read`, cause)
-            )
-          ))
-      }).pipe(Effect.withSpan("PortfolioWatcher.check"))
+                const trigger: TriggerData = {
+                  summary: row.trigger.type === "drift"
+                    ? "Your mix drifted from its target."
+                    : "Your portfolio crossed its level.",
+                  symbol: null,
+                  price: null,
+                  newsItemId: null
+                }
+                yield* FireAutomation.execute({ automationId: row.id, windowKey: step.fire, trigger }, {
+                  discard: true
+                })
+                  .pipe(Effect.provideService(WorkflowEngine.WorkflowEngine, engine))
+              }).pipe(
+                Effect.catchCause((cause) =>
+                  Effect.logWarning(`Automation ${row.id}: its portfolio couldn't be read`, cause)
+                )
+              )
+          )
+        }
+      )
 
       return PortfolioWatcher.of({ check })
     })
@@ -87,7 +95,7 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
     "automations.portfolios",
     Effect.gen(function*() {
       const watcher = yield* PortfolioWatcher
-      yield* watcher.check.pipe(
+      yield* watcher.check().pipe(
         Effect.catchCause((cause) => Effect.logWarning("Portfolio watcher failed", cause)),
         Effect.repeat(Schedule.spaced("1 minute"))
       )

@@ -36,12 +36,12 @@ layer(TestUsers.layer, { excludeTestServices: true })("PortfolioWatcher", (it) =
         })
         const watcher = yield* PortfolioWatcher
 
-        yield* watcher.check
+        yield* watcher.check({ userId: user.id })
         const { intent } = yield* user.events.next(
           "IntentChanged",
           ({ intent }) => intent.source === "automation" && intent.status === "needsApproval"
         )
-        yield* watcher.check
+        yield* watcher.check({ userId: user.id })
         const detail = yield* user.api.automations.automation({ params: { id: saved.id } })
 
         assert.deepStrictEqual(
