@@ -10,7 +10,7 @@ import {
 import { AutomationCheck, catalogInfo, type EntryInfo } from "@bluechip/domain/automations/Catalog"
 import { AutomationDetail } from "@bluechip/domain/automations/Run"
 import { defaultAutomations } from "@bluechip/domain/automations/Templates"
-import { EMPTY_STATE, type Watcher, type WatchState } from "@bluechip/domain/automations/Trigger"
+import { EMPTY_STATE, sameState, type Step, type Watcher, type WatchState } from "@bluechip/domain/automations/Trigger"
 import { nextRun } from "@bluechip/domain/automations/triggers/Schedule"
 import { Conflict, InvalidAutomation, NotFound } from "@bluechip/domain/Errors"
 import type { AgentId, AutomationId, MessageId, UserId } from "@bluechip/domain/Ids"
@@ -93,7 +93,12 @@ export class Automations extends Context.Service<Automations, {
   /** Active schedules due at `now`: everyone's, or one user's. */
   readonly due: (now: DateTime.Utc, userId?: UserId | undefined) => Effect.Effect<ReadonlyArray<AutomationRow>>
   readonly state: (id: string) => Effect.Effect<WatchState>
-  readonly saveState: (id: string, state: WatchState) => Effect.Effect<void>
+  /**
+   * Moves an automation's watch state on with `step` and returns the window to fire, if any. One step of an
+   * automation at a time: two watchers seeing the same crossing at once fire it once, the second seeing the first's
+   * state.
+   */
+  readonly advance: (id: string, step: (state: WatchState) => Step) => Effect.Effect<string | null>
   /** Moves a schedule on to its next time after `after`. */
   readonly schedule: (row: AutomationRow, after: DateTime.Utc) => Effect.Effect<void>
   /** Counts a fire at `at`. */
@@ -230,7 +235,7 @@ export class Automations extends Context.Service<Automations, {
         }).where(eq(automations.id, row.id)).returning().pipe(Effect.orDie)
 
         if (draft !== undefined && !Schema.toEquivalence(Trigger)(draft.trigger, row.trigger)) {
-          yield* saveState(row.id, EMPTY_STATE)
+          yield* advance(row.id, () => ({ state: EMPTY_STATE, fire: null }))
         }
         yield* record(updated!, draft === undefined ? (changes.status === "paused" ? "paused" : "resumed") : "edited")
         return toAutomation(updated!)
@@ -288,12 +293,28 @@ export class Automations extends Context.Service<Automations, {
         return row?.state ?? EMPTY_STATE
       })
 
-      const saveState = Effect.fn("Automations.saveState")(function*(id: string, next: WatchState) {
+      const advance = Effect.fn("Automations.advance")(function*(id: string, step: (state: WatchState) => Step) {
+        const automationId = id as `automation_${string}`
         const now = yield* DateTime.now
-        yield* db.insert(automationState)
-          .values({ automationId: id as `automation_${string}`, state: next, updatedAt: now })
-          .onConflictDoUpdate({ target: automationState.automationId, set: { state: next, updatedAt: now } })
-          .pipe(Effect.orDie)
+
+        return yield* db.transaction((tx) =>
+          Effect.gen(function*() {
+            yield* tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`automation:${id}`}))`)
+            const [row] = yield* tx.select().from(automationState).where(eq(automationState.automationId, automationId))
+            const state = row?.state ?? EMPTY_STATE
+
+            const next = step(state)
+            if (!sameState(next.state, state)) {
+              yield* tx.insert(automationState)
+                .values({ automationId, state: next.state, updatedAt: now })
+                .onConflictDoUpdate({
+                  target: automationState.automationId,
+                  set: { state: next.state, updatedAt: now }
+                })
+            }
+            return next.fire
+          })
+        ).pipe(Effect.orDie)
       })
 
       const schedule = Effect.fn("Automations.schedule")(function*(row: AutomationRow, after: DateTime.Utc) {
@@ -327,7 +348,7 @@ export class Automations extends Context.Service<Automations, {
         watched,
         due,
         state,
-        saveState,
+        advance,
         schedule,
         fired,
         end,

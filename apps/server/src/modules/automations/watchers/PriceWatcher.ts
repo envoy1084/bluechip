@@ -1,7 +1,7 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import { formatPrice } from "@bluechip/domain/automations/Format"
 import type { TriggerData } from "@bluechip/domain/automations/Run"
-import { type PriceTick, sameState, type Step } from "@bluechip/domain/automations/Trigger"
+import type { PriceTick, Step } from "@bluechip/domain/automations/Trigger"
 import { stepPriceCross } from "@bluechip/domain/automations/triggers/PriceCross"
 import { stepPriceMove } from "@bluechip/domain/automations/triggers/PriceMove"
 import type { UserId } from "@bluechip/domain/Ids"
@@ -59,14 +59,14 @@ export class PriceWatcher extends Context.Service<PriceWatcher, {
             day: newYorkDay(price.tradedAt),
             at: DateTime.formatIso(price.tradedAt)
           }
-          const state = yield* automations.state(row.id)
-          const step: Step = row.trigger.type === "priceMove" ?
-            stepPriceMove(row.trigger.config, state, tick) :
-            row.trigger.type === "priceCross" ?
-            stepPriceCross(row.trigger.config, state, tick) :
-            { state, fire: null }
-          if (!sameState(step.state, state)) yield* automations.saveState(row.id, step.state)
-          if (step.fire === null) continue
+          const rule = row.trigger
+          const fire = yield* automations.advance(row.id, (state): Step =>
+            rule.type === "priceMove" ?
+              stepPriceMove(rule.config, state, tick) :
+              rule.type === "priceCross" ?
+              stepPriceCross(rule.config, state, tick) :
+              { state, fire: null })
+          if (fire === null) continue
 
           const name = stocks.find((stock) => stock.symbol === price.symbol)?.name ?? price.symbol
           const trigger: TriggerData = {
@@ -75,7 +75,7 @@ export class PriceWatcher extends Context.Service<PriceWatcher, {
             price: price.price,
             newsItemId: null
           }
-          yield* FireAutomation.execute({ automationId: row.id, windowKey: step.fire, trigger }, { discard: true })
+          yield* FireAutomation.execute({ automationId: row.id, windowKey: fire, trigger }, { discard: true })
             .pipe(Effect.provideService(WorkflowEngine.WorkflowEngine, engine))
         }
       })

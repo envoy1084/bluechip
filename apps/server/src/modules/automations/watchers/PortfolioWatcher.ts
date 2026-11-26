@@ -1,5 +1,5 @@
 import type { TriggerData } from "@bluechip/domain/automations/Run"
-import { sameState, type Step } from "@bluechip/domain/automations/Trigger"
+import type { Step } from "@bluechip/domain/automations/Trigger"
 import { stepDrift } from "@bluechip/domain/automations/triggers/Drift"
 import { stepPortfolioLevel } from "@bluechip/domain/automations/triggers/PortfolioLevel"
 import type { UserId } from "@bluechip/domain/Ids"
@@ -52,18 +52,22 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
               Effect.gen(function*() {
                 const address = (yield* accounts.me(row.userId as UserId)).account.address as Address
                 const portfolio = valueHoldings(yield* balances.of(address), prices, now)
-                const state = yield* automations.state(row.id)
+                const rule = row.trigger
+                const target = rule.type === "drift" && row.agentId !== null
+                  ? yield* agentStore.tradingState(row.agentId).pipe(
+                    Effect.map(({ session }) =>
+                      session === undefined ? undefined : configOf(session.spec.policies, rebalance)
+                    )
+                  )
+                  : undefined
 
-                let step: Step = { state, fire: null }
-                if (row.trigger.type === "portfolio") {
-                  step = stepPortfolioLevel(row.trigger.config, state, portfolio, at)
-                } else if (row.trigger.type === "drift" && row.agentId !== null) {
-                  const { session } = yield* agentStore.tradingState(row.agentId)
-                  const config = session === undefined ? undefined : configOf(session.spec.policies, rebalance)
-                  if (config !== undefined) step = stepDrift(config, state, portfolio, at)
-                }
-                if (!sameState(step.state, state)) yield* automations.saveState(row.id, step.state)
-                if (step.fire === null) return
+                const fire = yield* automations.advance(row.id, (state): Step =>
+                  rule.type === "portfolio" ?
+                    stepPortfolioLevel(rule.config, state, portfolio, at) :
+                    rule.type === "drift" && target !== undefined ?
+                    stepDrift(target, state, portfolio, at) :
+                    { state, fire: null })
+                if (fire === null) return
 
                 const trigger: TriggerData = {
                   summary: row.trigger.type === "drift"
@@ -73,7 +77,7 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
                   price: null,
                   newsItemId: null
                 }
-                yield* FireAutomation.execute({ automationId: row.id, windowKey: step.fire, trigger }, {
+                yield* FireAutomation.execute({ automationId: row.id, windowKey: fire, trigger }, {
                   discard: true
                 })
                   .pipe(Effect.provideService(WorkflowEngine.WorkflowEngine, engine))
