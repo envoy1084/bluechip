@@ -1,4 +1,5 @@
 import { Conflict, InsufficientCash, Unavailable } from "@bluechip/domain/Errors"
+import { Intent } from "@bluechip/domain/intents/Intent"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import {
@@ -7,6 +8,7 @@ import {
   expiresIn,
   intentProblem,
   nothingMoved,
+  shownDecision,
   waitingText
 } from "../../../../../src/features/intents/model/intentText.ts"
 import { nvidiaBuy } from "../../../../fixtures/Intents.ts"
@@ -19,6 +21,27 @@ describe("nothingMoved", () => {
     { side: "sell", expected: "Nothing was sold. Your stocks are where they were." }
   ])("$side", ({ expected, side }) => {
     assert.strictEqual(nothingMoved(side), expected)
+  })
+})
+
+describe("shownDecision", () => {
+  const wait = { _tag: "Wait", reason: "noGas", until: DateTime.makeUnsafe("2026-11-26T05:34:00Z") } as const
+  it.each<{ name: string; status: Intent["status"]; decision: Intent["decision"]; expected: string | null }>([
+    { name: "a wait, while it waits", status: "waiting", decision: wait, expected: "Wait" },
+    { name: "a wait, once cancelled", status: "cancelled", decision: wait, expected: null },
+    { name: "a wait, once expired", status: "expired", decision: wait, expected: null },
+    { name: "a wait, once it passed and filled", status: "filled", decision: wait, expected: null },
+    {
+      name: "a pass, once filled",
+      status: "filled",
+      decision: { _tag: "Passes", callGasLimit: 100_000n },
+      expected: "Passes"
+    },
+    { name: "no decision yet", status: "proposed", decision: null, expected: null }
+  ])("$name", ({ decision, expected, status }) => {
+    const intent = new Intent({ ...nvidiaBuy("2026-11-26T05:00:00Z"), status, decision })
+
+    assert.strictEqual(shownDecision(intent)?._tag ?? null, expected)
   })
 })
 

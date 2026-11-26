@@ -9,7 +9,7 @@ import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
-import { nothingMoved, STATUS } from "../../model/intentText.ts"
+import { nothingMoved, shownDecision, STATUS } from "../../model/intentText.ts"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
 
@@ -83,6 +83,7 @@ export function AgentTradeProgress(
 ) {
   const { approve, decline, flow, intent } = useApproveIntent(asked)
   const status = STATUS[intent.status]
+  const decision = shownDecision(intent)
   const deciding = intent.status === "proposed" || intent.status === "deciding"
   const sent = intent.status === "sending" || intent.status === "confirming" || intent.status === "filled" ||
     intent.status === "failed"
@@ -105,8 +106,8 @@ export function AgentTradeProgress(
           </p>
         ) :
         null}
-      {intent.decision !== null && !deciding && (!sent || intent.decision._tag === "Passes") ?
-        <DecisionLine decision={intent.decision} /> :
+      {decision !== null && !deciding && (!sent || decision._tag === "Passes") ?
+        <DecisionLine decision={decision} /> :
         null}
       {intent.status === "blocked" || quiet !== undefined ?
         (

@@ -13,7 +13,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentIntentsAtom } from "../../atoms/intents.ts"
 import { useLatestIntent } from "../../hooks/useLatestIntent.ts"
-import { askedAt, nothingMoved, STATUS } from "../../model/intentText.ts"
+import { askedAt, nothingMoved, shownDecision, STATUS } from "../../model/intentText.ts"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
 
@@ -29,6 +29,7 @@ function IntentRow(
 ) {
   const intent = useLatestIntent(listed)
   const status = STATUS[intent.status]
+  const decision = shownDecision(intent)
   const trade = describeLeg(intent.leg, nameOf)
   const stopped = intent.status === "blocked" || intent.status === "failed" || intent.status === "declined" ||
     intent.status === "expired" || intent.status === "cancelled"
@@ -58,7 +59,7 @@ function IntentRow(
           </span>
           {intent.reason === "" ? null : <span className="text-label-sm text-g-500">{intent.reason}</span>}
         </span>
-        {intent.decision === null ? null : <DecisionLine decision={intent.decision} />}
+        {decision === null ? null : <DecisionLine decision={decision} />}
         {stopped ? <span className="text-label-sm text-g-600">{nothingMoved(intent.leg.side)}</span> : null}
       </span>
     </ActivityItem>

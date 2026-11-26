@@ -1,7 +1,7 @@
 // How an intent reads on screen: its status as a pill, the time it waits until, why a request didn't go, and how many
 // wait for you.
 import { Conflict, Unavailable } from "@bluechip/domain/Errors"
-import type { Intent, IntentStatus } from "@bluechip/domain/intents/Intent"
+import type { Decision, Intent, IntentStatus } from "@bluechip/domain/intents/Intent"
 import { formatRelative, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { localTimeZone } from "../../../lib/localTime.ts"
@@ -22,6 +22,13 @@ export const STATUS: Readonly<Record<IntentStatus, { readonly label: string; rea
   expired: { label: "Ran out", tone: "bg-g-100 text-g-600" },
   cancelled: { label: "Cancelled", tone: "bg-g-100 text-g-600" }
 }
+
+/**
+ * The decision an intent's line shows: a wait only while it still waits, since an intent cancelled, expired or decided
+ * again afterwards keeps its last decision, and "It tries again at 05:34" would no longer be true.
+ */
+export const shownDecision = (intent: Intent): Decision | null =>
+  intent.decision?._tag === "Wait" && intent.status !== "waiting" ? null : intent.decision
 
 /** "Nothing was bought. Your cash is where it was.", for a trade that ended without moving money. */
 export const nothingMoved = (side: "buy" | "sell"): string =>
