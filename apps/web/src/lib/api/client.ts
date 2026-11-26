@@ -35,3 +35,6 @@ export const intentsReactivityKey = "intents"
 
 /** Agents' usage refetches when this key is invalidated (an agent's trade filled). */
 export const usageReactivityKey = "usage"
+
+/** Automations and their runs refetch when this key is invalidated (after saving, pausing or deleting one). */
+export const automationsReactivityKey = "automations"

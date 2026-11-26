@@ -30,20 +30,23 @@ type Section = ComponentType<{ agent: Agent; nameOf: (symbol: StockSymbol) => st
 interface Sections {
   readonly Trade: Section
   readonly Activity: Section
+  /** Its automations, from the automations feature. */
+  readonly Automations: ComponentType<{ agent: Agent }>
   /** Opens a conversation with the assistant about the agent. */
   readonly Ask: ComponentType<{ agent: Agent }>
 }
 
 /**
- * An agent's page: its alerts, header, policies, usage and sessions. The trade and activity sections come from the
- * intents feature and the way to ask about it from the assistant feature, so the route passes them in.
+ * An agent's page: its alerts, header, policies, automations, usage and sessions. The trade and activity sections
+ * come from the intents feature, its automations from the automations feature and the way to ask about it from the
+ * assistant feature, so the route passes them in.
  */
-export function AgentScreen({ id, Trade, Activity, Ask }: Readonly<{ id: AgentId } & Sections>) {
+export function AgentScreen({ id, Trade, Activity, Automations, Ask }: Readonly<{ id: AgentId } & Sections>) {
   const agent = useAtomValue(agentAtom(id))
   const refresh = useAtomRefresh(agentAtom(id))
 
   if (AsyncResult.isSuccess(agent)) {
-    return <AgentContent agent={agent.value} Trade={Trade} Activity={Activity} Ask={Ask} />
+    return <AgentContent agent={agent.value} Trade={Trade} Activity={Activity} Automations={Automations} Ask={Ask} />
   }
   if (Option.getOrUndefined(AsyncResult.error(agent)) instanceof NotFoundError) return <AgentNotFound />
 
@@ -70,7 +73,7 @@ export function AgentScreen({ id, Trade, Activity, Ask }: Readonly<{ id: AgentId
 // its state (a removal in progress) as the agent moves between them.
 const noUsageAtom = Atom.make(AsyncResult.initial<AgentUsage, unknown>())
 
-function AgentContent({ agent, Trade, Activity, Ask }: Readonly<{ agent: Agent } & Sections>) {
+function AgentContent({ agent, Trade, Activity, Automations, Ask }: Readonly<{ agent: Agent } & Sections>) {
   const usageAtom: Atom.Atom<AsyncResult.AsyncResult<AgentUsage, unknown>> = hasSession(agent) ?
     agentUsageAtom(agent.id) :
     noUsageAtom
@@ -123,6 +126,7 @@ function AgentContent({ agent, Trade, Activity, Ask }: Readonly<{ agent: Agent }
         >
           <div className="grid content-start gap-4">
             <PoliciesSection agent={agent} nameOf={nameOf} />
+            {agent.status === "draft" ? null : <Automations agent={agent} />}
             {agent.status === "draft" ? null : <Activity agent={agent} nameOf={nameOf} />}
           </div>
           <div className="grid content-start gap-4">

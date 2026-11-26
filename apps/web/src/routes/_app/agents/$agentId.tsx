@@ -4,6 +4,7 @@ import * as Schema from "effect/Schema"
 import { AgentNotFound } from "../../../features/agents/components/detail/AgentNotFound.tsx"
 import { AgentScreen } from "../../../features/agents/screens/AgentScreen.tsx"
 import { AskAboutAgent } from "../../../features/assistant/components/AskAboutAgent.tsx"
+import { AgentAutomations } from "../../../features/automations/components/AgentAutomations.tsx"
 import { AgentActivity } from "../../../features/intents/components/agent/AgentActivity.tsx"
 import { TradeWithAgent } from "../../../features/intents/components/agent/TradeWithAgent.tsx"
 
@@ -20,6 +21,7 @@ function AgentPage() {
       id={agentId}
       Trade={TradeWithAgent}
       Activity={AgentActivity}
+      Automations={AgentAutomations}
       Ask={AskAboutAgent}
     />
   )

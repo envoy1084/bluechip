@@ -29,6 +29,7 @@ const NAV: ReadonlyArray<
       | "/portfolio"
       | "/stocks"
       | "/agents"
+      | "/automations"
       | "/activity"
       | "/approvals"
       | "/settings"
@@ -41,6 +42,7 @@ const NAV: ReadonlyArray<
   { to: "/portfolio", label: "Portfolio", icon: "portfolio" },
   { to: "/stocks", label: "Stocks", icon: "stocks" },
   { to: "/agents", label: "Agents", icon: "agents" },
+  { to: "/automations", label: "Automations", icon: "zap" },
   { to: "/activity", label: "Activity", icon: "activity" },
   { to: "/approvals", label: "Approvals", icon: "approvals" },
   { to: "/settings", label: "Settings", icon: "settings" }

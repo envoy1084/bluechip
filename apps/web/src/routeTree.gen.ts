@@ -27,11 +27,15 @@ import { Route as AppActivityIndexRouteImport } from './routes/_app/activity/ind
 import { Route as AppAgentsIndexRouteImport } from './routes/_app/agents/index'
 import { Route as AppAgentsAgentIdRouteImport } from './routes/_app/agents/$agentId'
 import { Route as AppAgentsNewRouteImport } from './routes/_app/agents/new'
+import { Route as AppAutomationsIndexRouteImport } from './routes/_app/automations/index'
+import { Route as AppAutomationsAutomationIdRouteImport } from './routes/_app/automations/$automationId'
+import { Route as AppAutomationsNewRouteImport } from './routes/_app/automations/new'
 import { Route as AppChatChar123ConversationIdChar125RouteImport } from './routes/_app/chat/{-$conversationId}'
 import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
 import { Route as AppAgentsAgentIdEditRouteImport } from './routes/_app/agents/$agentId_.edit'
+import { Route as AppAutomationsAutomationIdEditRouteImport } from './routes/_app/automations/$automationId_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -122,6 +126,22 @@ const AppAgentsNewRoute = AppAgentsNewRouteImport.update({
   path: '/agents/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAutomationsIndexRoute = AppAutomationsIndexRouteImport.update({
+  id: '/automations/',
+  path: '/automations/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAutomationsAutomationIdRoute =
+  AppAutomationsAutomationIdRouteImport.update({
+    id: '/automations/$automationId',
+    path: '/automations/$automationId',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppAutomationsNewRoute = AppAutomationsNewRouteImport.update({
+  id: '/automations/new',
+  path: '/automations/new',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppChatChar123ConversationIdChar125Route =
   AppChatChar123ConversationIdChar125RouteImport.update({
     id: '/chat/{-$conversationId}',
@@ -148,6 +168,12 @@ const AppAgentsAgentIdEditRoute = AppAgentsAgentIdEditRouteImport.update({
   path: '/agents/$agentId/edit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAutomationsAutomationIdEditRoute =
+  AppAutomationsAutomationIdEditRouteImport.update({
+    id: '/automations/$automationId_/edit',
+    path: '/automations/$automationId/edit',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -165,13 +191,17 @@ export interface FileRoutesByFullPath {
   '/welcome/': typeof WelcomeIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/agents/new': typeof AppAgentsNewRoute
+  '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
+  '/automations/new': typeof AppAutomationsNewRoute
   '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity/': typeof AppActivityIndexRoute
   '/agents/': typeof AppAgentsIndexRoute
+  '/automations/': typeof AppAutomationsIndexRoute
   '/portfolio/': typeof AppPortfolioIndexRoute
   '/stocks/': typeof AppStocksIndexRoute
   '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
+  '/automations/$automationId/edit': typeof AppAutomationsAutomationIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -189,13 +219,17 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/agents/new': typeof AppAgentsNewRoute
+  '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
+  '/automations/new': typeof AppAutomationsNewRoute
   '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity': typeof AppActivityIndexRoute
   '/agents': typeof AppAgentsIndexRoute
+  '/automations': typeof AppAutomationsIndexRoute
   '/portfolio': typeof AppPortfolioIndexRoute
   '/stocks': typeof AppStocksIndexRoute
   '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
+  '/automations/$automationId/edit': typeof AppAutomationsAutomationIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -215,13 +249,17 @@ export interface FileRoutesById {
   '/welcome/': typeof WelcomeIndexRoute
   '/_app/agents/$agentId': typeof AppAgentsAgentIdRoute
   '/_app/agents/new': typeof AppAgentsNewRoute
+  '/_app/automations/$automationId': typeof AppAutomationsAutomationIdRoute
+  '/_app/automations/new': typeof AppAutomationsNewRoute
   '/_app/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
+  '/_app/automations/': typeof AppAutomationsIndexRoute
   '/_app/portfolio/': typeof AppPortfolioIndexRoute
   '/_app/stocks/': typeof AppStocksIndexRoute
   '/_app/agents/$agentId_/edit': typeof AppAgentsAgentIdEditRoute
+  '/_app/automations/$automationId_/edit': typeof AppAutomationsAutomationIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -241,13 +279,17 @@ export interface FileRouteTypes {
     | '/welcome/'
     | '/agents/$agentId'
     | '/agents/new'
+    | '/automations/$automationId'
+    | '/automations/new'
     | '/chat/{-$conversationId}'
     | '/stocks/$symbol'
     | '/activity/'
     | '/agents/'
+    | '/automations/'
     | '/portfolio/'
     | '/stocks/'
     | '/agents/$agentId/edit'
+    | '/automations/$automationId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -265,13 +307,17 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/agents/$agentId'
     | '/agents/new'
+    | '/automations/$automationId'
+    | '/automations/new'
     | '/chat/{-$conversationId}'
     | '/stocks/$symbol'
     | '/activity'
     | '/agents'
+    | '/automations'
     | '/portfolio'
     | '/stocks'
     | '/agents/$agentId/edit'
+    | '/automations/$automationId/edit'
   id:
     | '__root__'
     | '/'
@@ -290,13 +336,17 @@ export interface FileRouteTypes {
     | '/welcome/'
     | '/_app/agents/$agentId'
     | '/_app/agents/new'
+    | '/_app/automations/$automationId'
+    | '/_app/automations/new'
     | '/_app/chat/{-$conversationId}'
     | '/_app/stocks/$symbol'
     | '/_app/activity/'
     | '/_app/agents/'
+    | '/_app/automations/'
     | '/_app/portfolio/'
     | '/_app/stocks/'
     | '/_app/agents/$agentId_/edit'
+    | '/_app/automations/$automationId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -440,6 +490,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/automations/': {
+      id: '/_app/automations/'
+      path: '/automations'
+      fullPath: '/automations/'
+      preLoaderRoute: typeof AppAutomationsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/automations/$automationId': {
+      id: '/_app/automations/$automationId'
+      path: '/automations/$automationId'
+      fullPath: '/automations/$automationId'
+      preLoaderRoute: typeof AppAutomationsAutomationIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/automations/new': {
+      id: '/_app/automations/new'
+      path: '/automations/new'
+      fullPath: '/automations/new'
+      preLoaderRoute: typeof AppAutomationsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/chat/{-$conversationId}': {
       id: '/_app/chat/{-$conversationId}'
       path: '/chat/{-$conversationId}'
@@ -475,6 +546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsAgentIdEditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/automations/$automationId_/edit': {
+      id: '/_app/automations/$automationId_/edit'
+      path: '/automations/$automationId/edit'
+      fullPath: '/automations/$automationId/edit'
+      preLoaderRoute: typeof AppAutomationsAutomationIdEditRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -485,13 +563,17 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppAgentsAgentIdRoute: typeof AppAgentsAgentIdRoute
   AppAgentsNewRoute: typeof AppAgentsNewRoute
+  AppAutomationsAutomationIdRoute: typeof AppAutomationsAutomationIdRoute
+  AppAutomationsNewRoute: typeof AppAutomationsNewRoute
   AppChatChar123ConversationIdChar125Route: typeof AppChatChar123ConversationIdChar125Route
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
+  AppAutomationsIndexRoute: typeof AppAutomationsIndexRoute
   AppPortfolioIndexRoute: typeof AppPortfolioIndexRoute
   AppStocksIndexRoute: typeof AppStocksIndexRoute
   AppAgentsAgentIdEditRoute: typeof AppAgentsAgentIdEditRoute
+  AppAutomationsAutomationIdEditRoute: typeof AppAutomationsAutomationIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -501,14 +583,18 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppAgentsAgentIdRoute: AppAgentsAgentIdRoute,
   AppAgentsNewRoute: AppAgentsNewRoute,
+  AppAutomationsAutomationIdRoute: AppAutomationsAutomationIdRoute,
+  AppAutomationsNewRoute: AppAutomationsNewRoute,
   AppChatChar123ConversationIdChar125Route:
     AppChatChar123ConversationIdChar125Route,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,
+  AppAutomationsIndexRoute: AppAutomationsIndexRoute,
   AppPortfolioIndexRoute: AppPortfolioIndexRoute,
   AppStocksIndexRoute: AppStocksIndexRoute,
   AppAgentsAgentIdEditRoute: AppAgentsAgentIdEditRoute,
+  AppAutomationsAutomationIdEditRoute: AppAutomationsAutomationIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
