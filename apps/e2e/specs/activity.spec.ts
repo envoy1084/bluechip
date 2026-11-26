@@ -66,7 +66,7 @@ test.describe("activity", () => {
   })
 
   test.fixme(
-    "a buy's details show the price checked against Chainlink (bug: on a holiday the chain runs days ahead of the server's clock, so every swap's deadline has passed)",
+    "a filled buy's details are its receipt, then the price checked against Chainlink (bug: on a holiday the chain runs days ahead of the server's clock, so every swap's deadline has passed)",
     async ({ page, funded: _funded }) => {
       await buy(page, "SPCX", 10)
       await page.goto("/activity")
@@ -74,16 +74,16 @@ test.describe("activity", () => {
       await page.getByText(/^Bought \$\d+\.\d{2} of SpaceX$/).click()
 
       const details = page.getByRole("dialog", { name: /^Bought \$\d+\.\d{2} of SpaceX$/ })
+      const receipt = details.getByRole("region", { name: "Bought SpaceX" })
+      await expect(receipt).toContainText(/You, today at \d{2}:\d{2}/)
       await expect(details.getByRole("definition")).toHaveText([
-        "SPCXSpaceX",
-        /^\$\d+\.\d{2} USDC$/,
-        /^\d+\.\d+$/,
+        /^[\d.]+ shares?$/,
         /^\$\d+\.\d{2} a share$/,
         /^\$\d+\.\d{2}$/,
-        /^\d+\.\d{2}% (worse|better) than Chainlink$/,
-        "Filled",
-        /^0x[0-9a-f]{4}…[0-9a-f]{4}$/
+        /^\$\d+\.\d{2}$/,
+        /^\d+\.\d{2}% (worse|better) than Chainlink$/
       ])
+      await expect(receipt.getByRole("link", { name: "View on BaseScan" })).toBeVisible()
     }
   )
 })
