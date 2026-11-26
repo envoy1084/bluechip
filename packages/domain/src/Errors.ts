@@ -5,6 +5,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
+import { AutomationProblem } from "./automations/Automation.ts"
 import { PolicyProblem } from "./policies/AgentSpec.ts"
 
 /**
@@ -75,7 +76,15 @@ export class InvalidRequest extends Schema.TaggedError<InvalidRequest>("@bluechi
 export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Errors/Conflict")(
   "Conflict",
   {
-    reason: Schema.Literals(["requestIdReused", "staleUpdate", "agentBusy", "intentClosed", "cardClosed", "runActive"])
+    reason: Schema.Literals([
+      "requestIdReused",
+      "staleUpdate",
+      "agentBusy",
+      "intentClosed",
+      "cardClosed",
+      "runActive",
+      "automationEnded"
+    ])
   },
   { httpApiStatus: 409 }
 ) {}
@@ -225,3 +234,19 @@ export class InvalidSpec extends Schema.TaggedError<InvalidSpec>("@bluechip/doma
   { problems: Schema.Array(PolicyProblem) },
   { httpApiStatus: 422 }
 ) {}
+
+/**
+ * An automation can't be saved: each problem names the part (trigger, a condition, the action, the settings), its
+ * field and why, in words.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class InvalidAutomation
+  extends Schema.TaggedError<InvalidAutomation>("@bluechip/domain/Errors/InvalidAutomation")(
+    "InvalidAutomation",
+    { problems: Schema.Array(AutomationProblem) },
+    { httpApiStatus: 422 }
+  )
+{}

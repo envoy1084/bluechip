@@ -19,6 +19,8 @@ import { AuditLog } from "./modules/audit/AuditLog.ts"
 import { Challenges } from "./modules/auth/Challenges.ts"
 import { Sessions } from "./modules/auth/Sessions.ts"
 import { WebAuthn } from "./modules/auth/WebAuthn.ts"
+import { AutomationRuns } from "./modules/automations/AutomationRuns.ts"
+import { Automations } from "./modules/automations/Automations.ts"
 import { Transfers } from "./modules/funding/Transfers.ts"
 import { Withdrawals } from "./modules/funding/Withdrawals.ts"
 import { AgentExecutor } from "./modules/intents/AgentExecutor.ts"
@@ -58,7 +60,7 @@ export const ServicesLive = Layer.mergeAll(
   Layer.provideMerge(Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer)),
   Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),
-  Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer)),
+  Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer, Automations.layer)),
   Layer.provideMerge(Layer.mergeAll(Trades.layer, Withdrawals.layer, Agents.layer, AgentRequests.layer)),
   Layer.provideMerge(Layer.mergeAll(SigningRequests.layer, AgentStore.layer, AgentExecutor.layer, TradeLedger.layer)),
   Layer.provideMerge(
@@ -82,7 +84,8 @@ export const ServicesLive = Layer.mergeAll(
       Sessions.layer,
       SavedTemplates.layer,
       Transfers.layer,
-      Activity.layer
+      Activity.layer,
+      AutomationRuns.layer
     )
   ),
   Layer.provideMerge(

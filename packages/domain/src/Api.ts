@@ -10,6 +10,7 @@ import { ActivityApi } from "./api/ActivityApi.ts"
 import { AgentsApi } from "./api/AgentsApi.ts"
 import { AssistantApi } from "./api/AssistantApi.ts"
 import { AuthApi } from "./api/AuthApi.ts"
+import { AutomationsApi } from "./api/AutomationsApi.ts"
 import { DevApi } from "./api/DevApi.ts"
 import { EventsApi } from "./api/EventsApi.ts"
 import { IntentsApi } from "./api/IntentsApi.ts"
@@ -41,6 +42,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(PoliciesApi)
   .add(AgentsApi)
   .add(IntentsApi)
+  .add(AutomationsApi)
   .add(ActivityApi)
   .add(AssistantApi)
   .add(DevApi)

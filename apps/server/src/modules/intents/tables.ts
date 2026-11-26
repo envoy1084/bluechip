@@ -1,5 +1,5 @@
 import { Decision, Leg } from "@bluechip/domain/intents/Intent"
-import { index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
 import { dateTimeUtc, jsonbSchema, typeId } from "../../platform/db/columns.ts"
 import { users } from "../accounts/tables.ts"
 import { agents } from "../agents/tables.ts"
@@ -22,7 +22,7 @@ const INTENT_STATUSES = [
 
 /**
  * Every trade anyone wants to make, yours included: who asked (`source`), who signs (`executor`), the trade (`leg`),
- * why, what the pipeline decided, and how it ended. `dedupe_key` makes a retried request or a repeated automation
+ * why, whether it asks you first, what the pipeline decided, and how it ended. `dedupe_key` makes a retried request or a repeated automation
  * fire create one intent.
  */
 export const intents = pgTable("intents", {
@@ -33,6 +33,8 @@ export const intents = pgTable("intents", {
   source: text("source", { enum: ["owner", "assistant", "automation", "channel", "mcp"] }).notNull(),
   sourceId: text("source_id"),
   executor: text("executor", { enum: ["agent", "owner"] }).notNull(),
+  /** Waits for your approval whatever the agent's policies allow: an automation that asks you first. */
+  ask: boolean("ask").notNull().default(false),
   dedupeKey: text("dedupe_key").notNull(),
   leg: jsonbSchema(Leg)("leg").notNull(),
   reason: text("reason").notNull(),

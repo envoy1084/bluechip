@@ -4,6 +4,7 @@ export { agents, agentSessions, sessionKeys, sessionPolicies } from "../../modul
 export { assistantCards, conversations, memories, messages, usageBudgets } from "../../modules/assistant/tables.ts"
 export { auditEvents } from "../../modules/audit/tables.ts"
 export { authChallenges, sessions } from "../../modules/auth/tables.ts"
+export { automationRuns, automations, automationState, judgments, newsItems } from "../../modules/automations/tables.ts"
 export { transfers } from "../../modules/funding/tables.ts"
 export { intents } from "../../modules/intents/tables.ts"
 export { agentTemplates } from "../../modules/policies/tables.ts"

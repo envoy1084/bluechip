@@ -8,6 +8,7 @@ import { AgentsHandlers } from "./modules/agents/http.ts"
 import { AssistantHandlers } from "./modules/assistant/http.ts"
 import { AuthenticationLive } from "./modules/auth/Authentication.ts"
 import { AuthHandlers } from "./modules/auth/http.ts"
+import { AutomationsHandlers } from "./modules/automations/http.ts"
 import { DevHandlers } from "./modules/dev/http.ts"
 import { EventsHandlers } from "./modules/events/http.ts"
 import { TransfersHandlers } from "./modules/funding/http.ts"
@@ -32,6 +33,7 @@ export const ApiHandlers = Layer.mergeAll(
   PoliciesHandlers,
   AgentsHandlers,
   IntentsHandlers,
+  AutomationsHandlers,
   ActivityHandlers,
   AssistantHandlers,
   DevHandlers
