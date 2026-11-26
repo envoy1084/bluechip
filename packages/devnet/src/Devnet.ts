@@ -63,7 +63,7 @@ export class Devnet extends Context.Service<Devnet, {
 }>()("@bluechip/devnet/Devnet") {
   /**
    * Connects to the current worker's devnet: sets Base's base fee (loading the captured state brings the fork's own),
-   * mines a block so its clock reads now, and marks every price as just updated, since the captured state's prices are
+   * moves its clock to now (the captured state brings the capture's) and mines a block, and marks every price as just updated, since the captured state's prices are
    * as old as the capture.
    *
    * @since 0.0.0
@@ -87,6 +87,10 @@ export class Devnet extends Context.Service<Devnet, {
           Effect.promise(() => Controls.movePool(anvil, stockOf(symbol), price))
 
         yield* Effect.promise(async () => {
+          // The captured state brings back the capture's clock: agents state the latest block's time and Namera
+          // bounds their operations to its UTC day, which the bundler checks against the real clock.
+          const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: string }
+          if (Number(latest.timestamp) < now()) await anvil("anvil_setTime", [now()])
           await anvil("anvil_setNextBlockBaseFeePerGas", [toHex(Controls.BASE_FEE_WEI)])
           await anvil("anvil_mine", ["0x1"])
           for (const { feed } of stocks) await Controls.setFeedTime(anvil, feed, now())
