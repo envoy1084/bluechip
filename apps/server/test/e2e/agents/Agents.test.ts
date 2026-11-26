@@ -1,5 +1,5 @@
 import { Agent, AgentRequest } from "@bluechip/domain/agents/Agent"
-import { Conflict, InvalidSpec, NotFound, SignatureRejected } from "@bluechip/domain/Errors"
+import { Conflict, InvalidSpec, NotFound, SignatureRejected, Unavailable } from "@bluechip/domain/Errors"
 import { RequestId } from "@bluechip/domain/Ids"
 import { AgentSpec, PolicyProblem } from "@bluechip/domain/policies/AgentSpec"
 import { assert, describe, layer } from "@effect/vitest"
@@ -50,6 +50,15 @@ layer(TestAgents.layer, { excludeTestServices: true })("agents", (it) => {
           "gasBudget",
           "anyCall"
         ])
+      }))
+
+    it.effect("503 Unavailable gas: an account without ETH for the network fee", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+
+        const error = yield* Effect.flip((yield* TestAgents).create(user))
+
+        assert.deepStrictEqual({ ...error }, { ...new Unavailable({ dependency: "gas", retryAfterSeconds: null }) })
       }))
 
     it.effect("422 InvalidSpec: the largest trade over the daily budget", () =>

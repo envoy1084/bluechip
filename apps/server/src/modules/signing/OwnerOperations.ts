@@ -10,6 +10,7 @@ import {
   formatUserOperation,
   formatUserOperationRequest,
   getUserOperationHash,
+  InsufficientPrefundError,
   type RpcUserOperation,
   toWebAuthnAccount,
   type UserOperation
@@ -35,6 +36,15 @@ export interface Receipt {
   readonly success: boolean
   readonly txHash: Hex
   readonly logs: ReadonlyArray<Log>
+}
+
+// ERC-4337's AA21: the account couldn't pay the operation's prefund, so it has no ETH for gas and nothing sponsors it.
+// The bundler's code reaches us inside a chain of wrapped errors (Effect's, viem's, Namera's), so every cause is read.
+const paysNoPrefund = (cause: unknown): boolean => {
+  for (let error = cause; error instanceof Error; error = error.cause) {
+    if (error instanceof InsufficientPrefundError || /\bAA21\b/.test(error.message)) return true
+  }
+  return false
 }
 
 /** The user operation's hash as WebAuthn's challenge (base64url of its 32 bytes). */
@@ -77,7 +87,11 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
 
       const unavailable = (cause: unknown) =>
         Effect.logWarning("Owner operation failed", cause).pipe(
-          Effect.andThen(Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: null })))
+          Effect.andThen(
+            Effect.fail(
+              new Unavailable({ dependency: paysNoPrefund(cause) ? "gas" : "chain", retryAfterSeconds: null })
+            )
+          )
         )
 
       // The owner as viem's WebAuthn account: `assertion` is what the user's browser signed, handed to the signing code

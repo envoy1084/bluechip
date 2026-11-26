@@ -187,7 +187,8 @@ export class Internal extends Schema.TaggedError<Internal>("@bluechip/domain/Err
 ) {}
 
 /**
- * A dependency (the chain, quotes, the database, the model) is down; retrying later can succeed.
+ * A dependency (the chain, quotes, the database, the model) is down, or the account has no ETH for Base's network fee
+ * while nothing sponsors it (`gas`); retrying later can succeed.
  *
  * @stability unstable
  * @category errors
@@ -196,7 +197,7 @@ export class Internal extends Schema.TaggedError<Internal>("@bluechip/domain/Err
 export class Unavailable extends Schema.TaggedError<Unavailable>("@bluechip/domain/Errors/Unavailable")(
   "Unavailable",
   {
-    dependency: Schema.Literals(["chain", "quotes", "database", "model"]),
+    dependency: Schema.Literals(["chain", "quotes", "database", "model", "gas"]),
     retryAfterSeconds: Schema.NullOr(Schema.Int)
   },
   { httpApiStatus: 503 }
