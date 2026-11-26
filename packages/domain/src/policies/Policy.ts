@@ -28,13 +28,23 @@ export type PolicyKind = typeof PolicyKind.Type
 
 /**
  * What a configuration field holds, for editors and sentences: dollars (USDC units), basis points, a count, the
- * stocks, the direction, the target mix, a switch, or wei.
+ * stocks, the direction, the target mix, a price floor per stock, a switch, or wei.
  *
  * @stability unstable
  * @category schemas
  * @since 0.0.0
  */
-export const FieldUnit = Schema.Literals(["usd", "bps", "count", "stocks", "direction", "mix", "toggle", "wei"])
+export const FieldUnit = Schema.Literals([
+  "usd",
+  "bps",
+  "count",
+  "stocks",
+  "direction",
+  "mix",
+  "floors",
+  "toggle",
+  "wei"
+])
 
 /**
  * @stability unstable

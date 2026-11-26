@@ -1,5 +1,6 @@
 /**
- * How policies say amounts in sentences: whole dollars, percentages from basis points, and lists of names.
+ * How policies say amounts in sentences: whole dollars, prices per share, percentages from basis points, and lists of
+ * names.
  *
  * @since 0.0.0
  */
@@ -14,6 +15,23 @@ const dollarFormat = new Intl.NumberFormat("en-US", { style: "currency", currenc
  */
 export const formatDollars = (amount: bigint | number): string =>
   dollarFormat.format(Number(BigInt(amount) / BigInt(1_000_000)))
+
+const priceFormat = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  trailingZeroDisplay: "stripIfInteger"
+})
+
+/**
+ * A price per share (USD × 1e8, Chainlink's scale) in dollars, with cents when it has them: `$150`, `$152.04`.
+ *
+ * @stability unstable
+ * @category formatting
+ * @since 0.0.0
+ */
+export const formatPrice = (price: bigint): string => priceFormat.format(Number(price) / 1e8)
 
 /**
  * Basis points as a percentage: `2.5%`.

@@ -12,6 +12,7 @@ import { gasBudget } from "./GasBudget.ts"
 import { rebalance } from "./Rebalance.ts"
 import { slippageBudget } from "./SlippageBudget.ts"
 import { stockCap } from "./StockCap.ts"
+import { stopLossFloor } from "./StopLossFloor.ts"
 import { trade } from "./Trade.ts"
 import { tradeSize } from "./TradeSize.ts"
 import { tradesPerDay } from "./TradesPerDay.ts"
@@ -30,6 +31,7 @@ export const POLICIES = [
   stockCap,
   cashReserve,
   rebalance,
+  stopLossFloor,
   slippageBudget,
   tradesPerDay,
   gasBudget,

@@ -1,4 +1,6 @@
+import { Price } from "@bluechip/domain/market/Units"
 import { AgentSpec, type PolicyEntry, type PolicyId } from "@bluechip/domain/policies/AgentSpec"
+import { complete } from "@bluechip/domain/policies/Catalog"
 import { draftSpec } from "@bluechip/domain/policies/Templates"
 
 // $250 a day, $100 a trade, 30% in one stock, 10% cash, 1% slippage a week, 12 trades a day, trades while paused.
@@ -11,6 +13,24 @@ export const REBALANCER = draftSpec({
   stocks: ["NVDA", "AAPL"],
   targets: [{ asset: "NVDA", weight: 3000 }, { asset: "AAPL", weight: 3000 }, { asset: "USDC", weight: 4000 }]
 })
+
+// A balanced Stop-loss guard of NVDA and AAPL, selling NVDA only at or under $150 and AAPL at or under $180.
+export const GUARD = complete(
+  new AgentSpec({
+    policies: [
+      ...draftSpec({ template: "stopLossGuard", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] }).policies,
+      {
+        id: "stopLossFloor",
+        config: {
+          floors: [{ symbol: "NVDA", price: Price.make(15_000_000_000n) }, {
+            symbol: "AAPL",
+            price: Price.make(18_000_000_000n)
+          }]
+        }
+      }
+    ]
+  })
+)
 
 // `spec` with each entry's configuration merged with a change, or added; unlike `SpecEdits.withConfig`, a change
 // names only the fields it sets, and can make a spec `checkSpec` refuses.

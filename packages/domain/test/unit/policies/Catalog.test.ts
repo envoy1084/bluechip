@@ -445,6 +445,7 @@ describe("catalogInfo", () => {
       ["stockCap", false],
       ["cashReserve", false],
       ["rebalance", false],
+      ["stopLossFloor", false],
       ["slippageBudget", false],
       ["tradesPerDay", false],
       ["gasBudget", true],

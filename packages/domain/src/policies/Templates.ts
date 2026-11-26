@@ -50,7 +50,7 @@ export type Preset = typeof Preset.Type
 
 /**
  * What a template sets: its direction and trade count, whether it trades while prices are paused, the most it spends
- * a day whatever the preset, and the optional rules it carries.
+ * a day whatever the preset, the optional rules it carries, and the ones the editor offers it without adding them.
  *
  * @stability unstable
  * @category models
@@ -65,6 +65,7 @@ export interface Template {
   readonly tradeWhilePaused: boolean
   readonly maxDailyBudget: bigint
   readonly rules: ReadonlyArray<PolicyId>
+  readonly options: ReadonlyArray<PolicyId>
 }
 
 /**
@@ -83,7 +84,8 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     tradesPerDay: 6,
     tradeWhilePaused: false,
     maxDailyBudget: dollars(2000),
-    rules: ["stockCap", "cashReserve", "rebalance", "slippageBudget"]
+    rules: ["stockCap", "cashReserve", "rebalance", "slippageBudget"],
+    options: []
   },
   stockPicker: {
     id: "stockPicker",
@@ -93,7 +95,8 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     tradesPerDay: 12,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(2000),
-    rules: ["stockCap", "cashReserve", "slippageBudget"]
+    rules: ["stockCap", "cashReserve", "slippageBudget"],
+    options: []
   },
   weeklyBuyer: {
     id: "weeklyBuyer",
@@ -103,7 +106,8 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     tradesPerDay: 1,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(500),
-    rules: ["stockCap", "cashReserve", "slippageBudget"]
+    rules: ["stockCap", "cashReserve", "slippageBudget"],
+    options: []
   },
   stopLossGuard: {
     id: "stopLossGuard",
@@ -113,7 +117,8 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     tradesPerDay: 4,
     tradeWhilePaused: true,
     maxDailyBudget: BigInt(0),
-    rules: ["slippageBudget"]
+    rules: ["slippageBudget"],
+    options: ["stopLossFloor"]
   }
 }
 
@@ -199,7 +204,8 @@ export class TemplateInfo extends Schema.Class<TemplateInfo>("@bluechip/domain/p
   title: Schema.String,
   summary: Schema.String,
   direction: Direction,
-  rules: Schema.Array(PolicyId)
+  rules: Schema.Array(PolicyId),
+  options: Schema.Array(PolicyId)
 }) {}
 
 /**
@@ -211,8 +217,8 @@ export class TemplateInfo extends Schema.Class<TemplateInfo>("@bluechip/domain/p
  */
 export const templateInfos = (): ReadonlyArray<TemplateInfo> =>
   TemplateId.literals.map((id) => {
-    const { direction, rules, summary, title } = TEMPLATES[id]
-    return new TemplateInfo({ id, title, summary, direction, rules })
+    const { direction, options, rules, summary, title } = TEMPLATES[id]
+    return new TemplateInfo({ id, title, summary, direction, rules, options })
   })
 
 /**
