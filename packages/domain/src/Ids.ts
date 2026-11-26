@@ -411,3 +411,60 @@ export const NewsItemId = typeId("news").pipe(
  * @since 0.0.0
  */
 export type NewsItemId = typeof NewsItemId.Type
+
+/**
+ * A conversation's rolling summary.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const SummaryId = typeId("summary").pipe(
+  Schema.brand("SummaryId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/SummaryId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type SummaryId = typeof SummaryId.Type
+
+/**
+ * An entry of an agent's journal.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const JournalEntryId = typeId("journal").pipe(
+  Schema.brand("JournalEntryId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/JournalEntryId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type JournalEntryId = typeof JournalEntryId.Type
+
+/**
+ * A document of bluechip's knowledge: a help article or a stock's facts.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const DocumentId = typeId("document").pipe(
+  Schema.brand("DocumentId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/DocumentId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type DocumentId = typeof DocumentId.Type

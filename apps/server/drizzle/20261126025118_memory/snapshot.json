@@ -1,0 +1,1561 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "33227be2-7eef-4b8b-8808-0b80d277d834",
+  "prevIds": [
+    "5f8326ea-39c3-4f12-b4fc-25b1d50cff27"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "agent_journal"
+      ],
+      "writes": [
+        "s|tbl|public.agent_journal",
+        "n|tbl|public.agent_journal",
+        "e|tbl|public.agent_journal",
+        "n|rel|public.agent_journal",
+        "n|type|public.agent_journal",
+        "n|rel|public.agent_journal_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversation_summaries"
+      ],
+      "writes": [
+        "s|tbl|public.conversation_summaries",
+        "n|tbl|public.conversation_summaries",
+        "e|tbl|public.conversation_summaries",
+        "n|rel|public.conversation_summaries",
+        "n|type|public.conversation_summaries",
+        "n|rel|public.conversation_summaries_pkey",
+        "n|rel|public.conversation_summaries_conversation_id_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "memory_uses"
+      ],
+      "writes": [
+        "s|tbl|public.memory_uses",
+        "n|tbl|public.memory_uses",
+        "e|tbl|public.memory_uses",
+        "n|rel|public.memory_uses",
+        "n|type|public.memory_uses",
+        "n|rel|public.memory_uses_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|tbl|public.recall_entries",
+        "n|tbl|public.recall_entries",
+        "e|tbl|public.recall_entries",
+        "n|rel|public.recall_entries",
+        "n|type|public.recall_entries",
+        "n|rel|public.recall_entries_pkey",
+        "n|rel|public.recall_entries_memory_id_key",
+        "n|rel|public.recall_entries_message_id_key",
+        "n|rel|public.recall_entries_summary_id_key",
+        "n|rel|public.recall_entries_journal_id_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "agent_journal",
+        "agent_journal_agent_at_idx"
+      ],
+      "writes": [
+        "s|idx|public.agent_journal_agent_at_idx",
+        "n|idx|public.agent_journal_agent_at_idx",
+        "e|idx|public.agent_journal_agent_at_idx",
+        "n|rel|public.agent_journal_agent_at_idx"
+      ],
+      "reads": [
+        "n|tbl|public.agent_journal",
+        "n|sch|public",
+        "n|col|public.agent_journal.agent_id",
+        "n|col|public.agent_journal.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "recall_entries",
+        "recall_entries_user_kind_idx"
+      ],
+      "writes": [
+        "s|idx|public.recall_entries_user_kind_idx",
+        "n|idx|public.recall_entries_user_kind_idx",
+        "e|idx|public.recall_entries_user_kind_idx",
+        "n|rel|public.recall_entries_user_kind_idx"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|col|public.recall_entries.user_id",
+        "n|col|public.recall_entries.kind"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "recall_entries",
+        "recall_entries_embedding_idx"
+      ],
+      "writes": [
+        "s|idx|public.recall_entries_embedding_idx",
+        "n|idx|public.recall_entries_embedding_idx",
+        "e|idx|public.recall_entries_embedding_idx",
+        "n|rel|public.recall_entries_embedding_idx"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|col|public.recall_entries.embedding"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "recall_entries",
+        "recall_entries_text_search_idx"
+      ],
+      "writes": [
+        "s|idx|public.recall_entries_text_search_idx",
+        "n|idx|public.recall_entries_text_search_idx",
+        "e|idx|public.recall_entries_text_search_idx",
+        "n|rel|public.recall_entries_text_search_idx"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|col|public.recall_entries.text_search"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "agent_journal"
+      ],
+      "writes": [
+        "s|fk|public.agent_journal.agent_journal_user_id_users_id_fkey",
+        "n|fk|public.agent_journal.agent_journal_user_id_users_id_fkey",
+        "e|fk|public.agent_journal.agent_journal_user_id_users_id_fkey",
+        "n|con|public.agent_journal.agent_journal_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.agent_journal",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.agent_journal.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "agent_journal"
+      ],
+      "writes": [
+        "s|fk|public.agent_journal.agent_journal_agent_id_agents_id_fkey",
+        "n|fk|public.agent_journal.agent_journal_agent_id_agents_id_fkey",
+        "e|fk|public.agent_journal.agent_journal_agent_id_agents_id_fkey",
+        "n|con|public.agent_journal.agent_journal_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.agent_journal",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.agent_journal.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversation_summaries"
+      ],
+      "writes": [
+        "s|fk|public.conversation_summaries.conversation_summaries_user_id_users_id_fkey",
+        "n|fk|public.conversation_summaries.conversation_summaries_user_id_users_id_fkey",
+        "e|fk|public.conversation_summaries.conversation_summaries_user_id_users_id_fkey",
+        "n|con|public.conversation_summaries.conversation_summaries_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.conversation_summaries",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.conversation_summaries.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversation_summaries"
+      ],
+      "writes": [
+        "s|fk|public.conversation_summaries.conversation_summaries_conversation_id_conversations_id_fkey",
+        "n|fk|public.conversation_summaries.conversation_summaries_conversation_id_conversations_id_fkey",
+        "e|fk|public.conversation_summaries.conversation_summaries_conversation_id_conversations_id_fkey",
+        "n|con|public.conversation_summaries.conversation_summaries_conversation_id_conversations_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.conversation_summaries",
+        "n|sch|public",
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.conversation_summaries.conversation_id",
+        "n|col|public.conversations.id",
+        "e|uniqueness|public.conversations.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversation_summaries"
+      ],
+      "writes": [
+        "s|fk|public.conversation_summaries.conversation_summaries_through_message_id_messages_id_fkey",
+        "n|fk|public.conversation_summaries.conversation_summaries_through_message_id_messages_id_fkey",
+        "e|fk|public.conversation_summaries.conversation_summaries_through_message_id_messages_id_fkey",
+        "n|con|public.conversation_summaries.conversation_summaries_through_message_id_messages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.conversation_summaries",
+        "n|sch|public",
+        "n|tbl|public.messages",
+        "n|sch|public",
+        "n|col|public.conversation_summaries.through_message_id",
+        "n|col|public.messages.id",
+        "e|uniqueness|public.messages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "memory_uses"
+      ],
+      "writes": [
+        "s|fk|public.memory_uses.memory_uses_memory_id_memories_id_fkey",
+        "n|fk|public.memory_uses.memory_uses_memory_id_memories_id_fkey",
+        "e|fk|public.memory_uses.memory_uses_memory_id_memories_id_fkey",
+        "n|con|public.memory_uses.memory_uses_memory_id_memories_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.memory_uses",
+        "n|sch|public",
+        "n|tbl|public.memories",
+        "n|sch|public",
+        "n|col|public.memory_uses.memory_id",
+        "n|col|public.memories.id",
+        "e|uniqueness|public.memories.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "memory_uses"
+      ],
+      "writes": [
+        "s|fk|public.memory_uses.memory_uses_message_id_messages_id_fkey",
+        "n|fk|public.memory_uses.memory_uses_message_id_messages_id_fkey",
+        "e|fk|public.memory_uses.memory_uses_message_id_messages_id_fkey",
+        "n|con|public.memory_uses.memory_uses_message_id_messages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.memory_uses",
+        "n|sch|public",
+        "n|tbl|public.messages",
+        "n|sch|public",
+        "n|col|public.memory_uses.message_id",
+        "n|col|public.messages.id",
+        "e|uniqueness|public.messages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_user_id_users_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_user_id_users_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_user_id_users_id_fkey",
+        "n|con|public.recall_entries.recall_entries_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.recall_entries.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_agent_id_agents_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_agent_id_agents_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_agent_id_agents_id_fkey",
+        "n|con|public.recall_entries.recall_entries_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.recall_entries.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_memory_id_memories_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_memory_id_memories_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_memory_id_memories_id_fkey",
+        "n|con|public.recall_entries.recall_entries_memory_id_memories_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.memories",
+        "n|sch|public",
+        "n|col|public.recall_entries.memory_id",
+        "n|col|public.memories.id",
+        "e|uniqueness|public.memories.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_message_id_messages_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_message_id_messages_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_message_id_messages_id_fkey",
+        "n|con|public.recall_entries.recall_entries_message_id_messages_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.messages",
+        "n|sch|public",
+        "n|col|public.recall_entries.message_id",
+        "n|col|public.messages.id",
+        "e|uniqueness|public.messages.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_summary_id_conversation_summaries_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_summary_id_conversation_summaries_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_summary_id_conversation_summaries_id_fkey",
+        "n|con|public.recall_entries.recall_entries_summary_id_conversation_summaries_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.conversation_summaries",
+        "n|sch|public",
+        "n|col|public.recall_entries.summary_id",
+        "n|col|public.conversation_summaries.id",
+        "e|uniqueness|public.conversation_summaries.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_journal_id_agent_journal_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_journal_id_agent_journal_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_journal_id_agent_journal_id_fkey",
+        "n|con|public.recall_entries.recall_entries_journal_id_agent_journal_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.agent_journal",
+        "n|sch|public",
+        "n|col|public.recall_entries.journal_id",
+        "n|col|public.agent_journal.id",
+        "e|uniqueness|public.agent_journal.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recall_entries"
+      ],
+      "writes": [
+        "s|fk|public.recall_entries.recall_entries_conversation_id_conversations_id_fkey",
+        "n|fk|public.recall_entries.recall_entries_conversation_id_conversations_id_fkey",
+        "e|fk|public.recall_entries.recall_entries_conversation_id_conversations_id_fkey",
+        "n|con|public.recall_entries.recall_entries_conversation_id_conversations_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recall_entries",
+        "n|sch|public",
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.recall_entries.conversation_id",
+        "n|col|public.conversations.id",
+        "e|uniqueness|public.conversations.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "agent_journal",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "conversation_summaries",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "memory_uses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "recall_entries",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "entry",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "refs",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "conversation_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "through_message_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memory_uses",
+        "name": "memory_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memory_uses",
+        "name": "message_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memory_uses",
+        "name": "at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "memory_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "message_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "summary_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "journal_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "conversation_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "importance",
+        "type": "double precision",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "model",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "embedding",
+        "type": "vector(1024)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "text_search",
+        "type": "tsvector",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": {
+          "as": "to_tsvector('english', text)",
+          "type": "stored"
+        },
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "agent_journal_agent_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "agent_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_user_kind_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_embedding_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "embedding",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": {
+              "name": "vector_cosine_ops",
+              "default": false
+            }
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "hnsw",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_text_search_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "text_search",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "gin",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "agent_journal_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "agent_journal_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "conversation_summaries_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "conversation_summaries_conversation_id_conversations_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "conversation_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "conversations",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "conversation_summaries_through_message_id_messages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "through_message_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "messages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memory_uses",
+        "name": "memory_uses_memory_id_memories_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "memory_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "memories",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memory_uses",
+        "name": "memory_uses_message_id_messages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "message_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "messages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_memory_id_memories_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "memory_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "memories",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_message_id_messages_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "message_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "messages",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_summary_id_conversation_summaries_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "summary_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "conversation_summaries",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_journal_id_agent_journal_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "journal_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agent_journal",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_conversation_id_conversations_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "conversation_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "conversations",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "memory_uses",
+        "name": "memory_uses_pkey",
+        "columns": [
+          "memory_id",
+          "message_id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "agent_journal",
+        "name": "agent_journal_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "conversation_summaries_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversation_summaries",
+        "name": "conversation_summaries_conversation_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "conversation_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_memory_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "memory_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_message_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "message_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_summary_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "summary_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recall_entries",
+        "name": "recall_entries_journal_id_key",
+        "nameExplicit": false,
+        "columns": [
+          "journal_id"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

@@ -150,5 +150,7 @@ account's desk.
 | `ALPACA_FEED`            | `iex`                   | `iex` (free plan) or `sip` (Algo Trader Plus)                    |
 | `ANTHROPIC_API_KEY`      | —                       | Anthropic key (redacted) for the assistant                       |
 | `ASSISTANT_MODEL`        | `claude-sonnet-5-5`     | The assistant's conversation model, and its memory notes         |
-| `ASSISTANT_SMALL_MODEL`  | `claude-haiku-5-5`      | Conversation titles                                              |
+| `ASSISTANT_SMALL_MODEL`  | `claude-haiku-5-5`      | Conversation titles and summaries                                |
 | `ASSISTANT_DAILY_BUDGET` | `1`                     | Each user's assistant budget per UTC day, in dollars             |
+| `VOYAGE_API_KEY`         | required                | Voyage AI key (redacted) for recall and help embeddings          |
+| `EMBEDDING_MODEL`        | `voyage-4`              | The embedding model (1,024 dimensions); a change re-embeds       |

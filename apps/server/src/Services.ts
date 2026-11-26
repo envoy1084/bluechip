@@ -38,8 +38,10 @@ import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
 import { Stocks } from "./modules/market/Stocks.ts"
+import { RecallEmbedCron } from "./modules/memory/EmbedCron.ts"
 import { Memories } from "./modules/memory/Memories.ts"
 import { MemoryExtractor } from "./modules/memory/MemoryExtractor.ts"
+import { RecallIndex } from "./modules/memory/RecallIndex.ts"
 import { SavedTemplates } from "./modules/policies/SavedTemplates.ts"
 import { AccountBalances } from "./modules/portfolio/AccountBalances.ts"
 import { PortfolioSnapshots } from "./modules/portfolio/PortfolioSnapshots.ts"
@@ -55,14 +57,15 @@ import { Namera } from "./platform/namera/Namera.ts"
  * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (`DevChain`
  * only answers on a local chain; the dev endpoints check the network first). Each line
  * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, the
- * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`) and the
- * durable engine.
+ * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`), the
+ * embedder (`Embeddings`) and the durable engine.
  */
 export const ServicesLive = Layer.mergeAll(
   DeskLive,
   ExpireIntentsCron,
   ExpireAgentsCron,
   PortfolioSnapshotCron,
+  RecallEmbedCron,
   Assistant.layer,
   FireAutomationLive,
   PriceWatcher.watch,
@@ -108,6 +111,6 @@ export const ServicesLive = Layer.mergeAll(
     )
   ),
   Layer.provideMerge(
-    Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, DevChain.layer)
+    Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, DevChain.layer, RecallIndex.layer)
   )
 )

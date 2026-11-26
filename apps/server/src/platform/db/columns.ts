@@ -40,3 +40,6 @@ export const jsonbSchema = <S extends Schema.Codec<any, any, never, never>>(sche
     fromDriver: (value) => Schema.decodeUnknownSync(json)(typeof value === "string" ? JSON.parse(value) : value)
   })
 }
+
+/** A `tsvector` for full-text search, kept by Postgres from other columns (`generatedAlwaysAs`); never written. */
+export const tsvector = customType<{ data: string; driverData: string }>({ dataType: () => "tsvector" })

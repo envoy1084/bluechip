@@ -3,7 +3,8 @@
 # money) and Alto, an ERC-4337 bundler, in front of it.
 services:
   postgres:
-    image: postgres:18-alpine
+    # Postgres 18 with pgvector, for the assistant's recall and knowledge (the `vector` extension).
+    image: pgvector/pgvector:0.8.1-pg18-trixie@sha256:2fd905ba95f99a51be207d0ff0b8d5b8538cbce7e9083b3ccfa65b93bb28b938
     environment:
       POSTGRES_USER: bluechip
       POSTGRES_PASSWORD: bluechip

@@ -11,6 +11,7 @@ import { AssistantModels } from "./modules/assistant/AssistantModels.ts"
 import { Alpaca } from "./modules/market/alpaca/Alpaca.ts"
 import { ReferencePrices } from "./modules/market/ReferencePrices.ts"
 import { Database } from "./platform/db/Database.ts"
+import { Embeddings } from "./platform/embeddings/Embeddings.ts"
 import { EngineLive } from "./platform/engine/Engine.ts"
 import { HealthRoutes } from "./platform/http/Health.ts"
 import { OriginCheckMiddleware } from "./platform/http/OriginCheck.ts"
@@ -21,13 +22,13 @@ import { ServicesLive } from "./Services.ts"
 export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware, OriginCheckMiddleware)
 
 /**
- * The server with its market data and the assistant's models given: routes, Node HTTP on `PORT`, the app's services
+ * The server with its market data, the assistant's models and the embedder given: routes, Node HTTP on `PORT`, the app's services
  * (the desk and crons among them) on the durable engine, the database, the chain, config and logging. Namera checks at
  * startup that the bundler and paymaster work together, and refuses to boot otherwise. The browser suite runs it with
  * fixed market data, recorded models and a route of its own (`test/stack/`).
  */
 export const makeServer = <Out, E, RA = never, R = never>(
-  adapters: Layer.Layer<Alpaca | AssistantModels | Out, E, RA>,
+  adapters: Layer.Layer<Alpaca | AssistantModels | Embeddings | Out, E, RA>,
   routes: Layer.Layer<never, never, R> = Layer.empty as Layer.Layer<never, never, R>
 ) =>
   HttpRouter.serve(Layer.merge(Routes, routes)).pipe(
@@ -46,5 +47,5 @@ export const makeServer = <Out, E, RA = never, R = never>(
     Layer.provide(LoggingLive)
   )
 
-/** The server on Alpaca's market data and Anthropic's models. */
-export const ServerLive = makeServer(Layer.merge(Alpaca.layer, AssistantModels.layer))
+/** The server on Alpaca's market data, Anthropic's models and Voyage's embeddings. */
+export const ServerLive = makeServer(Layer.mergeAll(Alpaca.layer, AssistantModels.layer, Embeddings.layer))
