@@ -198,16 +198,16 @@ describe("describeLeg", () => {
 
 describe("describeDecision", () => {
   it.each([
-    { name: "passes", decision: PASSES, expected: "Within the agent's policies: it sends this itself." },
+    { name: "passes", decision: PASSES, expected: "Within its policies, so it sends it itself." },
     {
       name: "over the largest trade",
       decision: OVER,
-      expected: "Over the agent's largest trade ($100): it needs your Face ID."
+      expected: "Over its $100 limit, so it needs your approval."
     },
     {
       name: "asking you first",
       decision: { _tag: "Ask" } as const,
-      expected: "It asks you first: it needs your Face ID."
+      expected: "It asks you first, so it needs your approval."
     },
     {
       name: "refused",

@@ -76,7 +76,7 @@ export const trade = Policy.make({
       label: "Daily budget",
       unit: "usd",
       min: 0,
-      max: Number(dollars(2000)),
+      sliderMax: Number(dollars(2000)),
       step: Number(dollars(10)),
       choices: [100, 250, 1000].map((amount) => Number(dollars(amount)))
     })

@@ -46,11 +46,11 @@ export const describeLeg = (leg: Leg, name: (symbol: StockSymbol) => string): st
 export const describeDecision = (decision: Decision): string => {
   switch (decision._tag) {
     case "Passes":
-      return "Within the agent's policies: it sends this itself."
+      return "Within its policies, so it sends it itself."
     case "OverLargestTrade":
-      return `Over the agent's largest trade (${formatDollars(decision.maxPerTrade)}): it needs your Face ID.`
+      return `Over its ${formatDollars(decision.maxPerTrade)} limit, so it needs your approval.`
     case "Ask":
-      return "It asks you first: it needs your Face ID."
+      return "It asks you first, so it needs your approval."
     case "Refused":
       return `Blocked by ${policyOf(decision.policy).title}: ${decision.message}`
     case "Wait": {

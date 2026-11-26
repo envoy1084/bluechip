@@ -7,7 +7,6 @@
 import * as Schema from "effect/Schema"
 import { formatPercent } from "./Format.ts"
 import * as Policy from "./Policy.ts"
-import { trade } from "./Trade.ts"
 
 /**
  * The collar in basis points, and whether it trades while prices are paused.
@@ -76,10 +75,6 @@ export const fairPrice = Policy.make({
   required: true,
   hidden: false,
   defaults: { collarBps: 100, tradeWhilePaused: true },
-  validate: (config, policies) =>
-    config.tradeWhilePaused && Policy.configOf(policies, trade)?.direction === "rebalance" ?
-      [{ field: "tradeWhilePaused", message: "A Rebalancer only trades while prices are live." }] :
-      [],
   describe: (config) => ({
     can: config.tradeWhilePaused ? ["Trade on weekends and holidays, with a tighter price limit"] : [],
     never: [

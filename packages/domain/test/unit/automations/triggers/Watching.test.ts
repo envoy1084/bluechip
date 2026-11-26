@@ -79,10 +79,22 @@ describe("stepDrift", () => {
       expected: { state: { ...EMPTY_STATE, side: "above", lastWindow: `drift:${AT}` }, fire: `drift:${AT}` }
     },
     {
-      name: "still off target after firing fires nothing",
-      state: { ...EMPTY_STATE, side: "above" },
+      name: "still off target the same UTC day after firing fires nothing",
+      state: { ...EMPTY_STATE, side: "above", lastWindow: "drift:2026-11-30T09:00:00Z" },
       cash: 400,
-      expected: { state: { ...EMPTY_STATE, side: "above" }, fire: null }
+      expected: { state: { ...EMPTY_STATE, side: "above", lastWindow: "drift:2026-11-30T09:00:00Z" }, fire: null }
+    },
+    {
+      name: "still off target on a later UTC day fires again, once",
+      state: { ...EMPTY_STATE, side: "above", lastWindow: "drift:2026-11-29T15:00:00Z" },
+      cash: 400,
+      expected: { state: { ...EMPTY_STATE, side: "above", lastWindow: "drift:2026-11-30" }, fire: "drift:2026-11-30" }
+    },
+    {
+      name: "fired again today already: nothing more today",
+      state: { ...EMPTY_STATE, side: "above", lastWindow: "drift:2026-11-30" },
+      cash: 400,
+      expected: { state: { ...EMPTY_STATE, side: "above", lastWindow: "drift:2026-11-30" }, fire: null }
     },
     {
       name: "back within the 1% band arms it again",

@@ -86,15 +86,17 @@ export const checkSpec = (spec: AgentSpec): ReadonlyArray<PolicyProblem> => {
     }
     for (const [name, field] of Object.entries(policy.fields as Record<string, Policy.Field>)) {
       const value = (entry.config as Record<string, unknown>)[name]
-      if (field.min === undefined || field.max === undefined) continue
+      if (field.min === undefined) continue
       if (typeof value !== "number" && typeof value !== "bigint") continue
-      if (value >= field.min && value <= field.max) continue
-      const range = field.unit === "usd" ?
-        `${formatDollars(field.min)} to ${formatDollars(field.max)}` :
-        field.unit === "bps" ?
-        `${formatPercent(field.min)} to ${formatPercent(field.max)}` :
-        `${field.min} to ${field.max}`
-      problem(entry.id, name, `Pick ${range}.`)
+      if (value >= field.min && (field.max === undefined || value <= field.max)) continue
+      const said = (bound: number) =>
+        field.unit === "usd" ? formatDollars(bound) : field.unit === "bps" ? formatPercent(bound) : String(bound)
+      // A field with no ceiling (a custom amount) only has a floor to say.
+      problem(
+        entry.id,
+        name,
+        field.max === undefined ? `At least ${said(field.min)}.` : `Pick ${said(field.min)} to ${said(field.max)}.`
+      )
     }
     for (const found of policy.validate(entry.config, policies)) {
       problem(entry.id, found.field, found.message)

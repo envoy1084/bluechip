@@ -66,6 +66,10 @@ export interface Template {
   readonly maxDailyBudget: bigint
   readonly rules: ReadonlyArray<PolicyId>
   readonly options: ReadonlyArray<PolicyId>
+  /** The stocks a new agent starts with before you pick: a mix needs some to be a mix. */
+  readonly defaultStocks: ReadonlyArray<StockSymbol>
+  /** Its own budget and largest trade per preset, where the shared ones are too small for it. */
+  readonly presets?: Partial<Record<Preset, { readonly dailyBudget: bigint; readonly maxPerTrade: bigint }>>
 }
 
 /**
@@ -81,44 +85,54 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     title: "Rebalancer",
     summary: "Keeps your target mix, trading only to bring you back to it.",
     direction: "rebalance",
-    tradesPerDay: 6,
-    tradeWhilePaused: false,
-    maxDailyBudget: dollars(2000),
+    tradesPerDay: 500,
+    tradeWhilePaused: true,
+    maxDailyBudget: dollars(5000),
     rules: ["stockCap", "cashReserve", "rebalance", "slippageBudget"],
-    options: []
+    options: [],
+    defaultStocks: ["AAPL", "MSFT", "NVDA", "AMZN"],
+    // A rebalance moves a share of everything at once: room for it in a day, in a few trades.
+    presets: {
+      conservative: { dailyBudget: dollars(500), maxPerTrade: dollars(200) },
+      balanced: { dailyBudget: dollars(2000), maxPerTrade: dollars(500) },
+      active: { dailyBudget: dollars(5000), maxPerTrade: dollars(1000) }
+    }
   },
   stockPicker: {
     id: "stockPicker",
     title: "Stock picker",
     summary: "Buys and sells a few stocks you pick.",
     direction: "both",
-    tradesPerDay: 12,
+    tradesPerDay: 500,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(2000),
     rules: ["stockCap", "cashReserve", "slippageBudget"],
-    options: []
+    options: [],
+    defaultStocks: []
   },
   weeklyBuyer: {
     id: "weeklyBuyer",
     title: "Weekly buyer",
     summary: "Buys the stocks you pick on a schedule.",
     direction: "buy",
-    tradesPerDay: 1,
+    tradesPerDay: 500,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(500),
     rules: ["stockCap", "cashReserve", "slippageBudget"],
-    options: []
+    options: [],
+    defaultStocks: []
   },
   stopLossGuard: {
     id: "stopLossGuard",
     title: "Stop-loss guard",
     summary: "Only sells, to protect what you hold.",
     direction: "sell",
-    tradesPerDay: 4,
+    tradesPerDay: 500,
     tradeWhilePaused: true,
     maxDailyBudget: BigInt(0),
     rules: ["slippageBudget"],
-    options: ["stopLossFloor"]
+    options: ["stopLossFloor"],
+    defaultStocks: []
   }
 }
 
@@ -168,7 +182,7 @@ export const draftSpec = (options: {
   readonly targets: ReadonlyArray<Target>
 }): AgentSpec => {
   const template = TEMPLATES[options.template]
-  const preset = PRESETS[options.preset]
+  const preset = { ...PRESETS[options.preset], ...template.presets?.[options.preset] }
   const dailyBudget = Usdc.make(min(preset.dailyBudget, template.maxDailyBudget))
   const maxPerTrade = Usdc.make(dailyBudget > BigInt(0) ? min(preset.maxPerTrade, dailyBudget) : preset.maxPerTrade)
 

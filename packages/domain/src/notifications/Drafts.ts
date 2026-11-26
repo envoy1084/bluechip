@@ -109,7 +109,7 @@ export const notificationOfIntent = (intent: Intent, names: Names): Notification
     case "needsApproval":
       return intentDraft(intent, {
         kind: "approvalNeeded",
-        title: `${names.agent ?? "A trade"} needs your OK`,
+        title: `${names.agent ?? "A trade"} needs your approval`,
         body: `${trade}. Approve or decline it in bluechip with Face ID.`,
         link: APPROVALS_LINK
       })
@@ -145,7 +145,7 @@ export const notificationOfWaiting = (intent: Intent, names: Names): Notificatio
 })
 
 /**
- * A trade waiting for your OK that expires within the hour.
+ * A trade waiting for your approval that expires within the hour.
  *
  * @stability unstable
  * @category drafts
@@ -154,7 +154,7 @@ export const notificationOfWaiting = (intent: Intent, names: Names): Notificatio
 export const notificationOfExpiring = (intent: Intent, names: Names): NotificationDraft => ({
   kind: "approvalExpiring",
   title: `${names.agent ?? "A trade"} expires within the hour`,
-  body: `${describeLeg(intent.leg, names.stock)} waits for your OK. Approve or decline it in bluechip.`,
+  body: `${describeLeg(intent.leg, names.stock)} waits for your approval. Approve or decline it in bluechip.`,
   link: APPROVALS_LINK,
   subjectType: "intent",
   subjectId: intent.id,

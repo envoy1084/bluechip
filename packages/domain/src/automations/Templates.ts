@@ -44,7 +44,7 @@ export const defaultAutomations = (
   const limits = limitsOf(spec)!
   switch (template) {
     case "weeklyBuyer": {
-      // A weekday each, so each day's buy is the one trade a day it makes; its largest trade, within its budget.
+      // A weekday each, so the week's buys spread out; its largest trade, within its budget.
       const amount = Usdc.make(
         limits.maxPerTrade === null || limits.maxPerTrade > limits.dailyBudget ? limits.dailyBudget : limits.maxPerTrade
       )

@@ -42,14 +42,17 @@ describe("checkSpec", () => {
       expected: [["trade", "stocks", "Each stock can be picked once."]]
     },
     {
-      name: "a daily budget at the $2,000 ceiling",
-      spec: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(2_000_000_000n) } }),
+      name: "a daily budget of $10,000, past the slider",
+      spec: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(10_000_000_000n) } }, {
+        id: "tradeSize",
+        config: { maxPerTrade: Usdc.make(100_000_000n) }
+      }),
       expected: []
     },
     {
-      name: "a daily budget a unit over the $2,000 ceiling",
-      spec: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(2_000_000_001n) } }),
-      expected: [["trade", "dailyBudget", "Pick $0 to $2,000."]]
+      name: "a daily budget of $50,000,000: no ceiling on a custom amount",
+      spec: changed(PICKER, { id: "trade", config: { dailyBudget: Usdc.make(50_000_000_000_000n) } }),
+      expected: []
     },
     {
       name: "a seller with a daily budget",
@@ -79,7 +82,7 @@ describe("checkSpec", () => {
     {
       name: "the largest trade a unit under $10",
       spec: changed(PICKER, { id: "tradeSize", config: { maxPerTrade: Usdc.make(9_999_999n) } }),
-      expected: [["tradeSize", "maxPerTrade", "Pick $10 to $1,000."]]
+      expected: [["tradeSize", "maxPerTrade", "At least $10."]]
     },
     {
       name: "the largest trade over the daily budget",
@@ -108,9 +111,9 @@ describe("checkSpec", () => {
       expected: [["fairPrice", "collarBps", "Pick 0.1% to 5%."]]
     },
     {
-      name: "a Rebalancer trading while prices are paused",
+      name: "a Rebalancer trading while prices are paused, under the tighter limit",
       spec: changed(REBALANCER, { id: "fairPrice", config: { tradeWhilePaused: true } }),
-      expected: [["fairPrice", "tradeWhilePaused", "A Rebalancer only trades while prices are live."]]
+      expected: []
     },
     {
       name: "max in one stock under 5%",
@@ -128,9 +131,9 @@ describe("checkSpec", () => {
       expected: []
     },
     {
-      name: "49 trades a day",
-      spec: changed(PICKER, { id: "tradesPerDay", config: { count: 49 } }),
-      expected: [["tradesPerDay", "count", "Pick 1 to 48."]]
+      name: "2,001 trades a day",
+      spec: changed(PICKER, { id: "tradesPerDay", config: { count: 2001 } }),
+      expected: [["tradesPerDay", "count", "Pick 1 to 2000."]]
     },
     {
       name: "an empty target mix",
@@ -347,7 +350,7 @@ describe("describeSpec", () => {
         "Spend up to $250 a day",
         "Trade up to $100 at a time, and ask you before anything bigger",
         "Trade on weekends and holidays, with a tighter price limit",
-        "Trade 12 times a day at most"
+        "Trade 500 times a day at most"
       ],
       never: [
         "Send money out of your account",
@@ -381,17 +384,17 @@ describe("describeSpec", () => {
     assert.deepStrictEqual({ can: description.can, never: description.never }, {
       can: [
         "Trade Nvidia, Apple, Tesla and 1 more, only to move you back to your target mix",
-        "Spend up to $100 a day",
-        "Trade up to $50 at a time, and ask you before anything bigger",
+        "Spend up to $500 a day",
+        "Trade up to $200 at a time, and ask you before anything bigger",
+        "Trade on weekends and holidays, with a tighter price limit",
         "Start rebalancing once your mix is 5% off target",
-        "Trade 6 times a day at most"
+        "Trade 500 times a day at most"
       ],
       never: [
         "Send money out of your account",
         "Trade stocks you didn't pick",
         "Make a trade under $5",
         "Trade more than 1% away from Chainlink's price",
-        "Trade while prices are paused",
         "Put over 20% of your money in one stock",
         "Leave less than 20% in cash",
         "Trade away from your target mix",

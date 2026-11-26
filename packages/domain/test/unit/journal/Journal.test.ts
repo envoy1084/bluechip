@@ -18,7 +18,7 @@ describe("journalOfIntent", () => {
       {
         status: "needsApproval",
         decision: { _tag: "OverLargestTrade", maxPerTrade: Usdc.make(25_000_000n) },
-        expected: "Buy $50.00 of NVIDIA. Over the agent's largest trade ($25): it needs your Face ID. Why: Dip."
+        expected: "Buy $50.00 of NVIDIA. Over its $25 limit, so it needs your approval. Why: Dip."
       },
       {
         status: "waiting",

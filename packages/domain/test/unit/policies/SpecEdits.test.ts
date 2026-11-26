@@ -64,12 +64,12 @@ describe("setStocks", () => {
 })
 
 describe("setDirection", () => {
-  it("rebalancing adds a target mix and stops trading on paused prices", () => {
+  it("rebalancing adds a target mix and keeps its paused-price setting", () => {
     const spec = setDirection(PICKER, "rebalance")
 
     assert.deepStrictEqual(
       [hasPolicy(spec, "rebalance"), configOf(spec.policies, fairPrice), checkSpec(spec)],
-      [true, { collarBps: 100, tradeWhilePaused: false }, []]
+      [true, configOf(PICKER.policies, fairPrice), []]
     )
   })
 

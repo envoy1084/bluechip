@@ -310,12 +310,12 @@ layer(
             [postedHere.map((message) => message.text), postedThere.map((message) => message.text), deliveries],
             [
               [
-                "**Buy $150.00 of NVIDIA**. Over the agent's largest trade ($100): it needs your Face ID. Approve it " +
+                "**Buy $150.00 of NVIDIA**. Over its $100 limit, so it needs your approval. Approve it " +
                 "in bluechip.\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals",
                 "It needs your Face ID."
               ],
               [
-                `**${agent.name} needs your OK**\nBuy $150.00 of NVIDIA. Approve or decline it in bluechip with Face ` +
+                `**${agent.name} needs your approval**\nBuy $150.00 of NVIDIA. Approve or decline it in bluechip with Face ` +
                 "ID.\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals"
               ],
               [{ channel: "push", status: "skipped", error: null }, {

@@ -61,7 +61,7 @@ export const stopLossFloor = Policy.make({
   id: "stopLossFloor",
   kind: "rule",
   title: "Stop-loss floor",
-  summary: "The price each stock has to fall to before it may sell: it never sells above your floor.",
+  summary: "Sells a stock only at or under the floor you set.",
   aliases: ["stop loss", "sell only below", "floor price", "stop price", "sell trigger"],
   examples: ["Only sell Nvidia if it falls under $150", "Sell Apple once it drops below $180"],
   config: StopLossFloorConfig,

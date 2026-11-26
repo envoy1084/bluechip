@@ -44,7 +44,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
         BigInt(250_000_000)
       ])
       assert.isTrue(slippage!.policy === "slippageBudget" && slippage!.used > 0 && slippage!.used < BigInt(500_000))
-      assert.deepStrictEqual([trades?.policy, trades?.used, trades?.limit], ["tradesPerDay", BigInt(1), BigInt(12)])
+      assert.deepStrictEqual([trades?.policy, trades?.used, trades?.limit], ["tradesPerDay", BigInt(1), BigInt(500)])
       assert.isTrue(gas!.policy === "gasBudget" && gas!.used > 0)
     }))
 

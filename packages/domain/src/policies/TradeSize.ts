@@ -48,7 +48,7 @@ export const tradeSize = Policy.make({
       label: "Ask me above",
       unit: "usd",
       min: Number(dollars(10)),
-      max: Number(dollars(1000)),
+      sliderMax: Number(dollars(1000)),
       step: Number(dollars(10)),
       choices: [50, 100, 400].map((amount) => Number(dollars(amount)))
     }),
@@ -56,7 +56,7 @@ export const tradeSize = Policy.make({
       label: "Smallest trade",
       unit: "usd",
       min: Number(dollars(1)),
-      max: Number(dollars(100)),
+      sliderMax: Number(dollars(100)),
       step: Number(dollars(1))
     })
   },

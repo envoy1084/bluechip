@@ -67,7 +67,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
   kind({
     kind: "approvalNeeded",
     group: "trades",
-    label: "An agent needs your OK",
+    label: "An agent needs your approval",
     description: "A trade over an agent's largest trade, or one an automation asks you about.",
     severity: "important",
     defaults: EVERYWHERE
@@ -76,7 +76,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     kind: "approvalExpiring",
     group: "trades",
     label: "An approval is about to expire",
-    description: "An hour before a trade waiting for your OK expires.",
+    description: "An hour before a trade waiting for your approval expires.",
     severity: "important",
     defaults: EVERYWHERE
   }),

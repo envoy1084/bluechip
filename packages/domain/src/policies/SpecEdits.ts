@@ -11,7 +11,6 @@ import { Usdc } from "../market/Units.ts"
 import { AgentSpec, POLICIES, type PolicyEntry, type PolicyId } from "./AgentSpec.ts"
 import { cashReserve } from "./CashReserve.ts"
 import { complete, policyOf } from "./Catalog.ts"
-import { fairPrice } from "./FairPrice.ts"
 import { configOf, type PolicyType } from "./Policy.ts"
 import { rebalance, type Target } from "./Rebalance.ts"
 import { stockCap } from "./StockCap.ts"
@@ -122,9 +121,7 @@ export const setDirection = (spec: AgentSpec, direction: Direction): AgentSpec =
   const next = update(spec, trade, (config) => ({ ...config, direction, dailyBudget: budget }))
 
   if (direction !== "rebalance") return drop(next, "rebalance")
-  return resetTargets(
-    update(insert(next, "rebalance"), fairPrice, (config) => ({ ...config, tradeWhilePaused: false }))
-  )
+  return resetTargets(insert(next, "rebalance"))
 }
 
 /**

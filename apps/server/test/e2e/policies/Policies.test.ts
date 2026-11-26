@@ -134,11 +134,11 @@ layer(TestUsers.layer, { excludeTestServices: true })("policies", (it) => {
         const { api } = yield* (yield* TestUsers).signUp
 
         const checked = yield* api.policies.check({
-          payload: { spec: changed(PICKER, { id: "tradesPerDay", config: { count: 49 } }), before: null }
+          payload: { spec: changed(PICKER, { id: "tradesPerDay", config: { count: 2001 } }), before: null }
         })
 
         assert.deepStrictEqual(checked.problems, [
-          new PolicyProblem({ policy: "tradesPerDay", field: "count", message: "Pick 1 to 48." })
+          new PolicyProblem({ policy: "tradesPerDay", field: "count", message: "Pick 1 to 2000." })
         ])
       }))
   })

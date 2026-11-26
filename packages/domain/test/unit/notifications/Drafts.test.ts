@@ -74,7 +74,7 @@ describe("notificationOfIntent", () => {
         intent: intent({ status: "needsApproval" }),
         expected: {
           kind: "approvalNeeded",
-          title: "Tech picker needs your OK",
+          title: "Tech picker needs your approval",
           body: "Buy $50.00 of NVIDIA. Approve or decline it in bluechip with Face ID.",
           link: "/home?sheet=approvals",
           subjectType: "intent",
@@ -153,7 +153,7 @@ describe("notificationOfExpiring", () => {
     assert.deepStrictEqual(notificationOfExpiring(intent({ status: "needsApproval" }), names), {
       kind: "approvalExpiring",
       title: "Tech picker expires within the hour",
-      body: "Buy $50.00 of NVIDIA waits for your OK. Approve or decline it in bluechip.",
+      body: "Buy $50.00 of NVIDIA waits for your approval. Approve or decline it in bluechip.",
       link: "/home?sheet=approvals",
       subjectType: "intent",
       subjectId: "intent_1",

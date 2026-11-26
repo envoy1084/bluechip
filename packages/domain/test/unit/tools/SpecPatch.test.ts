@@ -94,12 +94,12 @@ describe("applyPatch", () => {
 
   it("a setting out of range is reported by the catalog's check", () => {
     const { problems } = applyPatch(PICKER, {
-      settings: [{ policy: "tradeSize", field: "maxPerTrade", value: 5000 }]
+      settings: [{ policy: "tradeSize", field: "maxPerTrade", value: 2 }]
     })
 
-    assert.deepStrictEqual(problems.map((problem) => [problem.policy, problem.field]), [
-      ["tradeSize", "maxPerTrade"],
-      ["tradeSize", "maxPerTrade"]
+    assert.deepStrictEqual(problems.map((problem) => [problem.policy, problem.field, problem.message]), [
+      ["tradeSize", "maxPerTrade", "At least $10."],
+      ["tradeSize", "minPerTrade", "Can't be more than the largest trade."]
     ])
   })
 

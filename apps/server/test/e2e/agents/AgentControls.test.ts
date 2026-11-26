@@ -109,7 +109,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("agent controls", (it) =>
         assert.deepStrictEqual(usage.policies, [
           new PolicyUsage({ policy: "trade", unit: "usd", used: BigInt(0), limit: BigInt(250_000_000) }),
           new PolicyUsage({ policy: "slippageBudget", unit: "usd", used: BigInt(0), limit: null }),
-          new PolicyUsage({ policy: "tradesPerDay", unit: "count", used: BigInt(0), limit: BigInt(12) }),
+          new PolicyUsage({ policy: "tradesPerDay", unit: "count", used: BigInt(0), limit: BigInt(500) }),
           new PolicyUsage({ policy: "gasBudget", unit: "wei", used: BigInt(0), limit: BigInt(50_000_000_000_000_000) })
         ])
       }))

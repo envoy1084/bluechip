@@ -47,7 +47,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("AgentJournal", (it) => {
         const entries = yield* (yield* AgentJournal).read({ id: user.id, account: user.account }, agent.id)
 
         assert.deepStrictEqual(entries.map((entry) => entry.entry), [
-          "Buy $150.00 of NVIDIA. Over the agent's largest trade ($100): it needs your Face ID. " +
+          "Buy $150.00 of NVIDIA. Over its $100 limit, so it needs your approval. " +
           "Why: You asked this agent to trade."
         ])
       }))

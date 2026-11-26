@@ -66,6 +66,11 @@ export class Field extends Schema.Class<Field>("@bluechip/domain/policies/Policy
   unit: FieldUnit,
   min: Schema.optional(Schema.Number),
   max: Schema.optional(Schema.Number),
+  /**
+   * Where a slider ends: the range most people pick from. A bigger value is typed as a custom amount, up to `max` when
+   * there is one (no `max`: no ceiling).
+   */
+  sliderMax: Schema.optional(Schema.Number),
   step: Schema.optional(Schema.Number),
   choices: Schema.optional(Schema.Array(Schema.Number))
 }) {}

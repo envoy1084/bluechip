@@ -2,7 +2,6 @@ import { fairPrice } from "@bluechip/domain/policies/FairPrice"
 import { formatPercent } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { withConfig } from "@bluechip/domain/policies/SpecEdits"
-import { trade } from "@bluechip/domain/policies/Trade"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
 import type { EditorProps } from "./editorProps.ts"
 
@@ -12,7 +11,6 @@ const COLLARS: Readonly<Record<number, string>> = { 50: "Strict", 100: "Standard
 export function FairPriceEditor({ context, problemOf, onSpecChange }: EditorProps) {
   const config = configOf(context.spec.policies, fairPrice)
   if (config === undefined) return null
-  const rebalances = configOf(context.spec.policies, trade)?.direction === "rebalance"
   const set = (patch: Partial<typeof config>) =>
     onSpecChange(withConfig(context.spec, "fairPrice", { ...config, ...patch }))
 
@@ -32,10 +30,7 @@ export function FairPriceEditor({ context, problemOf, onSpecChange }: EditorProp
         field={fairPrice.fields.tradeWhilePaused}
         value={config.tradeWhilePaused}
         context={context}
-        disabled={rebalances && !config.tradeWhilePaused}
-        help={rebalances ?
-          "A Rebalancer only trades while prices are live." :
-          "On weekends and holidays, within half its price protection."}
+        help="On weekends and holidays, within half its price protection."
         problem={problemOf("tradeWhilePaused")}
         onChange={(tradeWhilePaused) => set({ tradeWhilePaused: tradeWhilePaused as boolean })}
       />

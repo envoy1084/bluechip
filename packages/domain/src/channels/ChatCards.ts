@@ -176,13 +176,13 @@ const controlResult = (card: Extract<Card, { readonly _tag: "AgentControl" }>): 
 /**
  * A notification as a chat message: its title in bold, its sentence, and a link to its page.
  *
- * **Example** (A trade waiting for your OK)
+ * **Example** (A trade waiting for your approval)
  *
  * ```ts import.meta.vitest
  * import { chatNotification } from "@bluechip/domain/channels/ChatCards"
  *
- * chatNotification({ kind: "approvalNeeded", title: "Tech picker needs your OK", body: "Buy $150.00 of NVIDIA.", link: "/home?sheet=approvals" } as never)
- * // => { markdown: "**Tech picker needs your OK**\nBuy $150.00 of NVIDIA.", actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }, { _tag: "PauseAll" }] }
+ * chatNotification({ kind: "approvalNeeded", title: "Tech picker needs your approval", body: "Buy $150.00 of NVIDIA.", link: "/home?sheet=approvals" } as never)
+ * // => { markdown: "**Tech picker needs your approval**\nBuy $150.00 of NVIDIA.", actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }, { _tag: "PauseAll" }] }
  * ```
  *
  * @stability unstable

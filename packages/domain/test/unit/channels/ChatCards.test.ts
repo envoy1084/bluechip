@@ -37,8 +37,7 @@ describe("chatCard", () => {
           }
         }),
         expected: {
-          markdown:
-            "**Buy $50.00 of NVIDIA**. Over the agent's largest trade ($25): it needs your Face ID. Approve it in bluechip.",
+          markdown: "**Buy $50.00 of NVIDIA**. Over its $25 limit, so it needs your approval. Approve it in bluechip.",
           actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }]
         }
       },

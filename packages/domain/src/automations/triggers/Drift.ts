@@ -27,7 +27,8 @@ export const DriftConfig = Schema.Struct({})
 export const drift = Trigger.make({
   type: "drift",
   watcher: "portfolio",
-  marketHours: true,
+  // Drift runs any time by default: a Rebalancer may trade while prices are paused, under its tighter price limit.
+  marketHours: false,
   asks: false,
   title: "Mix drifts",
   summary: "When your mix drifts from the agent's target mix by more than its trigger.",
@@ -68,8 +69,9 @@ export const driftOf = (portfolio: Pick<Portfolio, "value" | "cash" | "holdings"
 }
 
 /**
- * What a portfolio change does to a `drift` automation: past the trigger it fires once; back within the band it
- * is armed again.
+ * What a portfolio change does to a `drift` automation: past the trigger it fires; still past it on a later UTC day it
+ * fires again, once that day, so a rebalance the daily budget cut short carries on; back within the band it is armed
+ * again.
  *
  * @stability unstable
  * @category watching
@@ -83,8 +85,11 @@ export const stepDrift = (
 ): Trigger.Step => {
   const gap = driftOf(portfolio, config)
   if (gap >= config.triggerBps) {
-    if (state.side === "above") return { state, fire: null }
-    return Trigger.fireOnce({ ...state, side: "above" }, `drift:${at}`)
+    if (state.side !== "above") return Trigger.fireOnce({ ...state, side: "above" }, `drift:${at}`)
+    const day = at.slice(0, 10)
+    return state.lastWindow?.startsWith(`drift:${day}`) === true ?
+      { state, fire: null } :
+      Trigger.fireOnce(state, `drift:${day}`)
   }
   return { state: gap < band(config) ? { ...state, side: "below" } : state, fire: null }
 }

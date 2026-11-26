@@ -37,11 +37,11 @@ export const tradesPerDay = Policy.make({
   examples: ["At most 3 trades a day"],
   config: TradesPerDayConfig,
   fields: {
-    count: new Policy.Field({ label: "Trades a day", unit: "count", min: 1, max: 48, step: 1 })
+    count: new Policy.Field({ label: "Trades a day", unit: "count", min: 1, max: 2000, step: 1 })
   },
   required: true,
   hidden: false,
-  defaults: { count: 12 },
+  defaults: { count: 500 },
   describe: (config) => ({
     can: [config.count === 1 ? "Trade once a day at most" : `Trade ${config.count} times a day at most`],
     never: []

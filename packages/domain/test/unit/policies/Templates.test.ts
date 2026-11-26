@@ -16,19 +16,19 @@ describe("draftSpec", () => {
       { id: "stockCap", config: { maxBps: 3000 } },
       { id: "cashReserve", config: { minBps: 1000 } },
       { id: "slippageBudget", config: { weeklyBps: 100 } },
-      { id: "tradesPerDay", config: { count: 12 } },
+      { id: "tradesPerDay", config: { count: 500 } },
       { id: "gasBudget", config: { weiPerDay: 50_000_000_000_000_000n } },
       { id: "anyCall", config: {} }
     ])
   })
 
-  it("a conservative Rebalancer keeps its target mix and never trades while paused", () => {
+  it("a conservative Rebalancer: its own $500 budget and $200 trades, trading while paused", () => {
     const spec = draftSpec({ template: "rebalancer", preset: "conservative", stocks: ["NVDA"], targets: TARGETS })
 
     assert.deepStrictEqual(spec.policies.slice(0, 7), [
-      { id: "trade", config: { stocks: ["NVDA"], direction: "rebalance", dailyBudget: Usdc.make(100_000_000n) } },
-      { id: "tradeSize", config: { maxPerTrade: Usdc.make(50_000_000n), minPerTrade: Usdc.make(5_000_000n) } },
-      { id: "fairPrice", config: { collarBps: 100, tradeWhilePaused: false } },
+      { id: "trade", config: { stocks: ["NVDA"], direction: "rebalance", dailyBudget: Usdc.make(500_000_000n) } },
+      { id: "tradeSize", config: { maxPerTrade: Usdc.make(200_000_000n), minPerTrade: Usdc.make(5_000_000n) } },
+      { id: "fairPrice", config: { collarBps: 100, tradeWhilePaused: true } },
       { id: "stockCap", config: { maxBps: 2000 } },
       { id: "cashReserve", config: { minBps: 2000 } },
       { id: "rebalance", config: { targets: TARGETS, triggerBps: 500 } },

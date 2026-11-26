@@ -4,16 +4,16 @@ import { AutomationDraft } from "@bluechip/domain/automations/Automation"
 import { DEFAULT_SETTINGS, type Settings } from "@bluechip/domain/automations/Settings"
 import { Price, Usdc } from "@bluechip/domain/market/Units"
 import { draftSpec } from "@bluechip/domain/policies/Templates"
+import { changed } from "./Specs.ts"
 
-// $250 a day, $100 a trade, $5 smallest, 1 trade a day, NVDA and AAPL, only buys.
-export const WEEKLY_BUYER = draftSpec({
-  template: "weeklyBuyer",
-  preset: "balanced",
-  stocks: ["NVDA", "AAPL"],
-  targets: []
-})
+// $250 a day, $100 a trade, $5 smallest, NVDA and AAPL, only buys; held to 1 trade a day, so a plan that needs more
+// trades than it makes shows.
+export const WEEKLY_BUYER = changed(
+  draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] }),
+  { id: "tradesPerDay", config: { count: 1 } }
+)
 
-// $100 a trade, 4 trades a day, NVDA, only sells.
+// $100 a trade, 500 trades a day, NVDA, only sells.
 export const STOP_LOSS_GUARD = draftSpec({
   template: "stopLossGuard",
   preset: "balanced",
