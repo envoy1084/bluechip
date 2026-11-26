@@ -34,8 +34,9 @@ const RETRY = {
 // minute.
 const DAY_END_MARGIN_SECONDS = 60
 
-// The swap's own deadline, so a decided trade can't fill at an old price much later.
-const SWAP_DEADLINE = { minutes: 3 }
+// The swap's own deadline, so a decided trade can't fill at an old price much later. Counted from the chain's latest
+// block, since the swap checks it against `block.timestamp`, not the server's clock.
+const SWAP_DEADLINE_SECONDS = BigInt(180)
 
 // The tip an agent's operation offers: 0.001 gwei, Base's usual.
 const AGENT_TIP = BigInt(1_000_000)
@@ -174,15 +175,17 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         )
         if (eth === BigInt(0)) return waitFor("noGas", DateTime.addDuration(now, RETRY.noGas))
 
+        const block = yield* chain.use("block", (client) => client.getBlock()).pipe(Effect.result)
+        if (block._tag === "Failure") return waitFor("unavailable", DateTime.addDuration(now, RETRY.unavailable))
+
         const stock = stocks.find((candidate) => candidate.symbol === leg.symbol)!
-        const deadline = DateTime.toEpochMillis(DateTime.add(now, SWAP_DEADLINE))
         const calls = swapCalls({
           stock,
           side: leg.side,
           amountIn: "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares,
           minimumOut: quote.minimumOut,
           recipient: options.account,
-          deadline: BigInt(Math.floor(deadline / 1000))
+          deadline: block.success.timestamp + SWAP_DEADLINE_SECONDS
         })
 
         const client = yield* agentClient(options.agentId, options.session)

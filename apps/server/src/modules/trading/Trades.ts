@@ -1,3 +1,4 @@
+import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks } from "@bluechip/chain/Contracts"
 import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
 import {
@@ -47,8 +48,9 @@ const PAUSED_LIMIT_BPS = 50
 const APART_BPS = 100
 // Alpaca's free feed goes quiet after hours: an old last trade says nothing about how far apart they are.
 const RECENT_TRADE = Duration.minutes(30)
-// The swap's own deadline: past the signing window, so a signed trade can't fill at an old price much later.
-const SWAP_DEADLINE = { minutes: 3 }
+// The swap's own deadline: past the signing window, so a signed trade can't fill at an old price much later. Counted
+// from the chain's latest block, since the swap checks it against `block.timestamp`, not the server's clock.
+const SWAP_DEADLINE_SECONDS = BigInt(180)
 
 export type TradeInput = {
   readonly requestId: string
@@ -99,6 +101,7 @@ export class Trades extends Context.Service<Trades, {
       const balances = yield* AccountBalances
       const market = yield* MarketPrices
       const quoter = yield* Quoter
+      const chain = yield* ChainClient
       const ledger = yield* TradeLedger
       const intents = yield* IntentStore
       const operations = yield* OwnerOperations
@@ -200,7 +203,12 @@ export class Trades extends Context.Service<Trades, {
           warnings.push("marketApart")
         }
 
-        const deadline = DateTime.toEpochMillis(DateTime.add(now, SWAP_DEADLINE))
+        const block = yield* chain.use("block", (client) => client.getBlock()).pipe(
+          Effect.catchTag(
+            "ChainError",
+            () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 }))
+          )
+        )
         const row = yield* signing.create(owner, {
           requestId: input.requestId,
           kind: "trade",
@@ -220,7 +228,7 @@ export class Trades extends Context.Service<Trades, {
             amountIn,
             minimumOut: quote.minimumOut,
             recipient: owner.account as Hex,
-            deadline: BigInt(Math.floor(deadline / 1000))
+            deadline: block.timestamp + SWAP_DEADLINE_SECONDS
           }),
           minCallGas: swapCallGas
         })
