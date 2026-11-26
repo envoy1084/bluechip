@@ -1,5 +1,6 @@
 import { MemoryExport } from "@bluechip/domain/assistant/Memory"
 import type { ConversationId, SigningRequestId } from "@bluechip/domain/Ids"
+import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type * as AgUiSchema from "effect/ai/AgUiSchema"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
@@ -34,6 +35,8 @@ export const memoriesAtom = Atom.family((search: string) =>
 export const budgetAtom = BluechipApiClient.query("assistant", "budget", { reactivityKeys })
 
 export const startConversationAtom = BluechipApiClient.mutation("assistant", "startConversation")
+
+export const deleteConversationAtom = BluechipApiClient.mutation("assistant", "deleteConversation")
 
 export const confirmCardAtom = BluechipApiClient.mutation("assistant", "confirmCard")
 
@@ -86,6 +89,16 @@ export const runAtom = BluechipApiClient.runtime.fn(
     yield* Stream.runForEach(response.body, (event) => Effect.sync(() => run.onEvent(event)))
   }),
   { reactivityKeys: [assistantReactivityKey] }
+)
+
+/** A stock's past day, for the sparkline on a stock's result card. */
+export const stockDayAtom = Atom.family((symbol: StockSymbol) =>
+  BluechipApiClient.query("market", "history", {
+    params: { symbol },
+    query: { range: "1D" },
+    reactivityKeys: [liveReactivityKey],
+    timeToLive: "5 minutes"
+  })
 )
 
 /** Prepares your own trade again, after the card's request ran out. */

@@ -4,6 +4,7 @@ import type { RequestId } from "@bluechip/domain/Ids"
 import { AgentDraftCard } from "@bluechip/ui/bluechip/agent-draft-card"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
+import { WorstCaseCard } from "@bluechip/ui/bluechip/worst-case-card"
 import { ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
@@ -12,10 +13,13 @@ import { useState } from "react"
 import { confirmAgentAtom, lockAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
 import { AGENT_STANDING, agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
+import { worstCaseLines, worstCaseOf } from "../../model/worstCase.ts"
 import { DraftAutomations } from "./DraftAutomations.tsx"
+import { SpecGlance } from "./SpecGlance.tsx"
 
 /**
- * An agent drafted from chat: what it can and never does, the automations its template comes with (kept or left out,
+ * An agent drafted from chat: its limits at a glance, what it can and never does, the most it could do on its worst
+ * day, the automations its template comes with (kept or left out,
  * started once it's live), Customize to change its policies in the new-agent flow, and Face ID to lock it. The lock
  * request runs out after two minutes and is prepared again when you approve.
  */
@@ -50,6 +54,8 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
       detail={`Runs for ${SESSION_DAYS} days once locked. Pause it any time.`}
       can={card.description.can}
       never={card.description.never}
+      glance={<SpecGlance spec={agent.spec} />}
+      worstCase={<WorstCaseCard tone="quiet">{worstCaseLines(worstCaseOf(agent.spec)).join(" ")}</WorstCaseCard>}
       state={AGENT_STANDING[agent.status]}
       tone={draft ? "waiting" : agent.status === "active" ? "done" : "quiet"}
       problem={problem}

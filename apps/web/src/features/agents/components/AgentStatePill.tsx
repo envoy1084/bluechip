@@ -1,6 +1,8 @@
+import type { Agent } from "@bluechip/domain/agents/Agent"
 import { AgentStatus, agentStatusVariants } from "@bluechip/ui/bluechip/agent-status"
 import { Icon } from "@bluechip/ui/icons/icon"
-import type { AgentDisplayState } from "../model/agentState.ts"
+import { useState } from "react"
+import { type AgentDisplayState, agentState } from "../model/agentState.ts"
 
 /** The agent's state in one word: the kit's pill, or ours for a draft and for a change on its way to Base. */
 export function AgentStatePill({ state }: Readonly<{ state: AgentDisplayState }>) {
@@ -19,4 +21,10 @@ export function AgentStatePill({ state }: Readonly<{ state: AgentDisplayState }>
     )
   }
   return <AgentStatus state={state} />
+}
+
+/** The agent's state now, as its pill: for other features' pages, which get it through their route. */
+export function AgentStateNow({ agent }: Readonly<{ agent: Agent }>) {
+  const [now] = useState(() => new Date())
+  return <AgentStatePill state={agentState(agent, now)} />
 }

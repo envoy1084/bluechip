@@ -10,10 +10,12 @@ test.describe("performance", () => {
   test("with cash only, the portfolio says no trades yet and the profit chart waits for one", async ({ page, funded: _ }) => {
     await page.goto("/portfolio")
 
-    const card = results(page, "How you're doing")
+    const card = results(page, "Your money")
     await expect(card.getByText("No trades yet.")).toBeVisible()
     await expect(card.getByText("Nothing held yet")).toBeVisible()
-    await expect(page.getByText("Your results start with your first trade")).toBeVisible()
+    const chart = results(page, "Portfolio over time")
+    await chart.getByRole("tablist", { name: "Chart" }).getByRole("tab", { name: "Profit" }).click()
+    await expect(chart.getByText("Your results start with your first trade")).toBeVisible()
   })
 
   test("after a buy, the portfolio counts one trade and lists the stock by what it cost", async ({ page, funded: _ }) => {
@@ -21,9 +23,9 @@ test.describe("performance", () => {
 
     await page.goto("/portfolio")
 
-    const card = results(page, "How you're doing")
+    const card = results(page, "Your money")
     await expect(card.getByText(/^1 trade: \$\d+\.\d{2} in pool fees, /)).toBeVisible()
-    await expect(card.getByText("On $50.00 you paid")).toBeVisible()
+    await expect(card).toContainText("on $50.00 you paid")
     const lines = results(page, "By stock and agent").getByRole("link")
     await expect(lines.first()).toHaveAccessibleName(/NVIDIA Cost \$50\.00, worth \$\d/)
   })

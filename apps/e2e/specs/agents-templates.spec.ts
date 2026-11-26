@@ -105,7 +105,7 @@ test.describe("saved templates", () => {
     await page.getByRole("button", { name: "Delete template" }).click()
 
     await expect(page.getByRole("radio", { name: "Short lived" })).toBeHidden()
-    await expect(page.getByRole("radio", { name: "Rebalancer" })).toBeChecked()
+    await expect(page.getByRole("radio", { name: "Stock picker" })).toBeChecked()
     await expect(page.getByRole("button", { name: "Delete template" })).toBeHidden()
     await page.reload()
     await expect(page.getByRole("radiogroup", { name: "Agent templates" }).getByRole("radio")).toHaveCount(5)

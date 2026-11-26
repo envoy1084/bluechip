@@ -14,6 +14,7 @@ import { useState } from "react"
 import { changeAgentAtom, confirmAgentAtom, removeAgentAtom, renewAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
 import { AGENT_STANDING, agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
+import { SpecGlance } from "./SpecGlance.tsx"
 
 type PolicyChange = Extract<Card, { _tag: "PolicyChange" }>
 
@@ -35,7 +36,8 @@ const ACTION: Readonly<
 }
 
 /**
- * A change, renewal or removal of an agent, signed with Face ID here. A request that ran out (after two minutes) is
+ * A change, renewal or removal of an agent, signed with Face ID here, with its limits at a glance as they'll be locked
+ * (a change's new ones, a renewal's same ones). A request that ran out (after two minutes) is
  * prepared again when you approve. A draft's removal needs no Face ID, so the card only says it happened.
  */
 export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
@@ -101,6 +103,7 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
   const waiting = !sent && Result.isSuccess(transition(agent.status, { _tag: "Sent", action: card.action }))
 
   const landed = sent ? agentOutcome(card.action, agent.status, agent.name) : null
+  const locking = request.agent.pendingSpec ?? request.agent.spec
 
   return (
     <PolicyChangeView
@@ -112,6 +115,7 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
         { policy, change }
       ) => ({ title: policyOf(policy).title, change }))}
       looser={card.changes?.overall === "looser"}
+      glance={card.action === "remove" ? undefined : <SpecGlance spec={locking} />}
       can={card.description?.can ?? []}
       never={card.description?.never ?? []}
       state={waiting ? "Needs Face ID" : AGENT_STANDING[agent.status]}

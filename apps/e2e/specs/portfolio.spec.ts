@@ -29,12 +29,12 @@ test.describe("portfolio", () => {
     await expect(page.getByRole("list", { name: "Your mix" }).getByRole("button")).toHaveAccessibleName("Cash 100.0%")
   })
 
-  test("your money sums it up first, with Add cash left to the page", async ({ page, funded: _ }) => {
+  test("your money sums it up first, with Add cash left to the page and the mix to its card", async ({ page, funded: _ }) => {
     await page.goto("/portfolio")
 
     const money = page.getByRole("region", { name: "Your money" })
     await expect(money).toContainText("$1,000.00")
-    await expect(money.getByRole("img")).toHaveAccessibleName("Cash 100%")
+    await expect(money.getByRole("img")).toHaveCount(0)
     await expect(money.getByRole("button", { name: "Add cash" })).toHaveCount(0)
   })
 
@@ -114,7 +114,7 @@ test.describe("portfolio", () => {
 
   test("the cash card's buttons open Add cash and Withdraw", async ({ page, funded: _funded }) => {
     await page.goto("/portfolio")
-    const cash = page.getByText("USDC on Base, ready to invest or withdraw.").locator("..")
+    const cash = page.getByRole("region", { name: "Cash", exact: true })
 
     await cash.getByRole("button", { name: "Add cash" }).click()
     await expect(page.getByRole("dialog", { name: "Add cash" })).toBeVisible()

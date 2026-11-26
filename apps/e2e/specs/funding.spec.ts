@@ -58,8 +58,10 @@ test.describe("withdraw", () => {
     await withdraw(page, 25, burn)
 
     const withdrawals = page.getByRole("region", { name: "Withdrawals" })
-    await expect(withdrawals).toContainText("$25.00 to 0x0000…dEaD")
-    await expect(withdrawals).toContainText("Sent")
+    await expect(withdrawals.getByRole("listitem")).toHaveCount(1)
+    await expect(withdrawals.getByRole("listitem")).toContainText("$25.00")
+    await expect(withdrawals.getByRole("listitem")).toContainText("to 0x0000…dEaD")
+    await expect(withdrawals.getByRole("listitem")).toContainText("Sent")
     await expect(withdrawals.getByRole("link", { name: "View on BaseScan" })).toHaveAttribute(
       "href",
       /^https:\/\/basescan\.org\/tx\/0x[0-9a-f]{64}$/
@@ -142,7 +144,7 @@ test.describe("withdraw", () => {
     await expect(dialog.getByRole("button", { name: "Try Face ID again" })).toBeVisible()
     expect(confirms).toEqual([])
     await dialog.getByRole("button", { name: "Close" }).click()
-    await expect(page.getByRole("region", { name: "Withdrawals" })).toBeHidden()
+    await expect(page.getByRole("region", { name: "Withdrawals" })).toContainText("No withdrawals yet.")
     await expect(page.getByRole("region", { name: "Holdings" })).toContainText("$1,000.00")
   })
 

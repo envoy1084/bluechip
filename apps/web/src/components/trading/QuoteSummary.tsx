@@ -41,7 +41,7 @@ function FairPrice({ quote }: Readonly<{ quote: Quote }>) {
 }
 
 /** What a quoted trade does: the stock, what you pay and get, at what price, the fair price check and the least out. */
-export function QuoteSummary({ stock, quote }: Readonly<{ stock: Stock; quote: Quote }>) {
+export function QuoteSummary({ stock, quote }: Readonly<{ stock: Pick<Stock, "symbol" | "name">; quote: Quote }>) {
   const buying = quote.side === "buy"
   return (
     <OrderPreview>

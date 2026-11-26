@@ -9,9 +9,11 @@ export const emptyActivity = (
   history: History,
   filtered: boolean
 ): { readonly title: string; readonly description: string } => {
-  if (history === "none") return { title: "No activity yet", description: "Your trades and withdrawals show up here." }
+  if (history === "none") {
+    return { title: "No activity yet", description: "Your trades, deposits and withdrawals show up here." }
+  }
   if (filtered && history === "some") {
     return { title: "Nothing here yet", description: "Try another type or a longer period." }
   }
-  return { title: "Nothing here yet", description: "Your trades and withdrawals show up here." }
+  return { title: "Nothing here yet", description: "Your trades, deposits and withdrawals show up here." }
 }

@@ -74,19 +74,19 @@ describe("draftSpec", () => {
 })
 
 describe("templateInfos", () => {
-  it("describes each built-in template with its direction, rules and the rules offered with it", () => {
+  it("describes each built-in template, in the order they are offered, with its direction and rules", () => {
     assert.deepStrictEqual(
       templateInfos().map(({ direction, id, options, rules }) => ({ id, direction, rules, options })),
       [
+        { id: "stockPicker", direction: "both", rules: ["stockCap", "cashReserve", "slippageBudget"], options: [] },
+        { id: "weeklyBuyer", direction: "buy", rules: ["stockCap", "cashReserve", "slippageBudget"], options: [] },
+        { id: "stopLossGuard", direction: "sell", rules: ["slippageBudget"], options: ["stopLossFloor"] },
         {
           id: "rebalancer",
           direction: "rebalance",
           rules: ["stockCap", "cashReserve", "rebalance", "slippageBudget"],
           options: []
-        },
-        { id: "stockPicker", direction: "both", rules: ["stockCap", "cashReserve", "slippageBudget"], options: [] },
-        { id: "weeklyBuyer", direction: "buy", rules: ["stockCap", "cashReserve", "slippageBudget"], options: [] },
-        { id: "stopLossGuard", direction: "sell", rules: ["slippageBudget"], options: ["stopLossFloor"] }
+        }
       ]
     )
   })

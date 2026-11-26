@@ -30,19 +30,16 @@ test.describe("agents list", () => {
     await expect(page).toHaveURL(/\/agents\/new$/)
   })
 
-  test("a live agent's summary shows its name, state, what it does, today's use and lock", async ({ page, funded: _ }) => {
+  test("a live agent's card shows its name, state, what it trades and today's budget", async ({ page, funded: _ }) => {
     await createAgent(page, { template: "Weekly buyer", name: "Tuesday buys" })
 
     await page.goto("/agents")
 
     const card = page.getByRole("link", { name: /^Tuesday buys / })
     await expect(card).toContainText("Tuesday buysActive")
-    await expect(card).toContainText(/Buys \w+/)
+    await expect(card).toContainText(/Buys\s*[A-Z]+/)
     await expect(card.getByRole("meter", { name: "Spent today" })).toBeVisible()
-    await expect.poll(() => card.ariaSnapshot()).toContain("$250 left today")
-    await expect(card).toContainText("Trades today0 of 1")
-    await expect(card).toContainText(`Locked until${dayFromNow(90)}`)
-    await expect(card).toContainText("No trades yet.")
+    await expect(card).toContainText("$0 of $250 today")
   })
 
   test("a draft's card says it isn't locked yet", async ({ page, authenticator, funded: _ }) => {
@@ -51,8 +48,38 @@ test.describe("agents list", () => {
     await page.goto("/agents")
 
     await expect(page.getByRole("link", { name: /^Half made / })).toHaveText(
-      /^Half made\s*Stock picker\s*Not locked yet\s*Not locked yet$/
+      /^Half made\s*Not locked yet\s*Buys and sells.*Lock its rules with Face ID to start it$/
     )
+  })
+
+  test("its filters, search and sort pick which agents show", async ({ page, funded: _funded }) => {
+    await createAgent(page, { name: "Keeps going" })
+    await createAgent(page, { name: "Taking a break", stocks: ["AAPL Apple"] })
+    await page.getByRole("button", { name: "Pause", exact: true }).click()
+    await expect(statePill(page)).toContainText("Paused")
+    await page.goto("/agents")
+    const keepsGoing = page.getByRole("link", { name: /^Keeps going / })
+    const takingABreak = page.getByRole("link", { name: /^Taking a break / })
+
+    await page.getByRole("tab", { name: /^Paused/ }).click()
+    await expect(takingABreak).toBeVisible()
+    await expect(keepsGoing).toBeHidden()
+
+    await page.getByRole("tab", { name: /^All/ }).click()
+    await page.getByRole("searchbox", { name: "Search agents" }).fill("keeps")
+    await expect(keepsGoing).toBeVisible()
+    await expect(takingABreak).toBeHidden()
+
+    await page.getByRole("searchbox", { name: "Search agents" }).fill("nothing like it")
+    await expect(page.getByRole("heading", { name: "No agents match" })).toBeVisible()
+    await page.getByRole("button", { name: "Show all agents" }).click()
+    await expect(keepsGoing).toBeVisible()
+    await expect(takingABreak).toBeVisible()
+
+    await page.getByRole("combobox", { name: "Sort by" }).click()
+    await page.getByRole("option", { name: "Name" }).click()
+    await expect(page.getByRole("main").getByRole("link", { name: /^(Keeps going|Taking a break) / }).first())
+      .toHaveAccessibleName(/^Keeps going /)
   })
 
   test("a card opens its agent", async ({ page, funded: _funded }) => {

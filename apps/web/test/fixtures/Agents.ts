@@ -10,14 +10,21 @@ export const TEMPLATE_ID = SavedTemplateId.make("template_01jd8v4t5m6n7a8q9r0s1t
 // $250 a day, $100 a trade, 30% in one stock, 10% cash, over Nvidia and Apple.
 export const PICKER = draftSpec({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })
 
-/** A stock picker named "Nvidia picker", locked until 1 Dec 2026, at `status`. */
+/** A stock picker named "Nvidia picker", made on 20 Nov 2026 and locked until 1 Dec 2026, at `status`. */
 export const agent = (
   status: AgentStatus,
-  options: { readonly paused?: boolean; readonly lockedUntil?: string | null; readonly template?: string | null } = {}
+  options: {
+    readonly id?: AgentId
+    readonly name?: string
+    readonly paused?: boolean
+    readonly lockedUntil?: string | null
+    readonly template?: string | null
+    readonly createdAt?: string
+  } = {}
 ): Agent =>
   new Agent({
-    id: AGENT_ID,
-    name: "Nvidia picker",
+    id: options.id ?? AGENT_ID,
+    name: options.name ?? "Nvidia picker",
     template: options.template === undefined ? "stockPicker" : options.template,
     status,
     paused: options.paused ?? false,
@@ -28,7 +35,7 @@ export const agent = (
       options.lockedUntil === null ?
       null :
       DateTime.makeUnsafe(options.lockedUntil),
-    createdAt: DateTime.makeUnsafe("2026-11-20T10:00:00Z")
+    createdAt: DateTime.makeUnsafe(options.createdAt ?? "2026-11-20T10:00:00Z")
   })
 
 /** A saved template named "My picker", made from the stock picker. */

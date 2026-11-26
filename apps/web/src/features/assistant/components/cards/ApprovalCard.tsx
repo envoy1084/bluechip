@@ -6,10 +6,9 @@ import type { TradeWarning } from "@bluechip/domain/trading/Trade"
 import { ChatCard } from "@bluechip/ui/bluechip/chat-card"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { TradeApprovalCard } from "@bluechip/ui/bluechip/trade-approval-card"
-import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { useState } from "react"
-import { priceDollars, shareCount } from "../../../../lib/amounts.ts"
+import { QuoteSummary } from "../../../../components/trading/QuoteSummary.tsx"
 import { liveIntentsAtom } from "../../../../lib/api/events.ts"
 import { tradeProblem } from "../../../../lib/tradeProblem.ts"
 import { confirmIntentAtom, prepareIntentAtom } from "../../atoms/assistant.ts"
@@ -22,7 +21,8 @@ const WARNING: Readonly<Record<TradeWarning, string>> = {
 }
 
 /**
- * Your own trade, prepared for Face ID: nothing happens unless you approve it here. A request that ran out (after two
+ * Your own trade, prepared for Face ID, with exactly what it does at the quoted price (what you pay and get, the fair
+ * price check): nothing happens unless you approve it here. A request that ran out (after two
  * minutes) is prepared again with a fresh quote when you approve. Once signed, the trade follows Base live.
  */
 export function ApprovalCard(
@@ -73,7 +73,8 @@ export function ApprovalCard(
   return (
     <TradeApprovalCard
       title={describeLeg(intent.leg, nameOf)}
-      detail={`About ${formatShareCount(shareCount(quote.shares))} at ${formatMoney(priceDollars(quote.price))} each`}
+      detail="At the pool's price now, checked against Chainlink's"
+      preview={<QuoteSummary stock={{ symbol: intent.leg.symbol, name: nameOf(intent.leg.symbol) }} quote={quote} />}
       reason={intent.reason}
       warnings={request.warnings.map((warning) => WARNING[warning])}
       setsUpAccount={request.deploysAccount}

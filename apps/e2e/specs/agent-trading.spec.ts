@@ -32,17 +32,22 @@ test.describe("asking an agent for a trade", () => {
     await expect(tradeCard(page).getByRole("button", { name: "Trade again" })).toBeVisible()
   })
 
-  test("the journal tells a filled trade in words, newest first", async ({ page, funded: _funded }) => {
+  test("the journal tells a filled trade by day, newest first, after its rules were locked", async ({ page, funded: _funded }) => {
     await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
-    const journal = page.getByRole("region", { name: "Journal" })
-    await expect(journal.getByText(/^Nothing yet\./)).toBeVisible()
-
     await askToBuy(page, 50)
     await expect(tradeCard(page).getByRole("heading", { name: "Bought $50.00 of NVIDIA" })).toBeVisible()
-    await page.reload()
 
-    await expect(journal.getByRole("listitem").first()).toContainText("Buy $50.00 of NVIDIA: filled.")
-    await expect(journal.getByText(/^Buy \$50\.00 of NVIDIA, sent within its policies\./)).toBeVisible()
+    await page.getByRole("link", { name: "Journal" }).click()
+    const today = page.getByRole("region", { name: "Journal" }).getByRole("region", { name: "Today" })
+    const lines = today.getByRole("listitem")
+    await expect(lines.first()).toContainText("Buy $50.00 of NVIDIA")
+    await expect(lines.first().getByText("Filled", { exact: true })).toBeVisible()
+    await expect(lines.filter({ hasText: "Within its policies, so it sent it itself." })).toContainText("Sent")
+    await expect(lines.last()).toContainText("Rules locked with Face ID")
+
+    await page.getByRole("tablist", { name: "Show" }).getByRole("tab", { name: "Rules" }).click()
+    await expect(lines).toHaveCount(1)
+    await expect(lines.first()).toContainText("Rules locked with Face ID")
   })
 
   // fixme: the activity row never showed Filled within 30 s; not diagnosed (run once on the 2 s-block stack)

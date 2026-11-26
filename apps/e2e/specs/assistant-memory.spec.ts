@@ -51,7 +51,7 @@ test.describe("memory cards", () => {
     const card = page.getByRole("region", { name: "Memory, rule" }).last()
     await expect(card.getByText("Forgotten")).toBeVisible()
     await page.goto("/memory")
-    await expect(page.getByText("Nothing yet. Tell the assistant what matters to you")).toBeVisible()
+    await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 
   test("a guess kept with Remember is listed as confirmed", async ({ page, user: _user, replies }) => {
@@ -65,7 +65,7 @@ test.describe("memory cards", () => {
     await page.goto("/memory")
     await expect(page.getByText("You have kids.")).toBeVisible()
     await expect(page.getByText(/^Inferred, 60% sure, on /)).toBeVisible()
-    await expect(page.getByText("Not confirmed")).toBeHidden()
+    await expect(page.getByRole("region", { name: /^To confirm/ })).toBeHidden()
   })
 
   test("a guess left with Don't keep it is not kept", async ({ page, user: _user, replies }) => {
@@ -76,7 +76,7 @@ test.describe("memory cards", () => {
 
     await expect(card.getByText("Not kept")).toBeVisible()
     await page.goto("/memory")
-    await expect(page.getByText("Nothing yet. Tell the assistant what matters to you")).toBeVisible()
+    await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 })
 
@@ -84,13 +84,23 @@ test.describe("the memory page", () => {
   test("a guess waits there until you confirm it", async ({ page, user: _user, replies }) => {
     await mentionKids(page, replies)
     await page.goto("/memory")
-    await expect(page.getByText("Not confirmed")).toBeVisible()
-    await expect(page.getByText("bluechip doesn't use it until you confirm it.")).toBeVisible()
+    const toConfirm = page.getByRole("region", { name: /^To confirm/ })
+    await expect(toConfirm.getByText("You have kids.")).toBeVisible()
+    await expect(toConfirm.getByText("It doesn't use them until you confirm them.")).toBeVisible()
 
-    await page.getByRole("button", { name: "Remember" }).click()
+    await toConfirm.getByRole("button", { name: "Remember" }).click()
 
-    await expect(page.getByText("Not confirmed")).toBeHidden()
+    await expect(toConfirm).toBeHidden()
     await expect(page.getByText("You have kids.")).toBeVisible()
+  })
+
+  test("a guess left with Not right is deleted", async ({ page, user: _user, replies }) => {
+    await mentionKids(page, replies)
+    await page.goto("/memory")
+
+    await page.getByRole("button", { name: "Not right: You have kids." }).click()
+
+    await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 
   test("a memory is deleted from its row", async ({ page, user: _user, replies }) => {
@@ -99,7 +109,7 @@ test.describe("the memory page", () => {
 
     await page.getByRole("button", { name: "Delete: You never want Tesla." }).click()
 
-    await expect(page.getByText("Nothing yet. Tell the assistant what matters to you")).toBeVisible()
+    await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 
   test("Delete everything asks first, then forgets every memory", async ({ page, user: _user, replies }) => {
@@ -112,7 +122,7 @@ test.describe("the memory page", () => {
     const dialog = page.getByRole("alertdialog", { name: "Delete everything bluechip remembers?" })
     await dialog.getByRole("button", { name: "Delete everything" }).click()
 
-    await expect(page.getByText("Nothing yet. Tell the assistant what matters to you")).toBeVisible()
+    await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 
   test("a search lists the memories it recalls, and says when none matches", async ({ page, user: _user, replies }) => {

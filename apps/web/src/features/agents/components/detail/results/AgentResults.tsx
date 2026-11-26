@@ -17,7 +17,7 @@ import { DriftPanel, MoneyMoved, PolicyDecisions, TradeCosts } from "./ResultsPa
 /** Profit and loss signed and colored: gains green, losses red, nothing grey. */
 const tone = (amount: bigint) => amount > BigInt(0) ? "text-gain" : amount < BigInt(0) ? "text-loss" : "text-g-600"
 
-/** What it made in all, split into what its sales locked in and what it holds now. */
+/** What it made in all, split into what its sales locked in and what it holds now; it fills its row, the split at the bottom. */
 function Contribution({ performance }: Readonly<{ performance: AgentPerformance }>) {
   const profit = performance.realised + performance.unrealised
   const percent = returnPercent(profit, performance.bought)
@@ -25,7 +25,7 @@ function Contribution({ performance }: Readonly<{ performance: AgentPerformance 
   return (
     <section
       aria-label="Its contribution"
-      className="grid content-start gap-5 rounded-lg bg-white p-5 shadow-e2"
+      className="flex flex-col justify-between gap-5 rounded-lg bg-white p-5 shadow-e2"
     >
       <div className="grid gap-1">
         <span className="text-label text-g-600">Its contribution</span>
@@ -102,7 +102,7 @@ export function AgentResults({ agent }: Readonly<{ agent: Agent }>) {
 
   return (
     <div className="grid gap-4">
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
         <PortfolioChart
           title="Profit and loss"
           measure="profit"
@@ -117,7 +117,7 @@ export function AgentResults({ agent }: Readonly<{ agent: Agent }>) {
         />
         <Contribution performance={performance} />
       </div>
-      <div className="grid items-start gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         <MoneyMoved performance={performance} />
         <TradeCosts performance={performance} />
         <PolicyDecisions performance={performance} />

@@ -3,6 +3,7 @@ import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
 import {
   agentsReactivityKey,
+  automationsReactivityKey,
   BluechipApiClient,
   intentsReactivityKey,
   liveReactivityKey,
@@ -37,6 +38,23 @@ export const agentJournalAtom = Atom.family((key: string) => {
     reactivityKeys: [...reactivityKeys, intentsReactivityKey]
   })
 })
+
+/**
+ * The journal's pages loaded so far, read together so the page can tell them as one story:
+ * `"<agentId> <pageToken> <pageToken>…"`, the first token empty.
+ */
+export const agentJournalPagesAtom = Atom.family((key: string) => {
+  const [id, ...pageTokens] = key.split(" ")
+  return Atom.make((get) => pageTokens.map((pageToken) => get(agentJournalAtom(`${id} ${pageToken}`))))
+})
+
+/** An agent's automations, so its journal can say what set each run off. */
+export const agentAutomationsAtom = Atom.family((agentId: AgentId) =>
+  BluechipApiClient.query("automations", "list", {
+    query: { agentId },
+    reactivityKeys: [automationsReactivityKey, liveReactivityKey]
+  })
+)
 
 /** An agent's sessions, newest first: each set of policies locked for it, and how long it lasted. */
 export const agentSessionsAtom = Atom.family((id: AgentId) =>
@@ -83,3 +101,14 @@ export const agentLastTradeAtom = Atom.family((id: AgentId) =>
     reactivityKeys: [...reactivityKeys, intentsReactivityKey]
   })
 )
+
+/**
+ * The list's reads of several agents at once, in order: each one's usage and last filled trade, keyed by their ids
+ * joined with spaces (`"<agentId> <agentId>…"`).
+ */
+export const agentsAtAGlanceAtom = Atom.family((key: string) => {
+  const ids = key.split(" ").filter((id) => id !== "") as Array<AgentId>
+  return Atom.make((get) =>
+    ids.map((id) => ({ id, usage: get(agentUsageAtom(id)), lastTrade: get(agentLastTradeAtom(id)) }))
+  )
+})

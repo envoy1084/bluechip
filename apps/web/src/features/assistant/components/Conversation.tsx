@@ -9,7 +9,7 @@ import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import type { ReactNode } from "react"
+import { type ReactNode, useCallback } from "react"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { budgetAtom } from "../atoms/assistant.ts"
 import type { useAssistant } from "../hooks/useAssistant.ts"
@@ -59,22 +59,31 @@ export function Conversation(
   const { nameOf } = useStockLookup()
   const spent = AsyncResult.isSuccess(budget) && isSpent(budget.value)
   const fresh = state.entries.length === 0 && state.load === "ready"
+
+  // Opening a conversation puts you in its box (keyed below, so it mounts again), as does the start screen turning
+  // into the thread. Only where there is a mouse or trackpad: on touch screens it would pop the keyboard up.
+  const focusOnOpen = useCallback((area: HTMLDivElement | null) => {
+    if (area === null || !window.matchMedia("(pointer: fine)").matches) return
+    area.querySelector("textarea")?.focus({ preventScroll: true })
+  }, [])
+
   const composer = (
-    <ChatComposer
-      key={initialMessage}
-      defaultMessage={initialMessage}
-      onSend={(text) => void send(text)}
-      sending={running}
-      onStop={cancel}
-      size={fresh ? "lg" : "md"}
-      leading={
-        <AgentPicker
-          agentId={state.agentId}
-          onChange={(agentId: AgentId | null) => chooseAgent(agentId)}
-          locked={state.conversationId !== null}
-        />
-      }
-    />
+    <div key={`${state.conversationId} ${initialMessage}`} ref={focusOnOpen}>
+      <ChatComposer
+        defaultMessage={initialMessage}
+        onSend={(text) => void send(text)}
+        sending={running}
+        onStop={cancel}
+        size="lg"
+        leading={
+          <AgentPicker
+            agentId={state.agentId}
+            onChange={(agentId: AgentId | null) => chooseAgent(agentId)}
+            locked={state.conversationId !== null}
+          />
+        }
+      />
+    </div>
   )
   const budgetNotice = spent ?
     (

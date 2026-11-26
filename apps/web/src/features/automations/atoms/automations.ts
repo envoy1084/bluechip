@@ -1,4 +1,6 @@
+import type { AutomationRun } from "@bluechip/domain/automations/Run"
 import type { AgentId, AutomationId } from "@bluechip/domain/Ids"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
 import * as Atom from "effect/reactivity/Atom"
 import {
   automationsReactivityKey,
@@ -25,6 +27,22 @@ export const automationAtom = Atom.family((id: AutomationId) =>
   BluechipApiClient.query("automations", "automation", {
     params: { id },
     reactivityKeys: [...reactivityKeys, intentsReactivityKey]
+  })
+)
+
+/**
+ * The latest runs (newest first) of each automation `automationsAtom(agentId)` lists, read from their details, so a
+ * list can say how each last ran and which need a look. One whose details haven't loaded is missing.
+ */
+export const automationRunsAtom = Atom.family((agentId: AgentId | "all") =>
+  Atom.make((get): ReadonlyMap<AutomationId, ReadonlyArray<AutomationRun>> => {
+    const listed = get(automationsAtom(agentId))
+    if (!AsyncResult.isSuccess(listed)) return new Map()
+
+    return new Map(listed.value.flatMap((automation) => {
+      const detail = get(automationAtom(automation.id))
+      return AsyncResult.isSuccess(detail) ? [[automation.id, detail.value.runs] as const] : []
+    }))
   })
 )
 

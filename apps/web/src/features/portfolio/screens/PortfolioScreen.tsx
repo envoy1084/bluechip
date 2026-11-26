@@ -10,16 +10,14 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
-import { MoneySummary } from "../../../components/MoneySummary.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { performanceAtom } from "../atoms/performance.ts"
 import { CashCard } from "../components/CashCard.tsx"
 import { ContributionsCard } from "../components/ContributionsCard.tsx"
+import { HistoryChart } from "../components/HistoryChart.tsx"
 import { HoldingsCard } from "../components/HoldingsCard.tsx"
 import { MixCard } from "../components/MixCard.tsx"
-import { PerformanceCard } from "../components/PerformanceCard.tsx"
-import { ValueChart } from "../components/ValueChart.tsx"
-import { WithdrawalsCard } from "../components/WithdrawalsCard.tsx"
+import { SummaryCard } from "../components/SummaryCard.tsx"
 
 export function PortfolioScreen() {
   const portfolio = useAtomValue(portfolioAtom)
@@ -90,9 +88,8 @@ export function PortfolioScreen() {
 
       {AsyncResult.isSuccess(portfolio) && portfolio.value.value > BigInt(0) && (
         <div className="grid gap-4">
-          <MoneySummary addCash={false} />
-          <ValueChart />
-          {AsyncResult.isSuccess(performance) && <PerformanceCard performance={performance.value} />}
+          <SummaryCard portfolio={portfolio.value} performance={performance} />
+          <HistoryChart performance={performance} />
           <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <div className="grid min-w-0 content-start gap-4">
               <HoldingsCard portfolio={portfolio.value} names={names} />
@@ -103,14 +100,6 @@ export function PortfolioScreen() {
             <div className="grid min-w-0 content-start gap-4">
               <MixCard portfolio={portfolio.value} names={names} />
               <CashCard cash={portfolio.value.cash} />
-              <WithdrawalsCard />
-              <Alert variant="info">
-                <AlertTitle>Dividends and splits</AlertTitle>
-                <AlertDescription>
-                  When a stock pays a dividend or splits, each token stands for a different number of shares, so its
-                  value changes with it. Prices here already account for that.
-                </AlertDescription>
-              </Alert>
             </div>
           </div>
         </div>

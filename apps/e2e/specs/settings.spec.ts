@@ -88,11 +88,7 @@ test.describe("settings", () => {
 
     await expect(page).toHaveURL(/\/memory$/)
     await expect(page.getByRole("heading", { name: "Memory", level: 1 })).toBeVisible()
-    await expect(
-      page.getByText(
-        "Nothing yet. Tell the assistant what matters to you, like \"I never want to own Tesla\", and it remembers."
-      )
-    ).toBeVisible()
+    await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 
   test("the danger zone stays hidden without agents", async ({ page, user: _user }) => {

@@ -1,22 +1,9 @@
-// How automations read on screen: where one stands, how a run ended, what a model answered, and each choice of the
-// editor in words.
-import type { Automation, AutomationProblem, AutomationStatus } from "@bluechip/domain/automations/Automation"
+// How automations read on screen: how a run ended, what a model answered, and each of the editor's choices in words.
+import type { Action, AutomationProblem, Trigger } from "@bluechip/domain/automations/Automation"
 import type { JudgmentAnswer, JudgmentPreset } from "@bluechip/domain/automations/conditions/Judgment"
 import type { RunOutcome } from "@bluechip/domain/automations/Run"
 import type { Weekday } from "@bluechip/domain/automations/Time"
 import { Conflict, InvalidAutomation, NotFound } from "@bluechip/domain/Errors"
-import { formatDate, formatRelative } from "@bluechip/ui/lib/format"
-import * as DateTime from "effect/DateTime"
-
-export const STATUS: Readonly<
-  Record<AutomationStatus, { readonly label: string; readonly tone: "done" | "quiet" | "waiting" }>
-> = {
-  active: { label: "Active", tone: "done" },
-  paused: { label: "Paused", tone: "quiet" },
-  done: { label: "Done", tone: "quiet" },
-  expired: { label: "Ended", tone: "quiet" },
-  deleted: { label: "Deleted", tone: "quiet" }
-}
 
 export const OUTCOME: Readonly<
   Record<RunOutcome, { readonly label: string; readonly tone: "done" | "quiet" | "waiting" | "warn" }>
@@ -68,6 +55,26 @@ export const choiceLabel = (type: string, field: string, value: string, config: 
     default:
       return value
   }
+}
+
+/** Each trigger as you might set it up, on its card, about no stock in particular: "Every Monday at 10:00". */
+export const TRIGGER_EXAMPLES: Readonly<Record<Trigger["type"], string>> = {
+  schedule: "Every Monday at 10:00",
+  priceMove: "A stock falls 10% from its high",
+  priceCross: "A stock goes above a price you set",
+  drift: "Your mix drifts from its target",
+  portfolio: "Cash falls under 10% of your portfolio",
+  news: "A story about a stock or topic you pick"
+}
+
+/** Each action as you might set it up, on its card, about no stock in particular. */
+export const ACTION_EXAMPLES: Readonly<Record<Action["type"], string>> = {
+  buy: "Buy a dollar amount of stocks you pick",
+  sell: "Sell a dollar amount of a stock",
+  sellShare: "Sell half, or all, of a holding",
+  rebalance: "Trade back to the target mix",
+  notify: "Send you a message",
+  ask: "Propose a trade for your Face ID"
 }
 
 /** Waits between two fires the settings offer, in minutes. */
@@ -131,19 +138,3 @@ export const saveProblem = (error: unknown): string => {
 /** Phrases that each start a sentence, as one line: "At most once an hour, only while the market is open". */
 export const asOneLine = (phrases: ReadonlyArray<string>): string =>
   phrases.map((phrase, index) => index === 0 ? phrase : phrase[0]!.toLowerCase() + phrase.slice(1)).join(", ")
-
-/**
- * When it runs or ran, for its card: "Next run Mon 30 Nov, 10:00" for a schedule, else "Last ran 2 h ago", or that
- * it hasn't yet. Times are the viewer's, in `zone`.
- */
-export const runLine = (
-  automation: Pick<Automation, "status" | "nextRunAt" | "lastFiredAt">,
-  now: Date,
-  zone: string
-): string => {
-  if (automation.status === "active" && automation.nextRunAt !== null) {
-    return `Next run ${formatDate(DateTime.toDateUtc(automation.nextRunAt), { timeZone: zone })}`
-  }
-  if (automation.lastFiredAt === null) return automation.status === "active" ? "Hasn't run yet" : "Never ran"
-  return `Last ran ${formatRelative(DateTime.toDateUtc(automation.lastFiredAt), now, { timeZone: zone })}`
-}

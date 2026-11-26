@@ -2,7 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useId } from "react"
 import { timeZones } from "../../../model/automationText.ts"
 
-/** The time zone its times are in: the market's, yours, or UTC. */
+/** The time zone its times are in: the market's, yours, or UTC; its label above it. */
 export function ZoneField(
   { label, value, zone, onChange }: Readonly<{
     label: string
@@ -20,10 +20,10 @@ export function ZoneField(
   ]
 
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span id={id} className="text-[13.5px] font-medium text-g-700">{label}</span>
+    <div className="grid content-start gap-1.5">
+      <span id={id} className="text-[13.5px] font-medium whitespace-nowrap text-g-700">{label}</span>
       <Select items={items} value={value} onValueChange={(picked) => picked !== null && onChange(picked)}>
-        <SelectTrigger size="sm" aria-labelledby={id} className="min-w-[200px]">
+        <SelectTrigger size="sm" aria-labelledby={id} className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

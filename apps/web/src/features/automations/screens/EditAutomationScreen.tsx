@@ -17,6 +17,7 @@ import { localTimeZone } from "../../../lib/localTime.ts"
 import { automationAtom, changedKeys, updateAutomationAtom } from "../atoms/automations.ts"
 import { AutomationEditor } from "../components/editor/AutomationEditor.tsx"
 import { AutomationNotFound, ScreenState } from "../components/ScreenState.tsx"
+import { draftFieldsOf } from "../model/drafts.ts"
 import { specOf, stocksOf, traderName } from "../model/traders.ts"
 
 /** Changing an automation: loads it, its agent and the stocks, then the editor. Its agent can't change. */
@@ -82,19 +83,12 @@ function EditAutomation(
         ) :
         (
           <AutomationEditor
-            initial={{
-              name: automation.name,
-              agentId: automation.agentId,
-              trigger: automation.trigger,
-              conditions: automation.conditions,
-              action: automation.action,
-              settings: automation.settings
-            }}
+            initial={draftFieldsOf(automation)}
             context={{ stocks: stocksOf(spec, stocks), nameOf, zone: localTimeZone() }}
             spec={spec}
             whoTrades={automation.agentId === null || agent !== null ? traderName(agent) : "An agent that's gone"}
             saveLabel="Save changes"
-            footer={<ButtonLink variant="ghost" className="w-full" render={back}>Cancel</ButtonLink>}
+            footer={<ButtonLink variant="ghost" size="lg" render={back}>Cancel</ButtonLink>}
             onSave={async (draft) => {
               await update({ params: { id: automation.id }, payload: { draft }, reactivityKeys: changedKeys })
               await navigate({ to: "/automations/$automationId", params: { automationId: automation.id } })

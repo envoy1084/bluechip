@@ -7,8 +7,8 @@ import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
+import { dayHeading } from "../../../../lib/localTime.ts"
 import { agentIntentsAtom } from "../../atoms/intents.ts"
-import { askedOn } from "../../model/intentText.ts"
 import { ActivityRow } from "./ActivityRow.tsx"
 
 /** One page of the agent's intents; the last one loaded offers the next. */
@@ -52,7 +52,7 @@ function IntentPage(
   }
 
   // Each day's trades under its heading; a day split across pages keeps its heading on each.
-  const days = Array.groupBy(items, (intent) => askedOn(intent, now))
+  const days = Array.groupBy(items, (intent) => dayHeading(intent.createdAt, now))
   return (
     <>
       {Object.entries(days).map(([day, intents]) => (

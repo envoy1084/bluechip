@@ -15,7 +15,8 @@ import {
   offered,
   stocksFor,
   suggestedName,
-  toDraft
+  toDraft,
+  whyUnavailable
 } from "../../../../../src/features/automations/model/drafts.ts"
 
 describe("evenSplit", () => {
@@ -150,6 +151,37 @@ describe("offered", () => {
     const conditions = offered("condition", { spec: null, trigger, asking: true })
 
     assert.strictEqual(conditions.some((entry) => entry.type === "judgment"), expected)
+  })
+})
+
+describe("whyUnavailable", () => {
+  const weeklyBuyer = complete(
+    draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA"], targets: [] })
+  )
+
+  it.each(
+    [
+      { name: "a buy for your own trades can run", kind: "action", type: "buy", spec: null, expected: null },
+      {
+        name: "drift for your own trades needs an agent with a target mix",
+        kind: "trigger",
+        type: "drift",
+        spec: null,
+        expected: "Only an agent with a target mix can watch drift."
+      },
+      {
+        name: "a sale for a Weekly buyer",
+        kind: "action",
+        type: "sell",
+        spec: weeklyBuyer,
+        expected: "This agent only buys."
+      },
+      { name: "asking a Weekly buyer about a buy", kind: "action", type: "ask", spec: weeklyBuyer, expected: null }
+    ] as const
+  )("$name", ({ kind, type, spec, expected }) => {
+    const context = { spec, trigger: "schedule", asking: false }
+
+    assert.strictEqual(whyUnavailable(catalogEntry(kind, type), context), expected)
   })
 })
 

@@ -15,6 +15,10 @@ export interface ToolRow {
   readonly state: "running" | "done" | "failed"
   /** What the tool answered, in a few words, once it's done. */
   readonly summary: string | null
+  /** What it was asked, as JSON; while a run streams them, the arguments' text so far. */
+  readonly params: unknown
+  /** What it returned, as JSON (its result, or the problem it ran into); `null` while it runs. */
+  readonly result: unknown
 }
 
 export interface ShownCard {
@@ -64,19 +68,26 @@ const isFailure = (event: AgUiSchema.ToolCallResultEvent): boolean => {
   return Predicate.hasProperty(marker, "isFailure") && marker.isFailure === true
 }
 
+const parseJson = (text: string): unknown =>
+  Option.getOrNull(Schema.decodeOption(Schema.fromJsonString(Schema.Unknown))(text))
+
 // The result of a call as it arrived: the tool's encoded result as a JSON string.
 const resultOf = (content: AgUiSchema.ToolCallResultEvent["content"]): unknown =>
-  typeof content === "string"
-    ? Option.getOrNull(Schema.decodeOption(Schema.fromJsonString(Schema.Unknown))(content))
-    : null
+  typeof content === "string" ? parseJson(content) : null
+
+const updateRow = (turn: BluechipTurn, id: string, update: (row: ToolRow) => ToolRow): BluechipTurn => ({
+  ...turn,
+  tools: turn.tools.map((row) => row.id === id ? update(row) : row)
+})
 
 const finishTool = (turn: BluechipTurn, event: AgUiSchema.ToolCallResultEvent): BluechipTurn => ({
   ...turn,
   tools: turn.tools.map((row) => {
     if (row.id !== event.toolCallId) return row
+    const result = resultOf(event.content)
     return isFailure(event) ?
-      { ...row, state: "failed" } :
-      { ...row, state: "done", summary: toolSummary(row.name, resultOf(event.content)) }
+      { ...row, state: "failed", result } :
+      { ...row, state: "done", summary: toolSummary(row.name, result), result }
   })
 })
 
@@ -107,15 +118,22 @@ export const entriesOf = (messages: ReadonlyArray<Message>): Array<Entry> => {
     for (const part of message.parts) {
       if (part.type === "text") texts.push(part.text)
       else if (part.type === "toolCall") {
-        tools.set(part.id, { id: part.id, name: part.name, state: "running", summary: null })
+        tools.set(part.id, {
+          id: part.id,
+          name: part.name,
+          state: "running",
+          summary: null,
+          params: part.params,
+          result: null
+        })
       } else if (part.type === "toolResult") {
         const row = tools.get(part.id)
         if (row === undefined) continue
         tools.set(
           part.id,
           part.isFailure ?
-            { ...row, state: "failed" } :
-            { ...row, state: "done", summary: toolSummary(part.name, part.result) }
+            { ...row, state: "failed", result: part.result } :
+            { ...row, state: "done", summary: toolSummary(part.name, part.result), result: part.result }
         )
       } else if (part.type === "card") cards.set(part.card.id, { toolCallId: part.toolCallId, card: part.card })
       else if (part.type === "error") error = part.message
@@ -146,8 +164,23 @@ export const applyEvent = (turn: BluechipTurn, event: AgUiSchema.Event): Bluechi
     case "TOOL_CALL_START":
       return {
         ...turn,
-        tools: [...turn.tools, { id: event.toolCallId, name: event.toolCallName, state: "running", summary: null }]
+        tools: [
+          ...turn.tools,
+          { id: event.toolCallId, name: event.toolCallName, state: "running", summary: null, params: "", result: null }
+        ]
       }
+    case "TOOL_CALL_ARGS":
+      return updateRow(
+        turn,
+        event.toolCallId,
+        (row) => typeof row.params === "string" ? { ...row, params: row.params + event.delta } : row
+      )
+    case "TOOL_CALL_END":
+      return updateRow(
+        turn,
+        event.toolCallId,
+        (row) => typeof row.params === "string" ? { ...row, params: parseJson(row.params) } : row
+      )
     case "TOOL_CALL_RESULT":
       return finishTool(turn, event)
     case "CUSTOM": {

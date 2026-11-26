@@ -23,7 +23,7 @@ import { type AutomationSlots, type TemplateAutomation, templateAutomations } fr
 
 const newRequestId = () => crypto.randomUUID() as RequestId
 
-const FIRST: Origin = { kind: "builtIn", template: "rebalancer" }
+const FIRST: Origin = { kind: "builtIn", template: "stockPicker" }
 
 function Loading() {
   return (

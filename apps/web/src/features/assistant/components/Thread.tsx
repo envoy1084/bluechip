@@ -1,14 +1,28 @@
 import type { Card } from "@bluechip/domain/assistant/Card"
 import { ChatMessage } from "@bluechip/ui/bluechip/chat-message"
 import { ToolCallRow } from "@bluechip/ui/bluechip/tool-call-row"
-import { type Entry, shownCards } from "../model/thread.ts"
+import { type ResultCard, resultCardsOf } from "../model/resultCards.ts"
+import { type BluechipTurn, type Entry, shownCards } from "../model/thread.ts"
 import { toolLabel } from "../model/toolLabel.ts"
 import { CardView } from "./cards/CardView.tsx"
 import type { CardViews } from "./cards/CardViews.ts"
+import { ResultCardView } from "./results/ResultCardView.tsx"
+
+// A turn's result cards decode its tools' results; turns are replaced, never changed, so each is decoded once (while a
+// reply streams, only the turn it adds to).
+const decoded = new WeakMap<BluechipTurn, ReadonlyArray<ResultCard>>()
+
+const resultsOf = (turn: BluechipTurn): ReadonlyArray<ResultCard> => {
+  const known = decoded.get(turn)
+  if (known !== undefined) return known
+  const results = resultCardsOf(turn)
+  decoded.set(turn, results)
+  return results
+}
 
 /**
  * The conversation: your messages on the right; bluechip's turns on the left with what it checked (tool rows), its
- * answer as it streams, and the cards that came with it.
+ * answer as it streams, what the reads found (result cards) and the cards that came with it.
  */
 export function Thread(
   { entries, onCard, onRetry, Trade, nameOf }: Readonly<
@@ -24,39 +38,42 @@ export function Thread(
 
   return (
     <div className="grid gap-5">
-      {entries.map((entry) =>
-        entry._tag === "You" ?
-          <ChatMessage key={entry.id} from="you" text={entry.text} /> :
-          (
-            <ChatMessage
-              key={entry.id}
-              from="bluechip"
-              text={entry.text}
-              status={entry.status}
-              {...(entry.error === null ? {} : { error: entry.error })}
-              {...(entry === last && entry.status === "error" ? { onRetry } : {})}
-              toolCalls={entry.tools.length === 0 ? undefined : (
-                <div className="flex flex-wrap gap-1.5">
-                  {entry.tools.map((row) => (
-                    <ToolCallRow
-                      key={row.id}
-                      state={row.state}
-                      label={toolLabel(row)}
-                      {...(row.summary === null ? {} : { result: row.summary })}
-                    />
-                  ))}
-                </div>
-              )}
-              attachments={shownCards(entry).length === 0 ? undefined : (
-                <div className="grid gap-3 pt-1">
-                  {shownCards(entry).map(({ card }) => (
-                    <CardView key={card.id} card={card} onCard={onCard} Trade={Trade} nameOf={nameOf} />
-                  ))}
-                </div>
-              )}
-            />
-          )
-      )}
+      {entries.map((entry) => {
+        if (entry._tag === "You") return <ChatMessage key={entry.id} from="you" text={entry.text} />
+        const results = resultsOf(entry)
+        const cards = shownCards(entry)
+
+        return (
+          <ChatMessage
+            key={entry.id}
+            from="bluechip"
+            text={entry.text}
+            status={entry.status}
+            {...(entry.error === null ? {} : { error: entry.error })}
+            {...(entry === last && entry.status === "error" ? { onRetry } : {})}
+            toolCalls={entry.tools.length === 0 ? undefined : (
+              <div className="flex flex-wrap gap-1.5">
+                {entry.tools.map((row) => (
+                  <ToolCallRow
+                    key={row.id}
+                    state={row.state}
+                    label={toolLabel(row)}
+                    {...(row.summary === null ? {} : { result: row.summary })}
+                  />
+                ))}
+              </div>
+            )}
+            attachments={results.length === 0 && cards.length === 0 ? undefined : (
+              <div className="grid gap-3 pt-1">
+                {results.map((result) => <ResultCardView key={result.id} card={result} nameOf={nameOf} />)}
+                {cards.map(({ card }) => (
+                  <CardView key={card.id} card={card} onCard={onCard} Trade={Trade} nameOf={nameOf} />
+                ))}
+              </div>
+            )}
+          />
+        )
+      })}
     </div>
   )
 }

@@ -100,6 +100,10 @@ test.describe("tool rows", () => {
     await expect(lastTurn(page).getByRole("status").filter({ hasText: "Checked prices" })).toContainText(
       /NVIDIA \$\d{1,3}(,\d{3})*\.\d\d/
     )
+    // What it read, as a card under the row, with the way to every stock.
+    const prices = lastTurn(page).getByRole("region", { name: "Prices" })
+    await expect(prices).toContainText(/\$\d{1,3}(,\d{3})*\.\d\d/)
+    await expect(prices.getByRole("link", { name: "All stocks" })).toHaveAttribute("href", "/stocks")
   })
 
   test("a portfolio read shows its value", async ({ page, user: _user, replies }) => {
@@ -111,6 +115,9 @@ test.describe("tool rows", () => {
     })
 
     await expect(lastTurn(page).getByRole("status").filter({ hasText: "Read your portfolio" })).toContainText("$0.00")
+    await expect(lastTurn(page).getByRole("region", { name: "Your portfolio" })).toContainText(
+      "Nothing in your account yet."
+    )
   })
 })
 
@@ -152,6 +159,43 @@ test.describe("chats sidebar", () => {
     await expect(page.getByText(older, { exact: true })).toBeVisible()
     await expect(page.getByText("Apple makes phones.")).toBeVisible()
     await expect(page.getByText(newer, { exact: true })).toBeHidden()
+    await expect(composer(page)).toBeFocused()
+  })
+
+  test("Delete in a chat's menu deletes it, and the open one makes way for a new chat", async ({ page, user: _user, replies }) => {
+    const to = unique("Tell me about Ford")
+    await ask(page, replies, {
+      to,
+      rounds: [[{ text: "Ford makes trucks." }]],
+      notes: { title: "About Ford", memories: [] }
+    })
+    const chats = page.getByRole("complementary", { name: "Chats" })
+
+    await chats.getByRole("button", { name: "More for About Ford" }).click()
+    await page.getByRole("menuitem", { name: "Delete" }).click()
+    const dialog = page.getByRole("alertdialog", { name: "Delete “About Ford”?" })
+    await dialog.getByRole("button", { name: "Delete chat" }).click()
+
+    await expect(page).toHaveURL(/\/chat$/)
+    await expect(chats.getByRole("link", { name: /^About Ford/ })).toBeHidden()
+    await expect(page.getByText(to, { exact: true })).toBeHidden()
+  })
+
+  test("Keep it leaves a chat as it was", async ({ page, user: _user, replies }) => {
+    const to = unique("Tell me about Coca-Cola")
+    await ask(page, replies, {
+      to,
+      rounds: [[{ text: "Coca-Cola makes drinks." }]],
+      notes: { title: "About Coca-Cola", memories: [] }
+    })
+    const chats = page.getByRole("complementary", { name: "Chats" })
+
+    await chats.getByRole("button", { name: "More for About Coca-Cola" }).click()
+    await page.getByRole("menuitem", { name: "Delete" }).click()
+    await page.getByRole("alertdialog").getByRole("button", { name: "Keep it" }).click()
+
+    await expect(chats.getByRole("link", { name: /^About Coca-Cola/ })).toBeVisible()
+    await expect(page.getByText(to, { exact: true })).toBeVisible()
   })
 
   test("New chat starts again from an empty thread", async ({ page, user: _user, replies }) => {

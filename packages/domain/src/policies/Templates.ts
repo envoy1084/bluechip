@@ -23,7 +23,7 @@ import { Direction } from "./Trade.ts"
  * @category schemas
  * @since 0.0.0
  */
-export const TemplateId = Schema.Literals(["rebalancer", "stockPicker", "weeklyBuyer", "stopLossGuard"])
+export const TemplateId = Schema.Literals(["stockPicker", "weeklyBuyer", "stopLossGuard", "rebalancer"])
 
 /**
  * @stability unstable

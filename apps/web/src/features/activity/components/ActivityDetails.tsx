@@ -18,19 +18,10 @@ import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
-import { activityAt, describeActivity } from "../../../components/ActivityLine.tsx"
+import { activityAt, activityStatus, activityTitle } from "../../../lib/activityText.ts"
 import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { receiptWhen } from "../model/receipt.ts"
-
-const STATUS = {
-  sending: "Sending",
-  confirming: "Confirming on Base",
-  filled: "Filled",
-  pending: "Sending",
-  confirmed: "Sent",
-  failed: "Didn't go through"
-} as const
 
 function Transaction({ txHash }: Readonly<{ txHash: string | null }>) {
   if (txHash === null) return <>Not on Base yet</>
@@ -63,7 +54,7 @@ export function ActivityDetails(
         {item !== undefined && (
           <>
             <SheetHeader>
-              <SheetTitle>{describeActivity(item, names).title}</SheetTitle>
+              <SheetTitle>{activityTitle(item, names)}</SheetTitle>
               <SheetDescription>
                 {formatDate(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() })}
               </SheetDescription>
@@ -71,14 +62,20 @@ export function ActivityDetails(
             <SheetBody className="grid content-start gap-4">
               {item._tag === "Trade" ? <TradeRows item={item} names={names} /> : (
                 <OrderPreview>
-                  <OrderPreviewRow label="Type">Withdrawal</OrderPreviewRow>
+                  <OrderPreviewRow label="Type">
+                    {item.transfer.kind === "deposit" ? "Deposit" : "Withdrawal"}
+                  </OrderPreviewRow>
                   <OrderPreviewRow label="Amount">
-                    {formatMoney(usdcDollars(item.transfer.amount))} USDC
+                    {item.transfer.asset === "USDC" ?
+                      `${formatMoney(usdcDollars(item.transfer.amount))} USDC` :
+                      `${formatShares(shareCount(item.transfer.amount))} ${item.transfer.asset}`}
                   </OrderPreviewRow>
-                  <OrderPreviewRow label="To">
-                    <span className="font-mono">{item.transfer.to}</span>
+                  <OrderPreviewRow label={item.transfer.kind === "deposit" ? "From" : "To"}>
+                    <span className="font-mono">
+                      {item.transfer.kind === "deposit" ? item.transfer.from : item.transfer.to}
+                    </span>
                   </OrderPreviewRow>
-                  <OrderPreviewRow label="Status">{STATUS[item.transfer.status]}</OrderPreviewRow>
+                  <OrderPreviewRow label="Status">{activityStatus(item).label}</OrderPreviewRow>
                   <OrderPreviewRow label="Transaction">
                     <Transaction txHash={item.transfer.txHash} />
                   </OrderPreviewRow>
@@ -156,7 +153,7 @@ function TradeRows(
       <OrderPreviewRow label="Shares">{formatShares(shareCount(trade.shares))}</OrderPreviewRow>
       <OrderPreviewRow label="Price">{formatMoney(priceDollars(trade.price))} a share</OrderPreviewRow>
       <PriceCheckRows trade={trade} />
-      <OrderPreviewRow label="Status">{STATUS[trade.status]}</OrderPreviewRow>
+      <OrderPreviewRow label="Status">{activityStatus(item).label}</OrderPreviewRow>
       <OrderPreviewRow label="Transaction">
         <Transaction txHash={trade.txHash} />
       </OrderPreviewRow>

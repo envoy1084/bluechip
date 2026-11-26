@@ -2,19 +2,19 @@ import { expect, test } from "../fixtures/test.ts"
 import { canRules, createAgent, dayFromNow, openRule, startAgent } from "../utils/agents.ts"
 
 test.describe("new agent: template step", () => {
-  test("it offers the four templates and scratch, the Rebalancer first", async ({ page, user: _user }) => {
+  test("it offers the four templates and scratch, the Stock picker first", async ({ page, user: _user }) => {
     await page.goto("/agents/new")
 
     await expect(page.getByRole("heading", { name: "What should your agent do?" })).toBeVisible()
     await expect(page.getByRole("radiogroup", { name: "Agent templates" })).toMatchAriaSnapshot(`
       - radiogroup "Agent templates":
-        - radio "Rebalancer"
         - radio "Stock picker"
         - radio "Weekly buyer"
         - radio "Stop-loss guard"
+        - radio "Rebalancer"
         - radio "Start from scratch"
     `)
-    await expect(page.getByRole("radio", { name: "Rebalancer" })).toBeChecked()
+    await expect(page.getByRole("radio", { name: "Stock picker" })).toBeChecked()
     await expect(page.getByRole("radio", { name: "Weekly buyer" })).toHaveAccessibleDescription(
       "Buys the stocks you pick on a schedule."
     )

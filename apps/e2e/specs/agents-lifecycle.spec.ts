@@ -217,7 +217,7 @@ test.describe("expired", () => {
     await page.goto("/agents")
 
     await expect(page.getByRole("link", { name: /^Card ran out / })).toHaveText(
-      new RegExp(`^Card ran out\\s*Stock picker\\s*(Expired)+\\s*Ran out on ${ended}$`)
+      new RegExp(`^Card ran out\\s*(Expired)+\\s*Buys and sells.*Ran out on ${ended}$`)
     )
     await expect(page.getByRole("main").getByRole("button", { name: "Renew", exact: true })).toBeVisible()
   })

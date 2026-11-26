@@ -2,19 +2,19 @@ import type { AgentPerformance } from "@bluechip/domain/performance/Performance"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { formatPercent } from "@bluechip/domain/policies/Format"
 import { LineChart } from "@bluechip/ui/components/chart"
-import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { Icon } from "@bluechip/ui/icons/icon"
+import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatDate, formatMoney } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import type { ReactNode } from "react"
 import { usdcDollars } from "../../../../../lib/amounts.ts"
-import { gasEth } from "../../../../../lib/performance.ts"
 import { costShare } from "../../../model/results.ts"
 
-/** A results card: an icon, a title and what it's about, then its body. */
+/** A results card: an illustration, a title and what it's about, then its body; a last `mt-auto` child sits at the bottom. */
 function Panel(
-  { icon, title, sub, children, className }: Readonly<{
-    icon: IconName
+  { illustration, title, sub, children, className }: Readonly<{
+    illustration: IllustrationName
     title: string
     sub: string
     children: ReactNode
@@ -22,11 +22,9 @@ function Panel(
   }>
 ) {
   return (
-    <section aria-label={title} className={cn("grid content-start gap-4 rounded-lg bg-white p-5 shadow-e2", className)}>
-      <header className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[10px] text-g-600 surface-well">
-          <Icon name={icon} size={17} />
-        </span>
+    <section aria-label={title} className={cn("flex flex-col gap-4 rounded-lg bg-white p-5 shadow-e2", className)}>
+      <header className="flex items-center gap-3">
+        <Illustration name={illustration} size={40} label="" aria-hidden className="shrink-0" />
         <div className="grid gap-0.5">
           <h4 className="text-[14.5px] font-semibold tracking-[-0.01em]">{title}</h4>
           <p className="text-label-sm text-g-500">{sub}</p>
@@ -65,7 +63,7 @@ export function MoneyMoved({ performance }: Readonly<{ performance: AgentPerform
 
   return (
     <Panel
-      icon="coins"
+      illustration="coins"
       title="Money moved"
       sub={`${performance.trades} ${performance.trades === 1 ? "trade" : "trades"} filled`}
     >
@@ -73,7 +71,7 @@ export function MoneyMoved({ performance }: Readonly<{ performance: AgentPerform
         <ShareRow label="Bought" value={formatMoney(bought)} share={bought / most} tone="bg-blue" />
         <ShareRow label="Sold" value={formatMoney(sold)} share={sold / most} tone="bg-g-400" />
       </div>
-      <p className="border-t border-g-100 pt-3 text-label-sm text-g-600">
+      <p className="mt-auto border-t border-g-100 pt-3 text-label-sm text-g-600">
         {bought >= sold ?
           `${formatMoney(bought - sold)} more put into stocks than taken out.` :
           `${formatMoney(sold - bought)} more taken out of stocks than put in.`}
@@ -82,7 +80,7 @@ export function MoneyMoved({ performance }: Readonly<{ performance: AgentPerform
   )
 }
 
-/** What its trades cost beyond the stocks: the pools' fees, slippage against Chainlink and gas. */
+/** What its trades cost beyond the stocks: the pools' fees and slippage against Chainlink. */
 export function TradeCosts({ performance }: Readonly<{ performance: AgentPerformance }>) {
   const { costs } = performance
   const { dollars, percent } = costShare(performance)
@@ -92,9 +90,9 @@ export function TradeCosts({ performance }: Readonly<{ performance: AgentPerform
 
   return (
     <Panel
-      icon="receipt"
+      illustration="receipt"
       title="What it cost"
-      sub={percent === null ? "Nothing traded yet" : `${formatPercent(Math.round(percent * 100))} of what it traded`}
+      sub="Pool fees and slippage"
     >
       <b className="text-[26px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
         {formatMoney(usdcDollars(dollars))}
@@ -108,9 +106,12 @@ export function TradeCosts({ performance }: Readonly<{ performance: AgentPerform
           tone={slippage < 0 ? "bg-gain" : "bg-loss"}
         />
       </div>
-      <p className="flex items-center gap-1.5 border-t border-g-100 pt-3 text-label-sm text-g-600">
-        <Icon name="zap" size={13} className="text-g-400" />
-        {costs.gasWei === BigInt(0) ? "No gas paid" : `${gasEth(costs.gasWei)} of gas`}
+      <p className="mt-auto border-t border-g-100 pt-3 text-label-sm text-g-600">
+        {percent === null ?
+          "Nothing traded yet." :
+          `${formatPercent(Math.round(percent * 100))} of the ${
+            formatMoney(usdcDollars(performance.bought + performance.sold))
+          } it traded.`}
       </p>
     </Panel>
   )
@@ -123,7 +124,7 @@ export function PolicyDecisions({ performance }: Readonly<{ performance: AgentPe
 
   return (
     <Panel
-      icon="shield"
+      illustration="shield"
       title="Its policies"
       sub={performance.decided === 0 ?
         "Nothing tried yet" :
@@ -139,13 +140,13 @@ export function PolicyDecisions({ performance }: Readonly<{ performance: AgentPe
       </div>
       {performance.blockedBy.length === 0 ?
         (
-          <p className="flex items-center gap-1.5 border-t border-g-100 pt-3 text-label-sm text-g-600">
+          <p className="mt-auto flex items-center gap-1.5 border-t border-g-100 pt-3 text-label-sm text-g-600">
             <Icon name="check-circle" size={14} className="text-gain" />
             {performance.decided === 0 ? "Its first trade shows here." : "None of its trades were blocked."}
           </p>
         ) :
         (
-          <ul className="grid gap-2 border-t border-g-100 pt-3">
+          <ul className="mt-auto grid gap-2 border-t border-g-100 pt-3">
             {performance.blockedBy.map((row) => (
               <li key={row.policy} className="flex items-center justify-between gap-3 text-[13.5px]">
                 <span className="flex items-center gap-2 text-g-700">
@@ -169,7 +170,7 @@ export function DriftPanel({ drift }: Readonly<{ drift: NonNullable<AgentPerform
 
   return (
     <Panel
-      icon="target"
+      illustration="target"
       title="Drift from its target mix"
       sub={`It rebalances once the mix is ${formatPercent(latest.triggerBps)} off`}
       className="md:col-span-3"

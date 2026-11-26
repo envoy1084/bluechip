@@ -101,7 +101,7 @@ function AgentsSection() {
   if (!shown) return null
 
   return (
-    <Section title="Danger zone" description="These act on every agent at once.">
+    <Section title="Danger zone" description="These act on every agent at once." illustration="emergency-stop">
       <Row
         title="Pause all agents"
         description={failed ?

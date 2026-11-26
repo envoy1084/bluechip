@@ -1,14 +1,17 @@
 import type { AuditEvent, AuditType } from "@bluechip/domain/audit/Audit"
+import type { IconName } from "@bluechip/ui/icons/icon"
 
-/** The kinds of thing the log filters by, in its menu's order and words. */
-export const AUDIT_TYPES: ReadonlyArray<{ readonly value: AuditType; readonly label: string }> = [
-  { value: "intent", label: "Trades" },
-  { value: "agent", label: "Agents" },
-  { value: "automation", label: "Automations" },
-  { value: "passkey", label: "Passkeys" },
-  { value: "recovery", label: "Recovery" },
-  { value: "device", label: "Devices" },
-  { value: "channel", label: "Chats" }
+/** The kinds of thing the log filters by, in its tabs' order and words, each with its icon. */
+export const AUDIT_TYPES: ReadonlyArray<
+  { readonly value: AuditType; readonly label: string; readonly icon: IconName }
+> = [
+  { value: "intent", label: "Trades", icon: "chart-line" },
+  { value: "agent", label: "Agents", icon: "agent" },
+  { value: "automation", label: "Automations", icon: "zap" },
+  { value: "passkey", label: "Passkeys", icon: "key" },
+  { value: "recovery", label: "Recovery", icon: "shield" },
+  { value: "device", label: "Devices", icon: "desktop" },
+  { value: "channel", label: "Chats", icon: "chat" }
 ]
 
 const INTENT: Readonly<Record<string, string>> = {
@@ -52,7 +55,8 @@ const ACTIONS: Readonly<Record<string, (name: string) => string>> = {
   "channel.unlinked": () => "A chat was unlinked"
 }
 
-const field = (event: AuditEvent, key: string): string | undefined => {
+/** A string field of the event's `data`, when it has one. */
+export const auditField = (event: AuditEvent, key: string): string | undefined => {
   const data = event.data
   if (data === null || typeof data !== "object" || Array.isArray(data)) return undefined
   const value = (data as Record<string, unknown>)[key]
@@ -64,21 +68,23 @@ export const describeAudit = (event: AuditEvent): string => {
   if (event.action.startsWith("intent.")) {
     return INTENT[event.action.slice("intent.".length)] ?? "A trade changed"
   }
-  const named = field(event, "name") ?? field(event, "label") ?? field(event, "device")
-  if (event.action === "device.signedOut" && field(event, "device") === undefined) {
+  const named = auditField(event, "name") ?? auditField(event, "label") ?? auditField(event, "device")
+  if (event.action === "device.signedOut" && auditField(event, "device") === undefined) {
     return "Every other device was signed out"
   }
   const describe = ACTIONS[event.action]
   return describe === undefined ? event.action : describe(named ?? "A passkey")
 }
 
-/** Who acted, in words. */
-export const actorLabel = (event: AuditEvent): string => {
+/** Who acted, in words: an agent by its name when `agentName` knows it (or the entry carries it). */
+export const actorLabel = (event: AuditEvent, agentName: (id: string) => string | undefined = () => undefined) => {
   switch (event.actor) {
     case "owner":
       return "You"
-    case "agent":
-      return "An agent"
+    case "agent": {
+      const id = event.actorId ?? event.agentId
+      return (id === null ? undefined : agentName(id)) ?? auditField(event, "name") ?? "An agent"
+    }
     case "assistant":
       return "The assistant"
     case "automation":
@@ -86,4 +92,77 @@ export const actorLabel = (event: AuditEvent): string => {
     case "system":
       return "bluechip"
   }
+}
+
+/** The kind of thing an entry is about, by its action's subject (`intent.filled` is an `intent`). */
+export const auditTypeOf = (event: AuditEvent): AuditType | undefined =>
+  AUDIT_TYPES.find((type) => event.action.startsWith(`${type.value}.`))?.value
+
+/** How an entry reads at a glance: went well, went wrong, waits on you, or plain. */
+export type AuditTone = "gain" | "loss" | "warn" | "plain"
+
+const TONES: Readonly<Record<string, AuditTone>> = {
+  "intent.filled": "gain",
+  "intent.failed": "loss",
+  "intent.blocked": "loss",
+  "intent.needsApproval": "warn",
+  "intent.awaitingSignature": "warn",
+  "agent.active": "gain",
+  "agent.removed": "loss",
+  "passkey.added": "gain",
+  "passkey.removed": "loss",
+  "recovery.keySet": "gain",
+  "recovery.signedIn": "warn",
+  "recovery.requested": "warn",
+  "recovery.completed": "warn",
+  "channel.linked": "gain"
+}
+
+export const auditTone = (event: AuditEvent): AuditTone => TONES[event.action] ?? "plain"
+
+/** Where an entry's subject lives in the app, and its name there. */
+export type AuditSubject =
+  | { readonly _tag: "Agent"; readonly agentId: string; readonly label: string }
+  | { readonly _tag: "Trade"; readonly agentId: string | null; readonly label: string }
+  | { readonly _tag: "Automation"; readonly automationId: string; readonly label: string }
+  | { readonly _tag: "Security"; readonly label: string }
+  | { readonly _tag: "Chats"; readonly label: string }
+
+const PLATFORMS: Readonly<Record<string, string>> = { telegram: "Telegram" }
+
+/** The thing an entry is about, to link to: its agent, trade, automation, security setting or chat. */
+export const auditSubject = (
+  event: AuditEvent,
+  agentName: (id: string) => string | undefined = () => undefined
+): AuditSubject | undefined => {
+  const agentLabel = (id: string) => agentName(id) ?? auditField(event, "name") ?? "An agent"
+
+  switch (auditTypeOf(event)) {
+    case "intent": {
+      const label = event.agentId === null ? "Your trade" : `${agentLabel(event.agentId)}'s trade`
+      return { _tag: "Trade", agentId: event.agentId, label }
+    }
+    case "agent":
+      return { _tag: "Agent", agentId: event.subjectId, label: agentLabel(event.subjectId) }
+    case "automation":
+      return { _tag: "Automation", automationId: event.subjectId, label: "Automation" }
+    case "passkey":
+      return { _tag: "Security", label: auditField(event, "label") ?? "Passkeys" }
+    case "recovery":
+      return { _tag: "Security", label: auditField(event, "label") ?? "Recovery" }
+    case "device":
+      return { _tag: "Security", label: auditField(event, "device") ?? "Devices" }
+    case "channel": {
+      const platform = auditField(event, "platform")
+      return { _tag: "Chats", label: (platform === undefined ? undefined : PLATFORMS[platform]) ?? "Chats" }
+    }
+    case undefined:
+      return undefined
+  }
+}
+
+/** Whether an entry matches a search: every word of it in what happened, who did it or what it was about. */
+export const matchesAuditSearch = (fields: ReadonlyArray<string>, search: string): boolean => {
+  const haystack = fields.join(" ").toLowerCase()
+  return search.toLowerCase().split(/\s+/).filter((word) => word !== "").every((word) => haystack.includes(word))
 }

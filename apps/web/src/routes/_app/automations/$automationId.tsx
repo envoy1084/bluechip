@@ -1,6 +1,7 @@
 import { AutomationId } from "@bluechip/domain/Ids"
 import { createFileRoute } from "@tanstack/react-router"
 import * as Schema from "effect/Schema"
+import { AgentStateNow } from "../../../features/agents/components/AgentStatePill.tsx"
 import { AutomationNotFound } from "../../../features/automations/components/ScreenState.tsx"
 import { AutomationScreen } from "../../../features/automations/screens/AutomationScreen.tsx"
 import { IntentLine } from "../../../features/intents/components/IntentLine.tsx"
@@ -12,6 +13,6 @@ const isAutomationId = Schema.is(AutomationId)
 function AutomationPage() {
   const { automationId } = Route.useParams()
   return isAutomationId(automationId)
-    ? <AutomationScreen id={automationId} Intent={IntentLine} />
+    ? <AutomationScreen id={automationId} Intent={IntentLine} AgentState={AgentStateNow} />
     : <AutomationNotFound />
 }

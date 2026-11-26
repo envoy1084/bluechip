@@ -2,8 +2,9 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ComponentType, useState } from "react"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { useAgentPage } from "../components/detail/AgentPageContext.ts"
-import { JournalSection } from "../components/detail/JournalSection.tsx"
+import { JournalSection } from "../components/detail/journal/JournalSection.tsx"
 import { PoliciesSection } from "../components/detail/PoliciesSection.tsx"
 import { AgentResults } from "../components/detail/results/AgentResults.tsx"
 import { SessionHistory } from "../components/detail/SessionHistory.tsx"
@@ -47,9 +48,16 @@ export function AgentResultsScreen() {
 /** How much of each limit it has used today. */
 export function AgentUsageScreen() {
   const { agent, usage } = useAgentPage()
-  return usage === undefined ?
-    <p className="text-body-sm text-g-600">It has no session to count against yet.</p> :
-    <UsageCard agent={agent} usage={usage} />
+  if (usage !== undefined) return <UsageCard agent={agent} usage={usage} />
+
+  const ended = agent.status === "expired" || agent.status === "removed"
+  return (
+    <IllustratedEmpty illustration="hourglass" title={ended ? "Nothing to count" : "Nothing counted yet"}>
+      {ended ?
+        `${agent.name}'s session has ended, so nothing counts against its limits now.` :
+        `Once its limits are locked on Base, what ${agent.name} spends and trades each day shows up here.`}
+    </IllustratedEmpty>
+  )
 }
 
 /** Its trades (from the intents feature), then each time its rules were locked. */

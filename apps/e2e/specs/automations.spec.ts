@@ -12,16 +12,36 @@ test.describe("automations list", () => {
     await expect(page).toHaveURL(/\/automations\/new$/)
   })
 
-  test("your own automations are listed under your own trades, with their sentence", async ({ page, user: _user }) => {
+  test("your own automations are listed with their sentence, as yours", async ({ page, user: _user }) => {
     await saveOwn(page, "Monday buy")
 
     await page.goto("/automations")
 
-    const group = page.getByRole("region", { name: "Your own trades" })
-    await expect(group.getByRole("link", { name: /^Monday buy Active / })).toBeVisible()
-    await expect(group.getByRole("link", { name: /^Monday buy / })).toContainText(
-      /Next run \w{3} \d+ \w{3}, \d{2}:\d{2}/
+    const list = page.getByRole("list", { name: "Automations" })
+    await expect(list.getByRole("link", { name: /^Monday buy Active .*You, with Face ID/ })).toBeVisible()
+    await expect(list.getByRole("link", { name: /^Monday buy / })).toContainText(
+      /Next run \w{3} \d+ \w{3}, \d{2}:\d{2}, (in \d+ (days|h|min)|tomorrow|now)/
     )
+  })
+
+  test("the overview counts what's running, and Needs attention shows none for a healthy one", async ({ page, user: _user }) => {
+    await saveOwn(page, "Counted buy")
+
+    await page.goto("/automations")
+
+    await expect(page.getByRole("region", { name: "Overview" })).toContainText("1 automation watching for you")
+    await page.getByRole("tab", { name: /^Needs attention/ }).click()
+    await expect(page.getByRole("heading", { name: "Nothing needs a look" })).toBeVisible()
+  })
+
+  test("Pause on its row pauses it there", async ({ page, user: _user }) => {
+    await saveOwn(page, "Row pause")
+
+    await page.goto("/automations")
+    await page.getByRole("button", { name: "Pause Row pause" }).click()
+
+    await expect(page.getByRole("link", { name: /^Row pause Paused / })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Resume Row pause" })).toBeVisible()
   })
 })
 
@@ -45,8 +65,7 @@ test.describe("automation editor", () => {
   test("a price trigger reads back as a fall from its high", async ({ page, user: _user }) => {
     await page.goto("/automations/new")
 
-    await page.getByRole("combobox", { name: "Trigger" }).click()
-    await page.getByRole("option", { name: "Price move" }).click()
+    await page.getByRole("radiogroup", { name: "Trigger" }).getByRole("radio", { name: /^Price move/ }).click()
 
     await expect(sentence(page)).toHaveText(/^When .+ falls 10% from its high, buy \$50 of .+\.$/)
   })
@@ -76,9 +95,12 @@ test.describe("automation editor", () => {
   test("an edit is saved under its new name", async ({ page, user: _user }) => {
     await saveOwn(page, "Before the edit")
 
-    await page.getByRole("link", { name: "Edit", exact: true }).click()
-    await page.getByRole("textbox", { name: "Name" }).fill("After the edit")
-    await page.getByRole("button", { name: "Save changes" }).click()
+    await page.getByRole("button", { name: "Edit", exact: true }).click()
+    const sheet = page.getByRole("dialog", { name: "Edit Before the edit" })
+    await sheet.getByRole("textbox", { name: "Name" }).fill("After the edit")
+    await sheet.getByRole("button", { name: "Save changes" }).click()
+
+    await expect(sheet).toBeHidden()
 
     await expect(page.getByRole("heading", { level: 1, name: "After the edit" })).toBeVisible()
   })
@@ -90,7 +112,7 @@ test.describe("automation page", () => {
 
     const about = page.getByRole("region", { name: "What it does" })
     await expect(about).toContainText("Active")
-    await expect(about.getByText(WEEKLY)).toBeVisible()
+    await expect(sentence(page)).toHaveText(WEEKLY)
     await expect(about).toContainText("You, with Face ID for each trade")
     await expect(about).toContainText("RanNot yet")
     await expect(about).toContainText("You set it up")
@@ -137,10 +159,11 @@ test.describe("automation page", () => {
 test.describe("an agent's automations", () => {
   test("its page has none yet, and New automation trades through it", async ({ page, funded: _funded }) => {
     await createAgent(page, { name: "Auto picker" })
+    await page.getByRole("main").getByRole("link", { name: "Automations", exact: true }).click()
 
-    const section = page.getByRole("region", { name: "Automations" })
-    await expect(section).toContainText("None yet.")
-    await section.getByRole("link", { name: "New automation" }).click()
+    const section = page.getByRole("region", { name: "Automations", exact: true })
+    await expect(section.getByRole("heading", { name: "No automations yet" })).toBeVisible()
+    await section.getByRole("link", { name: "New automation" }).first().click()
 
     await expect(page.getByRole("combobox", { name: "Trades through" })).toHaveText("Auto picker")
     await expect(sentence(page)).toHaveText(/^Every Monday at 10:00 New York time, buy \$50 of NVIDIA\.$/)
@@ -148,16 +171,22 @@ test.describe("an agent's automations", () => {
 
   test("one saved for it is listed on its page and under its name", async ({ page, funded: _funded }) => {
     await createAgent(page, { name: "Listed picker" })
-    await page.getByRole("region", { name: "Automations" }).getByRole("link", { name: "New automation" }).click()
+    await page.getByRole("main").getByRole("link", { name: "Automations", exact: true }).click()
+    await page.getByRole("region", { name: "Automations", exact: true }).getByRole("link", { name: "New automation" })
+      .first().click()
     await page.getByRole("textbox", { name: "Name" }).fill("Picker's Monday")
     await page.getByRole("button", { name: "Save automation" }).click()
     await expect(page).toHaveURL(/\/automations\/automation_[0-9a-z]+$/)
 
-    await page.getByRole("main").getByRole("link", { name: "Listed picker" }).click()
-    await expect(page.getByRole("region", { name: "Automations" }).getByRole("link", { name: /^Picker's Monday / }))
-      .toBeVisible()
+    await page.getByRole("main").getByRole("link", { name: "Listed picker", exact: true }).click()
+    await page.getByRole("main").getByRole("link", { name: "Automations", exact: true }).click()
+    await expect(
+      page.getByRole("region", { name: "Automations", exact: true }).getByRole("link", { name: /^Picker's Monday / })
+    ).toBeVisible()
     await page.goto("/automations")
-    await expect(page.getByRole("region", { name: "Listed picker" }).getByRole("link", { name: /^Picker's Monday / }))
+    await page.getByRole("combobox", { name: "Trades through" }).click()
+    await page.getByRole("option", { name: /^Listed picker/ }).click()
+    await expect(page.getByRole("list", { name: "Automations" }).getByRole("link", { name: /^Picker's Monday / }))
       .toBeVisible()
   })
 

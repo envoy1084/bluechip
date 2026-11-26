@@ -4,6 +4,7 @@ import { TRADE_ACTIONS } from "@bluechip/domain/automations/actions/Ask"
 import {
   type Action,
   ACTIONS,
+  type Automation,
   AutomationDraft,
   type Condition,
   CONDITIONS,
@@ -92,22 +93,27 @@ export const freshEntry = (kind: Kind, type: string, stock: StockSymbol, context
   return { type, config }
 }
 
-const fits = (entry: CatalogEntry, context: CheckContext) =>
-  entry.check(entry.defaults as never, context).every((problem) => problem.field !== null)
-
 const TRADES = TRADE_ACTIONS as unknown as ReadonlyArray<CatalogEntry>
 
 /** The trades an `ask` of this automation can propose: those its agent may make when it asks you first. */
 export const offeredTrades = (context: CheckContext): ReadonlyArray<CatalogEntry> =>
-  TRADES.filter((entry) => fits(entry, { ...context, asking: true }))
+  TRADES.filter((entry) => whyUnavailable(entry, { ...context, asking: true }) === null)
 
 /**
- * The entries of a catalog that can run for this automation: those whose defaults aren't refused as a whole (an agent
- * that only buys never sells; only an agent with a target mix watches drift), and `ask` while there is a trade it can
- * propose. Fields can still be wrong.
+ * Why an entry can't run for this automation at all, whatever its fields (an agent that only buys never sells; only
+ * an agent with a target mix watches drift), or `null` when it can. `ask` can while there is a trade it can propose.
  */
+export const whyUnavailable = (entry: CatalogEntry, context: CheckContext): string | null => {
+  if (entry.type === "ask") return offeredTrades(context).length > 0 ? null : "There's no trade it could ask you about."
+  return entry.check(entry.defaults as never, context).find((problem) => problem.field === null)?.message ?? null
+}
+
+/** The entries of a catalog that can run for this automation. Fields can still be wrong. */
 export const offered = (kind: Kind, context: CheckContext): ReadonlyArray<CatalogEntry> =>
-  CATALOG[kind].filter((entry) => entry.type === "ask" ? offeredTrades(context).length > 0 : fits(entry, context))
+  CATALOG[kind].filter((entry) => whyUnavailable(entry, context) === null)
+
+/** Every entry of a catalog, in its order. */
+export const catalogOf = (kind: Kind): ReadonlyArray<CatalogEntry> => CATALOG[kind]
 
 /** The entry with one field changed. */
 export const withField = <E extends Entry>(entry: E, name: string, value: unknown): E => ({
@@ -127,6 +133,18 @@ export const suggestedName = (action: string): string => {
  */
 export const toDraft = (fields: DraftFields, action: string): AutomationDraft =>
   new AutomationDraft({ ...fields, name: fields.name.trim() || suggestedName(action) }, { disableChecks: true })
+
+/** A saved automation as the editor holds it. */
+export const draftFieldsOf = (
+  automation: Pick<Automation, "name" | "agentId" | "trigger" | "conditions" | "action" | "settings">
+): DraftFields => ({
+  name: automation.name,
+  agentId: automation.agentId,
+  trigger: automation.trigger,
+  conditions: automation.conditions,
+  action: automation.action,
+  settings: automation.settings
+})
 
 /** What a new automation starts as: every Monday at 10:00, buying $50 of the first stock it may trade. */
 export const newDraft = (

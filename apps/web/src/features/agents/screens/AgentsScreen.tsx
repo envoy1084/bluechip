@@ -1,3 +1,5 @@
+import type { Agent } from "@bluechip/domain/agents/Agent"
+import type { AgentId } from "@bluechip/domain/Ids"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
@@ -6,13 +8,27 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtom, useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
+import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { useStockLookup } from "../../../hooks/useStockLookup.ts"
+import { agentsAtAGlanceAtom } from "../atoms/agents.ts"
 import { agentMomentAtom } from "../atoms/moment.ts"
 import { AgentListCard } from "../components/list/AgentListCard.tsx"
+import { AgentListToolbar } from "../components/list/AgentListToolbar.tsx"
+import {
+  type AgentFilter,
+  type AgentSort,
+  filterCounts,
+  listedAgent,
+  matches,
+  shows,
+  sortAgents
+} from "../model/agentList.ts"
 import { momentText } from "../model/agentMoment.ts"
+import { hasSession } from "../model/agentState.ts"
 
 const PLACEHOLDER_CARDS = ["a", "b", "c"]
 
@@ -24,14 +40,14 @@ function NewAgentButton({ size = "sm" }: Readonly<{ size?: "sm" | "md" }>) {
   )
 }
 
-function AgentCards() {
+function AgentCards({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentId, number> }>) {
   const agents = useAtomValue(agentsAtom)
   const refresh = useAtomRefresh(agentsAtom)
 
   if (AsyncResult.isInitial(agents)) {
     return (
-      <div aria-busy className="grid gap-3.5 sm:grid-cols-2">
-        {PLACEHOLDER_CARDS.map((id) => <SkeletonBlock key={id} className="h-[148px] w-full rounded-lg" />)}
+      <div aria-busy className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
+        {PLACEHOLDER_CARDS.map((id) => <SkeletonBlock key={id} className="h-[104px] w-full rounded-lg" />)}
       </div>
     )
   }
@@ -63,9 +79,79 @@ function AgentCards() {
       </Empty>
     )
   }
+  return <AgentList agents={agents.value} awaiting={awaiting} />
+}
+
+/** Your agents, filtered, searched and sorted; the toolbar shows once there are two to choose between. */
+function AgentList(
+  { agents, awaiting }: Readonly<{ agents: ReadonlyArray<Agent>; awaiting: ReadonlyMap<AgentId, number> }>
+) {
+  const [now] = useState(() => new Date())
+  const [filter, setFilter] = useState<AgentFilter>("all")
+  const [query, setQuery] = useState("")
+  const [sort, setSort] = useState<AgentSort>("recent")
+  const { nameOf } = useStockLookup()
+
+  const reads = useAtomValue(agentsAtAGlanceAtom(agents.filter(hasSession).map((agent) => agent.id).join(" ")))
+  const readOf = new Map(reads.map((read) => [read.id, read]))
+  const listed = agents.map((agent) => {
+    const read = readOf.get(agent.id)
+    const lastTrade = read === undefined ?
+      null :
+      AsyncResult.isSuccess(read.lastTrade) ?
+      read.lastTrade.value.items[0] ?? null :
+      undefined
+    return listedAgent(agent, now, {
+      ...(read !== undefined && AsyncResult.isSuccess(read.usage) ? { usage: read.usage.value } : {}),
+      lastTradeAt: lastTrade === undefined || lastTrade === null ? lastTrade : DateTime.toDateUtc(lastTrade.updatedAt),
+      awaiting: awaiting.get(agent.id) ?? 0
+    })
+  })
+
+  const shown = sortAgents(
+    listed.filter((each) => shows(each, filter) && matches(each.agent, query, nameOf)),
+    sort
+  )
+  const clear = () => {
+    setFilter("all")
+    setQuery("")
+  }
+
   return (
-    <div className="grid gap-3.5 sm:grid-cols-2">
-      {agents.value.map((agent) => <AgentListCard key={agent.id} agent={agent} />)}
+    <div className="grid gap-4">
+      {agents.length > 1 ?
+        (
+          <AgentListToolbar
+            counts={filterCounts(listed)}
+            filter={filter}
+            query={query}
+            sort={sort}
+            onFilter={setFilter}
+            onQuery={setQuery}
+            onSort={setSort}
+          />
+        ) :
+        null}
+      {shown.length === 0 ?
+        (
+          <Empty>
+            <Illustration name="magnifier" variant="halftone" size={120} className="-my-2" />
+            <EmptyTitle>No agents match</EmptyTitle>
+            <EmptyDescription>
+              {query.trim() === "" ?
+                "None of your agents are in this state right now." :
+                `No agent's name or stocks match "${query.trim()}".`}
+            </EmptyDescription>
+            <EmptyContent>
+              <Button variant="secondary" onClick={clear}>Show all agents</Button>
+            </EmptyContent>
+          </Empty>
+        ) :
+        (
+          <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
+            {shown.map((each) => <AgentListCard key={each.agent.id} listed={each} />)}
+          </div>
+        )}
     </div>
   )
 }
@@ -92,12 +178,15 @@ function RemovedAlert() {
   )
 }
 
-/** The user's agents as cards, with the way to a new one. */
-export function AgentsScreen() {
+/**
+ * The user's agents as compact cards, with the way to a new one. `awaiting` is how many of each agent's trades wait
+ * for your approval, from the route.
+ */
+export function AgentsScreen({ awaiting }: Readonly<{ awaiting: ReadonlyMap<AgentId, number> }>) {
   return (
     <AppPage title="Agents" actions={<NewAgentButton />} width="wide">
       <RemovedAlert />
-      <AgentCards />
+      <AgentCards awaiting={awaiting} />
     </AppPage>
   )
 }

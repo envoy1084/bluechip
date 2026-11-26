@@ -1,13 +1,11 @@
 import { AutomationProblem } from "@bluechip/domain/automations/Automation"
 import { Conflict, InvalidAutomation, NotFound } from "@bluechip/domain/Errors"
 import { assert, describe, it } from "@effect/vitest"
-import * as DateTime from "effect/DateTime"
 import {
   asOneLine,
   choiceLabel,
   judgmentText,
   problemText,
-  runLine,
   saveProblem,
   timeZones
 } from "../../../../../src/features/automations/model/automationText.ts"
@@ -137,41 +135,6 @@ describe("saveProblem", () => {
     }
   ])("$name", ({ error, expected }) => {
     assert.strictEqual(saveProblem(error), expected)
-  })
-})
-
-describe("runLine", () => {
-  const now = new Date("2026-11-26T15:00:00Z")
-
-  it.each(
-    [
-      {
-        name: "a schedule says its next run, in the viewer's zone",
-        automation: { status: "active", nextRunAt: DateTime.makeUnsafe("2026-11-30T15:00:00Z"), lastFiredAt: null },
-        expected: "Next run Mon 30 Nov, 10:00"
-      },
-      {
-        name: "a paused schedule says when it last ran",
-        automation: {
-          status: "paused",
-          nextRunAt: DateTime.makeUnsafe("2026-11-30T15:00:00Z"),
-          lastFiredAt: DateTime.makeUnsafe("2026-11-26T13:00:00Z")
-        },
-        expected: "Last ran 2 h ago"
-      },
-      {
-        name: "an active one that hasn't run",
-        automation: { status: "active", nextRunAt: null, lastFiredAt: null },
-        expected: "Hasn't run yet"
-      },
-      {
-        name: "one that ended without running",
-        automation: { status: "expired", nextRunAt: null, lastFiredAt: null },
-        expected: "Never ran"
-      }
-    ] as const
-  )("$name", ({ automation, expected }) => {
-    assert.strictEqual(runLine(automation, now, "America/New_York"), expected)
   })
 })
 

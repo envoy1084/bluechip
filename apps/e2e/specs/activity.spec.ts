@@ -14,7 +14,7 @@ test.describe("activity", () => {
     await page.goto("/activity")
 
     await expect(page.getByText("No activity yet")).toBeVisible()
-    await expect(page.getByText("Your trades and withdrawals show up here.")).toBeVisible()
+    await expect(page.getByText("Your trades, deposits and withdrawals show up here.")).toBeVisible()
     await choosePeriod(page, "All time")
     await expect(page.getByText("No activity yet")).toBeVisible()
     await expect(page.getByText("Try another type or a longer period.")).toBeHidden()
@@ -28,6 +28,9 @@ test.describe("activity", () => {
     await expect(page.getByRole("heading", { name: "Today", level: 2 })).toBeVisible()
     await expect(page.getByText("Withdrew $15.00")).toBeVisible()
     await expect(page.getByText("To 0x0000…dEaD on Base")).toBeVisible()
+    const summary = page.getByRole("region", { name: "Summary" })
+    await expect(summary.getByText("$15.00")).toBeVisible()
+    await expect(summary.getByText("1 withdrawal")).toBeVisible()
   })
 
   test("a withdrawal's details show its amount, address, status and transaction", async ({ page, funded: _ }) => {
@@ -62,6 +65,19 @@ test.describe("activity", () => {
     await expect(page.getByText("Nothing here yet")).toBeVisible()
     await expect(page.getByText("Try another type or a longer period.")).toBeVisible()
     await filter.getByRole("tab", { name: "Cash" }).click()
+    await expect(page.getByText("Withdrew $15.00")).toBeVisible()
+  })
+
+  test("an empty filter offers every type and period again", async ({ page, funded: _funded }) => {
+    await withdraw(page, 15, burn)
+    await page.goto("/activity")
+    const filter = page.getByRole("tablist", { name: "Filter by type" })
+    await filter.getByRole("tab", { name: "Trades" }).click()
+
+    await page.getByRole("button", { name: "Show all activity" }).click()
+
+    await expect(filter.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "true")
+    await expect(page.getByRole("combobox", { name: "Period" })).toHaveText("All time")
     await expect(page.getByText("Withdrew $15.00")).toBeVisible()
   })
 

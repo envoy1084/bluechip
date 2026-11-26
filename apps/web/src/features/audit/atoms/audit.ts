@@ -37,6 +37,18 @@ export const auditPageAtom = Atom.family((key: string) => {
   })
 })
 
+/**
+ * The pages loaded so far for a filter, read together so the table groups their entries by day as one list: the key
+ * is the filter and the pages' tokens (`null` first), as JSON.
+ */
+export const auditPagesAtom = Atom.family((key: string) => {
+  const { filter, pageTokens } = JSON.parse(key) as {
+    filter: AuditFilter
+    pageTokens: ReadonlyArray<string | null>
+  }
+  return Atom.make((get) => pageTokens.map((pageToken) => get(auditPageAtom(JSON.stringify({ filter, pageToken })))))
+})
+
 /** Everything the filter shows, as the JSON file the export saves. */
 export const exportAuditAtom = BluechipApiClient.runtime.fn(
   Effect.fnUntraced(function*(filter: AuditFilter) {

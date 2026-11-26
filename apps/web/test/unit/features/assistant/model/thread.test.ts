@@ -45,7 +45,7 @@ describe("entriesOf", () => {
       {
         _tag: "Bluechip",
         id: round.id,
-        tools: [{ id: "call-1", name: "getPortfolio", state: "done", summary: null }],
+        tools: [{ id: "call-1", name: "getPortfolio", state: "done", summary: null, params: {}, result: {} }],
         text: "Mostly cash.\n\nAnd some Nvidia.",
         cards: [],
         status: "done",
@@ -70,7 +70,7 @@ describe("entriesOf", () => {
     assert.deepStrictEqual(entriesOf([round]), [{
       _tag: "Bluechip",
       id: round.id,
-      tools: [{ id: "call-1", name: "getPrices", state: "done", summary: "No stocks" }],
+      tools: [{ id: "call-1", name: "getPrices", state: "done", summary: "No stocks", params: {}, result: [] }],
       text: "",
       cards: [],
       status: "done",
@@ -94,7 +94,7 @@ describe("entriesOf", () => {
     assert.deepStrictEqual(entriesOf([round]), [{
       _tag: "Bluechip",
       id: round.id,
-      tools: [{ id: "call-1", name: "getQuote", state: "failed", summary: null }],
+      tools: [{ id: "call-1", name: "getQuote", state: "failed", summary: null, params: {}, result: {} }],
       text: "",
       cards: [],
       status: "done",
@@ -109,7 +109,7 @@ describe("entriesOf", () => {
     assert.deepStrictEqual(entriesOf([round]), [{
       _tag: "Bluechip",
       id: round.id,
-      tools: [{ id: "call-1", name: "getPrices", state: "failed", summary: null }],
+      tools: [{ id: "call-1", name: "getPrices", state: "failed", summary: null, params: {}, result: null }],
       text: "",
       cards: [],
       status: "done",
@@ -233,46 +233,78 @@ describe("applyEvent", () => {
   it("a tool call starts a running row", () => {
     assert.deepStrictEqual(
       applyEvent(turn({}), { type: "TOOL_CALL_START", toolCallId: "call-1", toolCallName: "getPrices" }),
-      turn({ tools: [{ id: "call-1", name: "getPrices", state: "running", summary: null }] })
+      turn({ tools: [{ id: "call-1", name: "getPrices", state: "running", summary: null, params: "", result: null }] })
+    )
+  })
+
+  it("a tool call's arguments stream in, then read as JSON once it ends", () => {
+    const started = turn({
+      tools: [{ id: "call-1", name: "getAgentUsage", state: "running", summary: null, params: "", result: null }]
+    })
+    const streamed = [
+      { type: "TOOL_CALL_ARGS", toolCallId: "call-1", delta: "{\"agentId\":" },
+      { type: "TOOL_CALL_ARGS", toolCallId: "call-1", delta: "\"agent_1\"}" },
+      { type: "TOOL_CALL_END", toolCallId: "call-1" }
+    ] as const
+    assert.deepStrictEqual(
+      streamed.reduce(applyEvent, started),
+      turn({
+        tools: [{
+          id: "call-1",
+          name: "getAgentUsage",
+          state: "running",
+          summary: null,
+          params: { agentId: "agent_1" },
+          result: null
+        }]
+      })
     )
   })
 
   it("a tool result marks its row done, the others still running", () => {
     const running = turn({
       tools: [
-        { id: "call-1", name: "getQuote", state: "running", summary: null },
-        { id: "call-2", name: "getStock", state: "running", summary: null }
+        { id: "call-1", name: "getQuote", state: "running", summary: null, params: null, result: null },
+        { id: "call-2", name: "getStock", state: "running", summary: null, params: null, result: null }
       ]
     })
     assert.deepStrictEqual(
       applyEvent(running, { type: "TOOL_CALL_RESULT", messageId: "r1", toolCallId: "call-1", content: "{}" }),
       turn({
         tools: [
-          { id: "call-1", name: "getQuote", state: "done", summary: null },
-          { id: "call-2", name: "getStock", state: "running", summary: null }
+          { id: "call-1", name: "getQuote", state: "done", summary: null, params: null, result: {} },
+          { id: "call-2", name: "getStock", state: "running", summary: null, params: null, result: null }
         ]
       })
     )
   })
 
   it("a tool result's JSON decoded into its row's summary", () => {
-    const running = turn({ tools: [{ id: "call-1", name: "listAgents", state: "running", summary: null }] })
+    const running = turn({
+      tools: [{ id: "call-1", name: "listAgents", state: "running", summary: null, params: null, result: null }]
+    })
     assert.deepStrictEqual(
       applyEvent(running, { type: "TOOL_CALL_RESULT", messageId: "r1", toolCallId: "call-1", content: "[]" }),
-      turn({ tools: [{ id: "call-1", name: "listAgents", state: "done", summary: "No agents yet" }] })
+      turn({
+        tools: [{ id: "call-1", name: "listAgents", state: "done", summary: "No agents yet", params: null, result: [] }]
+      })
     )
   })
 
   it("a tool result that isn't JSON: done, without a summary", () => {
-    const running = turn({ tools: [{ id: "call-1", name: "listAgents", state: "running", summary: null }] })
+    const running = turn({
+      tools: [{ id: "call-1", name: "listAgents", state: "running", summary: null, params: null, result: null }]
+    })
     assert.deepStrictEqual(
       applyEvent(running, { type: "TOOL_CALL_RESULT", messageId: "r1", toolCallId: "call-1", content: "not json" }),
-      turn({ tools: [{ id: "call-1", name: "listAgents", state: "done", summary: null }] })
+      turn({ tools: [{ id: "call-1", name: "listAgents", state: "done", summary: null, params: null, result: null }] })
     )
   })
 
   it("a failed tool result marks its row failed", () => {
-    const running = turn({ tools: [{ id: "call-1", name: "getQuote", state: "running", summary: null }] })
+    const running = turn({
+      tools: [{ id: "call-1", name: "getQuote", state: "running", summary: null, params: null, result: null }]
+    })
     assert.deepStrictEqual(
       applyEvent(running, {
         type: "TOOL_CALL_RESULT",
@@ -281,7 +313,7 @@ describe("applyEvent", () => {
         content: "{}",
         metadata: { "effect/ai": { isFailure: true } }
       }),
-      turn({ tools: [{ id: "call-1", name: "getQuote", state: "failed", summary: null }] })
+      turn({ tools: [{ id: "call-1", name: "getQuote", state: "failed", summary: null, params: null, result: {} }] })
     )
   })
 
@@ -327,14 +359,14 @@ describe("applyEvent", () => {
   it("the run finishing: done, trailing space trimmed, running rows done", () => {
     const streaming = turn({
       text: "Done.\n\n",
-      tools: [{ id: "call-1", name: "getPrices", state: "running", summary: null }]
+      tools: [{ id: "call-1", name: "getPrices", state: "running", summary: null, params: null, result: null }]
     })
     assert.deepStrictEqual(
       applyEvent(streaming, { type: "RUN_FINISHED", threadId: "t1", runId: "r1" }),
       turn({
         text: "Done.",
         status: "done",
-        tools: [{ id: "call-1", name: "getPrices", state: "done", summary: null }]
+        tools: [{ id: "call-1", name: "getPrices", state: "done", summary: null, params: null, result: null }]
       })
     )
   })
@@ -342,7 +374,7 @@ describe("applyEvent", () => {
   it("the run failing: an error, running rows failed", () => {
     const streaming = turn({
       text: "Checking ",
-      tools: [{ id: "call-1", name: "getPrices", state: "running", summary: null }]
+      tools: [{ id: "call-1", name: "getPrices", state: "running", summary: null, params: null, result: null }]
     })
     assert.deepStrictEqual(
       applyEvent(streaming, { type: "RUN_ERROR", message: "The model can't answer right now." }),
@@ -350,7 +382,7 @@ describe("applyEvent", () => {
         text: "Checking",
         status: "error",
         error: "The model can't answer right now.",
-        tools: [{ id: "call-1", name: "getPrices", state: "failed", summary: null }]
+        tools: [{ id: "call-1", name: "getPrices", state: "failed", summary: null, params: null, result: null }]
       })
     )
   })

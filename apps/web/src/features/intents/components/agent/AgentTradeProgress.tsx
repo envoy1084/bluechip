@@ -12,6 +12,7 @@ import { nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tra
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
 import { shownDecision, STATUS } from "../../model/intentText.ts"
 import { DecisionLine } from "../DecisionLine.tsx"
+import { FilledTrade } from "../FilledTrade.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
 
 // What an ended intent that sent nothing says.
@@ -56,7 +57,7 @@ function ApproveHere(
 }
 
 /**
- * A trade you asked the agent for, followed live: checked against its policies, then sent by the agent, waiting for
+ * A trade you asked the agent for (or your own, once signed), followed live, with its receipt once it fills: checked against its policies, then sent by the agent, waiting for
  * your Face ID (approve it right here), blocked by a policy, or waiting to be tried again. With `onDone`, an ended
  * trade offers to start another.
  */
@@ -87,10 +88,16 @@ export function AgentTradeProgress(
     ) :
     null
 
-  // Once sent, Base takes a couple of seconds: one place that turns from the wait into the fill or the failure.
+  // Once sent, Base takes a couple of seconds: one place that turns from the wait into the fill or the failure, then
+  // the receipt of what filled.
   if (stage !== null) {
     const text = tradeOutcome(stage, intent.leg.side, trade)
-    return <Outcome tone={text.tone} title={text.title} description={text.description} actions={again ?? undefined} />
+    return (
+      <div className="grid gap-3">
+        <Outcome tone={text.tone} title={text.title} description={text.description} actions={again ?? undefined} />
+        {stage === "filled" && intent.tradeId !== null ? <FilledTrade id={intent.tradeId} withTx /> : null}
+      </div>
+    )
   }
 
   return (

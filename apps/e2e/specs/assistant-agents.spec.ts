@@ -33,6 +33,10 @@ test.describe("draft agent cards", () => {
     await expect(card.getByRole("heading", { name: "Apple weekly" })).toBeVisible()
     await expect(card.getByText("Runs for 90 days once locked. Pause it any time.")).toBeVisible()
     await expect(card.getByText("Not running yet")).toBeVisible()
+    await expect(card.getByRole("list", { name: "Its stocks" }).getByRole("listitem")).toHaveCount(1)
+    await expect(card.getByRole("region", { name: "The worst case" })).toContainText(
+      "On its worst day it could spend $250"
+    )
 
     await card.getByRole("button", { name: "Lock with Face ID" }).click()
 

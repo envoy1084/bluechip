@@ -1,125 +1,208 @@
 import type { ActivityItem, ActivityKind, ActivityPeriod } from "@bluechip/domain/activity/Activity"
 import { Button } from "@bluechip/ui/components/button"
-import { Empty, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatDate } from "@bluechip/ui/lib/format"
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
-import * as DateTime from "effect/DateTime"
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
+import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { activityAtom } from "../../../atoms/activity.ts"
-import { activityAt, ActivityLine } from "../../../components/ActivityLine.tsx"
+import { agentsAtom } from "../../../atoms/agents.ts"
+import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
+import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
-import { localTimeZone } from "../../../lib/localTime.ts"
+import { activityAt, activityId } from "../../../lib/activityText.ts"
+import { dayHeading } from "../../../lib/localTime.ts"
+import { activityPagesAtom } from "../atoms/activity.ts"
 import { ActivityDetails } from "../components/ActivityDetails.tsx"
+import { ActivityEntry } from "../components/ActivityEntry.tsx"
+import { ActivityFilters } from "../components/ActivityFilters.tsx"
+import { ActivitySummary, ActivitySummarySkeleton } from "../components/ActivitySummary.tsx"
 import { emptyActivity } from "../model/emptyActivity.ts"
 
 type Kind = typeof ActivityKind.Type
 type Period = typeof ActivityPeriod.Type
 
-const PERIODS: ReadonlyArray<{ readonly value: Period; readonly label: string }> = [
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-  { value: "all", label: "All time" }
-]
-
-/** The day an item belongs to, as the list heads it: Today, Yesterday, then the date. */
-const dayOf = (item: ActivityItem) => {
-  const at = DateTime.toDateUtc(activityAt(item))
-  const days = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(at).setHours(0, 0, 0, 0)) / 86_400_000)
-  return days === 0 ? "Today" : days === 1 ? "Yesterday" : formatDate(at, { time: false, timeZone: localTimeZone() })
-}
-
-/** Every trade and withdrawal, by day, filtered by kind and period, each opening its details. */
-export function ActivityScreen() {
-  const [kind, setKind] = useState<Kind>("all")
-  const [period, setPeriod] = useState<Period>("7d")
-  const [selected, setSelected] = useState<ActivityItem | undefined>(undefined)
-  const activity = useAtomValue(activityAtom(`${kind} ${period}`))
-  const refresh = useAtomRefresh(activityAtom(`${kind} ${period}`))
-
-  const { names } = useStockLookup()
-  const items = AsyncResult.isSuccess(activity) ? activity.value.items : []
-  const days = [...new Set(items.map(dayOf))]
-
+function ListSkeleton() {
   return (
-    <AppPage title="Activity">
-      <div className="flex flex-wrap items-center gap-2.5">
-        <Tabs variant="segmented" value={kind} onValueChange={(value) => setKind(value as Kind)}>
-          <TabsList
-            aria-label="Filter by type"
-            className="[&_[role=tab]]:h-[28px] [&_[role=tab]]:px-3 [&_[role=tab]]:text-label-sm"
-          >
-            <TabsTab value="all">All</TabsTab>
-            <TabsTab value="trades">Trades</TabsTab>
-            <TabsTab value="cash">Cash</TabsTab>
-          </TabsList>
-        </Tabs>
-        <Select items={PERIODS} value={period} onValueChange={(value) => value !== null && setPeriod(value as Period)}>
-          <SelectTrigger size="sm" aria-label="Period" className="w-[150px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIODS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {AsyncResult.isInitial(activity) && <SkeletonBlock className="h-48 w-full" />}
-
-      {AsyncResult.isFailure(activity) && (
-        <div className="grid justify-items-center gap-3 py-10 text-center">
-          <p className="text-body-sm text-g-600">
-            We couldn't load your activity. Check your connection and try again.
-          </p>
-          <Button variant="secondary" onClick={refresh}>
-            <Icon name="refresh" size={14} />Try again
-          </Button>
+    <div aria-busy className="grid gap-4 px-5 py-4">
+      {[0, 1, 2].map((row) => (
+        <div key={row} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3.5">
+          <SkeletonBlock className="size-[34px] rounded-md" />
+          <div className="grid gap-2">
+            <SkeletonBlock className="h-4 w-2/3" />
+            <SkeletonBlock className="h-3 w-1/3" />
+          </div>
         </div>
-      )}
-
-      {AsyncResult.isSuccess(activity) && items.length === 0 && (
-        <EmptyActivity filtered={kind !== "all" || period !== "all"} />
-      )}
-
-      {days.map((day) => (
-        <section key={day} className="grid gap-2">
-          <h2 className="text-label-sm font-semibold text-g-500">{day}</h2>
-          <ul className="overflow-hidden rounded-lg bg-white shadow-e2">
-            {items.filter((item) => dayOf(item) === day).map((item) => (
-              <ActivityLine
-                key={item._tag === "Trade" ? item.trade.id : item.transfer.id}
-                item={item}
-                names={names}
-                onOpen={() => setSelected(item)}
-              />
-            ))}
-          </ul>
-        </section>
       ))}
-
-      <ActivityDetails item={selected} names={names} onClose={() => setSelected(undefined)} />
-    </AppPage>
+    </div>
   )
 }
 
-/** The empty list. It reads the whole history only once a filter comes back empty, to know what to say. */
-function EmptyActivity({ filtered }: Readonly<{ filtered: boolean }>) {
+/** A page that didn't load, with a way to ask again. */
+function PageProblem({ query, what }: Readonly<{ query: Parameters<typeof activityAtom>[0]; what: string }>) {
+  const refresh = useAtomRefresh(activityAtom(query))
+  return (
+    <div className="grid justify-items-center gap-2.5 border-t border-g-100 px-5 py-8 text-center first:border-t-0">
+      <p className="text-body-sm text-g-600">We couldn't load {what}. Check your connection and try again.</p>
+      <Button variant="secondary" size="sm" onClick={refresh}>
+        <Icon name="refresh" size={14} />Try again
+      </Button>
+    </div>
+  )
+}
+
+/**
+ * The empty list, with the way forward: cash to start with, or every type and period. It reads the whole history only
+ * once a filter comes back empty, to know what to say.
+ */
+function EmptyActivity({ filtered, onShowAll }: Readonly<{ filtered: boolean; onShowAll: () => void }>) {
   const everything = useAtomValue(activityAtom("all all"))
+  const openCash = useAtomSet(cashDialogAtom)
   const history = !AsyncResult.isSuccess(everything) ? "unknown" : everything.value.items.length === 0 ? "none" : "some"
   const { title, description } = emptyActivity(history, filtered)
 
   return (
-    <Empty variant="outline" size="sm">
-      <EmptyMedia>
-        <Icon name="activity" size={18} />
-      </EmptyMedia>
-      <EmptyTitle>{title}</EmptyTitle>
-      <EmptyDescription>{description}</EmptyDescription>
-    </Empty>
+    <IllustratedEmpty
+      illustration="empty-inbox"
+      title={title}
+      size={120}
+      action={history === "none" ?
+        (
+          <Button variant="secondary" size="sm" onClick={() => openCash("add")}>
+            <Icon name="plus" size={14} />Add cash
+          </Button>
+        ) :
+        filtered && history === "some" ?
+        <Button variant="secondary" size="sm" onClick={onShowAll}>Show all activity</Button> :
+        undefined}
+    >
+      {description}
+    </IllustratedEmpty>
+  )
+}
+
+/**
+ * Every trade, deposit and withdrawal, filtered by type and period: the period's totals, then the items by day, each
+ * opening its details, older ones page by page.
+ */
+export function ActivityScreen() {
+  const [kind, setKind] = useState<Kind>("all")
+  const [period, setPeriod] = useState<Period>("7d")
+  const [pageTokens, setPageTokens] = useState<ReadonlyArray<string>>([""])
+  const [selected, setSelected] = useState<ActivityItem | undefined>(undefined)
+  const [now] = useState(() => new Date())
+
+  const pages = useAtomValue(activityPagesAtom(`${kind} ${period} ${pageTokens.join(" ")}`))
+  const agents = useAtomValue(agentsAtom)
+  const { names } = useStockLookup()
+
+  const loadedCount = pages.findIndex((page) => !AsyncResult.isSuccess(page))
+  const loaded = (loadedCount === -1 ? pages : pages.slice(0, loadedCount)).flatMap((page) =>
+    AsyncResult.isSuccess(page) ? [page.value] : []
+  )
+  const pending = loadedCount === -1 ? undefined : pages[loadedCount]
+  const nextPageToken = pending === undefined ? (loaded.at(-1)?.nextPageToken ?? null) : null
+  const items = loaded.flatMap((page) => page.items)
+  // Each day's items under its heading, in the order they came.
+  const days = Array.groupBy(items, (item) => dayHeading(activityAt(item), now))
+
+  const agentNames = new Map(AsyncResult.isSuccess(agents) ? agents.value.map((agent) => [agent.id, agent.name]) : [])
+  const pageQuery = (index: number) => {
+    const token = pageTokens[index] ?? ""
+    return token === "" ? `${kind} ${period}` as const : `${kind} ${period} ${token}` as const
+  }
+  const filter = (next: { readonly kind?: Kind; readonly period?: Period }) => {
+    setKind(next.kind ?? kind)
+    setPeriod(next.period ?? period)
+    setPageTokens([""])
+  }
+
+  const body = () => {
+    if (loaded.length === 0 && pending !== undefined) {
+      if (AsyncResult.isInitial(pending)) {
+        return (
+          <>
+            <ActivitySummarySkeleton />
+            <div className="overflow-hidden rounded-lg bg-white shadow-e2">
+              <ListSkeleton />
+            </div>
+          </>
+        )
+      }
+      return (
+        <div className="overflow-hidden rounded-lg bg-white shadow-e2">
+          <PageProblem query={pageQuery(0)} what="your activity" />
+        </div>
+      )
+    }
+    if (items.length === 0) {
+      return (
+        <div className="rounded-lg bg-white shadow-e2">
+          <EmptyActivity
+            filtered={kind !== "all" || period !== "all"}
+            onShowAll={() => filter({ kind: "all", period: "all" })}
+          />
+        </div>
+      )
+    }
+
+    return (
+      <>
+        <ActivitySummary items={items} kind={kind} partial={nextPageToken !== null || pending !== undefined} />
+        <div className="overflow-hidden rounded-lg bg-white shadow-e2">
+          {Object.entries(days).map(([day, dayItems]) => (
+            <section key={day} aria-label={day}>
+              <h2 className="border-b border-g-100 bg-g-50/70 px-5 py-2 text-caption font-semibold tracking-[0.02em] text-g-500 uppercase">
+                {day}
+              </h2>
+              <ul>
+                {dayItems.map((item) => (
+                  <ActivityEntry
+                    key={activityId(item)}
+                    item={item}
+                    names={names}
+                    agentName={(id) => agentNames.get(id)}
+                    onOpen={() => setSelected(item)}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))}
+          {pending === undefined ?
+            null :
+            AsyncResult.isInitial(pending) ?
+            <ListSkeleton /> :
+            <PageProblem query={pageQuery(loadedCount)} what="your older activity" />}
+          {nextPageToken === null ?
+            null :
+            (
+              <div className="grid border-t border-g-100 p-2.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPageTokens((tokens) => [...tokens, nextPageToken])}
+                >
+                  Show older activity
+                </Button>
+              </div>
+            )}
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <AppPage title="Activity" sub="Every trade, and every dollar in and out">
+      <ActivityFilters
+        kind={kind}
+        period={period}
+        onKind={(next) => filter({ kind: next })}
+        onPeriod={(next) => filter({ period: next })}
+      />
+      {body()}
+      <ActivityDetails item={selected} names={names} onClose={() => setSelected(undefined)} />
+    </AppPage>
   )
 }

@@ -1,4 +1,5 @@
 import { SIMPLE_CONDITIONS } from "@bluechip/domain/automations/conditions/Logic"
+import type { Field } from "@bluechip/domain/automations/Entry"
 import { Button } from "@bluechip/ui/components/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -127,9 +128,12 @@ function NestedConditions(
   )
 }
 
+// Fields small enough to sit two to a row, when the editor is wide enough: a time beside its zone, From beside To.
+const HALF = new Set(["time", "timeZone", "stock"])
+
 /**
- * The fields of a trigger, condition or action, one after another from the catalog's hints; the conditions of
- * `all`, `any` and `not`, and the trade `ask` proposes, are edited in place.
+ * The fields of a trigger, condition or action, one after another from the catalog's hints, short ones side by side
+ * where there is room; the conditions of `all`, `any` and `not`, and the trade `ask` proposes, are edited in place.
  */
 export function EntryEditor(
   { kind, value, context, problemOf, onChange }: Readonly<{
@@ -144,69 +148,70 @@ export function EntryEditor(
   const config = value.config as Record<string, unknown>
   const stock = context.stocks[0]!.symbol
   const set = (name: string, next: unknown) => onChange(changeField(value, name, next, stock))
+  const fields = fieldsOf(entry)
+  if (fields.length === 0) return null
 
-  return (
-    <div className="grid gap-4 empty:hidden">
-      {fieldsOf(entry).map(([name, field]) => {
-        if (field.unit === "action") {
-          const trade = config[name] as Entry
-          return (
-            <div key={name} className="grid gap-3 rounded-[12px] p-3 surface-well">
-              <span className="text-[13.5px] font-medium text-g-700">{field.label}</span>
-              <EntryTypeSelect
-                label={field.label}
-                value={trade.type}
-                entries={offeredTrades(context.check)}
-                onChange={(type) => set(name, freshEntry("action", type, stock))}
-              />
-              <EntryEditor
-                kind="action"
-                value={trade}
-                context={context}
-                problemOf={() => undefined}
-                onChange={(next) => set(name, next)}
-              />
-            </div>
-          )
-        }
-
-        if (field.unit === "conditions") {
-          // `not` holds one condition; `all` and `any` a list of at least one.
-          if (!Array.isArray(config[name])) {
-            return (
-              <NestedCondition
-                key={name}
-                value={config[name] as Entry}
-                context={context}
-                onChange={(next) => set(name, next)}
-              />
-            )
-          }
-          return (
-            <NestedConditions
-              key={name}
-              value={config[name] as ReadonlyArray<Entry>}
-              context={context}
-              problem={problemOf(name)}
-              onChange={(next) => set(name, next)}
-            />
-          )
-        }
-
-        return (
-          <EntryField
-            key={name}
-            entry={entry}
-            name={name}
-            field={field}
-            value={config[name]}
-            config={config}
+  const fieldOf = (name: string, field: Field) => {
+    if (field.unit === "action") {
+      const trade = config[name] as Entry
+      return (
+        <div className="grid gap-3 rounded-[12px] p-3 surface-well">
+          <span className="text-[13.5px] font-medium text-g-700">{field.label}</span>
+          <EntryTypeSelect
+            label={field.label}
+            value={trade.type}
+            entries={offeredTrades(context.check)}
+            onChange={(type) => set(name, freshEntry("action", type, stock))}
+          />
+          <EntryEditor
+            kind="action"
+            value={trade}
             context={context}
-            problem={problemOf(name)}
+            problemOf={() => undefined}
             onChange={(next) => set(name, next)}
           />
-        )
-      })}
+        </div>
+      )
+    }
+
+    if (field.unit === "conditions") {
+      // `not` holds one condition; `all` and `any` a list of at least one.
+      if (!Array.isArray(config[name])) {
+        return <NestedCondition value={config[name] as Entry} context={context} onChange={(next) => set(name, next)} />
+      }
+      return (
+        <NestedConditions
+          value={config[name] as ReadonlyArray<Entry>}
+          context={context}
+          problem={problemOf(name)}
+          onChange={(next) => set(name, next)}
+        />
+      )
+    }
+
+    return (
+      <EntryField
+        entry={entry}
+        name={name}
+        field={field}
+        value={config[name]}
+        config={config}
+        context={context}
+        problem={problemOf(name)}
+        onChange={(next) => set(name, next)}
+      />
+    )
+  }
+
+  return (
+    <div className="@container">
+      <div className="grid gap-4 @xl:grid-cols-2 *:empty:hidden">
+        {fields.map(([name, field]) => (
+          <div key={name} className={HALF.has(field.unit) ? "min-w-0" : "min-w-0 @xl:col-span-2"}>
+            {fieldOf(name, field)}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

@@ -7,15 +7,14 @@ test.describe("audit log", () => {
 
     await expect(page.getByRole("heading", { name: "Audit log", level: 1 })).toBeVisible()
     await expect(page.getByTestId("audit-event").first()).toContainText("signed in")
-    await expect(page.getByTestId("audit-event").first()).toContainText("You,")
+    await expect(page.getByTestId("audit-event").first()).toContainText("You")
   })
 
   test("filtered to agents, it lists the lock of a new agent", async ({ page, funded: _funded }) => {
     await createAgent(page, { name: "Audited picker" })
     await page.goto("/settings/audit")
 
-    await page.getByRole("combobox", { name: "Kind" }).click()
-    await page.getByRole("option", { name: "Agents" }).click()
+    await page.getByRole("tablist", { name: "Kind" }).getByRole("tab", { name: "Agents" }).click()
 
     await expect(page.getByTestId("audit-event").first()).toContainText(
       "Audited picker's policies are in force onchain"
@@ -27,8 +26,7 @@ test.describe("audit log", () => {
   test("a filter nothing matches shows an empty state", async ({ page, user: _user }) => {
     await page.goto("/settings/audit")
 
-    await page.getByRole("combobox", { name: "Kind" }).click()
-    await page.getByRole("option", { name: "Recovery" }).click()
+    await page.getByRole("tablist", { name: "Kind" }).getByRole("tab", { name: "Recovery" }).click()
 
     await expect(page.getByText("Nothing your account did matches these filters.")).toBeVisible()
   })
@@ -36,9 +34,28 @@ test.describe("audit log", () => {
   test("dates: a range before today is empty", async ({ page, user: _user }) => {
     await page.goto("/settings/audit")
 
+    await page.getByRole("combobox", { name: "Days" }).click()
+    await page.getByRole("option", { name: "Custom range" }).click()
     await page.getByLabel("To").fill("2020-01-01")
 
     await expect(page.getByText("Nothing your account did matches these filters.")).toBeVisible()
+  })
+
+  test("a search narrows the loaded entries, and says when none matches", async ({ page, user: _user }) => {
+    await page.goto("/settings/audit")
+    await expect(page.getByTestId("audit-event").first()).toBeVisible()
+
+    await page.getByRole("searchbox", { name: "Search the log" }).fill("no such entry anywhere")
+
+    await expect(page.getByText("No entry matches “no such entry anywhere”")).toBeVisible()
+  })
+
+  test("an entry opens its record", async ({ page, user: _user }) => {
+    await page.goto("/settings/audit")
+
+    await page.getByTestId("audit-event").first().getByRole("button", { name: /^Details: / }).click()
+
+    await expect(page.getByText("device.signedIn")).toBeVisible()
   })
 
   test("Export JSON downloads the log", async ({ page, user: _user }) => {
