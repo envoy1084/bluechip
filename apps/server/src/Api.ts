@@ -22,6 +22,7 @@ import { PoliciesHandlers } from "./modules/policies/http.ts"
 import { PortfolioHandlers } from "./modules/portfolio/http.ts"
 import { PushHandlers } from "./modules/push/http.ts"
 import { RecoveryApiHandlers } from "./modules/recovery/http.ts"
+import { RpcBodyLimitLive, RpcHandlers } from "./modules/rpc/http.ts"
 import { SystemHandlers } from "./modules/system/http.ts"
 import { TradesHandlers } from "./modules/trading/http.ts"
 import { ContractCheckLive, DefectReportingLive, MalformedIdsLive } from "./platform/http/Contract.ts"
@@ -48,7 +49,8 @@ export const ApiHandlers = Layer.mergeAll(
   NotificationsHandlers,
   PushHandlers,
   ChannelsHandlers,
-  DevHandlers
+  DevHandlers,
+  RpcHandlers
 )
   .pipe(
     Layer.provideMerge(
@@ -56,6 +58,7 @@ export const ApiHandlers = Layer.mergeAll(
         ContractCheckLive,
         DefectReportingLive,
         MalformedIdsLive,
+        RpcBodyLimitLive,
         AuthenticationLive,
         RecoveryAuthenticationLive
       )

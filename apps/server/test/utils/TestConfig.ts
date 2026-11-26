@@ -16,7 +16,8 @@ export const testDatabaseUrl = "postgres://bluechip:bluechip@localhost:5432/blue
 export const origin = "http://localhost:3000"
 
 /**
- * The server's config on this worker's devnet: the test database, a fresh agent-key secret, the devnet's bundler, a
+ * The server's config on this worker's devnet: the test database, a fresh agent-key secret, the devnet's node (what
+ * the RPC proxy forwards to) and bundler, a
  * VAPID key pair, the Telegram bot's handle (no token: Telegram is `ChatTest` in tests), and every schedule and
  * watcher that sweeps everyone's rows off (`SCHEDULES_ENABLED`): servers on other workers share the database, so
  * tests run each sweep for their own user.
@@ -29,6 +30,7 @@ export const TestConfig = Layer.unwrap(Effect.gen(function*() {
     RP_ID: "localhost",
     AGENT_KEY_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
     BUNDLER_URL: devnet.bundlerUrl,
+    BASE_RPC_URL: devnet.rpcUrl,
     VAPID_PUBLIC_KEY: vapid.getPublicKey().toString("base64url"),
     VAPID_PRIVATE_KEY: vapid.getPrivateKey().toString("base64url"),
     VAPID_SUBJECT: "mailto:tests@bluechip.test",

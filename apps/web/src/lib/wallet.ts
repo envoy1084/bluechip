@@ -1,20 +1,27 @@
+import { ContractVersion, contractVersionHeader } from "@bluechip/domain/Contract"
 import { createConfig, http } from "wagmi"
 import { base } from "wagmi/chains"
 import { baseAccount, injected } from "wagmi/connectors"
 
 /**
- * `local` reads the Anvil fork from `docker compose --profile chain up -d` (same chain id as Base, fake money);
- * `base` reads Base mainnet. A browser wallet on the fork needs a custom network: RPC http://localhost:8545, chain 8453.
- * `VITE_RPC_URL` points `local` at another node (the browser suite's own devnet).
+ * `local` is the local chain `pnpm dev` runs (same chain id as Base, fake money); `base` is Base mainnet. Either way
+ * the app reads the chain through bluechip's server (`/api/rpc`, forwarded to the server's own node), so no RPC key
+ * reaches the browser. A browser wallet on the local chain needs a custom network: RPC http://localhost:8545, chain
+ * 8453.
  */
 export const network = import.meta.env["VITE_NETWORK"] === "base" ? "base" : "local"
 
-const localRpcUrl = import.meta.env["VITE_RPC_URL"] ?? "http://localhost:8545"
+// The page's own origin, as the API client's; only the browser reads the chain (pages that do render there).
+const rpcUrl = typeof window === "undefined" ? "http://localhost/api/rpc" : `${window.location.origin}/api/rpc`
 
 export const wagmiConfig = createConfig({
   chains: [base],
   connectors: [injected(), baseAccount({ appName: "bluechip" })],
-  transports: { [base.id]: http(network === "local" ? localRpcUrl : undefined) },
+  transports: {
+    [base.id]: http(rpcUrl, {
+      fetchOptions: { credentials: "same-origin", headers: { [contractVersionHeader]: String(ContractVersion) } }
+    })
+  },
   ssr: true
 })
 

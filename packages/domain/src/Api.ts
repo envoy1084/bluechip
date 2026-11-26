@@ -23,6 +23,7 @@ import { PoliciesApi } from "./api/PoliciesApi.ts"
 import { PortfolioApi } from "./api/PortfolioApi.ts"
 import { PushApi } from "./api/PushApi.ts"
 import { AccountRecoveryApi, RecoveringApi, RecoveryApi } from "./api/RecoveryApi.ts"
+import { RpcApi } from "./api/RpcApi.ts"
 import { SystemApi } from "./api/SystemApi.ts"
 import { TradesApi } from "./api/TradesApi.ts"
 import { TransfersApi } from "./api/TransfersApi.ts"
@@ -60,6 +61,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(PushApi)
   .add(ChannelsApi)
   .add(DevApi)
+  .add(RpcApi)
   .middleware(DefectReporting)
   .middleware(MalformedIds)
   .middleware(ContractCheck)

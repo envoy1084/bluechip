@@ -210,7 +210,6 @@ export const startStack = async (): Promise<Stack> => {
     // The web app reads these through Vite, ahead of its own `.env.local`.
     process.env["SERVER_ORIGIN"] = urls.server
     process.env["VITE_NETWORK"] = "local"
-    process.env["VITE_RPC_URL"] = urls.anvil
     web = await createServer({
       configFile: path.join(root, "apps/web/vite.config.ts"),
       root: path.join(root, "apps/web"),

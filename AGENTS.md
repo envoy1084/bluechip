@@ -167,7 +167,8 @@ Code is organized so a maintainer can find and review any change quickly.
   `atoms/` (its queries and mutations) and `model/` (pure logic and wording, no React).
 - Shared, for what two or more features use: `components/` (`layout/` holds the page frames), `hooks/`, `atoms/`
   (queries several features read: the user, stocks, portfolio, agents, activity), `lib/` (the API client and live
-  events, passkey signing, amounts, wallet config) and `providers/`.
+  events, passkey signing, amounts, wallet config: the chain is read through the server's `/api/rpc`, never a node
+  of its own) and `providers/`.
 
 Imports flow one way: shared → `features` → `routes`. Features never import each other or routes, and shared code
 never imports features. When a screen shows another feature's piece, its route composes them, passing the piece in
@@ -182,7 +183,7 @@ feature): a `Context.Service` is a port, a `Layer` its adapter.
 
 - `modules/<feature>/`: one folder per feature (`accounts`, `auth`, `agents`, `policies`, `intents`, `trading`,
   `portfolio`, `funding`, `market`, `activity`, `audit`, `signing`, `notifications`, `push`, `channels`, `dev`, `events`,
-  `system`): its services
+  `rpc`, `system`): its services
   (`Agents.ts`, `AgentSessions.ts`), its HTTP handlers (`http.ts`), its Drizzle tables (`tables.ts`) and its crons.
 - `platform/`: infrastructure the features share: `db/` (`Database`, columns, `schema.ts` gathering every table for
   drizzle-kit), `engine/`, `http/` (middleware, health), `live/` (`LiveEvents`), `namera/`. `config/` holds

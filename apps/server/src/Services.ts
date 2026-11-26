@@ -83,6 +83,7 @@ import { Recoveries } from "./modules/recovery/Recoveries.ts"
 import { RecoveryKeys } from "./modules/recovery/RecoveryKeys.ts"
 import { RecoveryOperations } from "./modules/recovery/RecoveryOperations.ts"
 import { RecoveryStore } from "./modules/recovery/RecoveryStore.ts"
+import { RpcProxy } from "./modules/rpc/RpcProxy.ts"
 import { OwnerOperations } from "./modules/signing/OwnerOperations.ts"
 import { SigningRequests } from "./modules/signing/SigningRequests.ts"
 import { TradeLedger } from "./modules/trading/TradeLedger.ts"
@@ -213,7 +214,8 @@ export const ServicesLive = Layer.mergeAll(
       PushSubscriptions.layer,
       PushConfig.layer,
       TelegramConfig.layer,
-      NotificationOutbox.layer
+      NotificationOutbox.layer,
+      RpcProxy.layer
     )
   )
 )
