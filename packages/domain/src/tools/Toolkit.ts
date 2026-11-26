@@ -25,15 +25,18 @@ import { CreateAutomation, ListAutomations, PauseAutomation } from "./Automation
 import { GetStockFacts, SearchHelp } from "./KnowledgeTools.ts"
 import { GetActivity, GetPortfolio, GetPrices, GetQuote, GetStock } from "./MarketTools.ts"
 import { Forget, ListMemories, Remember, SearchMemory } from "./MemoryTools.ts"
+import { PerformanceToolkit } from "./PerformanceTools.ts"
 import { CheckAgentSpec, ListPolicies, ListTemplates, SaveTemplate } from "./PolicyTools.ts"
 import { ProposeRebalance, ProposeTrade } from "./TradeTools.ts"
 
 /**
+ * Every tool but the performance tools ({@link PerformanceToolkit}), which the server implements on their own.
+ *
  * @stability unstable
  * @category toolkits
  * @since 0.0.0
  */
-export const BluechipToolkit = Toolkit.make(
+export const CoreToolkit = Toolkit.make(
   GetPortfolio,
   GetPrices,
   GetQuote,
@@ -68,6 +71,13 @@ export const BluechipToolkit = Toolkit.make(
   CreateAutomation,
   PauseAutomation
 )
+
+/**
+ * @stability unstable
+ * @category toolkits
+ * @since 0.0.0
+ */
+export const BluechipToolkit = Toolkit.merge(CoreToolkit, PerformanceToolkit)
 
 /**
  * The name the server gives Anthropic's web search tool in the toolkit it runs (`AnthropicTool.WebSearch_20250305`):

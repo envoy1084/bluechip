@@ -18,6 +18,7 @@ import { EventsApi } from "./api/EventsApi.ts"
 import { IntentsApi } from "./api/IntentsApi.ts"
 import { MarketApi } from "./api/MarketApi.ts"
 import { NotificationsApi } from "./api/NotificationsApi.ts"
+import { PerformanceApi } from "./api/PerformanceApi.ts"
 import { PoliciesApi } from "./api/PoliciesApi.ts"
 import { PortfolioApi } from "./api/PortfolioApi.ts"
 import { PushApi } from "./api/PushApi.ts"
@@ -45,6 +46,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(RecoveringApi)
   .add(MarketApi)
   .add(PortfolioApi)
+  .add(PerformanceApi)
   .add(TransfersApi)
   .add(TradesApi)
   .add(PoliciesApi)

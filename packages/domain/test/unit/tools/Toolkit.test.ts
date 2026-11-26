@@ -48,7 +48,11 @@ describe("the toolkit", () => {
         searchHelp: "read",
         listAutomations: "read",
         createAutomation: "configure",
-        pauseAutomation: "configure"
+        pauseAutomation: "configure",
+        getPerformance: "read",
+        getStockPerformance: "read",
+        getAgentPerformance: "read",
+        getAutomationPerformance: "read"
       } satisfies Record<string, RiskLevel>
     )
   })
