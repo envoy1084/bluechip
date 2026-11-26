@@ -1,5 +1,11 @@
 import type { Card } from "@bluechip/domain/assistant/Card"
-import { Conversation, ConversationThread, Message, type MessagePart } from "@bluechip/domain/assistant/Conversation"
+import {
+  Conversation,
+  ConversationThread,
+  Message,
+  type MessagePart,
+  type Surface
+} from "@bluechip/domain/assistant/Conversation"
 import { NotFound } from "@bluechip/domain/Errors"
 import { type AgentId, ConversationId, type MessageId } from "@bluechip/domain/Ids"
 import { and, asc, desc, eq, lt } from "drizzle-orm"
@@ -51,8 +57,11 @@ export interface MessageUsage {
  * from the client.
  */
 export class Conversations extends Context.Service<Conversations, {
-  /** A new conversation, about one of the owner's agents when `agentId` is set. */
-  readonly start: (owner: Owner, input: { readonly agentId: AgentId | null }) => Effect.Effect<Conversation, NotFound>
+  /** A new conversation, about one of the owner's agents when `agentId` is set, in the app unless `surface` says. */
+  readonly start: (owner: Owner, input: {
+    readonly agentId: AgentId | null
+    readonly surface?: Surface | undefined
+  }) => Effect.Effect<Conversation, NotFound>
   /** The owner's conversations, newest first, a page at a time. */
   readonly list: (owner: Owner, query: {
     readonly pageSize?: number | undefined
@@ -76,7 +85,7 @@ export class Conversations extends Context.Service<Conversations, {
       const agents = yield* Agents
 
       const start = Effect.fn("Conversations.start")(
-        function*(owner: Owner, input: { readonly agentId: AgentId | null }) {
+        function*(owner: Owner, input: { readonly agentId: AgentId | null; readonly surface?: Surface | undefined }) {
           if (input.agentId !== null) yield* agents.find(owner, input.agentId)
           const now = yield* DateTime.now
 
@@ -84,7 +93,7 @@ export class Conversations extends Context.Service<Conversations, {
             id: typeid("conversation").toString() as `conversation_${string}`,
             userId: owner.id as `user_${string}`,
             agentId: input.agentId as `agent_${string}` | null,
-            surface: "web",
+            surface: input.surface ?? "web",
             title: null,
             createdAt: now,
             updatedAt: now

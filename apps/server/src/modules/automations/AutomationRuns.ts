@@ -1,6 +1,7 @@
 import type { JudgmentAnswer, JudgmentPreset } from "@bluechip/domain/automations/conditions/Judgment"
 import type { ConditionRecord, RunOutcome, TriggerData } from "@bluechip/domain/automations/Run"
 import { AutomationRun, Judgment } from "@bluechip/domain/automations/Run"
+import { LiveEvent } from "@bluechip/domain/Events"
 import {
   type AgentId,
   type AutomationId,
@@ -18,6 +19,7 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
 import { automationRuns, automations, judgments } from "./tables.ts"
 
@@ -65,7 +67,7 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
     readonly trigger: TriggerData
   }) => Effect.Effect<{ readonly row: RunRow; readonly created: boolean }>
   readonly get: (id: string) => Effect.Effect<RunRow | undefined>
-  /** Ends a run. */
+  /** Ends a run, and tells its owner (`AutomationRan`). */
   readonly finish: (id: string, result: {
     readonly outcome: RunOutcome
     readonly reason: string
@@ -92,6 +94,7 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
     Effect.gen(function*() {
       const db = yield* Database
       const journal = yield* AgentJournal
+      const live = yield* LiveEvents
 
       // The agent's automation a run belongs to, when it trades for an agent.
       const agentAutomationOf = Effect.fnUntraced(function*(runId: string) {
@@ -161,6 +164,12 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
             refs: { automationId: automation.automationId as AutomationId, runId: id as AutomationRunId }
           })
         }
+        const [owned] = yield* db.select({ name: automations.name }).from(automations)
+          .where(eq(automations.id, row!.automationId)).pipe(Effect.orDie)
+        yield* live.publish(
+          LiveEvent.cases.AutomationRan.make({ run: toRun(row!), automationName: owned?.name ?? "An automation" }),
+          row!.userId as UserId
+        )
         return row!
       })
 

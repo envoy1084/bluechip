@@ -64,8 +64,12 @@ export class AgentStore extends Context.Service<AgentStore, {
   /** Agents with an owner operation on its way, to follow after a restart. */
   readonly inFlight: Effect.Effect<ReadonlyArray<AgentRow>>
   readonly toAgent: (row: AgentRow) => Effect.Effect<Agent>
-  /** Saves changes to an agent and tells its owner (`AgentChanged`). */
-  readonly save: (row: AgentRow, changes: Partial<AgentRow>) => Effect.Effect<Agent>
+  /** Saves changes to an agent and tells its owner (`AgentChanged`, with the `change` notifications tell). */
+  readonly save: (
+    row: AgentRow,
+    changes: Partial<AgentRow>,
+    change?: "paused" | "renewed" | undefined
+  ) => Effect.Effect<Agent>
 }>()("@bluechip/server/AgentStore") {
   static readonly layer = Layer.effect(
     AgentStore,
@@ -163,11 +167,18 @@ export class AgentStore extends Context.Service<AgentStore, {
         return toAgent(row, yield* sessions.ofAgents([row.id]))
       })
 
-      const save = Effect.fn("AgentStore.save")(function*(row: AgentRow, changes: Partial<AgentRow>) {
+      const save = Effect.fn("AgentStore.save")(function*(
+        row: AgentRow,
+        changes: Partial<AgentRow>,
+        change?: "paused" | "renewed" | undefined
+      ) {
         const [updated] = yield* db.update(agents).set({ ...changes, updatedAt: yield* DateTime.now })
           .where(eq(agents.id, row.id)).returning().pipe(Effect.orDie)
         const agent = yield* agentOf(updated!)
-        yield* live.publish(LiveEvent.cases.AgentChanged.make({ agent }), row.userId as UserId)
+        yield* live.publish(
+          LiveEvent.cases.AgentChanged.make(change === undefined ? { agent } : { agent, change }),
+          row.userId as UserId
+        )
         return agent
       })
 

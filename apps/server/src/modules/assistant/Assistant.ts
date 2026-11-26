@@ -1,6 +1,11 @@
 import { isSpent } from "@bluechip/domain/assistant/Budget"
 import { type Card, describeCard, isPending } from "@bluechip/domain/assistant/Card"
-import { MAX_MESSAGE_LENGTH, type Message, type MessagePart } from "@bluechip/domain/assistant/Conversation"
+import {
+  MAX_MESSAGE_LENGTH,
+  type Message,
+  type MessagePart,
+  type Surface
+} from "@bluechip/domain/assistant/Conversation"
 import { CARD_EVENT, CardEvent } from "@bluechip/domain/assistant/RunEvents"
 import { systemPrompt } from "@bluechip/domain/assistant/SystemPrompt"
 import { NotFound } from "@bluechip/domain/Errors"
@@ -110,6 +115,7 @@ export class Assistant extends Context.Service<Assistant, {
         readonly userMessage: Message
         readonly userText: string
         readonly wantsTitle: boolean
+        readonly surface: Surface
         readonly stopped: Deferred.Deferred<Stopped>
       }): Stream.Stream<AgUiSchema.Event> => {
         const { conversationId, input } = context
@@ -118,7 +124,8 @@ export class Assistant extends Context.Service<Assistant, {
           account: owner.account,
           conversationId,
           messageId: context.userMessage.id,
-          source: "assistant" as const
+          // A chat platform's trades say so: the assistant in a chat is a channel.
+          source: context.surface === "web" ? "assistant" as const : "channel" as const
         }
         const waiting: Array<Card> = []
 
@@ -401,6 +408,7 @@ export class Assistant extends Context.Service<Assistant, {
           userMessage,
           userText,
           wantsTitle: conversation.title === null,
+          surface: conversation.surface,
           stopped
         }).pipe(
           Stream.runIntoQueue(events),

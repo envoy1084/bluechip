@@ -1,5 +1,5 @@
 import { Card } from "@bluechip/domain/assistant/Card"
-import { MessagePart } from "@bluechip/domain/assistant/Conversation"
+import { MessagePart, Surface } from "@bluechip/domain/assistant/Conversation"
 import { bigint, date, index, integer, pgTable, primaryKey, text } from "drizzle-orm/pg-core"
 import * as Schema from "effect/Schema"
 import { dateTimeUtc, jsonbSchema, typeId } from "../../platform/db/columns.ts"
@@ -11,7 +11,7 @@ export const conversations = pgTable("conversations", {
   id: typeId("conversation")("id").primaryKey(),
   userId: typeId("user")("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   agentId: typeId("agent")("agent_id").references(() => agents.id, { onDelete: "set null" }),
-  surface: text("surface", { enum: ["web"] }).notNull(),
+  surface: text("surface", { enum: Surface.literals }).notNull(),
   title: text("title"),
   createdAt: dateTimeUtc("created_at").notNull(),
   updatedAt: dateTimeUtc("updated_at").notNull(),

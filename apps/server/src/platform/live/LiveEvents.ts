@@ -7,7 +7,8 @@ import * as PubSub from "effect/PubSub"
 import type * as Scope from "effect/Scope"
 import * as Stream from "effect/Stream"
 
-interface Delivery {
+/** An event and who it is for. */
+export interface Delivery {
   readonly event: LiveEvent
   /** `undefined` for everyone (prices); a user for their own money (deposits, withdrawals, portfolio). */
   readonly to: UserId | undefined
@@ -15,7 +16,8 @@ interface Delivery {
 
 /**
  * The hub every live event goes through: producers (the price feed, the deposit watcher, withdrawals) publish, each
- * open `/api/events` stream subscribes and only sees events for everyone or for its own user.
+ * open `/api/events` stream subscribes and only sees events for everyone or for its own user, and the server's own
+ * listeners (notifications) see them all.
  */
 export class LiveEvents extends Context.Service<LiveEvents, {
   /** Sends `event` to every stream, or only to `to`'s streams. */
@@ -25,6 +27,8 @@ export class LiveEvents extends Context.Service<LiveEvents, {
    * stream, so a caller can subscribe, then act, without missing what its action publishes.
    */
   readonly subscribe: (user: UserId) => Effect.Effect<Stream.Stream<LiveEvent>, never, Scope.Scope>
+  /** Subscribes now (for the scope) to every event and who it is for: what the server itself reacts to. */
+  readonly subscribeAll: Effect.Effect<Stream.Stream<Delivery>, never, Scope.Scope>
 }>()("@bluechip/server/LiveEvents") {
   static readonly layer = Layer.effect(
     LiveEvents,
@@ -37,7 +41,8 @@ export class LiveEvents extends Context.Service<LiveEvents, {
             Stream.fromSubscription(subscription).pipe(
               Stream.filter((delivery) => delivery.to === undefined || delivery.to === user),
               Stream.map((delivery) => delivery.event)
-            ))
+            )),
+        subscribeAll: Effect.map(PubSub.subscribe(hub), Stream.fromSubscription)
       }
     })
   )

@@ -27,6 +27,11 @@ import { NewsWatcher } from "./modules/automations/watchers/NewsWatcher.ts"
 import { PortfolioWatcher } from "./modules/automations/watchers/PortfolioWatcher.ts"
 import { PriceWatcher } from "./modules/automations/watchers/PriceWatcher.ts"
 import { ScheduleWatcher } from "./modules/automations/watchers/ScheduleWatcher.ts"
+import { AnswerChatMessageLive, BotInteractionsLive, ChatHandlerLive } from "./modules/channels/BotHandlers.ts"
+import { ChannelLinks } from "./modules/channels/ChannelLinks.ts"
+import { ChatBot } from "./modules/channels/ChatBot.ts"
+import { ChatNotifier } from "./modules/channels/ChatNotifier.ts"
+import { TelegramConfig } from "./modules/channels/telegram/TelegramConfig.ts"
 import { Transfers } from "./modules/funding/Transfers.ts"
 import { Withdrawals } from "./modules/funding/Withdrawals.ts"
 import { AgentExecutor } from "./modules/intents/AgentExecutor.ts"
@@ -48,10 +53,20 @@ import { Memories } from "./modules/memory/Memories.ts"
 import { MemoryExtractor } from "./modules/memory/MemoryExtractor.ts"
 import { Recall } from "./modules/memory/Recall.ts"
 import { RecallIndex } from "./modules/memory/RecallIndex.ts"
+import { Deliveries, DeliverNotificationLive } from "./modules/notifications/Deliveries.ts"
+import { DigestCron } from "./modules/notifications/DigestCron.ts"
+import { NotificationFanout } from "./modules/notifications/Fanout.ts"
+import { Notifications } from "./modules/notifications/Notifications.ts"
+import { Notifiers } from "./modules/notifications/Notifiers.ts"
+import { ReminderCron } from "./modules/notifications/ReminderCron.ts"
+import { Reminders } from "./modules/notifications/Reminders.ts"
 import { SavedTemplates } from "./modules/policies/SavedTemplates.ts"
 import { AccountBalances } from "./modules/portfolio/AccountBalances.ts"
 import { PortfolioSnapshots } from "./modules/portfolio/PortfolioSnapshots.ts"
 import { PortfolioSnapshotCron } from "./modules/portfolio/SnapshotCron.ts"
+import { PushConfig } from "./modules/push/PushConfig.ts"
+import { PushNotifier } from "./modules/push/PushNotifier.ts"
+import { PushSubscriptions } from "./modules/push/PushSubscriptions.ts"
 import { OwnerOperations } from "./modules/signing/OwnerOperations.ts"
 import { SigningRequests } from "./modules/signing/SigningRequests.ts"
 import { TradeLedger } from "./modules/trading/TradeLedger.ts"
@@ -64,7 +79,8 @@ import { Namera } from "./platform/namera/Namera.ts"
  * only answers on a local chain; the dev endpoints check the network first). Each line
  * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, the
  * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`), the
- * embedder (`Embeddings`) and the durable engine.
+ * embedder (`Embeddings`), the chat router (`Chat`, with Telegram's adapter or `ChatTest`'s), the `HttpClient` push
+ * services are reached with, and the durable engine.
  */
 export const ServicesLive = Layer.mergeAll(
   DeskLive,
@@ -75,13 +91,22 @@ export const ServicesLive = Layer.mergeAll(
   MemoryDecayCron,
   KnowledgeRefreshCron,
   Knowledge.refreshOnStart,
-  Assistant.layer,
   FireAutomationLive,
   PriceWatcher.watch,
   ScheduleWatcher.watch,
   PortfolioWatcher.watch,
-  NewsWatcher.watch
+  NewsWatcher.watch,
+  NotificationFanout,
+  ReminderCron,
+  DigestCron,
+  DeliverNotificationLive,
+  AnswerChatMessageLive,
+  ChatHandlerLive,
+  BotInteractionsLive
 ).pipe(
+  Layer.provideMerge(Layer.mergeAll(ChatBot.layer, Deliveries.layer, Reminders.layer)),
+  Layer.provideMerge(Layer.mergeAll(Assistant.layer, Notifiers.layer)),
+  Layer.provideMerge(Layer.mergeAll(PushNotifier.layer, ChatNotifier.layer)),
   Layer.provideMerge(
     Layer.mergeAll(PriceWatcher.layer, ScheduleWatcher.layer, PortfolioWatcher.layer, NewsWatcher.layer)
   ),
@@ -110,7 +135,8 @@ export const ServicesLive = Layer.mergeAll(
       Quoter.layer,
       Charts.layer,
       Stocks.layer,
-      PortfolioSnapshots.layer
+      PortfolioSnapshots.layer,
+      ChannelLinks.layer
     )
   ),
   Layer.provideMerge(
@@ -128,8 +154,17 @@ export const ServicesLive = Layer.mergeAll(
       Knowledge.layer
     )
   ),
-  Layer.provideMerge(AgentJournal.layer),
+  Layer.provideMerge(Layer.mergeAll(AgentJournal.layer, Notifications.layer)),
   Layer.provideMerge(
-    Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, DevChain.layer, RecallIndex.layer)
+    Layer.mergeAll(
+      LiveEvents.layer,
+      Namera.layer,
+      AccountBalances.layer,
+      DevChain.layer,
+      RecallIndex.layer,
+      PushSubscriptions.layer,
+      PushConfig.layer,
+      TelegramConfig.layer
+    )
   )
 )

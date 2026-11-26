@@ -9,13 +9,16 @@ import { AssistantHandlers } from "./modules/assistant/http.ts"
 import { AuthenticationLive } from "./modules/auth/Authentication.ts"
 import { AuthHandlers } from "./modules/auth/http.ts"
 import { AutomationsHandlers } from "./modules/automations/http.ts"
+import { ChannelsHandlers } from "./modules/channels/http.ts"
 import { DevHandlers } from "./modules/dev/http.ts"
 import { EventsHandlers } from "./modules/events/http.ts"
 import { TransfersHandlers } from "./modules/funding/http.ts"
 import { IntentsHandlers } from "./modules/intents/http.ts"
 import { MarketHandlers } from "./modules/market/http.ts"
+import { NotificationsHandlers } from "./modules/notifications/http.ts"
 import { PoliciesHandlers } from "./modules/policies/http.ts"
 import { PortfolioHandlers } from "./modules/portfolio/http.ts"
+import { PushHandlers } from "./modules/push/http.ts"
 import { SystemHandlers } from "./modules/system/http.ts"
 import { TradesHandlers } from "./modules/trading/http.ts"
 import { ContractCheckLive, DefectReportingLive } from "./platform/http/Contract.ts"
@@ -36,6 +39,9 @@ export const ApiHandlers = Layer.mergeAll(
   AutomationsHandlers,
   ActivityHandlers,
   AssistantHandlers,
+  NotificationsHandlers,
+  PushHandlers,
+  ChannelsHandlers,
   DevHandlers
 )
   .pipe(

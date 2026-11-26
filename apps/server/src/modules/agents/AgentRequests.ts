@@ -211,7 +211,13 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         if (current !== undefined && current.status !== "expired") {
           yield* sessions.save(current.id, { status: "replaced", endedAt: now })
         }
-        return yield* store.save(row, { status: next.success, currentSessionId: sending.id, pendingSessionId: null })
+        // A renewal locks a new key; a change of policies keeps the current one.
+        const renewed = current !== undefined && current.sessionKey !== sending.sessionKey
+        return yield* store.save(
+          row,
+          { status: next.success, currentSessionId: sending.id, pendingSessionId: null },
+          renewed ? "renewed" : undefined
+        )
       }, Effect.catchTag("ChainError", (error) => Effect.logWarning("Agent settle failed", error)))
 
       const track = (agentId: AgentRow["id"], passkey: OwnerPasskey) =>

@@ -83,14 +83,14 @@ export class Agents extends Context.Service<Agents, {
           if (row.status === "draft" || row.status === "removed") return yield* new Conflict({ reason: "agentBusy" })
           if (row.paused === paused) return yield* store.toAgent(row)
           if (paused) yield* intents.cancelAgentIntents(row.id)
-          return yield* store.save(row, { paused })
+          return yield* store.save(row, { paused }, paused ? "paused" : undefined)
         })
 
       const setAllPaused = (paused: boolean) =>
         Effect.fnUntraced(function*(owner: Owner) {
           for (const row of yield* store.running(owner, !paused)) {
             if (paused) yield* intents.cancelAgentIntents(row.id)
-            yield* store.save(row, { paused })
+            yield* store.save(row, { paused }, paused ? "paused" : undefined)
           }
           return yield* store.list(owner)
         })
