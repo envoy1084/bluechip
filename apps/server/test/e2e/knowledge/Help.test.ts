@@ -20,7 +20,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("bluechip's knowledge 
         yield* recorded.record({
           to: asked,
           rounds: [[{ call: "searchHelp", params: { query: "lose every passkey recovery" } }], [{
-            text: "Recovery isn't available yet (Recovery, If you lose every passkey)."
+            text: "Use your recovery key on a new device (Recovery, If you lose every passkey)."
           }]]
         })
 
@@ -39,7 +39,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("bluechip's knowledge 
         assert.include(
           toolResults.join("\n"),
           "[1] Recovery, If you lose every passkey (/help/recovery#if-you-lose-every-passkey):\nRecovery: If you lose " +
-            "every passkey\n\nAccount recovery isn't available yet"
+            "every passkey\n\nOn a new device, open the recovery page and use your recovery key"
         )
       }))
   })
