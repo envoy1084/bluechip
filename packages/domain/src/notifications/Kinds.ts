@@ -132,9 +132,17 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     kind: "automationFired",
     group: "automations",
     label: "An automation ran",
-    description: "What fired it and what it did, or the message it has for you.",
+    description: "What fired it and what it did.",
     severity: "info",
     defaults: ["inApp", "telegram"]
+  }),
+  kind({
+    kind: "automationMessage",
+    group: "automations",
+    label: "Tell me",
+    description: "When an automation whose action is to tell you fires, with its message.",
+    severity: "important",
+    defaults: EVERYWHERE
   }),
   kind({
     kind: "automationSkipped",

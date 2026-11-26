@@ -147,7 +147,7 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
           const message = row.action.type === "notify" ? row.action.config.message.trim() : ""
           return {
             outcome: "notified" as RunOutcome,
-            reason: message === "" ? "Told you." : message,
+            reason: message === "" ? `${trigger.summary}.` : message,
             conditions,
             intentIds: []
           }

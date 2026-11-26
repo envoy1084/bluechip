@@ -18,6 +18,17 @@ export const weeklyBuy = (agentId: AgentId | null, symbol: StockSymbol = "NVDA")
     settings: DEFAULT_SETTINGS
   })
 
+/** Every Monday at 10:00 New York time, at any hour of the market, tell you `message`. Yours. */
+export const tellMe = (message: string): AutomationDraft =>
+  new AutomationDraft({
+    name: "Apple watch",
+    agentId: null,
+    trigger: { type: "schedule", config: { days: ["monday"], time: "10:00", timeZone: "America/New_York" } },
+    conditions: [],
+    action: { type: "notify", config: { message } },
+    settings: { ...DEFAULT_SETTINGS, marketHoursOnly: false }
+  })
+
 /** When NVIDIA (or `symbol`) falls 10% (or `bps`) from its high, sell half of it, if the conditions hold. */
 export const stopLoss = (agentId: AgentId | null, options: {
   readonly symbol?: StockSymbol

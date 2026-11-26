@@ -56,6 +56,7 @@ export const NotificationKind = Schema.Literals([
   "approvalNeeded",
   "approvalExpiring",
   "automationFired",
+  "automationMessage",
   "automationSkipped",
   "sessionEnding",
   "sessionRenewed",

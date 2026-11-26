@@ -1,10 +1,13 @@
+import { RequestId } from "@bluechip/domain/Ids"
 import { Shares } from "@bluechip/domain/market/Units"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import { randomUUID } from "node:crypto"
 import { AutomationRunner } from "../../../../src/modules/automations/AutomationRunner.ts"
 import { AutomationRuns } from "../../../../src/modules/automations/AutomationRuns.ts"
-import { AROUND_THE_CLOCK, GUARDED, stopLoss, TEST_FIRE } from "../../../fixtures/Automations.ts"
+import { AROUND_THE_CLOCK, GUARDED, stopLoss, tellMe, TEST_FIRE } from "../../../fixtures/Automations.ts"
 import { TestAutomations } from "../../../utils/TestAutomations.ts"
+import { TestUsers } from "../../../utils/TestUsers.ts"
 
 // The server runs on the real clock (see `TestServer`).
 layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", (it) => {
@@ -47,6 +50,30 @@ layer(TestAutomations.layer, { excludeTestServices: true })("AutomationRunner", 
         const detail = yield* user.api.automations.automation({ params: { id: automation.id } })
 
         assert.deepStrictEqual(detail.runs.map((run) => [run.outcome, run.intentIds.length]), [["proposed", 2]])
+      }))
+
+    it.effect("a Tell me action: notified, and its message is a notification", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const automation = yield* user.api.automations.create({
+          payload: {
+            requestId: RequestId.make(randomUUID()),
+            draft: tellMe("Look at Apple.")
+          }
+        })
+
+        yield* (yield* AutomationRunner).fire(automation.id, "test:1", TEST_FIRE)
+        const { notification } = yield* user.events.next("NotificationAdded")
+        const detail = yield* user.api.automations.automation({ params: { id: automation.id } })
+
+        assert.deepStrictEqual(
+          [detail.runs.map((run) => [run.outcome, run.reason]), [
+            notification.kind,
+            notification.title,
+            notification.body
+          ]],
+          [[["notified", "Look at Apple."]], ["automationMessage", "Apple watch", "Look at Apple."]]
+        )
       }))
 
     it.effect("its agent paused: skipped, saying why", () =>

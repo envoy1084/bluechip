@@ -261,8 +261,9 @@ export const notificationOfTransfer = (
 }
 
 /**
- * What an automation's run tells you: it traded, asked you, or has a message for you (`automationFired`), or a model's
- * judgment held it back (`automationSkipped`); `undefined` for a run skipped for any other reason.
+ * What an automation's run tells you: it traded or asked you (`automationFired`), it has a message for you
+ * (`automationMessage`, a `notify` action), or a model's judgment held it back (`automationSkipped`); `undefined` for
+ * a run skipped for any other reason. One notification per run.
  *
  * @stability unstable
  * @category drafts
@@ -281,10 +282,12 @@ export const notificationOfRun = (run: AutomationRun, automationName: string): N
       { ...base, kind: "automationSkipped", title: `A judgment held back ${automationName}`, body: run.reason } :
       undefined
   }
+  if (run.outcome === "notified") {
+    return { ...base, kind: "automationMessage", title: automationName, body: run.reason }
+  }
   const said = {
     proposed: `${run.trigger.summary}. It proposed trades to its agent.`,
     asked: `${run.trigger.summary}. It asks you first: approve it in bluechip.`,
-    notified: run.reason,
     failed: `It failed: ${run.reason}`
   } as const
   return { ...base, kind: "automationFired", title: `${automationName} ran`, body: said[run.outcome] }

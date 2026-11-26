@@ -294,7 +294,7 @@ describe("notificationOfRun", () => {
       {
         name: "a message for you",
         run: run({ outcome: "notified", reason: "Apple is up 5% today." }),
-        expected: ["automationFired", "Dip buyer ran", "Apple is up 5% today."]
+        expected: ["automationMessage", "Dip buyer", "Apple is up 5% today."]
       },
       {
         name: "failed",
@@ -314,6 +314,15 @@ describe("notificationOfRun", () => {
   )("$name", ({ expected, run }) => {
     const draft = notificationOfRun(run, "Dip buyer")
     assert.deepStrictEqual<ReadonlyArray<unknown>>([draft?.kind, draft?.title, draft?.body], expected)
+  })
+
+  it("a message: one notification per run, about its automation", () => {
+    const draft = notificationOfRun(run({ outcome: "notified", reason: "Apple is up 5% today." }), "Dip buyer")
+
+    assert.deepStrictEqual(
+      [draft?.dedupeKey, draft?.subjectType, draft?.subjectId, draft?.link],
+      ["run:run_1", "automation", "automation_1", "/automations/automation_1"]
+    )
   })
 
   it("skipped by a time window: nothing", () => {
