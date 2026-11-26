@@ -30,6 +30,11 @@ describe("AgentSummary", () => {
     await expect.element(screen.getByText("No trades yet.")).toBeVisible()
   })
 
+  it("a budget used up says when it starts again", async () => {
+    const screen = await render(<AgentSummary {...NIMBUS} spentToday={250} resetsAt="midnight UTC" />)
+    await expect.element(screen.getByText("Limit reached. Resets at midnight UTC.")).toBeVisible()
+  })
+
   it("a sell-only agent has no budget to spend", async () => {
     const screen = await render(<AgentSummary {...NIMBUS} dailyBudget={0} spentToday={0} />)
     await expect.element(screen.getByText("It only sells")).toBeVisible()
