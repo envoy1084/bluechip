@@ -57,7 +57,7 @@ export function PolicyRow(
               {forced ? problem : summary}
             </span>
           </span>
-          {off ?
+          {off || forced ?
             null :
             (
               <span className="inline-flex items-center gap-1 text-label-sm font-medium text-g-500 group-hover/row:text-blue">

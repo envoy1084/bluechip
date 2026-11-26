@@ -88,7 +88,7 @@ export function PortfolioSummary(
     <section
       data-slot="portfolio-summary"
       aria-label="Your money"
-      className={cn("grid gap-4 rounded-lg bg-white p-5 shadow-e2", className)}
+      className={cn("@container grid gap-4 rounded-lg bg-white p-5 shadow-e2", className)}
     >
       <div className="grid gap-1">
         <span className="text-label text-g-500">Your money</span>
@@ -131,7 +131,7 @@ export function PortfolioSummary(
                 />
               ))}
             </div>
-            <ul className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+            <ul className="grid gap-x-4 gap-y-1.5 @[440px]:grid-cols-2">
               {segments.map((segment) => (
                 <li key={segment.id} className="flex items-center gap-2 text-label">
                   <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: segment.color }} />
