@@ -82,7 +82,14 @@ function EditAutomation(
         ) :
         (
           <AutomationEditor
-            initial={automation}
+            initial={{
+              name: automation.name,
+              agentId: automation.agentId,
+              trigger: automation.trigger,
+              conditions: automation.conditions,
+              action: automation.action,
+              settings: automation.settings
+            }}
             context={{ stocks: stocksOf(spec, stocks), nameOf, zone: localTimeZone() }}
             spec={spec}
             whoTrades={automation.agentId === null || agent !== null ? traderName(agent) : "An agent that's gone"}
