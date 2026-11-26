@@ -7,16 +7,17 @@ import { ButterflyAssemble } from "@bluechip/ui/motion/butterfly-assemble"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
+import type { ReactNode } from "react"
 import { cashDialogAtom } from "../../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../../atoms/portfolio.ts"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 
 /**
- * The new agent, live: its butterfly, how long its rules are locked, what it can do now (three lines at most), and
- * where to go next. Without cash it has nothing to trade with, so adding cash comes first.
+ * The new agent, live: its butterfly, how long its rules are locked, what it can do now (three lines at most), its
+ * automations, and where to go next. Without cash it has nothing to trade with, so adding cash comes first.
  */
-export function DoneStep({ agent }: Readonly<{ agent: Agent }>) {
+export function DoneStep({ agent, automations }: Readonly<{ agent: Agent; automations: ReactNode }>) {
   const { nameOf } = useStockLookup()
   const portfolio = useAtomValue(portfolioAtom)
   const openCash = useAtomSet(cashDialogAtom)
@@ -72,6 +73,7 @@ export function DoneStep({ agent }: Readonly<{ agent: Agent }>) {
               ))}
             </ul>
           )}
+        {automations}
         {noCash
           ? <p className="text-center text-label-sm text-g-500">It needs cash in your account to trade.</p>
           : null}

@@ -1,6 +1,7 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { AgentId, RequestId } from "@bluechip/domain/Ids"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
+import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { Button } from "@bluechip/ui/components/button"
@@ -18,6 +19,7 @@ import { PoliciesStep } from "../components/new/PoliciesStep.tsx"
 import { ReviewStep } from "../components/new/ReviewStep.tsx"
 import { TemplateStep } from "../components/new/TemplateStep.tsx"
 import { type Origin, originLabel, originOf, originPresets, originSpec } from "../model/origin.ts"
+import { type AutomationSlots, type TemplateAutomation, templateAutomations } from "../model/templateAutomations.ts"
 
 const newRequestId = () => crypto.randomUUID() as RequestId
 
@@ -38,13 +40,15 @@ function Loading() {
  * A new agent: loads the stocks its rules pick from, then the flow. With `draftId` (a draft the assistant made), the
  * flow starts at its rules, prefilled.
  */
-export function NewAgentScreen({ draftId }: Readonly<{ draftId?: AgentId | undefined }>) {
+export function NewAgentScreen(
+  { draftId, automations }: Readonly<{ draftId?: AgentId | undefined; automations: AutomationSlots }>
+) {
   const stocks = useAtomValue(stocksAtom)
   const refresh = useAtomRefresh(stocksAtom)
   if (AsyncResult.isSuccess(stocks)) {
     return draftId === undefined ?
-      <NewAgentFlow stocks={stocks.value} start={null} /> :
-      <FromDraft id={draftId} stocks={stocks.value} />
+      <NewAgentFlow stocks={stocks.value} start={null} slots={automations} /> :
+      <FromDraft id={draftId} stocks={stocks.value} slots={automations} />
   }
   if (AsyncResult.isInitial(stocks)) return <Loading />
 
@@ -62,7 +66,9 @@ export function NewAgentScreen({ draftId }: Readonly<{ draftId?: AgentId | undef
  * The flow over a draft, once it and the saved templates load (a draft from a saved template starts from it); a
  * draft that's gone or already locked starts the flow afresh.
  */
-function FromDraft({ id, stocks }: Readonly<{ id: AgentId; stocks: ReadonlyArray<Stock> }>) {
+function FromDraft(
+  { id, stocks, slots }: Readonly<{ id: AgentId; stocks: ReadonlyArray<Stock>; slots: AutomationSlots }>
+) {
   const agent = useAtomValue(agentAtom(id))
   const templates = useAtomValue(templatesAtom)
   if (AsyncResult.isInitial(agent) || AsyncResult.isInitial(templates)) return <Loading />
@@ -73,6 +79,7 @@ function FromDraft({ id, stocks }: Readonly<{ id: AgentId; stocks: ReadonlyArray
     <NewAgentFlow
       stocks={stocks}
       start={draft === null ? null : { draft, origin: originOf(draft, saved) }}
+      slots={slots}
     />
   )
 }
@@ -82,9 +89,10 @@ function FromDraft({ id, stocks }: Readonly<{ id: AgentId; stocks: ReadonlyArray
  * it. Once the lock is sent the page follows it to Base until the agent is live.
  */
 function NewAgentFlow(
-  { stocks, start }: Readonly<{
+  { stocks, start, slots }: Readonly<{
     stocks: ReadonlyArray<Stock>
     start: { readonly draft: Agent; readonly origin: Origin } | null
+    slots: AutomationSlots
   }>
 ) {
   const remove = useAtomSet(removeAgentAtom, { mode: "promise" })
@@ -96,11 +104,27 @@ function NewAgentFlow(
   const [requestId, setRequestId] = useState(newRequestId)
   const [editProblem, setEditProblem] = useState<string | null>(null)
   const [sent, setSent] = useState<{ readonly agent: Agent; readonly attempt: number } | null>(null)
+  // The template's automations, drawn again whenever the rules they were drawn from change.
+  const [automations, setAutomations] = useState<
+    { readonly spec: AgentSpec; readonly list: ReadonlyArray<TemplateAutomation> } | null
+  >(null)
 
   const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
   const send = (agent: Agent) => setSent((last) => ({ agent, attempt: (last?.attempt ?? 0) + 1 }))
 
-  if (sent !== null) return <LockStep key={sent.attempt} sent={sent.agent} onSent={send} />
+  const kept = automations?.list ?? []
+  const { Defaults, Saved } = slots
+  if (sent !== null) {
+    return (
+      <LockStep
+        key={sent.attempt}
+        sent={sent.agent}
+        onSent={send}
+        Saved={Saved}
+        automations={kept}
+      />
+    )
+  }
 
   const pickOrigin = (picked: Origin) => {
     if (name.trim() === "" || name === originLabel(origin)) setName(originLabel(picked))
@@ -136,6 +160,7 @@ function NewAgentFlow(
         setEditProblem("We couldn't set the drafted agent aside, so its rules can't change yet. Try again.")
       }
     }
+    if (automations?.spec !== spec) setAutomations({ spec, list: templateAutomations(origin, spec) })
     setStep("review")
   }
 
@@ -177,6 +202,15 @@ function NewAgentFlow(
         onSent={send}
         onEdit={() => void backToRules()}
         editProblem={editProblem}
+        automations={
+          <Defaults
+            automations={kept}
+            spec={spec}
+            stocks={stocks}
+            nameOf={nameOf}
+            onChange={(list) => setAutomations({ spec, list })}
+          />
+        }
       />
     </NewAgentShell>
   )

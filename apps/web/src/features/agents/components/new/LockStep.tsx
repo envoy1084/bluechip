@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router"
 import { lockAgentAtom } from "../../atoms/agents.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
 import { useLanding } from "../../hooks/useLanding.ts"
+import type { AutomationSlots, TemplateAutomation } from "../../model/templateAutomations.ts"
 import { DoneStep } from "./DoneStep.tsx"
 import { NewAgentShell } from "./NewAgentShell.tsx"
 
@@ -64,13 +65,21 @@ function LockAgain({ agent, onSent }: Readonly<{ agent: Agent; onSent: (agent: A
  * After Face ID: a couple of seconds while Base takes the lock, followed through the live agent, then the agent at
  * work, or the lock that didn't land. Mount it once per send (a new `key`), so a retry follows its own lock.
  */
-export function LockStep({ sent, onSent }: Readonly<{ sent: Agent; onSent: (agent: Agent) => void }>) {
+export function LockStep(
+  { sent, onSent, Saved, automations }: Readonly<{
+    sent: Agent
+    onSent: (agent: Agent) => void
+    /** Saves its automations once it's live. */
+    Saved: AutomationSlots["Saved"]
+    automations: ReadonlyArray<TemplateAutomation>
+  }>
+) {
   const { agent, landing } = useLanding(sent, (candidate) => candidate.status === "active")
 
   return (
     <NewAgentShell step={null}>
       {landing === "landed" ?
-        <DoneStep agent={agent} /> :
+        <DoneStep agent={agent} automations={<Saved agent={agent} automations={automations} />} /> :
         (
           <div className="mx-auto w-full max-w-[460px] rounded-lg bg-white px-6 py-7 shadow-e2">
             {landing === "sending" ?

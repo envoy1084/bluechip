@@ -19,7 +19,7 @@ import { Input } from "@bluechip/ui/components/input"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomSet } from "@effect/atom-react/Hooks"
-import { useId, useState } from "react"
+import { type ReactNode, useId, useState } from "react"
 import { createAgentAtom, lockAgentAtom } from "../../atoms/agents.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
 import { useSpecCheck } from "../../hooks/useSpecCheck.ts"
@@ -73,11 +73,24 @@ function Facts({ spec }: Readonly<{ spec: AgentSpec }>) {
 }
 
 /**
- * Step three: its name, the agent as bluechip reads it (`POST /sessions/check`), the worst it could do, and Face ID
- * to lock it. Creating it saves a draft first, so a cancelled Face ID locks that same draft on the next try.
+ * Step three: its name, the agent as bluechip reads it (`POST /sessions/check`), the automations it comes with, the
+ * worst it could do, and Face ID to lock it. Creating it saves a draft first, so a cancelled Face ID locks that same draft on the next try.
  */
 export function ReviewStep(
-  { origin, spec, name, onNameChange, nameOf, draft, requestId, onDraft, onSent, onEdit, editProblem }: Readonly<{
+  {
+    origin,
+    spec,
+    name,
+    onNameChange,
+    nameOf,
+    draft,
+    requestId,
+    onDraft,
+    onSent,
+    onEdit,
+    editProblem,
+    automations
+  }: Readonly<{
     origin: Origin
     spec: AgentSpec
     name: string
@@ -91,6 +104,8 @@ export function ReviewStep(
     onEdit: () => void
     /** Why going back to the rules didn't work. */
     editProblem: string | null
+    /** The automations its template comes with. */
+    automations: ReactNode
   }>
 ) {
   const nameId = useId()
@@ -163,6 +178,8 @@ export function ReviewStep(
             }
           />
         </div>
+
+        {automations}
 
         <div className="flex flex-wrap items-center gap-2 px-0.5">
           <SaveTemplate spec={spec} basedOn={originTemplate(origin)} defaultName={name.trim() || originLabel(origin)} />
