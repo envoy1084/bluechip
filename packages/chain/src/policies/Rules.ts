@@ -11,6 +11,7 @@ import { configOf, type PolicyType } from "@bluechip/domain/policies/Policy"
 import { band, OVERSHOOT_BPS, PROGRESS_BPS, rebalance } from "@bluechip/domain/policies/Rebalance"
 import { SLIPPAGE_WINDOW_SECONDS, slippageBudget } from "@bluechip/domain/policies/SlippageBudget"
 import { stockCap } from "@bluechip/domain/policies/StockCap"
+import { stopLossFloor } from "@bluechip/domain/policies/StopLossFloor"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import type * as Schema from "effect/Schema"
 import { type Abi, type Address, encodeAbiParameters, type Hex } from "viem"
@@ -26,6 +27,8 @@ import {
   slippageBudgetRuleAbi,
   stockCapRule,
   stockCapRuleAbi,
+  stopLossFloorRule,
+  stopLossFloorRuleAbi,
   tradeSizeRule,
   tradeSizeRuleAbi
 } from "./Deployed.ts"
@@ -145,6 +148,22 @@ export const RULES: ReadonlyArray<RuleBinding> = [
       NoProgress: () => "Wouldn't bring your mix closer to its target.",
       LosesValue: () => "Would lose too much value to prices.",
       TargetsMismatch: () => "Its target mix doesn't match the stocks it values."
+    }
+  },
+  {
+    policy: "stopLossFloor",
+    address: stopLossFloorRule,
+    abi: stopLossFloorRuleAbi,
+    config: (spec) => {
+      const { floors } = required(spec, stopLossFloor)
+      return encode([{ type: "uint256[]", name: "floors" }], {
+        // By the guard's market index: a stock without a floor (0) is never sold.
+        floors: stocks.map((stock) => floors.find((floor) => floor.symbol === stock.symbol)?.price ?? BigInt(0))
+      })
+    },
+    errors: {
+      AboveFloor: (stock) => `Would sell ${stock} above the floor you set.`,
+      FloorsMismatch: () => "Its floors don't match the stocks it values."
     }
   },
   {

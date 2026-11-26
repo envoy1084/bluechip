@@ -226,6 +226,43 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
       }))
   })
 
+  describe("refused by stopLossFloor", () => {
+    // A Stop-loss guard holding one NVDA, selling a tenth of it (about $18).
+    const guard = (floor: bigint) =>
+      changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: BigInt(0) } }, {
+        id: "stopLossFloor",
+        config: { floors: [{ symbol: "NVDA", price: floor }, { symbol: "AAPL", price: floor }] }
+      })
+
+    it.effect.skip("a sale of NVDA above its floor (needs pnpm devnet:capture)", () =>
+      Effect.gen(function*() {
+        const { address, agent } = yield* (yield* TestAgents).lock({ spec: guard(BigInt(1)) })
+        yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(100_000_000))
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "sell", BigInt(10_000_000), address))
+
+        assert.deepStrictEqual(decision, {
+          _tag: "Refused",
+          refusal: {
+            policy: "stopLossFloor",
+            error: "AboveFloor",
+            stock: "NVDA",
+            message: "Would sell NVDA above the floor you set."
+          }
+        })
+      }))
+
+    it.effect.skip("the same sale under a floor of $10,000 (needs pnpm devnet:capture)", () =>
+      Effect.gen(function*() {
+        const { address, agent } = yield* (yield* TestAgents).lock({ spec: guard(BigInt(1_000_000_000_000)) })
+        yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(100_000_000))
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "sell", BigInt(10_000_000), address))
+
+        assert.strictEqual(decision._tag, "Passes")
+      }))
+  })
+
   describe("refused by slippageBudget", () => {
     it.effect("a buy losing 0.8% of $100, over a budget of 0.01% of $1,000", () =>
       Effect.gen(function*() {

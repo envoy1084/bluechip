@@ -33,4 +33,20 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("each optional rul
 
       assert.strictEqual(decision._tag, "Passes")
     }))
+
+  it.effect.skip(
+    "stopLossFloor: a session carrying it alone locks, and a fair $20 buy passes (needs pnpm devnet:capture)",
+    () =>
+      Effect.gen(function*() {
+        const spec = changed(without(PICKER, "stockCap", "cashReserve", "slippageBudget"), {
+          id: "stopLossFloor",
+          config: { floors: [{ symbol: "NVDA", price: BigInt(1) }, { symbol: "AAPL", price: BigInt(1) }] }
+        })
+        const { address, agent } = yield* (yield* TestAgents).lock({ spec })
+
+        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", BigInt(20_000_000), address))
+
+        assert.strictEqual(decision._tag, "Passes")
+      })
+  )
 })
