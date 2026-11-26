@@ -14,9 +14,12 @@ import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 import {
   agentsReactivityKey,
+  automationsReactivityKey,
   BluechipApiClient,
+  channelsReactivityKey,
   intentsReactivityKey,
   liveReactivityKey,
+  notificationsReactivityKey,
   portfolioReactivityKey,
   usageReactivityKey
 } from "./client.ts"
@@ -78,6 +81,16 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
                 [intentsReactivityKey]
             )
           }
+          if (event._tag === "NotificationAdded") {
+            const { kind } = event.notification
+            // A chat linked or unlinked from Telegram changes the settings page's list too.
+            return Reactivity.invalidate(
+              kind === "chatLinked" || kind === "chatUnlinked" ?
+                [notificationsReactivityKey, channelsReactivityKey] :
+                [notificationsReactivityKey]
+            )
+          }
+          if (event._tag === "AutomationRan") return Reactivity.invalidate([automationsReactivityKey])
           if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
             return Reactivity.invalidate([portfolioReactivityKey])
           }

@@ -9,6 +9,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { ConnectionBanner } from "../../../components/layout/ConnectionBanner.tsx"
+import { useFrameActions } from "../../../components/layout/FrameActions.tsx"
 import { conversationsAtom } from "../atoms/assistant.ts"
 import type { CardViews } from "../components/cards/CardViews.ts"
 import { Conversation } from "../components/Conversation.tsx"
@@ -60,6 +61,7 @@ export function ChatScreen(
 ) {
   const app = useSidebar()
   const assistant = useAssistant({ conversationId, agentId, onStarted })
+  const frameActions = useFrameActions()
 
   return (
     <div className="flex h-svh min-h-0 flex-col">
@@ -85,7 +87,7 @@ export function ChatScreen(
               </SidebarTrigger>
               <ChatTitle conversationId={assistant.state.conversationId} agentId={assistant.state.agentId} />
             </div>
-            <div className="flex shrink-0 items-center gap-1.5">{approvals}</div>
+            <div className="flex shrink-0 items-center gap-1.5">{approvals}{frameActions}</div>
           </header>
           <div className="px-4 pt-3 empty:hidden md:px-6">
             <ConnectionBanner />

@@ -38,3 +38,9 @@ export const usageReactivityKey = "usage"
 
 /** Automations and their runs refetch when this key is invalidated (after saving, pausing or deleting one). */
 export const automationsReactivityKey = "automations"
+
+/** Notifications and their unread count refetch when this key is invalidated (live `NotificationAdded` events). */
+export const notificationsReactivityKey = "notifications"
+
+/** Linked chats refetch when this key is invalidated (a chat linked or unlinked, from either side). */
+export const channelsReactivityKey = "channels"

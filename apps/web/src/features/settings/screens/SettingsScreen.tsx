@@ -123,6 +123,17 @@ export function SettingsScreen() {
           )) :
           null}
       </Section>
+      <Section title="Notifications" description="What bluechip tells you, in the app, as push and in Telegram.">
+        <Row
+          title="Notifications"
+          description="Each kind and where it goes, quiet hours, push and Telegram."
+          icon="bell"
+        >
+          <ButtonLink variant="secondary" size="sm" render={<Link to="/settings/notifications" />}>
+            Notification settings
+          </ButtonLink>
+        </Row>
+      </Section>
       <Section title="Assistant" description="What the assistant knows about you is yours to see and delete.">
         <Row title="Memory" description="Preferences, rules, goals and facts it uses to answer you." icon="book">
           <ButtonLink variant="secondary" size="sm" render={<Link to="/memory" />}>

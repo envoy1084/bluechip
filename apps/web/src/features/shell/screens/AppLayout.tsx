@@ -18,6 +18,7 @@ import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomMount } from "@effect/atom-react/Hooks"
 import { Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+import { FrameActionsProvider } from "../../../components/layout/FrameActions.tsx"
 import { SignedIn } from "../../../components/SignedIn.tsx"
 import { liveEventAtom } from "../../../lib/api/events.ts"
 
@@ -50,14 +51,16 @@ const NAV: ReadonlyArray<
 
 /**
  * The frame of every signed-in page: the sidebar's navigation, then the page. What other features show in it comes
- * from the route: the approvals badge count, the sidebar's agents and kill switch, and the cash dialogs.
+ * from the route: the approvals badge count, the sidebar's agents and kill switch, the cash dialogs, and what every
+ * page's top bar ends with (the notifications bell).
  */
 export function AppLayout(
-  { approvals, agents, pauseAll, dialogs }: Readonly<{
+  { approvals, agents, pauseAll, dialogs, topBar }: Readonly<{
     approvals: number
     agents: ReactNode
     pauseAll: ReactNode
     dialogs: ReactNode
+    topBar: ReactNode
   }>
 ) {
   const matchRoute = useMatchRoute()
@@ -111,7 +114,9 @@ export function AppLayout(
                 <SidebarRail />
               </Sidebar>
               <SidebarInset>
-                <Outlet />
+                <FrameActionsProvider value={topBar}>
+                  <Outlet />
+                </FrameActionsProvider>
               </SidebarInset>
             </SidebarProvider>
           )}

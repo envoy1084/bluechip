@@ -15,10 +15,17 @@ import { useApprovalCount } from "../../hooks/useApprovalCount.ts"
 import { waitingText } from "../../model/intentText.ts"
 import { ApprovalsList } from "./ApprovalsList.tsx"
 
-/** The bell with how many trades wait for you; it opens the approvals in a sheet. */
-export function ApprovalsBell() {
+/**
+ * The approvals button with how many trades wait for you; it opens them in a sheet. The route can hold the sheet open
+ * (`open`, `onOpenChange`), so a link (a notification, a push) opens it.
+ */
+export function ApprovalsBell(
+  { open: held, onOpenChange }: Readonly<{ open?: boolean; onOpenChange?: (open: boolean) => void }> = {}
+) {
   const count = useApprovalCount()
-  const [open, setOpen] = useState(false)
+  const [own, setOwn] = useState(false)
+  const open = held ?? own
+  const setOpen = onOpenChange ?? setOwn
 
   return (
     <>
@@ -29,7 +36,7 @@ export function ApprovalsBell() {
         aria-label={`Approvals, ${waitingText(count).toLowerCase()}`}
         onClick={() => setOpen(true)}
       >
-        <Icon name="bell" size={16} />
+        <Icon name="approvals" size={16} />
         {count === 0 ?
           null :
           (

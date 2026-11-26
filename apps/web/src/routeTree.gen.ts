@@ -32,6 +32,7 @@ import { Route as AppAutomationsAutomationIdRouteImport } from './routes/_app/au
 import { Route as AppAutomationsNewRouteImport } from './routes/_app/automations/new'
 import { Route as AppChatChar123ConversationIdChar125RouteImport } from './routes/_app/chat/{-$conversationId}'
 import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings_.notifications'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
 import { Route as AppAgentsAgentIdEditRouteImport } from './routes/_app/agents/$agentId_.edit'
@@ -153,6 +154,12 @@ const AppPortfolioIndexRoute = AppPortfolioIndexRouteImport.update({
   path: '/portfolio/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/settings_/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppStocksIndexRoute = AppStocksIndexRouteImport.update({
   id: '/stocks/',
   path: '/stocks/',
@@ -194,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/automations/new': typeof AppAutomationsNewRoute
   '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity/': typeof AppActivityIndexRoute
   '/agents/': typeof AppAgentsIndexRoute
@@ -222,6 +230,7 @@ export interface FileRoutesByTo {
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/automations/new': typeof AppAutomationsNewRoute
   '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity': typeof AppActivityIndexRoute
   '/agents': typeof AppAgentsIndexRoute
@@ -252,6 +261,7 @@ export interface FileRoutesById {
   '/_app/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/_app/automations/new': typeof AppAutomationsNewRoute
   '/_app/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
+  '/_app/settings_/notifications': typeof AppSettingsNotificationsRoute
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/automations/$automationId'
     | '/automations/new'
     | '/chat/{-$conversationId}'
+    | '/settings/notifications'
     | '/stocks/$symbol'
     | '/activity/'
     | '/agents/'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/automations/$automationId'
     | '/automations/new'
     | '/chat/{-$conversationId}'
+    | '/settings/notifications'
     | '/stocks/$symbol'
     | '/activity'
     | '/agents'
@@ -339,6 +351,7 @@ export interface FileRouteTypes {
     | '/_app/automations/$automationId'
     | '/_app/automations/new'
     | '/_app/chat/{-$conversationId}'
+    | '/_app/settings_/notifications'
     | '/_app/stocks/$symbol'
     | '/_app/activity/'
     | '/_app/agents/'
@@ -525,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPortfolioIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings_/notifications': {
+      id: '/_app/settings_/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/stocks/': {
       id: '/_app/stocks/'
       path: '/stocks'
@@ -566,6 +586,7 @@ interface AppRouteChildren {
   AppAutomationsAutomationIdRoute: typeof AppAutomationsAutomationIdRoute
   AppAutomationsNewRoute: typeof AppAutomationsNewRoute
   AppChatChar123ConversationIdChar125Route: typeof AppChatChar123ConversationIdChar125Route
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
@@ -587,6 +608,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAutomationsNewRoute: AppAutomationsNewRoute,
   AppChatChar123ConversationIdChar125Route:
     AppChatChar123ConversationIdChar125Route,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,
