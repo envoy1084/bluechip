@@ -9,8 +9,10 @@ export const users = pgTable("users", {
 })
 
 /**
- * Passkeys that sign in and own the account. `coseKey` is the credential's public key as WebAuthn reports it (for
- * verifying sign-ins); `publicKey` is the same P-256 key uncompressed (`0x04‖x‖y`), as Kernel's validator takes it.
+ * Passkeys that sign in and own the account (`owner`, any one of them signs), or only recover it (`recovery`).
+ * `coseKey` is the credential's public key as WebAuthn reports it (for verifying sign-ins); `publicKey` is the same
+ * P-256 key uncompressed (`0x04‖x‖y`), as Namera's `WebAuthnValidator` takes it. An owner added later is `pending`
+ * until its owner operation (`user_op_hash`) lands, and `removing` until its removal does.
  */
 export const passkeys = pgTable("passkeys", {
   id: typeId("passkey")("id").primaryKey(),
@@ -24,8 +26,13 @@ export const passkeys = pgTable("passkeys", {
   label: text("label"),
   /** Backed up by the provider, so it works on the user's other devices too. */
   synced: boolean("synced").notNull().default(false),
+  role: text("role", { enum: ["owner", "recovery"] }).notNull().default("owner"),
+  status: text("status", { enum: ["pending", "active", "removing", "removed"] }).notNull().default("active"),
+  /** The owner operation adding or removing it, while it is on its way. */
+  userOpHash: text("user_op_hash"),
   createdAt: dateTimeUtc("created_at").notNull(),
-  lastUsedAt: dateTimeUtc("last_used_at")
+  lastUsedAt: dateTimeUtc("last_used_at"),
+  removedAt: dateTimeUtc("removed_at")
 })
 
 /** The user's Kernel account on Base; the address is fixed by the sign-up passkey. */

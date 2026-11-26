@@ -53,9 +53,13 @@ const setupFromConfig = Effect.gen(function*() {
  * the bundler and paymaster don't work together.
  */
 export class Namera extends Context.Service<Namera, {
-  /** The user's Kernel account: its address is fixed by the passkey, whether or not it is deployed yet. */
+  /**
+   * The user's Kernel account owned by `owner`: at the address the sign-up passkey fixed (computed from `owner` when
+   * no `address` is given), whether or not it is deployed yet. Any of the account's passkeys signs for it.
+   */
   readonly kernelAccount: (
-    owner: WebAuthnAccount
+    owner: WebAuthnAccount,
+    address?: `0x${string}` | undefined
   ) => Effect.Effect<KernelAccount.KernelAccount, AccountError.AccountError | ChainError.ChainError>
   /** A bundler client for `account`; `estimateFeesPerGas` replaces the bundler's own fee estimate. */
   readonly bundlerClient: (
@@ -78,7 +82,8 @@ export class Namera extends Context.Service<Namera, {
         return yield* Effect.die(new Error(`Namera: ${compat.problems.map((problem) => problem.message).join("; ")}`))
       }
       return {
-        kernelAccount: (owner) => KernelAccount.from({ client: chain.client, owner }),
+        kernelAccount: (owner, address) =>
+          KernelAccount.from({ client: chain.client, owner, ...(address === undefined ? {} : { address }) }),
         bundlerClient: (account, options) =>
           createBundlerClient({
             account,

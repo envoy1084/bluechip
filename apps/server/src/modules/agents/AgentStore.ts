@@ -11,6 +11,7 @@ import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { AuditLog } from "../audit/AuditLog.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { AgentSessions, type SessionRow } from "./AgentSessions.ts"
 import { agents, agentSessions } from "./tables.ts"
@@ -76,6 +77,7 @@ export class AgentStore extends Context.Service<AgentStore, {
     Effect.gen(function*() {
       const db = yield* Database
       const live = yield* LiveEvents
+      const audit = yield* AuditLog
       const sessions = yield* AgentSessions
 
       const create = Effect.fn("AgentStore.create")(function*(owner: Owner, input: {
@@ -175,6 +177,25 @@ export class AgentStore extends Context.Service<AgentStore, {
         const [updated] = yield* db.update(agents).set({ ...changes, updatedAt: yield* DateTime.now })
           .where(eq(agents.id, row.id)).returning().pipe(Effect.orDie)
         const agent = yield* agentOf(updated!)
+        // Pauses, resumes and each step of a lock, change, renewal or removal. Landing (active, removed) and an end
+        // (expired) are bluechip following the chain; the rest is you.
+        const action = changes.paused !== undefined && changes.paused !== row.paused ?
+          (changes.paused ? "agent.paused" : "agent.resumed") :
+          changes.status !== undefined && changes.status !== row.status ?
+          `agent.${changes.status}` :
+          undefined
+        if (action !== undefined) {
+          const byBluechip = action === "agent.active" || action === "agent.removed" || action === "agent.expired"
+          yield* audit.record({
+            userId: row.userId as UserId,
+            actor: byBluechip ? "system" : "owner",
+            action,
+            subjectType: "agent",
+            subjectId: row.id,
+            agentId: row.id,
+            data: { name: updated!.name }
+          })
+        }
         yield* live.publish(
           LiveEvent.cases.AgentChanged.make(change === undefined ? { agent } : { agent, change }),
           row.userId as UserId

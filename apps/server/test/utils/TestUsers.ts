@@ -38,6 +38,8 @@ export interface TestUser extends Browser {
 export class TestUsers extends Context.Service<TestUsers, {
   /** A new browser, signed out. */
   readonly browser: Effect.Effect<Browser>
+  /** A new browser that names itself with `userAgent`, signed out. */
+  readonly browserOn: (userAgent: string) => Effect.Effect<Browser>
   /** A new user: a new passkey signed up in a new browser, with their live events open for the scope. No money. */
   readonly signUp: Effect.Effect<TestUser, never, Scope.Scope>
   /** A new user with 1,000 test USDC and ETH for gas (`POST /api/dev/fund`). */
@@ -48,7 +50,7 @@ export class TestUsers extends Context.Service<TestUsers, {
     Effect.gen(function*() {
       const httpClient = yield* HttpClient.HttpClient
 
-      const browser = Effect.gen(function*() {
+      const browserOn = Effect.fnUntraced(function*(userAgent: string | undefined) {
         const cookies = yield* Ref.make<ReadonlyArray<Cookies.Cookie>>([])
         const api = yield* HttpApiClient.make(BluechipApi, {
           transformClient: (client) =>
@@ -56,7 +58,8 @@ export class TestUsers extends Context.Service<TestUsers, {
               HttpClient.mapRequest((request) =>
                 request.pipe(
                   HttpClientRequest.setHeader(contractVersionHeader, String(ContractVersion)),
-                  HttpClientRequest.setHeader("origin", origin)
+                  HttpClientRequest.setHeader("origin", origin),
+                  userAgent === undefined ? (same) => same : HttpClientRequest.setHeader("user-agent", userAgent)
                 )
               ),
               HttpClient.withCookiesRef(cookies)
@@ -64,6 +67,7 @@ export class TestUsers extends Context.Service<TestUsers, {
         }).pipe(Effect.provideService(HttpClient.HttpClient, httpClient))
         return { api, cookies }
       })
+      const browser = browserOn(undefined)
 
       const signUp = Effect.gen(function*() {
         const { api, cookies } = yield* browser
@@ -91,7 +95,7 @@ export class TestUsers extends Context.Service<TestUsers, {
 
       const funded = Effect.tap(signUp, (user) => Effect.orDie(user.api.dev.fund()))
 
-      return { browser, signUp, funded }
+      return { browser, browserOn, signUp, funded }
     })
   )
 

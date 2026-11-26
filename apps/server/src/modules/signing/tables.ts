@@ -3,7 +3,8 @@ import { dateTimeUtc, typeId } from "../../platform/db/columns.ts"
 import { users } from "../accounts/tables.ts"
 
 /**
- * An action prepared for the user's passkey (a withdrawal, a trade, or an agent's lock, change or removal): the user operation as the bundler will get it
+ * An action prepared for the user's passkey (a withdrawal, a trade, an agent's lock, change or removal, removing every
+ * agent, adding or removing a passkey, setting up or removing the recovery key): the user operation as the bundler will get it
  * (`userOperation`, RPC encoding) and its hash, the WebAuthn challenge, with what it does (`payload`). Used once,
  * within two minutes.
  */
@@ -12,7 +13,7 @@ export const signingRequests = pgTable("signing_requests", {
   userId: typeId("user")("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   /** The client's request id: preparing the same action again returns this request. */
   requestId: text("request_id").notNull(),
-  kind: text("kind", { enum: ["withdrawal", "trade", "agent"] }).notNull(),
+  kind: text("kind", { enum: ["withdrawal", "trade", "agent", "agents", "passkey", "recoveryKey"] }).notNull(),
   payload: jsonb("payload").$type<Record<string, string>>().notNull(),
   userOperation: jsonb("user_operation").$type<Record<string, unknown>>().notNull(),
   hash: text("hash").notNull(),

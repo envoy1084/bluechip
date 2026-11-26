@@ -2,6 +2,7 @@ import { BluechipApi } from "@bluechip/domain/Api"
 import { sessionCookie } from "@bluechip/domain/Auth"
 import { SignatureRejected } from "@bluechip/domain/Errors"
 import type { PasskeyId, UserId } from "@bluechip/domain/Ids"
+import { notificationOfDevice } from "@bluechip/domain/notifications/SecurityDrafts"
 import { Ceremony } from "@bluechip/domain/WebAuthn"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -12,9 +13,12 @@ import * as HttpServerResponse from "effect/http/HttpServerResponse"
 import * as Option from "effect/Option"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Accounts } from "../accounts/Accounts.ts"
+import { AuditLog } from "../audit/AuditLog.ts"
+import { Notifications } from "../notifications/Notifications.ts"
 import { Challenges } from "./Challenges.ts"
 import { passkeyLabel } from "./PasskeyLabel.ts"
 import { Sessions } from "./Sessions.ts"
+import { deviceOf } from "./UserAgents.ts"
 import { WebAuthn } from "./WebAuthn.ts"
 
 // SimpleWebAuthn leaves unset options as `undefined`, which is not JSON; send them as the browser will read them.
@@ -29,10 +33,26 @@ export const AuthHandlers = HttpApiBuilder.group(
     const challenges = yield* Challenges
     const sessions = yield* Sessions
     const webAuthn = yield* WebAuthn
+    const notifications = yield* Notifications
+    const audit = yield* AuditLog
 
-    // Starts a session for the user and sets its cookie on the response.
-    const signIn = Effect.fn("Auth.signIn")(function*(userId: UserId, passkeyId: PasskeyId) {
-      const session = yield* sessions.create(userId, passkeyId)
+    // Starts a session for the user on this browser and sets its cookie on the response. A sign-in on a device the
+    // user never signed in on is a security notification (not the sign-up's first one).
+    const signIn = Effect.fn("Auth.signIn")(function*(userId: UserId, passkeyId: PasskeyId, firstSession: boolean) {
+      const request = yield* HttpServerRequest.HttpServerRequest
+      const device = deviceOf(request.headers["user-agent"])
+      const session = yield* sessions.create({ userId, passkeyId, device })
+      yield* audit.record({
+        userId,
+        actor: "owner",
+        action: "device.signedIn",
+        subjectType: "session",
+        subjectId: session.id,
+        data: { device }
+      })
+      if (session.newDevice && !firstSession) {
+        yield* notifications.add(userId, notificationOfDevice({ id: session.id, device }))
+      }
       yield* HttpApiBuilder.securitySetCookie(sessionCookie, session.token, {
         path: "/",
         sameSite: "lax",
@@ -53,7 +73,7 @@ export const AuthHandlers = HttpApiBuilder.group(
         const request = yield* HttpServerRequest.HttpServerRequest
         const label = passkeyLabel({ aaguid: passkey.aaguid, userAgent: request.headers["user-agent"] })
         const { me, passkeyId } = yield* accounts.register({ displayName: payload.displayName, passkey, label })
-        yield* signIn(me.user.id, passkeyId)
+        yield* signIn(me.user.id, passkeyId, true)
         return me
       }),
       loginOptions: Effect.fn(function*() {
@@ -64,10 +84,14 @@ export const AuthHandlers = HttpApiBuilder.group(
       loginVerify: Effect.fn(function*({ payload }) {
         const challenge = yield* challenges.consume("login", payload.challengeId)
         const passkey = yield* accounts.findPasskey(payload.credential.id)
-        if (Option.isNone(passkey)) return yield* new SignatureRejected({ reason: "unknownPasskey" })
+        // Only the account's owners sign in here: a recovery passkey signs in to recover, and a passkey being added
+        // or removed doesn't own the account.
+        if (Option.isNone(passkey) || passkey.value.role !== "owner" || passkey.value.status !== "active") {
+          return yield* new SignatureRejected({ reason: "unknownPasskey" })
+        }
         const counter = yield* webAuthn.verifyAuthentication(payload.credential, challenge, passkey.value)
         yield* accounts.recordPasskeyUse(passkey.value.id, counter)
-        yield* signIn(passkey.value.userId as UserId, passkey.value.id as PasskeyId)
+        yield* signIn(passkey.value.userId as UserId, passkey.value.id as PasskeyId, false)
         return yield* accounts.me(passkey.value.userId as UserId)
       }),
       logout: Effect.fn(function*() {

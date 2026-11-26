@@ -234,6 +234,7 @@ export class IntentStore extends Context.Service<IntentStore, {
             userId: row.userId as UserId,
             actor: byOwner ? "owner" : byAgent ? "agent" : "system",
             actorId: row.executor === "agent" ? row.agentId : null,
+            agentId: row.agentId,
             action: `intent.${next.success}`,
             subjectType: "intent",
             subjectId: row.id,

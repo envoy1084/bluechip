@@ -282,7 +282,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
         )
 
         const activity = yield* user.api.intents.list({ query: { agentId: agent.id } })
-        const audit = yield* user.api.intents.audit({ query: {} })
+        const audit = yield* user.api.audit.list({ query: {} })
 
         assert.deepStrictEqual(activity.items.map((intent) => intent.id), [created.id])
         assert.deepStrictEqual(

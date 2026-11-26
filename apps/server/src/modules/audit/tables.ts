@@ -11,6 +11,11 @@ export const auditEvents = pgTable("audit_events", {
   action: text("action").notNull(),
   subjectType: text("subject_type").notNull(),
   subjectId: text("subject_id").notNull(),
+  /** The agent it concerns: the one that acted, or the one acted on. */
+  agentId: text("agent_id"),
   data: jsonb("data").$type<unknown>().notNull(),
   at: dateTimeUtc("at").notNull()
-}, (table) => [index("audit_events_user_at_idx").on(table.userId, table.at)])
+}, (table) => [
+  index("audit_events_user_at_idx").on(table.userId, table.at),
+  index("audit_events_user_agent_idx").on(table.userId, table.agentId)
+])

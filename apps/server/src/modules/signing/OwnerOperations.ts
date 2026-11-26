@@ -19,10 +19,11 @@ import { base } from "viem/chains"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Namera } from "../../platform/namera/Namera.ts"
 
-/** The passkey that owns an account, as stored at sign-up. */
+/** One of the passkeys that own an account, and the account's address. */
 export interface OwnerPasskey {
   readonly credentialId: string
   readonly publicKey: string
+  readonly account: string
 }
 
 /** A call the account makes. */
@@ -46,6 +47,11 @@ const paysNoPrefund = (cause: unknown): boolean => {
   }
   return false
 }
+
+// Any of the account's passkeys may sign what one of them prepared. The bundler estimates call gas with the preparing
+// passkey's stub signature, whose validation warms that passkey's storage; a call reading another passkey's storage
+// (removing it, say) then pays for cold reads the estimate never saw. This covers a few cold slots.
+const OTHER_SIGNER_CALL_GAS = BigInt(20_000)
 
 /** The user operation's hash as WebAuthn's challenge (base64url of its 32 bytes). */
 export const challengeOf = (hash: Hex) => isoBase64URL.fromBuffer(hexToBytes(hash) as Uint8Array<ArrayBuffer>)
@@ -97,24 +103,27 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
       // The owner as viem's WebAuthn account: `assertion` is what the user's browser signed, handed to the signing code
       // as if the authenticator had just answered.
       const kernelAccount = (passkey: OwnerPasskey, assertion?: typeof AuthenticationCredential.Type) =>
-        namera.kernelAccount(toWebAuthnAccount({
-          credential: { id: passkey.credentialId, publicKey: passkey.publicKey as Hex },
-          // Given explicitly: without it, ox reads the relying party from `window`, which a server doesn't have.
-          rpId: config.rpId,
-          getFn: async () => {
-            if (assertion === undefined) throw new Error("the owner's signature is collected in the browser")
-            const buffer = (value: string) => isoBase64URL.toBuffer(value).buffer as ArrayBuffer
-            return {
-              id: assertion.id,
-              type: "public-key",
-              response: {
-                clientDataJSON: buffer(assertion.response.clientDataJSON),
-                authenticatorData: buffer(assertion.response.authenticatorData),
-                signature: buffer(assertion.response.signature)
-              }
-            } as never
-          }
-        })).pipe(Effect.catch(unavailable))
+        namera.kernelAccount(
+          toWebAuthnAccount({
+            credential: { id: passkey.credentialId, publicKey: passkey.publicKey as Hex },
+            // Given explicitly: without it, ox reads the relying party from `window`, which a server doesn't have.
+            rpId: config.rpId,
+            getFn: async () => {
+              if (assertion === undefined) throw new Error("the owner's signature is collected in the browser")
+              const buffer = (value: string) => isoBase64URL.toBuffer(value).buffer as ArrayBuffer
+              return {
+                id: assertion.id,
+                type: "public-key",
+                response: {
+                  clientDataJSON: buffer(assertion.response.clientDataJSON),
+                  authenticatorData: buffer(assertion.response.authenticatorData),
+                  signature: buffer(assertion.response.signature)
+                }
+              } as never
+            }
+          }),
+          passkey.account as Hex
+        ).pipe(Effect.catch(unavailable))
 
       const prepare = Effect.fn("OwnerOperations.prepare")(
         function*(passkey: OwnerPasskey, calls: ReadonlyArray<Call>, minCallGas?: bigint) {
@@ -122,12 +131,11 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
           const bundler = namera.bundlerClient(account)
           const prepared = yield* Effect.tryPromise(() => bundler.prepareUserOperation({ account, calls: [...calls] }))
             .pipe(Effect.catch(unavailable))
+          const estimated = prepared.callGasLimit + OTHER_SIGNER_CALL_GAS
           const userOperation = {
             ...prepared,
             // Some calls are estimated short (a swap, see `swapCallGas`): a floor keeps them whole.
-            callGasLimit: minCallGas !== undefined && prepared.callGasLimit < minCallGas
-              ? minCallGas
-              : prepared.callGasLimit,
+            callGasLimit: minCallGas !== undefined && estimated < minCallGas ? minCallGas : estimated,
             signature: "0x"
           } as UserOperation<"0.7">
           const hash = getUserOperationHash({

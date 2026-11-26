@@ -74,12 +74,17 @@ export class SigningRequests extends Context.Service<SigningRequests, {
       const webAuthn = yield* WebAuthn
       const operations = yield* OwnerOperations
 
+      // Any of the account's owner passkeys signs: the browser offers whichever this device has.
       const webAuthnOptions = Effect.fn("SigningRequests.webAuthnOptions")(function*(row: SigningRequestRow) {
-        const passkey = yield* accounts.ownerPasskey(row.userId as UserId)
+        const owners = yield* accounts.owners(row.userId as UserId)
         return {
           challenge: challengeOf(row.hash as Hex),
           rpId: config.rpId,
-          allowCredentials: [{ id: passkey.credentialId, type: "public-key", transports: passkey.transports }],
+          allowCredentials: owners.map((owner) => ({
+            id: owner.credentialId,
+            type: "public-key",
+            transports: owner.transports
+          })),
           userVerification: "required",
           timeout: 120_000
         }
@@ -149,8 +154,9 @@ export class SigningRequests extends Context.Service<SigningRequests, {
           return yield* new SignatureRejected({ reason: "challenge" })
         }
 
-        const passkey = yield* accounts.ownerPasskey(owner.id)
-        if (credential.id !== passkey.credentialId) return yield* new SignatureRejected({ reason: "unknownPasskey" })
+        const signer = yield* accounts.ownerByCredential(owner.id, credential.id)
+        if (Option.isNone(signer)) return yield* new SignatureRejected({ reason: "unknownPasskey" })
+        const passkey = signer.value
         const counter = yield* webAuthn.verifyAuthentication(credential, challengeOf(request.hash as Hex), passkey)
         yield* accounts.recordPasskeyUse(passkey.id, counter)
 

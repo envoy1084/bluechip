@@ -1,4 +1,4 @@
-import { Authentication, CurrentUser } from "@bluechip/domain/Auth"
+import { Authentication, CurrentUser, RecoveringUser, RecoveryAuthentication } from "@bluechip/domain/Auth"
 import { Unauthenticated } from "@bluechip/domain/Errors"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
@@ -18,6 +18,23 @@ export const AuthenticationLive = Layer.effect(
         const user = yield* sessions.user(token)
         if (Option.isNone(user)) return yield* new Unauthenticated()
         return yield* Effect.provideService(httpEffect, CurrentUser, user.value)
+      })
+    })
+  })
+)
+
+/** Recovery cookie → live recovery session → `RecoveringUser`; anything else is `Unauthenticated`. */
+export const RecoveryAuthenticationLive = Layer.effect(
+  RecoveryAuthentication,
+  Effect.gen(function*() {
+    const sessions = yield* Sessions
+    return RecoveryAuthentication.of({
+      recovery: Effect.fn("RecoveryAuthentication.recovery")(function*(httpEffect, { credential }) {
+        const token = Redacted.value(credential)
+        if (token === "") return yield* new Unauthenticated()
+        const user = yield* sessions.recovering(token)
+        if (Option.isNone(user)) return yield* new Unauthenticated()
+        return yield* Effect.provideService(httpEffect, RecoveringUser, user.value)
       })
     })
   })

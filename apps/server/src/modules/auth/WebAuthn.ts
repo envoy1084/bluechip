@@ -35,9 +35,16 @@ export interface NewPasskey {
 
 /** Passkey ceremonies for this site, as the relying party: their options, and checks of the browser's answers. */
 export class WebAuthn extends Context.Service<WebAuthn, {
-  /** Options for creating a discoverable, user-verified ES256 passkey. */
+  /**
+   * Options for creating a discoverable, user-verified ES256 passkey; `exclude` lists the user's passkeys already
+   * known (an authenticator holding one refuses), `securityKey` suggests another device or a hardware key.
+   */
   readonly registrationOptions: (
-    displayName: string | undefined
+    displayName: string | undefined,
+    options?: {
+      readonly exclude?: ReadonlyArray<{ readonly credentialId: string; readonly transports: ReadonlyArray<string> }>
+      readonly securityKey?: boolean | undefined
+    }
   ) => Effect.Effect<PublicKeyCredentialCreationOptionsJSON>
   readonly verifyRegistration: (
     credential: typeof RegistrationCredential.Type,
@@ -60,7 +67,15 @@ export class WebAuthn extends Context.Service<WebAuthn, {
     Effect.gen(function*() {
       const config = yield* AppConfig
 
-      const registrationOptions = Effect.fn("WebAuthn.registrationOptions")((displayName: string | undefined) =>
+      const registrationOptions = Effect.fn("WebAuthn.registrationOptions")((
+        displayName: string | undefined,
+        options: {
+          readonly exclude?: ReadonlyArray<
+            { readonly credentialId: string; readonly transports: ReadonlyArray<string> }
+          >
+          readonly securityKey?: boolean | undefined
+        } = {}
+      ) =>
         Effect.promise(() =>
           generateRegistrationOptions({
             rpName: "bluechip",
@@ -69,7 +84,12 @@ export class WebAuthn extends Context.Service<WebAuthn, {
             userDisplayName: displayName ?? "bluechip",
             attestationType: "none",
             authenticatorSelection: { residentKey: "required", userVerification: "required" },
-            supportedAlgorithmIDs: es256
+            supportedAlgorithmIDs: es256,
+            excludeCredentials: (options.exclude ?? []).map((passkey) => ({
+              id: passkey.credentialId,
+              transports: passkey.transports as never
+            })),
+            ...(options.securityKey === true ? { preferredAuthenticatorType: "securityKey" as const } : {})
           })
         )
       )

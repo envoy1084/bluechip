@@ -8,7 +8,8 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { authChallenges } from "./tables.ts"
 
-type Purpose = "register" | "login"
+/** What a challenge is for: sign-up, sign-in, another passkey of yours, or the recovery passkey's ceremonies. */
+type Purpose = "register" | "login" | "passkey" | "recovery"
 
 /** The challenges of passkey ceremonies, each valid for five minutes and verified at most once. */
 export class Challenges extends Context.Service<Challenges, {

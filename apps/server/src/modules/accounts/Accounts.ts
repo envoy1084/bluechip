@@ -2,7 +2,7 @@ import { ChainClient } from "@bluechip/chain/ChainClient"
 import { Account, type Eligibility, Me, Passkey, User } from "@bluechip/domain/Account"
 import type { Address, PasskeyId, UserId } from "@bluechip/domain/Ids"
 import * as SmartAccount from "@namera-ai/sdk/effect/accounts/SmartAccount"
-import { eq } from "drizzle-orm"
+import { and, asc, eq, isNotNull, ne } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -15,7 +15,23 @@ import { Namera } from "../../platform/namera/Namera.ts"
 import type { NewPasskey } from "../auth/WebAuthn.ts"
 import { accounts, passkeys, users } from "./tables.ts"
 
-type PasskeyRow = typeof passkeys.$inferSelect
+export type PasskeyRow = typeof passkeys.$inferSelect
+
+/** A passkey that signs for the account, with the account's address. */
+export type Signer = PasskeyRow & { readonly account: string }
+
+/** A passkey row as the API shows it; `current` is the one that signed in the session asking. */
+export const toPasskey = (row: PasskeyRow, current?: string) =>
+  new Passkey({
+    id: row.id as PasskeyId,
+    role: row.role,
+    status: row.status,
+    label: row.label,
+    synced: row.synced,
+    current: row.id === current,
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt
+  })
 
 const toUser = (row: typeof users.$inferSelect) =>
   new User({
@@ -25,7 +41,10 @@ const toUser = (row: typeof users.$inferSelect) =>
     createdAt: row.createdAt
   })
 
-/** Users, their passkeys and their Kernel accounts. */
+/**
+ * Users, their passkeys and their Kernel accounts. The account's owners are its active `owner` passkeys, each
+ * installed on Namera's `WebAuthnValidator` with a threshold of one, so any of them signs.
+ */
 export class Accounts extends Context.Service<Accounts, {
   /**
    * Creates the user, their first passkey and their Kernel account (address computed from the passkey, offline) in
@@ -40,12 +59,30 @@ export class Accounts extends Context.Service<Accounts, {
   readonly me: (userId: UserId) => Effect.Effect<Me>
   readonly setEligibility: (userId: UserId, eligibility: Eligibility) => Effect.Effect<User>
   readonly setDisplayName: (userId: UserId, displayName: string | null) => Effect.Effect<User>
-  /** The user's passkeys, marking the one that signed in the current session. */
+  /**
+   * The account's owner passkeys, oldest first: those that own it and those on their way in or out (not one prepared
+   * but never signed), marking the one that signed in the current session.
+   */
   readonly passkeys: (userId: UserId, current: PasskeyId) => Effect.Effect<ReadonlyArray<Passkey>>
   /** The stored passkey a sign-in names, if this site knows it. */
   readonly findPasskey: (credentialId: string) => Effect.Effect<Option.Option<PasskeyRow>>
-  /** The passkey the account was created with: the one its validator checks. */
-  readonly ownerPasskey: (userId: UserId) => Effect.Effect<PasskeyRow>
+  /** One of the account's owners (the oldest): any of them signs, so it prepares and follows operations. */
+  readonly ownerPasskey: (userId: UserId) => Effect.Effect<Signer>
+  /** The account's owner with this WebAuthn credential id, if it is one. */
+  readonly ownerByCredential: (userId: UserId, credentialId: string) => Effect.Effect<Option.Option<Signer>>
+  /** The account's owners, oldest first. */
+  readonly owners: (userId: UserId) => Effect.Effect<ReadonlyArray<PasskeyRow>>
+  /** One of the user's passkeys, by id. */
+  readonly passkey: (userId: UserId, id: string) => Effect.Effect<Option.Option<PasskeyRow>>
+  /** Stores a new passkey of the user's, not yet onchain (`pending`). */
+  readonly insertPasskey: (userId: UserId, input: {
+    readonly passkey: NewPasskey
+    readonly label: string
+    readonly role: PasskeyRow["role"]
+  }) => Effect.Effect<PasskeyRow>
+  readonly savePasskey: (id: string, changes: Partial<PasskeyRow>) => Effect.Effect<PasskeyRow>
+  /** Passkeys with an owner operation on its way, everyone's. */
+  readonly passkeysInFlight: Effect.Effect<ReadonlyArray<PasskeyRow>>
   readonly recordPasskeyUse: (id: string, counter: number) => Effect.Effect<void>
 }>()("@bluechip/server/Accounts") {
   static readonly layer = Layer.effect(
@@ -145,19 +182,13 @@ export class Accounts extends Context.Service<Accounts, {
       )
 
       const listPasskeys = Effect.fn("Accounts.passkeys")(function*(userId: UserId, current: PasskeyId) {
-        const rows = yield* db.select().from(passkeys).where(eq(passkeys.userId, userId as `user_${string}`))
-          .orderBy(passkeys.createdAt)
-          .pipe(Effect.orDie)
-        return rows.map((row) =>
-          new Passkey({
-            id: row.id as PasskeyId,
-            label: row.label,
-            synced: row.synced,
-            current: row.id === current,
-            createdAt: row.createdAt,
-            lastUsedAt: row.lastUsedAt
-          })
-        )
+        const rows = yield* db.select().from(passkeys).where(and(
+          eq(passkeys.userId, userId as `user_${string}`),
+          eq(passkeys.role, "owner"),
+          ne(passkeys.status, "removed")
+        )).orderBy(asc(passkeys.createdAt)).pipe(Effect.orDie)
+        return rows.filter((row) => row.status !== "pending" || row.userOpHash !== null)
+          .map((row) => toPasskey(row, current))
       })
 
       const findPasskey = Effect.fn("Accounts.findPasskey")(function*(credentialId: string) {
@@ -167,12 +198,72 @@ export class Accounts extends Context.Service<Accounts, {
         return Option.fromNullishOr(row)
       })
 
-      const ownerPasskey = Effect.fn("Accounts.ownerPasskey")(function*(userId: UserId) {
-        const [row] = yield* db.select().from(passkeys).where(eq(passkeys.userId, userId as `user_${string}`))
-          .orderBy(passkeys.createdAt).limit(1).pipe(Effect.orDie)
-        if (row === undefined) return yield* Effect.die(new Error(`no passkey for ${userId}`))
-        return row
+      const addressOf = Effect.fnUntraced(function*(userId: UserId) {
+        const [row] = yield* db.select({ address: accounts.address }).from(accounts)
+          .where(eq(accounts.userId, userId as `user_${string}`)).pipe(Effect.orDie)
+        if (row === undefined) return yield* Effect.die(new Error(`no account for ${userId}`))
+        return row.address
       })
+
+      const owners = Effect.fn("Accounts.owners")(function*(userId: UserId) {
+        return yield* db.select().from(passkeys).where(and(
+          eq(passkeys.userId, userId as `user_${string}`),
+          eq(passkeys.role, "owner"),
+          eq(passkeys.status, "active")
+        )).orderBy(asc(passkeys.createdAt)).pipe(Effect.orDie)
+      })
+
+      const ownerPasskey = Effect.fn("Accounts.ownerPasskey")(function*(userId: UserId) {
+        const [row] = yield* owners(userId)
+        if (row === undefined) return yield* Effect.die(new Error(`no owner passkey for ${userId}`))
+        return { ...row, account: yield* addressOf(userId) }
+      })
+
+      const ownerByCredential = Effect.fn("Accounts.ownerByCredential")(
+        function*(userId: UserId, credentialId: string) {
+          const row = (yield* owners(userId)).find((owner) => owner.credentialId === credentialId)
+          return row === undefined ? Option.none<Signer>() : Option.some({ ...row, account: yield* addressOf(userId) })
+        }
+      )
+
+      const passkey = Effect.fn("Accounts.passkey")(function*(userId: UserId, id: string) {
+        const [row] = yield* db.select().from(passkeys).where(and(
+          eq(passkeys.userId, userId as `user_${string}`),
+          eq(passkeys.id, id as `passkey_${string}`)
+        )).pipe(Effect.orDie)
+        return Option.fromNullishOr(row)
+      })
+
+      const insertPasskey = Effect.fn("Accounts.insertPasskey")(function*(userId: UserId, input: {
+        readonly passkey: NewPasskey
+        readonly label: string
+        readonly role: PasskeyRow["role"]
+      }) {
+        const now = yield* DateTime.now
+        const [row] = yield* db.insert(passkeys).values({
+          id: typeid("passkey").toString() as `passkey_${string}`,
+          userId: userId as `user_${string}`,
+          credentialId: input.passkey.credentialId,
+          coseKey: input.passkey.coseKey,
+          publicKey: input.passkey.publicKey,
+          counter: input.passkey.counter,
+          transports: [...input.passkey.transports],
+          label: input.label,
+          synced: input.passkey.synced,
+          role: input.role,
+          status: "pending",
+          createdAt: now
+        }).returning().pipe(Effect.orDie)
+        return row!
+      })
+
+      const savePasskey = Effect.fn("Accounts.savePasskey")(function*(id: string, changes: Partial<PasskeyRow>) {
+        const [row] = yield* db.update(passkeys).set(changes).where(eq(passkeys.id, id as `passkey_${string}`))
+          .returning().pipe(Effect.orDie)
+        return row!
+      })
+
+      const passkeysInFlight = db.select().from(passkeys).where(isNotNull(passkeys.userOpHash)).pipe(Effect.orDie)
 
       const recordPasskeyUse = Effect.fn("Accounts.recordPasskeyUse")(function*(id: string, counter: number) {
         yield* db.update(passkeys).set({ counter, lastUsedAt: yield* DateTime.now })
@@ -188,6 +279,12 @@ export class Accounts extends Context.Service<Accounts, {
         passkeys: listPasskeys,
         findPasskey,
         ownerPasskey,
+        ownerByCredential,
+        owners,
+        passkey,
+        insertPasskey,
+        savePasskey,
+        passkeysInFlight,
         recordPasskeyUse
       })
     })
