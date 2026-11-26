@@ -7,6 +7,8 @@
 @import "./surfaces.css";
 @import "skullet/styles.css";
 @import "./skeleton.css";
+@import "./markdown.css";
+@import "katex/dist/katex.min.css";
 
 /* Scan the package's components for class names when an app imports this file. */
 @source "../";

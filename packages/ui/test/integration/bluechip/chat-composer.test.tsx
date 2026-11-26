@@ -67,6 +67,27 @@ describe("ChatComposer", () => {
     expect(stopped).toBe(1)
   })
 
+  it("Escape stops bluechip's answer", async () => {
+    let stopped = 0
+    const screen = await render(<ChatComposer sending onStop={() => stopped++} onSend={() => {}} />)
+    await userEvent.click(screen.getByRole("textbox", { name: "Message bluechip" }))
+    await userEvent.keyboard("{Escape}")
+    expect(stopped).toBe(1)
+  })
+
+  it("Escape does nothing while nothing is answering", async () => {
+    let stopped = 0
+    const screen = await render(<ChatComposer onStop={() => stopped++} onSend={() => {}} />)
+    await userEvent.click(screen.getByRole("textbox", { name: "Message bluechip" }))
+    await userEvent.keyboard("{Escape}")
+    expect(stopped).toBe(0)
+  })
+
+  it("shows what's given as leading beside Send", async () => {
+    const screen = await render(<ChatComposer leading={<button type="button">My account</button>} onSend={() => {}} />)
+    await expect.element(screen.getByRole("button", { name: "My account" })).toBeVisible()
+  })
+
   it("fills the box from a suggestion without sending it", async () => {
     const sent: Array<string> = []
     const screen = await render(

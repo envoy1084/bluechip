@@ -2,16 +2,16 @@ import { type ComponentProps, type ReactNode, useId } from "react"
 import { Button } from "../components/button.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
-import { CitationChip, type CitationSource } from "./citation-chip.tsx"
-import { TickerChip } from "./ticker-chip.tsx"
+import { ChatMarkdown } from "./chat-markdown.tsx"
+import type { CitationSource } from "./citation-chip.tsx"
 
 export type ChatMessageStatus = "streaming" | "done" | "error"
 
 export interface ChatMessageProps extends Omit<ComponentProps<"div">, "children"> {
   readonly from: "you" | "bluechip"
   /**
-   * The message in simple rich text: `**bold**`, lines starting with `- ` as a list, `[[NVDA]]` for a ticker chip
-   * and `[^1]` for the first of `sources`.
+   * The message. bluechip's is markdown, streamed (`ChatMarkdown`), with `[[NVDA]]` for a ticker chip and `[^1]` for
+   * the first of `sources`; yours is plain text.
    */
   readonly text?: string
   /** `streaming` shows three dots until text arrives, then a caret after it. Defaults to `done`. */
@@ -27,70 +27,6 @@ export interface ChatMessageProps extends Omit<ComponentProps<"div">, "children"
 }
 
 const NO_SOURCES: ReadonlyArray<CitationSource> = []
-
-const INLINE = /\*\*(.+?)\*\*|\[\[([A-Z]+)\]\]|\[\^(\d+)\]/g
-
-function renderInline(line: string, sources: ReadonlyArray<CitationSource>): ReactNode {
-  const parts: Array<ReactNode> = []
-  let last = 0
-  for (const match of line.matchAll(INLINE)) {
-    parts.push(line.slice(last, match.index))
-    const [token, bold, symbol, cite] = match
-    if (bold !== undefined) parts.push(<b key={match.index} className="font-semibold text-ink">{bold}</b>)
-    else if (symbol !== undefined) {
-      parts.push(<TickerChip key={match.index} symbol={symbol} size="sm" className="mr-[3px] align-[1px]" />)
-    } else {
-      const source = sources[Number(cite) - 1]
-      parts.push(source ? <CitationChip key={match.index} index={Number(cite)} source={source} /> : token)
-    }
-    last = match.index + token.length
-  }
-  parts.push(line.slice(last))
-  return parts
-}
-
-const caret = (
-  <span
-    data-slot="chat-caret"
-    aria-hidden
-    className="ml-0.5 inline-block h-[15px] w-[7px] animate-pulse rounded-[1px] bg-blue align-[-2px] motion-reduce:animate-none"
-  />
-)
-
-/** Splits rich text into paragraphs and lists; the caret, when streaming, follows the last block's text. */
-function RichText({ text, sources, streaming }: {
-  readonly text: string
-  readonly sources: ReadonlyArray<CitationSource>
-  readonly streaming: boolean
-}) {
-  // Each line keeps its line number in the text as a stable key.
-  type Line = { readonly n: number; readonly text: string }
-  const blocks: Array<{ readonly list: boolean; readonly lines: Array<Line> }> = []
-  text.split("\n").forEach((raw, n) => {
-    const item = raw.startsWith("- ")
-    if (!item && raw.trim() === "") return
-    const line = { n, text: item ? raw.slice(2) : raw }
-    const previous = blocks.at(-1)
-    if (item && previous?.list) previous.lines.push(line)
-    else blocks.push({ list: item, lines: [line] })
-  })
-  const lastLine = blocks.at(-1)?.lines.at(-1)
-  const body = (line: Line) => (
-    <>
-      {renderInline(line.text, sources)}
-      {streaming && line === lastLine && caret}
-    </>
-  )
-  return blocks.map((block) => {
-    const first = block.lines[0]!
-    if (!block.list) return <p key={first.n}>{body(first)}</p>
-    return (
-      <ul key={first.n} className="grid list-disc gap-1 pl-[18px] marker:text-g-400">
-        {block.lines.map((line) => <li key={line.n}>{body(line)}</li>)}
-      </ul>
-    )
-  })
-}
 
 /** bluechip's rising chip mark. */
 function BotMark() {
@@ -175,7 +111,7 @@ export function ChatMessage({
               ))}
             </output>
           ) :
-          text && <RichText text={text} sources={sources} streaming={streaming} />}
+          text && <ChatMarkdown text={text} sources={sources} streaming={streaming} />}
         {status === "error" && (
           <div className="flex flex-wrap items-center gap-2 rounded-[10px] bg-warn-wash py-2 pr-2.5 pl-3 text-[13.5px] text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
             <Icon name="warning" size={14} />

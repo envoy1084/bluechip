@@ -5,7 +5,8 @@ import { userEvent } from "vitest/browser"
 
 const PORTFOLIO = { kind: "Account", from: "Your portfolio", title: "Holdings and limits", when: "Right now" } as const
 
-const caretOf = (container: HTMLElement) => container.querySelector("[data-slot=chat-caret]")
+// Streamdown draws its caret in CSS, after the last block, from this custom property.
+const caretOf = (container: HTMLElement) => container.querySelector("[style*='--streamdown-caret']")
 const busyOf = (container: HTMLElement) =>
   container.querySelector("[data-slot=chat-message]")?.getAttribute("aria-busy") ?? null
 
@@ -20,13 +21,14 @@ describe("ChatMessage", () => {
       const screen = await render(<ChatMessage from="bluechip" status="streaming" text="Nvidia is" />)
       await expect.element(screen.getByText("Nvidia is")).toBeVisible()
       await expect.element(screen.getByRole("status", { name: "bluechip is typing" })).not.toBeInTheDocument()
-      expect(caretOf(screen.container)?.parentElement?.textContent).toBe("Nvidia is")
+      expect(caretOf(screen.container)?.textContent).toBe("Nvidia is")
       expect(busyOf(screen.container)).toBe("true")
     })
 
-    it("puts the caret after the last list item", async () => {
-      const screen = await render(<ChatMessage from="bluechip" status="streaming" text={"- Nvidia\n- Apple"} />)
-      expect(caretOf(screen.container)?.parentElement?.textContent).toBe("Apple")
+    it("renders an unfinished bold as it will end", async () => {
+      const screen = await render(<ChatMessage from="bluechip" status="streaming" text="Nvidia is **$181" />)
+      await expect.element(screen.getByText("$181")).toBeVisible()
+      expect(screen.getByText("$181").element().tagName).toBe("STRONG")
     })
 
     it("has no caret and isn't busy once done", async () => {
@@ -37,19 +39,22 @@ describe("ChatMessage", () => {
     })
   })
 
-  describe("rich text", () => {
+  describe("markdown", () => {
     it("bolds **text**", async () => {
       const screen = await render(<ChatMessage from="bluechip" text="Nvidia is **$181.42** today." />)
-      expect(screen.getByText("$181.42").element().tagName).toBe("B")
+      await expect.element(screen.getByText("$181.42")).toBeVisible()
+      expect(screen.getByText("$181.42").element().tagName).toBe("STRONG")
     })
 
     it("turns lines starting with - into a list", async () => {
-      const screen = await render(<ChatMessage from="bluechip" text={"Here's where you stand:\n- Nvidia\n- Apple"} />)
+      const screen = await render(<ChatMessage from="bluechip" text={"Here's where you stand:\n\n- Nvidia\n- Apple"} />)
+      await expect.element(screen.getByText("Apple")).toBeVisible()
       expect(screen.getByRole("listitem").elements().map((item) => item.textContent)).toEqual(["Nvidia", "Apple"])
     })
 
-    it("makes each other line a paragraph, skipping blank lines", async () => {
+    it("makes each block a paragraph", async () => {
       const screen = await render(<ChatMessage from="bluechip" text={"Nvidia is up.\n\nApple is down."} />)
+      await expect.element(screen.getByText("Apple is down.")).toBeVisible()
       expect(screen.getByRole("paragraph").elements().map((p) => p.textContent)).toEqual([
         "Nvidia is up.",
         "Apple is down."
@@ -58,6 +63,7 @@ describe("ChatMessage", () => {
 
     it("turns [[NVDA]] into a ticker chip", async () => {
       const screen = await render(<ChatMessage from="bluechip" text="[[NVDA]] is 28.5% of your money." />)
+      await expect.element(screen.getByText("is 28.5% of your money.", { exact: false })).toBeVisible()
       expect(screen.container.querySelector("[data-slot=ticker-chip]")?.textContent).toBe("NVDA")
     })
 
@@ -66,9 +72,16 @@ describe("ChatMessage", () => {
       await expect.element(screen.getByRole("button", { name: "Source 1: Your portfolio" })).toBeVisible()
     })
 
-    it("leaves a citation with no such source as written", async () => {
+    it("shows no chip for a citation with no such source", async () => {
       const screen = await render(<ChatMessage from="bluechip" text="Your max is 30%.[^2]" sources={[PORTFOLIO]} />)
-      await expect.element(screen.getByText("Your max is 30%.[^2]")).toBeVisible()
+      await expect.element(screen.getByText("Your max is 30%.")).toBeVisible()
+      await expect.element(screen.getByRole("button", { name: /^Source/ })).not.toBeInTheDocument()
+    })
+
+    it("highlights a fenced code block", async () => {
+      const screen = await render(<ChatMessage from="bluechip" text={"```ts\nconst max = 30\n```"} />)
+      await expect.element(screen.getByText("max", { exact: false })).toBeVisible()
+      expect(screen.container.querySelector("[data-streamdown=code-block]")).not.toBeNull()
     })
   })
 

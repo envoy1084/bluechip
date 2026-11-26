@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, useId, useRef, useState } from "react"
+import { type FormEvent, type KeyboardEvent, type ReactNode, useId, useRef, useState } from "react"
 import { Button } from "../components/button.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
@@ -14,12 +14,15 @@ export interface ChatComposerProps {
   /** Prompts shown above the box. Picking one fills the box for you to edit or send. */
   readonly suggestions?: ReadonlyArray<string>
   readonly placeholder?: string
+  /** Beside the send button, in place of the keyboard hint: a picker for who the message is for, say. */
+  readonly leading?: ReactNode
   readonly className?: string
 }
 
 /**
  * Where you ask a question or describe the agent you want. The box grows to six lines, Enter sends and
- * Shift+Enter adds a line. No attachments, by design.
+ * Shift+Enter adds a line (not while an input method is composing), and Escape stops an answer. No attachments, by
+ * design.
  */
 export function ChatComposer({
   onSend,
@@ -27,6 +30,7 @@ export function ChatComposer({
   onStop,
   suggestions = NO_SUGGESTIONS,
   placeholder = "Ask anything, or describe the agent you want…",
+  leading,
   className
 }: ChatComposerProps) {
   const id = useId()
@@ -41,6 +45,11 @@ export function ChatComposer({
     setMessage("")
   }
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Escape" && sending && onStop) {
+      event.preventDefault()
+      onStop()
+      return
+    }
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return
     event.preventDefault()
     submit()
@@ -85,7 +94,11 @@ export function ChatComposer({
           className="block max-h-[148px] min-h-[38px] w-full resize-none border-0 bg-transparent px-2.5 pt-2.5 pb-1.5 font-sans text-[15px] leading-[22px] text-ink outline-none field-sizing-content placeholder:text-g-400"
         />
         <div className="flex items-center justify-between gap-2 py-0.5 pr-0.5 pl-2.5">
-          <span id={`${id}-hint`} className="text-label-sm text-g-500 max-sm:sr-only">
+          {leading}
+          <span
+            id={`${id}-hint`}
+            className={cn("text-label-sm text-g-500 max-sm:sr-only", leading !== undefined && "sr-only")}
+          >
             Enter to send, Shift + Enter for a new line
           </span>
           {sending && onStop ?

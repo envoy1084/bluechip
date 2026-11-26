@@ -1,0 +1,16 @@
+/* Streamdown, which renders the assistant's streaming markdown, styles its own parts (code blocks, tables, their
+   controls) with shadcn's colour names. These aliases point those names at brand tokens; nothing else uses them. */
+@theme {
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-ink);
+  --color-muted: var(--color-g-50);
+  --color-muted-foreground: var(--color-g-500);
+  --color-border: var(--color-g-200);
+  --color-primary: var(--color-blue);
+  --color-primary-foreground: var(--color-white);
+  --color-sidebar: var(--color-g-50);
+}
+
+@source "../../node_modules/streamdown/dist/*.js";
+@source "../../node_modules/@streamdown/code/dist/*.js";
+@source "../../node_modules/@streamdown/math/dist/*.js";
