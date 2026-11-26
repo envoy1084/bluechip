@@ -2,7 +2,7 @@ import type { Card } from "@bluechip/domain/assistant/Card"
 import { ChatMessage } from "@bluechip/ui/bluechip/chat-message"
 import { ToolCallRow } from "@bluechip/ui/bluechip/tool-call-row"
 import { useEffect, useRef } from "react"
-import type { Entry } from "../model/thread.ts"
+import { type Entry, shownCards } from "../model/thread.ts"
 import { toolLabel } from "../model/toolLabel.ts"
 import { CardView } from "./cards/CardView.tsx"
 import type { CardViews } from "./cards/CardViews.ts"
@@ -57,9 +57,9 @@ export function Thread(
                   ))}
                 </div>
               )}
-              attachments={entry.cards.length === 0 ? undefined : (
+              attachments={shownCards(entry).length === 0 ? undefined : (
                 <div className="grid gap-3 pt-1">
-                  {entry.cards.map(({ card }) => (
+                  {shownCards(entry).map(({ card }) => (
                     <CardView key={card.id} card={card} onCard={onCard} Trade={Trade} nameOf={nameOf} />
                   ))}
                 </div>

@@ -42,6 +42,13 @@ export interface BluechipTurn {
 
 export type Entry = YourMessage | BluechipTurn
 
+/**
+ * The cards a turn shows: all of them, but an error card saying what the turn's own error already says (the model
+ * couldn't answer: the server sends both the card and the run's error), which the error line shows once, with Retry.
+ */
+export const shownCards = (turn: BluechipTurn): ReadonlyArray<ShownCard> =>
+  turn.cards.filter(({ card }) => !(card._tag === "Error" && card.message === turn.error))
+
 export const emptyTurn = (id: string): BluechipTurn => ({
   _tag: "Bluechip",
   id,

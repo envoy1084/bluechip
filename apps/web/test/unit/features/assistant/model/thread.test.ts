@@ -6,7 +6,8 @@ import {
   entriesOf,
   type Entry,
   replaceCard,
-  resumeEntries
+  resumeEntries,
+  shownCards
 } from "../../../../../src/features/assistant/model/thread.ts"
 import { budgetCard, CARD_ID, message } from "../../../../fixtures/Messages.ts"
 
@@ -361,6 +362,40 @@ describe("applyEvent", () => {
         text: "Hi"
       })
     )
+  })
+})
+
+describe("shownCards", () => {
+  const unavailable = "The assistant can't answer right now. Nothing was changed. Try again in a moment."
+  const errorCard = (reason: "budget" | "unavailable", text: string) => ({
+    toolCallId: null,
+    card: { ...budgetCard(text), reason }
+  })
+
+  it.each<{ name: string; error: string | null; reason: "budget" | "unavailable"; text: string; shown: number }>([
+    {
+      name: "an unavailable card the turn's error repeats is hidden",
+      error: unavailable,
+      reason: "unavailable",
+      text: unavailable,
+      shown: 0
+    },
+    {
+      name: "an error card saying something else stays",
+      error: unavailable,
+      reason: "budget",
+      text: "Today's budget is spent.",
+      shown: 1
+    },
+    {
+      name: "an error card in a turn that ended fine stays",
+      error: null,
+      reason: "budget",
+      text: "Today's budget is spent.",
+      shown: 1
+    }
+  ])("$name", ({ error, reason, shown, text }) => {
+    assert.strictEqual(shownCards(turn({ error, cards: [errorCard(reason, text)] })).length, shown)
   })
 })
 
