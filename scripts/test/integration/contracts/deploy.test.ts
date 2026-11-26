@@ -28,6 +28,7 @@ layer(Layer.merge(NodeServices.layer, FreshAnvil))("deployContracts", (it) => {
       assert.deepStrictEqual(first, [
         { name: "AerodromeTradePolicy", address: "0x3FdF29585d00d26240da3c45168Cad0148Ac9073", status: "deployed" },
         { name: "TradeGuard", address: "0x6131C37391279FFD3831dB2F89C10C29D52fc57D", status: "deployed" },
+        { name: "RecoveryDelayPolicy", address: "0xF2C702138f8BFF92C19AA4e138ee6FE752916B4C", status: "deployed" },
         { name: "TradeSizeRule", address: "0x240274AB59bd003C39eDf22542910EA9BBc3121e", status: "deployed" },
         { name: "FairPriceRule", address: "0x8482F4E90a5101422044e1D54D45AF72A75d28e3", status: "deployed" },
         { name: "StockCapRule", address: "0x6Ec294E0c7D091E57c67Cf4dE4f0965170Ff61DA", status: "deployed" },
@@ -36,8 +37,8 @@ layer(Layer.merge(NodeServices.layer, FreshAnvil))("deployContracts", (it) => {
         { name: "StopLossFloorRule", address: "0x40303065601832aED92bB4fad1d6425631ddD47e", status: "deployed" },
         { name: "SlippageBudgetRule", address: "0x1167EC36224BCd2FAce8502Bc7284a84b01bef4E", status: "deployed" }
       ])
-      assert.deepStrictEqual(second.map((deployment) => deployment.status), Array(9).fill("present"))
-      assert.deepStrictEqual(status.map((deployment) => deployment.status), Array(9).fill("present"))
+      assert.deepStrictEqual(second.map((deployment) => deployment.status), Array(10).fill("present"))
+      assert.deepStrictEqual(status.map((deployment) => deployment.status), Array(10).fill("present"))
     }))
 
   it.effect("refuses a node that isn't Anvil", () =>

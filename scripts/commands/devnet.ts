@@ -1,7 +1,11 @@
+import { rpc } from "@bluechip/devnet/Controls"
 import { Config, Console, Effect, FileSystem, Path, Redacted, Schema } from "effect"
 import { Command } from "effect/cli"
+import { gunzipSync } from "node:zlib"
+import { Instance } from "prool"
 import type { Hex } from "viem"
 
+import { deployContracts } from "../contracts/deploy.ts"
 import { captureDevnet } from "../devnet/capture.ts"
 import { CheckFailed, ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
@@ -70,7 +74,48 @@ const capture = Command.make("capture").pipe(
   )
 )
 
+const deploy = Command.make("deploy").pipe(
+  Command.withDescription(
+    "Add bluechip's contracts missing from the devnet's state, deployed as the capture deploys them (no fork, no RPC)"
+  ),
+  Command.withHandler(() =>
+    Effect.gen(function*() {
+      const fs = yield* FileSystem.FileSystem
+      const path = yield* Path.Path
+      const root = process.cwd()
+      const file = path.join(root, DEVNET_STATE)
+
+      yield* (yield* Tools).run("forge", ["build", "--quiet"], { cwd: path.join(root, "contracts") })
+      const built = yield* builtContracts(root)
+      const loaded = path.join(yield* fs.makeTempDirectoryScoped(), "state.json")
+      yield* fs.writeFile(loaded, gunzipSync(yield* fs.readFile(file)))
+
+      // The same chain as the capture's bare Anvil, started from the captured state.
+      const anvil = Instance.anvil({ hardfork: "base:Denim" as never, chainId: 8453, loadState: loaded, port: 18_649 })
+      const { deployments, state } = yield* Effect.acquireUseRelease(
+        Effect.promise(() => anvil.start()),
+        () =>
+          Effect.tryPromise({
+            try: async () => {
+              const node = rpc("http://localhost:18649")
+              const deployments = await deployContracts(node, built)
+              const dump = await node("anvil_dumpState") as Hex
+              return { deployments, state: Buffer.from(dump.slice(2), "hex") }
+            },
+            catch: (cause) => ToolFailed.make({ tool: "devnet deploy", output: String(cause) })
+          }),
+        () => Effect.promise(() => anvil.stop())
+      )
+
+      for (const { address, name, status } of deployments) yield* Console.log(`devnet: ${name} ${address} ${status}`)
+      if (deployments.every((deployment) => deployment.status === "present")) return
+      yield* fs.writeFile(file, state)
+      yield* Console.log(`devnet: wrote ${DEVNET_STATE} (${Math.round(state.length / 1024)} KB)`)
+    }).pipe(Effect.scoped)
+  )
+)
+
 export const devnet = Command.make("devnet").pipe(
   Command.withDescription("The local Base the tests run on"),
-  Command.withSubcommands([capture])
+  Command.withSubcommands([capture, deploy])
 )
