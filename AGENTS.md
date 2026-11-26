@@ -59,7 +59,9 @@ Dependencies point inward: apps depend on packages, packages never depend on app
 | `pnpm circular`        | Fail on import cycles between modules                                |
 
 Local services: copy each `.env.example` to `.env.local` (root: Docker Compose's fork RPC; `apps/server`, with
-`AGENT_KEY_ENCRYPTION_KEY` from `openssl rand -base64 32`; `apps/web`; never committed), then `pnpm dev`: Postgres, the local chain (the devnet on Anvil, 8545, no RPC; its
+`AGENT_KEY_ENCRYPTION_KEY` from `openssl rand -base64 32`, web push keys from
+`node scripts/bin.ts vapid --env apps/server/.env.local` and, for the Telegram bot, `TELEGRAM_BOT_TOKEN` and
+`TELEGRAM_BOT_USERNAME`, polling for updates in development; `apps/web`; never committed), then `pnpm dev`: Postgres, the local chain (the devnet on Anvil, 8545, no RPC; its
 feeds and pools follow the server's market prices every 15 s, and its state carries over between runs in
 `.data/devnet/`), the Alto bundler (4337), migrations, then the server (8080), the web app (3000), the component
 kit (4000), in one terminal. Ctrl+C stops everything; `pnpm dev:stop` stops anything
@@ -174,7 +176,8 @@ Import modules directly; no `index.ts` barrels.
 feature): a `Context.Service` is a port, a `Layer` its adapter.
 
 - `modules/<feature>/`: one folder per feature (`accounts`, `auth`, `agents`, `policies`, `intents`, `trading`,
-  `portfolio`, `funding`, `market`, `activity`, `audit`, `signing`, `dev`, `events`, `system`): its services
+  `portfolio`, `funding`, `market`, `activity`, `audit`, `signing`, `notifications`, `push`, `channels`, `dev`, `events`,
+  `system`): its services
   (`Agents.ts`, `AgentSessions.ts`), its HTTP handlers (`http.ts`), its Drizzle tables (`tables.ts`) and its crons.
 - `platform/`: infrastructure the features share: `db/` (`Database`, columns, `schema.ts` gathering every table for
   drizzle-kit), `engine/`, `http/` (middleware, health), `live/` (`LiveEvents`), `namera/`. `config/` holds
@@ -277,6 +280,47 @@ To add a trigger, condition or action:
 4. **Web.** Nothing, when its `Field` hints say how to edit it: the generic editor and the automation sentences are built
    from the catalog. Add a dedicated editor only when a field's unit can't (as the `stopLossFloor` policy's price per
    stock).
+
+## Notifications: to add a kind, a notifier or a chat platform
+
+Features never send messages. They say what happened: a live event (`LiveEvents`, which `NotificationFanout` reads)
+or `Notifications.add` with a draft. `Notifications` stores it in your center once (`dedupe_key`), publishes
+`NotificationAdded`, and starts a `DeliverNotification` workflow per channel its rule picks (quiet hours wait on a
+durable clock; a platform that says try again is retried). Domain in `packages/domain/src/notifications/` and
+`channels/`, server in `apps/server/src/modules/notifications/`, `push/` and `channels/`.
+
+To add a notification kind:
+
+1. **Domain.** Add it to `NotificationKind` (`Notification.ts`) and `KINDS` (`Kinds.ts`): group, label, description,
+   severity (`security` locks it on every channel), the channels it may use and its defaults. Write its draft in
+   `Drafts.ts`, a pure function of what happened with a `dedupeKey`, tested with a table in
+   `test/unit/notifications/Drafts.test.ts`.
+2. **Server.** Make it from a live event in `Fanout.ts`, from time in `Reminders.ts`, or with `Notifications.add`
+   where it happens. Never call a notifier.
+3. **Web.** Nothing: the settings page and the bell are built from the catalog.
+
+To add a notifier (a channel):
+
+1. **Domain.** Add it to `Channel` and to the kinds that may use it (`KINDS`), and its words if a notification reads
+   differently there (as `chatNotification` in `channels/ChatCards.ts`).
+2. **Server.** A service with `send(userId, notification)` answering `sent` or `skipped` (nowhere to send it), failing
+   `NotifierError` (`retryable` when trying later can work); add its case to `Notifiers.ts` and its channel to
+   `notification_deliveries.channel` (drizzle-kit migration). Test it at the platform's edge with an in-process
+   `HttpClient` (as `PushServiceTest`).
+3. **Web.** A column in the settings page follows `CHANNEL_LABELS`; a card for opting in, if it needs one.
+
+To add a chat platform (Slack, Discord):
+
+1. **Domain.** Add it to `Platform` (`channels/Channel.ts`) and as a channel (above).
+2. **Server.** Its `effect/chat` adapter (`@effect/chat-<platform>`) registered in the chat router beside
+   Telegram's in `modules/channels/<platform>/`, with its transport (webhook route or socket, one consumer) wired in
+   `Server.ts`. `ChatBot`, `BotHandlers` (the `AnswerChatMessage` workflow, `BotInteractions`) and `ChatNotifier` are
+   platform-free: linking, the assistant (`surface` is the platform; tools keep their risk levels: configure cards
+   confirm with buttons, sign cards link into the app, nothing is signed in a chat), commands and notifications work
+   as they are. Add the platform to `Surface` (`assistant/Conversation.ts`).
+3. **Tests.** Conversations on `ChatTest` with the platform's capabilities (as `TelegramTest` in `TestServer.ts`,
+   through `TestTelegram`), and the transport against an in-process API (as `BotApiTest`). Tests never reach the
+   platform; a live probe goes in `scratchpad/` and is deleted after.
 
 ## Tests
 
