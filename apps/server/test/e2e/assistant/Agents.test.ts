@@ -1,3 +1,4 @@
+import { NotFound } from "@bluechip/domain/Errors"
 import { checkSpec } from "@bluechip/domain/policies/Catalog"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
@@ -12,6 +13,52 @@ import { TestUsers } from "../../utils/TestUsers.ts"
 layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTestServices: true })(
   "assistant agents",
   (it) => {
+    describe("POST /api/assistant/conversations", () => {
+      it.effect("a conversation started from an agent keeps it as its focus", () =>
+        Effect.gen(function*() {
+          const { agent, user } = yield* (yield* TestAgents).locked
+          const conversation = yield* (yield* TestAssistant).start(user, agent.id)
+
+          const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
+          const listed = yield* user.api.assistant.conversations({ query: {} })
+
+          assert.deepStrictEqual(
+            [conversation.agentId, thread.conversation.agentId, listed.items.map((item) => item.agentId)],
+            [agent.id, agent.id, [agent.id]]
+          )
+        }))
+
+      it.effect("the model is told the focused agent trades for the user", () =>
+        Effect.gen(function*() {
+          const { agent, user } = yield* (yield* TestAgents).locked
+          const assistant = yield* TestAssistant
+          const models = yield* RecordedModel
+          yield* models.record({ to: "Who trades here?", rounds: [[{ text: "Tech picker." }]] })
+          const conversation = yield* assistant.start(user, agent.id)
+
+          yield* assistant.ask(user, conversation.id, "Who trades here?")
+          const [prompt] = yield* models.prompts("Who trades here?")
+
+          const system = prompt!.content.find((message) => message.role === "system")
+          assert.include(
+            system?.role === "system" ? system.content : "",
+            `Propose every trade with agentId ${agent.id} first`
+          )
+        }))
+
+      it.effect("404: another user's agent", () =>
+        Effect.gen(function*() {
+          const { agent } = yield* (yield* TestAgents).locked
+          const stranger = yield* (yield* TestUsers).signUp
+
+          const error = yield* Effect.flip(
+            stranger.api.assistant.startConversation({ payload: { agentId: agent.id } })
+          )
+
+          assert.deepStrictEqual({ ...error }, { ...new NotFound({ resource: "agent", id: agent.id }) })
+        }))
+    })
+
     describe("draftAgent", () => {
       it.effect("drafts an agent mixing policies, with a spec that passes the catalog's check, left a draft", () =>
         Effect.gen(function*() {

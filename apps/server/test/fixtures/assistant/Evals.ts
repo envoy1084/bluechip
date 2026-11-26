@@ -1,13 +1,16 @@
 // Recorded conversations for the assistant's evals. The first model round of each was recorded from
 // `claude-sonnet-5-5` on 2026-11-26 with bluechip's system prompt and toolkit (a user with one "Tech picker" agent);
 // the memory notes from `claude-haiku-5-5` (the notes model then; `MemoryNotes.ts` holds Sonnet's); later rounds, and the injected page, are written to drive the worst case
-// through the pipeline. Agent ids are filled in per run.
+// through the pipeline. The conversations about an agent (`focused`) are written, not recorded, to drive each way
+// a trade routes. Agent ids are filled in per run.
 import type { AgentId } from "@bluechip/domain/Ids"
 import type { Reply } from "../../utils/RecordedModel.ts"
 
 /** What an eval expects of a turn: the tools called, in order, and the cards shown. */
 export interface Eval {
   readonly name: string
+  /** The conversation is about the user's agent (started from it), so the agent trades by default. */
+  readonly focused?: boolean
   readonly reply: (agentId: AgentId) => Reply
   readonly calls: ReadonlyArray<string>
   readonly cards: ReadonlyArray<string>
@@ -190,5 +193,101 @@ export const EVALS: ReadonlyArray<Eval> = [
     }),
     calls: ["AnthropicWebSearch", "proposeTrade"],
     cards: ["Trade:needsApproval", "Research"]
+  },
+  {
+    name: "in the agent's conversation, a trade that doesn't name it goes through the agent, which sends it",
+    focused: true,
+    reply: (agentId) => ({
+      to: "Buy $50 of Nvidia",
+      rounds: [
+        [{
+          call: "proposeTrade",
+          params: {
+            agentId,
+            symbol: "NVDA",
+            side: "buy",
+            dollars: 50,
+            shares: null,
+            reason: "You asked for $50 of NVDA."
+          }
+        }],
+        [{ text: "Sending $50 of Nvidia." }]
+      ]
+    }),
+    calls: ["proposeTrade"],
+    cards: ["Trade:sending"]
+  },
+  {
+    name: "in the agent's conversation, a trade over its largest waits for Face ID",
+    focused: true,
+    reply: (agentId) => ({
+      to: "Buy $5,000 of Nvidia",
+      rounds: [
+        [{
+          call: "proposeTrade",
+          params: {
+            agentId,
+            symbol: "NVDA",
+            side: "buy",
+            dollars: 5000,
+            shares: null,
+            reason: "You asked for $5,000 of NVDA."
+          }
+        }],
+        [{ text: "Over Tech picker's largest trade, so it needs your Face ID." }]
+      ]
+    }),
+    calls: ["proposeTrade"],
+    cards: ["Trade:needsApproval"]
+  },
+  {
+    name: "in the agent's conversation, a trade its policies block moves to your account, for Face ID",
+    focused: true,
+    reply: (agentId) => ({
+      to: "Buy $20 of Tesla",
+      rounds: [
+        [{
+          call: "proposeTrade",
+          params: {
+            agentId,
+            symbol: "TSLA",
+            side: "buy",
+            dollars: 20,
+            shares: null,
+            reason: "You asked for $20 of TSLA."
+          }
+        }],
+        [{
+          call: "proposeTrade",
+          params: {
+            agentId: null,
+            symbol: "TSLA",
+            side: "buy",
+            dollars: 20,
+            shares: null,
+            reason: "Tech picker can't trade TSLA."
+          }
+        }],
+        [{ text: "Tech picker can't buy Tesla, so this one needs your Face ID." }]
+      ]
+    }),
+    calls: ["proposeTrade", "proposeTrade"],
+    cards: ["Trade:blocked", "Approval"]
+  },
+  {
+    name: "in the agent's conversation, a trade asked of your own account goes there",
+    focused: true,
+    reply: () => ({
+      to: "Buy $20 of Apple from my own account",
+      rounds: [
+        [{
+          call: "proposeTrade",
+          params: { agentId: null, symbol: "AAPL", side: "buy", dollars: 20, shares: null, reason: "You asked." }
+        }],
+        [{ text: "Approve it with Face ID." }]
+      ]
+    }),
+    calls: ["proposeTrade"],
+    cards: ["Approval"]
   }
 ]

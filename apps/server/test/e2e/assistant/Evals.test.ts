@@ -19,7 +19,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           const assistant = yield* TestAssistant
           const reply = expected.reply(agent.id)
           yield* (yield* RecordedModel).record(reply)
-          const conversation = yield* assistant.start(user)
+          const conversation = yield* assistant.start(user, expected.focused === true ? agent.id : undefined)
 
           const run = yield* assistant.ask(user, conversation.id, reply.to)
 
