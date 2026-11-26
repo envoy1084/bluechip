@@ -91,6 +91,9 @@ describe("comingUp", () => {
   it("an automation on a live trigger watches instead", () => {
     const alert = { ...scheduled(null), id: ALERT, name: "Apple under $200", trigger: PRICE }
 
-    assert.deepStrictEqual(comingUp([alert], [], NOW), { upcoming: [], watching: ["Apple under $200 watches prices"] })
+    assert.deepStrictEqual(comingUp([alert], [], NOW), {
+      upcoming: [],
+      watching: [{ name: "Apple under $200", watches: "prices" }]
+    })
   })
 })

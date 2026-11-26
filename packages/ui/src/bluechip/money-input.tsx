@@ -34,6 +34,8 @@ export type MoneyInputCheck =
 export interface MoneyLimits {
   /** Cash you can spend. More than this is an error. */
   readonly available?: number
+  /** What to do about more than `available`, after it: "Add cash or lower the amount." by default. */
+  readonly overAvailable?: string
   /** The smallest amount. Defaults to $1. */
   readonly min?: number
   /** The largest amount allowed here, like an agent's max per trade. */
@@ -50,7 +52,9 @@ export const checkMoneyInput = (amount: number | null, limits: MoneyLimits): Mon
   if (limits.available !== undefined && amount > limits.available) {
     return {
       status: "error",
-      message: `You have ${formatMoney(limits.available)} in cash. Add cash or lower the amount.`
+      message: `You have ${formatMoney(limits.available)} in cash. ${
+        limits.overAvailable ?? "Add cash or lower the amount."
+      }`
     }
   }
   if (limits.max !== undefined && amount > limits.max) {

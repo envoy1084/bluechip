@@ -18,6 +18,8 @@ export interface PortfolioPoint {
   readonly value: number
   /** When it was, as people read it: "Tue 24 Nov" or "14:30". */
   readonly label: string
+  /** The time axis's shorter label, when `label` is too long for a tick: "24 Nov" for "Tue 24 Nov, 14:30". */
+  readonly tick?: string
 }
 
 export interface PortfolioRange {
@@ -26,6 +28,13 @@ export interface PortfolioRange {
   /** What the headline says when nothing is hovered: "Past month". */
   readonly description: string
   readonly points: ReadonlyArray<PortfolioPoint>
+  /**
+   * The range's change, when a better source than its first point has it (a stock's day, from its price 24 hours ago):
+   * the headline shows it while nothing is hovered, so it matches the rest of the page.
+   */
+  readonly change?: { readonly amount: number; readonly percent: number }
+  /** What the headline's change means, under it: "Change in value, including deposits". */
+  readonly changeNote?: string
 }
 
 export interface PortfolioChartProps {
@@ -120,7 +129,12 @@ const definitionFor = (
         scale: scaleLinear().domain([0, Math.max(rows.length - 1, 1)]),
         axis: {
           line: false,
-          ticks: { values: ticks, size: 0, padding: 8, format: (index) => rows[index]?.label ?? "" },
+          ticks: {
+            values: ticks,
+            size: 0,
+            padding: 8,
+            format: (index) => rows[index]?.tick ?? rows[index]?.label ?? ""
+          },
           tickLabels: { anchor: ({ index }) => (index === 0 ? "start" : index === ticks.length - 1 ? "end" : "middle") }
         }
       },
@@ -248,12 +262,19 @@ export function PortfolioChart(
             {!loading && current && (
               <span className="flex flex-wrap items-center gap-2">
                 {measure === "value" && (
-                  <PriceChange
-                    value={base === 0 ? 0 : ((current.value - base) / base) * 100}
-                    amount={current.value - base}
-                  />
+                  index === null && range?.change !== undefined ?
+                    <PriceChange value={range.change.percent} amount={range.change.amount} /> :
+                    (
+                      <PriceChange
+                        value={base === 0 ? 0 : ((current.value - base) / base) * 100}
+                        amount={current.value - base}
+                      />
+                    )
                 )}
                 <span className="text-label-sm text-g-500">{index === null ? range?.description : current.label}</span>
+                {index === null && range?.changeNote !== undefined ?
+                  <span className="basis-full text-caption text-g-500">{range.changeNote}</span> :
+                  null}
               </span>
             )}
           </div>

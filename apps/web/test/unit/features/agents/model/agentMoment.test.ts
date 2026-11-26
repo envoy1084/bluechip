@@ -31,8 +31,8 @@ describe("agentMoment", () => {
     { name: "a lock landed", before: at("locking"), after: at("active"), expected: "live" },
     { name: "a change landed", before: at("updating"), after: at("active"), expected: "changed" },
     { name: "a renewal landed", before: at("updating", false, true), after: at("active"), expected: "renewed" },
-    { name: "resumed", before: at("active", true), after: at("active", false), expected: "resumed" },
-    { name: "paused: the paused alert says it", before: at("active"), after: at("active", true), expected: null },
+    { name: "resumed: instant, said in place", before: at("active", true), after: at("active", false), expected: null },
+    { name: "paused: said in place", before: at("active"), after: at("active", true), expected: null },
     { name: "nothing changed", before: at("active"), after: at("active"), expected: null },
     { name: "a change that failed back to expired", before: at("updating"), after: at("expired"), expected: null },
     { name: "still on its way", before: at("active"), after: at("updating"), expected: null },
@@ -49,10 +49,9 @@ describe("momentText", () => {
     { moment: "live", title: "Nvidia picker is live", description: "It trades inside its rules from now on." },
     { moment: "changed", title: "Nvidia picker's new rules are locked", description: "They apply to its next trade." },
     { moment: "renewed", title: "Nvidia picker is renewed", description: "Same rules, locked until 1 Dec." },
-    { moment: "resumed", title: "Nvidia picker is trading again", description: "It trades inside its rules." },
     {
       moment: "removed",
-      title: "Nvidia picker is removed",
+      title: "Nvidia picker was removed",
       description: "It can never trade again. Your stocks and cash stay yours."
     }
   ])("$moment", ({ description, moment, title }) => {

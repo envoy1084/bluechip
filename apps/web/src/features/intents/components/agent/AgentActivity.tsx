@@ -7,6 +7,7 @@ import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
+import { SectionHeader } from "../../../../components/layout/SectionHeader.tsx"
 import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { dayHeading } from "../../../../lib/localTime.ts"
 import { agentIntentsAtom } from "../../atoms/intents.ts"
@@ -90,12 +91,12 @@ export function AgentActivity(
 
   return (
     <section aria-labelledby={`activity-${agent.id}`} className="grid content-start gap-3">
-      <div className="grid gap-0.5 px-0.5">
-        <h3 id={`activity-${agent.id}`} className="text-[16px] font-semibold tracking-[-0.015em]">Activity</h3>
-        <p className="text-label-sm text-g-500">
-          Every trade it was asked for, what its policies decided, and how it ended.
-        </p>
-      </div>
+      <SectionHeader
+        id={`activity-${agent.id}`}
+        level="h3"
+        title="Trades"
+        description="Every trade it was asked for, what its policies decided, and how it ended."
+      />
       <div className="overflow-hidden rounded-lg bg-white shadow-e2">
         {pageTokens.map((pageToken, index) => (
           <IntentPage

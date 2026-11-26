@@ -1,15 +1,17 @@
 import { expect, test } from "../fixtures/test.ts"
 import { createAgent } from "../utils/agents.ts"
+import { askToBuy } from "../utils/intents.ts"
 
 test.describe("notification bell", () => {
-  test("a new person: no badge, and nothing new in the popover", async ({ page, user: _user }) => {
+  test("a new person: no badge, and nothing yet in the panel", async ({ page, user: _user }) => {
     await page.goto("/home")
 
     await page.getByRole("button", { name: "Notifications", exact: true }).click()
 
     await expect(page.getByTestId("notification-badge")).toBeHidden()
-    await expect(page.getByText("Nothing new")).toBeVisible()
-    await expect(page.getByText("Trades, approvals and your agents' news show up here.")).toBeVisible()
+    await expect(page.getByText("You're all caught up")).toBeVisible()
+    await expect(page.getByText("Nothing yet")).toBeVisible()
+    await expect(page.getByText("Trades, approvals, your agents' news and account safety show up here.")).toBeVisible()
   })
 
   test("pausing an agent: the badge counts it, opening it reads it and goes to the agent", async ({ page, funded: _funded }) => {
@@ -19,8 +21,11 @@ test.describe("notification bell", () => {
     await expect(page.getByRole("button", { name: "Notifications, 1 unread" })).toBeVisible()
     await page.goto("/home")
     await page.getByRole("button", { name: "Notifications, 1 unread" }).click()
-    const row = page.getByTestId("notification").filter({ hasText: "Bell agent is paused" })
+    const today = page.getByRole("region", { name: "Today" })
+    const row = today.getByTestId("notification").filter({ hasText: "Bell agent is paused" })
     await expect(row).toContainText("It can't trade until you resume it. Nothing was sold.")
+    // News of a pause offers nothing to do but open it.
+    await expect(today.getByRole("button", { name: "Pause all agents" })).toHaveCount(0)
     await row.click()
 
     await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
@@ -46,6 +51,18 @@ test.describe("notification bell", () => {
 
     await expect(page).toHaveURL(/\/settings\/notifications$/)
     await expect(page.getByRole("heading", { name: "Notifications", level: 1 })).toBeVisible()
+  })
+
+  test("an approval's notification offers Review, which opens the approvals sheet where you are", async ({ page, funded: _funded }) => {
+    await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
+    await askToBuy(page, 150)
+    await page.goto("/portfolio")
+    await page.getByRole("button", { name: /^Notifications, \d+ unread$/ }).click()
+
+    await page.getByRole("button", { name: "Review" }).first().click()
+
+    await expect(page.getByRole("dialog", { name: "Approvals" })).toBeVisible()
+    await expect(page).toHaveURL(/\/portfolio\?sheet=approvals$/)
   })
 
   test("a notification's approvals link opens the approvals sheet", async ({ page, user: _user }) => {

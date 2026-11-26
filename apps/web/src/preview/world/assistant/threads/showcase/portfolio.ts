@@ -53,7 +53,7 @@ export const portfolioAndPerformance = ({ mint }: ThreadContext): ReadonlyArray<
     {
       you: `How did ${agent.name} do?`,
       rounds: [[getAgentPerformance(mint, agent.id, 120)], [
-        say(`${agent.name}: **+$120** over 9 trades. Its rules refused 3: two by the stock cap, one by trade size.`)
+        say(`${agent.name}: **+$120** over 9 trades. Its rules refused 3: Max in one stock twice, Trade size once.`)
       ]]
     },
     ...(automations[0] === undefined ? [] : [{

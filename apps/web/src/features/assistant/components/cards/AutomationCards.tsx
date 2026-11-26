@@ -19,8 +19,15 @@ type OnCard = (card: Card) => void
 const STATE = {
   pending: { label: "Waiting for you", tone: "waiting" },
   applied: { label: "Done", tone: "done" },
-  dismissed: { label: "Not now", tone: "quiet" }
+  dismissed: { label: "Dismissed", tone: "quiet" }
 } as const
+
+// Its settings in one sentence: "At most once every 4 hours, up to 3 times, until 26 Dec 2026."
+const settingsSentence = (settings: ReadonlyArray<string>): string =>
+  `${
+    settings.map((setting, index) => index === 0 ? setting : `${setting.charAt(0).toLowerCase()}${setting.slice(1)}`)
+      .join(", ")
+  }.`
 
 /** The way to an automation once it's saved. */
 function SeeIt({ id }: Readonly<{ id: AutomationId | undefined }>) {
@@ -84,7 +91,7 @@ export function AutomationCard(
             </p>
             {card.description.settings.length === 0 ?
               null :
-              <ChatCardNote icon="clock">{card.description.settings.join(". ")}.</ChatCardNote>}
+              <ChatCardNote icon="clock">{settingsSentence(card.description.settings)}</ChatCardNote>}
             {card.status === "pending" ?
               (
                 <ChatCardNote icon="shield">

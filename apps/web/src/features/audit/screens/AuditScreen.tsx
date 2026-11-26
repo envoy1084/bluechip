@@ -201,7 +201,8 @@ export function AuditScreen() {
       width="wide"
       actions={
         <Button variant="secondary" size="sm" loading={exporting} onClick={() => void download()}>
-          <Icon name="download" size={14} />Export JSON
+          <Icon name="download" size={14} />
+          <span className="max-sm:sr-only">Export</span>
         </Button>
       }
     >

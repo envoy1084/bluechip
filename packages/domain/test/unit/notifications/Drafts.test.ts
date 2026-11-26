@@ -75,7 +75,7 @@ describe("notificationOfIntent", () => {
         expected: {
           kind: "approvalNeeded",
           title: "Tech picker needs your approval",
-          body: "Buy $50.00 of NVIDIA. Approve or decline it in bluechip with Face ID.",
+          body: "Buy $50.00 of NVIDIA. Approve or decline it with Face ID.",
           link: "/home?sheet=approvals",
           subjectType: "intent",
           subjectId: "intent_1",

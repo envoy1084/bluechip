@@ -9,7 +9,7 @@ import { useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
 import { SignedIn } from "../../../components/SignedIn.tsx"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
-import { setEligibilityAtom } from "../atoms/auth.ts"
+import { setEligibilityAtom, signOutAtom } from "../atoms/auth.ts"
 
 type Answer = "outsideUs" | "us"
 
@@ -26,6 +26,8 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
   const navigate = useNavigate()
   const [answer, setAnswer] = useState<Answer>(saved === "us" ? "us" : "outsideUs")
   const [saving, setSaving] = useState(false)
+  const signOut = useAtomSet(signOutAtom, { mode: "promise" })
+  const [signingOut, setSigningOut] = useState(false)
   const choose = (value: Answer) => {
     setAnswer(value)
     if (value === "us") void setEligibility({ payload: { answer: "us" } })
@@ -39,8 +41,8 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
   return (
     <OnboardingFrame step="Eligibility">
       <div className="grid w-full gap-3.5 text-left">
-        <OnboardingTitle title="Where do you live?">
-          Tokenized US stocks can't be offered in the United States, so bluechip isn't available there.
+        <OnboardingTitle title="Are you a US citizen or resident?">
+          Tokenized US stocks can't be offered to US citizens or residents, so bluechip isn't available to them.
         </OnboardingTitle>
         <RadioGroup
           aria-label="Where you live"
@@ -53,7 +55,7 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
               <Icon name="globe" size={18} />
             </RadioCardIcon>
             <RadioCardContent>
-              <strong>Outside the United States</strong>I'm not a US citizen or resident
+              <strong>Outside the United States</strong>I'm neither a US citizen nor a US resident
             </RadioCardContent>
           </RadioCard>
           <RadioCard value="us" className="items-center">
@@ -61,7 +63,7 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
               <Icon name="flag" size={18} />
             </RadioCardIcon>
             <RadioCardContent>
-              <strong>In the United States</strong>Or I'm a US citizen living abroad
+              <strong>In the United States</strong>I live in the US, or I'm a US citizen anywhere
             </RadioCardContent>
           </RadioCard>
         </RadioGroup>
@@ -80,9 +82,28 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
               <Icon name="check-circle" size={14} />You can use bluechip.
             </p>
           )}
-        <Button size="lg" className="w-full" disabled={answer === "us"} loading={saving} onClick={confirm}>
-          Continue<Icon name="arrow-right" size={16} />
-        </Button>
+        {answer === "us" ?
+          (
+            // No way on, but a way out: sign out, and the landing page.
+            <Button
+              size="lg"
+              variant="secondary"
+              className="w-full"
+              loading={signingOut}
+              onClick={async () => {
+                setSigningOut(true)
+                await signOut({ reactivityKeys: [accountReactivityKey] }).finally(() => setSigningOut(false))
+                await navigate({ to: "/" })
+              }}
+            >
+              <Icon name="logout" size={16} />Sign out
+            </Button>
+          ) :
+          (
+            <Button size="lg" className="w-full" loading={saving} onClick={confirm}>
+              Continue<Icon name="arrow-right" size={16} />
+            </Button>
+          )}
       </div>
     </OnboardingFrame>
   )

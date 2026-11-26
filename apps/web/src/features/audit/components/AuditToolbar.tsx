@@ -29,7 +29,7 @@ export function AuditToolbar(
   }>
 ) {
   const agentItems = [
-    { value: ALL, label: "Every agent" },
+    { value: ALL, label: "All agents" },
     ...agents.map((agent) => ({ value: agent.id, label: agent.name }))
   ]
 
@@ -70,7 +70,7 @@ export function AuditToolbar(
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Every agent</SelectItem>
+            <SelectItem value={ALL}>All agents</SelectItem>
             {agents.map((agent) => (
               <SelectItem key={agent.id} value={agent.id}>
                 <AgentAvatar agentId={agent.id} size="sm" className="size-5 rounded-full [&_canvas]:w-3.5" />

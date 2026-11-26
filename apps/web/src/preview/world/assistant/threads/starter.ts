@@ -2,7 +2,7 @@
 import { getActivity, getPortfolio } from "../accountReads.ts"
 import { agentFor } from "../cards.ts"
 import { draftAgentCard } from "../cards/agentCards.ts"
-import { approvalCard } from "../cards/tradeCards.ts"
+import { tradeCard } from "../cards/tradeCards.ts"
 import { agentOf, specOf } from "../castRecords.ts"
 import { checkSpec, listTemplates, searchHelp } from "../reads.ts"
 import { say, shows, type ThreadContext, type Turn } from "../rounds.ts"
@@ -28,17 +28,12 @@ export const howToStart = ({ mint }: ThreadContext): ReadonlyArray<Turn> => [
     you: "Yes, $20 of Apple",
     rounds: [[
       say("Here it is. Your first trade also sets up your account onchain, in the same Face ID."),
+      // A day and a half on, it's the trade you signed: the card shows how it ended, not the Face ID it asked for.
       shows(
         mint,
         "proposeTrade",
         { agentId: null, symbol: "AAPL", dollars: 20 },
-        approvalCard(mint, {
-          symbol: "AAPL",
-          dollars: 20,
-          expired: true,
-          setsUpAccount: true,
-          hoursAgo: 40
-        })
+        tradeCard(mint, agentFor(mint, null), "sent", { symbol: "AAPL", dollars: 20, yours: true, hoursAgo: 40 })
       )
     ]]
   }

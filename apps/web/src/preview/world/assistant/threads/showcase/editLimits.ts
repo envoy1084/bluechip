@@ -15,7 +15,7 @@ export const editLimits = ({ mint }: ThreadContext): ReadonlyArray<Turn> => {
     {
       you: `Buy $100 of ${cast.stocks[0] === "NVDA" ? "Nvidia" : "it"} through ${cast.name}`,
       rounds: [[shows(mint, "proposeTrade", {}, tradeCard(mint, cast, "blocked", { dollars: 100 }))], [
-        say(`Its stock cap refused it. Want me to change ${cast.name}'s limits?`)
+        say(`Its Max in one stock policy refused it. Want me to change ${cast.name}'s limits?`)
       ]]
     },
     {

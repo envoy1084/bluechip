@@ -79,3 +79,13 @@ export const activityProblem = (item: ActivityItem): string | null => {
   if (item.transfer.status !== "failed") return null
   return item.transfer.kind === "deposit" ? "This deposit didn't land." : "Base didn't take this withdrawal."
 }
+
+/**
+ * How a fill's price compared with Chainlink's, said the same in a row and its details: "0.09% worse than Chainlink",
+ * "0.12% better than Chainlink", or "Same as Chainlink" when they round to the same.
+ */
+export const fairPriceText = (gapBps: number): string => {
+  const percent = Math.abs(gapBps / 100).toFixed(2)
+  if (percent === "0.00") return "Same as Chainlink"
+  return `${percent}% ${gapBps > 0 ? "worse" : "better"} than Chainlink`
+}

@@ -1,6 +1,6 @@
-// What a preview agent's journal says: its trades in the server's words (`journalOfIntent`), varied the way a real
-// agent's are (filled, sent, blocked by a policy, waiting for you or for prices, approved, failed, declined, expired,
-// cancelled) and sized by its limits, plus its automations' runs and judgments.
+// What a preview agent's journal says beyond the market's trades through it (told in `castAgents.ts`): a trade the
+// panel adds at any moment (filled, sent, blocked by a policy, waiting for you or for prices, approved, failed,
+// declined, expired, cancelled), sized by its limits, and its automations' runs and judgments.
 import type { AgentLimits } from "@bluechip/domain/automations/AgentLimits"
 import type { AutomationRun, Judgment } from "@bluechip/domain/automations/Run"
 import type { AgentId, AutomationId, JournalEntryId } from "@bluechip/domain/Ids"
@@ -88,27 +88,6 @@ const momentOf = (
   }
 }
 
-const CYCLE: ReadonlyArray<readonly [TradeMoment, Leg["side"]]> = [
-  ["filled", "buy"],
-  ["filled", "buy"],
-  ["sent", "buy"],
-  ["filled", "sell"],
-  ["blocked", "buy"],
-  ["filled", "buy"],
-  ["approval", "buy"],
-  ["filled", "sell"],
-  ["declined", "buy"],
-  ["waiting", "buy"],
-  ["filled", "buy"],
-  ["blocked", "buy"],
-  ["approved", "buy"],
-  ["filled", "sell"],
-  ["expired", "sell"],
-  ["failed", "buy"],
-  ["filled", "buy"],
-  ["cancelled", "sell"]
-]
-
 /** One journal entry. */
 const journalEntry = (
   ids: IdCounter,
@@ -148,37 +127,6 @@ export const tradeEntry = (
       reason: why[ids.next % why.length]!
     }, stockName)!,
     refs: {}
-  })
-}
-
-/**
- * Its trades over the days it traded, about one a day (at most 30) up to `until` (when it stopped), cycling through
- * the moments over its stocks, newest first.
- */
-export const tradeHistory = (
-  ids: IdCounter,
-  record: Pick<AgentRecord, "id">,
-  options: {
-    readonly limits: AgentLimits
-    readonly from: DateTime.Utc
-    readonly until: DateTime.Utc
-  }
-): Array<JournalEntry> => {
-  const { stocks } = options.limits
-  const hours = (DateTime.toEpochMillis(options.until) - DateTime.toEpochMillis(options.from)) / 3_600_000
-  if (stocks.length === 0 || hours < 24) return []
-
-  const count = Math.min(30, Math.floor(hours / 20))
-  return Array.from({ length: count }, (_, index) => {
-    const [moment, side] = CYCLE[index % CYCLE.length]!
-    return tradeEntry(ids, record, {
-      moment,
-      side,
-      symbol: stocks[index % stocks.length]!,
-      limits: options.limits,
-      share: [1, 0.5, 0.8, 0.4, 0.6][index % 5]!,
-      at: DateTime.subtract(options.until, { hours: 2 + Math.round((index * hours) / (count + 1)) })
-    })
   })
 }
 

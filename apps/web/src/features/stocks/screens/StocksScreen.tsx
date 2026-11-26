@@ -3,6 +3,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { ListCardHeader } from "../../../components/layout/ListCardHeader.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
 import { StockListRow } from "../components/StockListRow.tsx"
@@ -22,7 +23,7 @@ function StockRows() {
     ))
   }
   if (!AsyncResult.isSuccess(stocks)) {
-    return <LoadProblem what="the stocks" onRetry={refresh} />
+    return <LoadProblem what="the stocks" onRetry={refresh} size="sm" />
   }
   return stocks.value.map((stock) => <StockListRow key={stock.symbol} stock={stock} />)
 }
@@ -31,17 +32,14 @@ function StockRows() {
 export function StocksScreen() {
   const stocks = useAtomValue(stocksAtom)
   return (
-    <AppPage title="Stocks" actions={<MarketPill className="hidden sm:inline-flex" />} width="wide">
+    <AppPage title="Stocks" width="wide">
       <div className="mx-auto grid w-full max-w-[820px] gap-3.5">
         <section
           aria-labelledby="stocks-title"
           aria-busy={AsyncResult.isInitial(stocks)}
           className="overflow-hidden rounded-lg bg-white shadow-e2"
         >
-          <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-g-100 px-4 py-[13px]">
-            <h2 id="stocks-title" className="text-body-sm font-semibold tracking-normal">Stocks on bluechip</h2>
-            <span className="text-label-sm text-g-500">Past day and price</span>
-          </div>
+          <ListCardHeader id="stocks-title" title="Stocks on bluechip" actions={<MarketPill />} />
           <div className="grid">
             <StockRows />
           </div>

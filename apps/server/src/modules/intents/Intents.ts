@@ -82,7 +82,8 @@ export class Intents extends Context.Service<Intents, {
       })
 
       // Prepares an intent for your passkey (your own trade, or an agent's you approve) with the other trades of its
-      // plan waiting for you, one per stock: one signature sends them all.
+      // plan waiting for you, one per stock: one signature sends them all. An approval keeps its own deadline: the
+      // signing window only bounds a trade that has none (yours), so a Face ID you cancel never shortens it.
       const prepareForOwner = Effect.fnUntraced(function*(
         owner: Owner,
         row: IntentRow,
@@ -111,7 +112,7 @@ export class Intents extends Context.Service<Intents, {
             leg.status === "awaitingSignature" ? leg : yield* store.advance(leg, { _tag: "Prepared" }, {
               signingRequestId: request.id as `signing_${string}`,
               executor: "owner",
-              expiresAt: request.expiresAt
+              expiresAt: leg.expiresAt ?? request.expiresAt
             })
           )
         }

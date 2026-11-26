@@ -253,7 +253,10 @@ export const makeCard = (mint: Mint, kind: CardKind, status: CardStatus, focus: 
     case "memoryConfirm": {
       const memory = memoryOf(mint, {
         kind: "preference",
-        text: "You prefer to keep each stock under a quarter of your portfolio.",
+        // Each state a guess of its own: kept ones land in memory, and one guess shouldn't show there twice.
+        text: status === "applied" ?
+          "You prefer to keep about a fifth of your money in cash." :
+          "You prefer to keep each stock under a quarter of your portfolio.",
         source: "inferred",
         confidence: 0.67,
         confirmedHoursAgo: status === "applied" ? 0 : null,

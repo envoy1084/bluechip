@@ -12,10 +12,10 @@ describe("DepositCard", () => {
     await expect.element(qr).toHaveAttribute("src", expect.stringMatching(/^blob:/))
   })
 
-  it("shows the address to copy", async () => {
+  it("shows the whole address to copy", async () => {
     const screen = await render(<DepositCard address={ADDRESS} paymentRequest={REQUEST} />)
     await expect.element(screen.getByRole("button", { name: "Copy address" })).toBeVisible()
-    await expect.element(screen.getByText("0x7a3F…B9d4", { exact: true })).toBeVisible()
+    await expect.element(screen.getByText(ADDRESS, { exact: true })).toBeVisible()
   })
 
   it("warns that only USDC on Base is safe to send", async () => {

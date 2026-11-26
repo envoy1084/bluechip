@@ -57,8 +57,13 @@ export const news = Trigger.make({
     ...stockProblems("symbols", config.symbols, context)
   ],
   describe: (config, { name }) => {
-    const about = [...config.symbols.map(name), ...config.topics.map((topic) => `"${topic}"`)]
-    return `when there is news about ${listNames(about)}`
+    const topics = config.topics.map((topic) => `"${topic}"`)
+    const mentioning = topics.length <= 1 ?
+      topics.join("") :
+      `${topics.slice(0, -1).join(", ")} or ${topics.at(-1)}`
+    if (config.symbols.length === 0) return `when a story mentions ${mentioning}`
+    const about = `when there is news about ${listNames(config.symbols.map(name))}`
+    return topics.length === 0 ? about : `${about}, or a story mentioning ${mentioning}`
   }
 })
 

@@ -211,6 +211,27 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
         assert.deepStrictEqual({ ...error }, { ...new Conflict({ reason: "intentClosed" }) })
       }))
 
+    it.effect("an approval prepared for Face ID and left unsigned keeps its own deadline", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const created = yield* user.api.intents.create({
+          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("NVDA", 150) }
+        })
+        assert.instanceOf(created, Intent)
+        const { intent: waiting } = yield* user.events.next(
+          "IntentChanged",
+          ({ intent }) => intent.id === created.id && intent.status === "needsApproval"
+        )
+
+        yield* user.api.intents.approve({
+          params: { id: created.id },
+          payload: { requestId: RequestId.make(randomUUID()) }
+        })
+        const after = yield* user.api.intents.intent({ params: { id: created.id } })
+
+        assert.deepStrictEqual([after.status, after.expiresAt], ["awaitingSignature", waiting.expiresAt])
+      }))
+
     it.effect("pausing the agent cancels its approvals", () =>
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked

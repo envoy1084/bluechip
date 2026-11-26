@@ -16,8 +16,9 @@ const TRIGGER_ART: Readonly<Record<Trigger["type"], IllustrationName>> = {
 }
 
 /**
- * What starts an automation, as its illustration on a tile: pixel art for lists (`md`, 48 px), or a halftone that
- * drifts (still under reduced motion) for its page (`hero`). Decorative: the sentence beside it says the trigger.
+ * What starts an automation, as its illustration on a tile: pixel art for lists (`md`, 48 px, 40 on a phone), or a
+ * halftone that drifts (still under reduced motion) for its page (`hero`, smaller on a phone so the sentence shows).
+ * Decorative: the sentence beside it says the trigger.
  */
 export function TriggerArt(
   { type, size = "md", dimmed = false, className }: Readonly<{
@@ -35,12 +36,20 @@ export function TriggerArt(
         aria-hidden
         className={cn(
           "grid size-[176px] shrink-0 place-items-center rounded-[22px] shadow-[inset_0_0_0_1px_rgba(10,11,13,.05)]",
+          "max-sm:size-[112px] max-sm:rounded-[18px]",
           WASH,
           dimmed && "grayscale-[.85]",
           className
         )}
       >
-        <Illustration name={illustration} variant="halftone" size={160} animate={!dimmed} label="" />
+        <Illustration
+          name={illustration}
+          variant="halftone"
+          size={160}
+          animate={!dimmed}
+          label=""
+          className="max-sm:!w-[100px]"
+        />
       </div>
     )
   }
@@ -50,12 +59,13 @@ export function TriggerArt(
       aria-hidden
       className={cn(
         "grid size-12 shrink-0 place-items-center rounded-[13px] shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.06)]",
+        "max-sm:size-10 max-sm:rounded-[11px]",
         WASH,
         dimmed && "grayscale-[.85] opacity-70",
         className
       )}
     >
-      <Illustration name={illustration} size={40} label="" />
+      <Illustration name={illustration} size={40} label="" className="max-sm:!w-8" />
     </span>
   )
 }

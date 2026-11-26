@@ -3,6 +3,8 @@ import { AgentAvatar } from "./agent-avatar.tsx"
 import { ChatCard, ChatCardHeadline, ChatCardProblem, ChatCardRules, type ChatCardTone } from "./chat-card.tsx"
 
 export interface AgentDraftCardProps {
+  /** The card's tag: "Draft agent" until it's locked, then "New agent". */
+  readonly tag?: string
   /** The draft's id: its butterfly is the one it keeps. */
   readonly agentId: string
   readonly name: string
@@ -34,6 +36,7 @@ export interface AgentDraftCardProps {
  */
 export function AgentDraftCard(
   {
+    tag = "Draft agent",
     agentId,
     name,
     detail,
@@ -51,7 +54,7 @@ export function AgentDraftCard(
   }: AgentDraftCardProps
 ) {
   return (
-    <ChatCard tag="Draft agent" icon="agent" state={state} tone={tone} footer={footer} className={className}>
+    <ChatCard tag={tag} icon="agent" state={state} tone={tone} footer={footer} className={className}>
       {children ?? (
         <>
           <ChatCardHeadline media={<AgentAvatar agentId={agentId} size="lg" />} title={name} detail={detail} />

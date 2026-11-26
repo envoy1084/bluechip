@@ -3,6 +3,7 @@
 // shows it.
 import type { Stock } from "@bluechip/domain/market/Market"
 import { GetAgent, GetAgentHistory, GetAgentJournal, ListAgents } from "@bluechip/domain/tools/AgentTools"
+import { ListAutomations } from "@bluechip/domain/tools/AutomationTools"
 import { GetStockFacts, SearchHelp } from "@bluechip/domain/tools/KnowledgeTools"
 import { GetActivity, GetPortfolio, GetPrices, GetQuote, GetStock } from "@bluechip/domain/tools/MarketTools"
 import { ListMemories, SearchMemory } from "@bluechip/domain/tools/MemoryTools"
@@ -62,6 +63,10 @@ const SUMMARIES: Readonly<Record<string, (result: unknown) => string | null>> = 
   getAgentJournal: summarize(
     GetAgentJournal.successSchema,
     (entries) => entries.length === 0 ? "Nothing yet" : count(entries.length, "entry", "entries")
+  ),
+  listAutomations: summarize(
+    ListAutomations.successSchema,
+    (automations) => automations.length === 0 ? "None yet" : count(automations.length, "automation", "automations")
   ),
   listPolicies: summarize(
     ListPolicies.successSchema,

@@ -6,17 +6,17 @@ import { formatDollars } from "@bluechip/ui/lib/agent-limits"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useNow } from "../../../../../hooks/useNow.ts"
 import { toDollars } from "../../../model/fieldText.ts"
-import { countdown, dayGone, shownLimits, todayRoom } from "../../../model/usage.ts"
+import { countdown, dayGone, limitOf, shownLimits, todayRoom } from "../../../model/usage.ts"
 import { StandingPill } from "./StandingPill.tsx"
 
-/** The time left until the daily counts start again, ticking each second. */
-function ResetCountdown({ resetAt }: Readonly<{ resetAt: string }>) {
+/** The time left until the daily counts reset (when a stopped agent starts again), ticking each second. */
+function ResetCountdown({ resetAt, stopped }: Readonly<{ resetAt: string; stopped: boolean }>) {
   const now = useNow(1000)
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-3.5 py-2.5 surface-well">
       <Icon name="clock" size={16} className="text-blue" />
-      <span className="text-label-sm text-g-600">Starts again in</span>
+      <span className="text-label-sm text-g-600">{stopped ? "Starts again in" : "Its limits reset in"}</span>
       {/* A timer is silent to screen readers by default, so the tick doesn't announce itself each second. */}
       <span role="timer" className="text-[17px] leading-none font-semibold tracking-[-0.01em] tabular-nums">
         {countdown(now)}
@@ -37,7 +37,7 @@ export function UsageHero(
   const room = todayRoom(usage, agent.name, now)
   const shown = shownLimits(usage)
   const dialed = shown.find((counted) => counted.policy === "trade" && counted.limit !== null) ??
-    shown.find((counted) => counted.policy === "tradesPerDay" && counted.limit !== null)
+    shown.find((counted) => counted.policy === "tradesPerDay" && limitOf(counted) !== null)
   const dollars = dialed?.unit === "usd"
   const amount = (value: bigint) => dollars ? toDollars(value) : Number(value)
 
@@ -65,7 +65,7 @@ export function UsageHero(
           <h4 className="text-[26px] leading-[1.15] font-semibold tracking-[-0.03em] text-balance">{room.headline}</h4>
           <p className="max-w-[56ch] text-body-sm text-pretty text-g-600">{room.detail}</p>
         </div>
-        <ResetCountdown resetAt={resetAt} />
+        <ResetCountdown resetAt={resetAt} stopped={room.standing === "used"} />
       </div>
 
       {dialed === undefined ? null : (

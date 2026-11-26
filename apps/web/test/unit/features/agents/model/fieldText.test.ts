@@ -73,7 +73,8 @@ describe("fieldText", () => {
 describe("dayLabel", () => {
   it.each<{ name: string; date: Date | DateTime.Utc; expected: string }>([
     { name: "a Date", date: new Date("2026-02-21T12:00:00Z"), expected: "21 Feb" },
-    { name: "a DateTime", date: DateTime.makeUnsafe("2026-12-01T12:00:00Z"), expected: "1 Dec" }
+    { name: "a DateTime", date: DateTime.makeUnsafe("2026-12-01T12:00:00Z"), expected: "1 Dec" },
+    { name: "September in three letters", date: new Date("2026-09-27T12:00:00Z"), expected: "27 Sep" }
   ])("$name", ({ date, expected }) => {
     assert.strictEqual(dayLabel(date), expected)
   })

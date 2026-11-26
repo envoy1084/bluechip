@@ -2,15 +2,14 @@ import { expect, test } from "../fixtures/test.ts"
 import { createAgent, createDraft, dayFromNow, daysFromNow, statePill } from "../utils/agents.ts"
 
 test.describe("pause and resume", () => {
-  test("Pause stops it: paused pill and alert, no trading", async ({ page, funded: _funded }) => {
+  test("Pause stops it in place: paused pill, Resume where Pause was, no trading", async ({ page, funded: _ }) => {
     await createAgent(page, { name: "Pausable" })
 
     await page.getByRole("button", { name: "Pause", exact: true }).click()
 
     await expect(statePill(page)).toContainText("Paused")
-    await expect(page.getByText("Pausable is paused")).toBeVisible()
     await expect(page.getByText("It won't trade until you resume it. Nothing was sold.")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeHidden()
+    await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeFocused()
     await expect(page.getByRole("region", { name: "Trade with this agent" })).toBeHidden()
   })
 
@@ -22,7 +21,7 @@ test.describe("pause and resume", () => {
     await page.getByRole("button", { name: "Resume", exact: true }).click()
 
     await expect(statePill(page)).toContainText("Active")
-    await expect(page.getByText("Resumable is paused")).toBeHidden()
+    await expect(page.getByText("It won't trade until you resume it. Nothing was sold.")).toBeHidden()
     await expect(page.getByRole("region", { name: "Trade with this agent" })).toBeVisible()
   })
 
@@ -52,17 +51,18 @@ test.describe("pause all", () => {
 
     await page.getByRole("button", { name: "Pause all agents" }).click()
 
-    await expect(page.getByRole("button", { name: "Resume all" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Resume all agents" })).toBeFocused()
+    await expect(page.getByText("Paused 2 agents")).toBeVisible()
     await page.goto("/agents")
     await expect(page.getByRole("link", { name: /^One of two / })).toContainText("Paused")
     await expect(page.getByRole("link", { name: /^Two of two / })).toContainText("Paused")
   })
 
-  test("the sidebar's Resume all resumes every agent", async ({ page, funded: _funded }) => {
+  test("the sidebar's Resume all agents resumes every agent", async ({ page, funded: _funded }) => {
     await createAgent(page, { name: "Sleeper" })
     await page.getByRole("button", { name: "Pause all agents" }).click()
 
-    await page.getByRole("button", { name: "Resume all" }).click()
+    await page.getByRole("button", { name: "Resume all agents" }).click()
 
     await expect(page.getByRole("button", { name: "Pause all agents" })).toBeVisible()
     await expect(statePill(page)).toContainText("Active")
@@ -217,7 +217,7 @@ test.describe("expired", () => {
     await page.goto("/agents")
 
     await expect(page.getByRole("link", { name: /^Card ran out / })).toHaveText(
-      new RegExp(`^Card ran out\\s*(Expired)+\\s*Buys and sells.*Ran out on ${ended}$`)
+      new RegExp(`^Card ran out\\s*(Ran out)+\\s*Buys and sells.*Ran out on ${ended}$`)
     )
     await expect(page.getByRole("main").getByRole("button", { name: "Renew", exact: true })).toBeVisible()
   })

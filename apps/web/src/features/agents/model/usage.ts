@@ -3,9 +3,10 @@
 import type { AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { formatDollars, listNames } from "@bluechip/domain/policies/Format"
+import { NO_TRADE_LIMIT } from "@bluechip/domain/policies/TradesPerDay"
 import { dailyResetText, nextDailyReset } from "../../../lib/localTime.ts"
 
-/** How a limit stands: room left, from 80% nearly used, used up, or open when it has no limit. */
+/** How a limit stands: plenty left, from 80% nearly used, used up, or open when it has no limit. */
 export type Standing = "room" | "nearly" | "used" | "open"
 
 const DAY = 86_400_000
@@ -16,11 +17,21 @@ export const shownLimits = (usage: AgentUsage): ReadonlyArray<PolicyUsage> =>
     !policyOf(counted.policy).hidden && !(counted.policy === "trade" && counted.limit === BigInt(0))
   )
 
+/**
+ * The limit it counts against, `null` when it has none of its own: trades a day at bluechip's default count is no
+ * limit (its budget stops it first).
+ */
+export const limitOf = (counted: Pick<PolicyUsage, "policy" | "limit">): bigint | null =>
+  counted.policy === "tradesPerDay" && counted.limit !== null && counted.limit >= BigInt(NO_TRADE_LIMIT) ?
+    null :
+    counted.limit
+
 /** How much of a limit is used, as a standing. */
-export const standingOf = (counted: Pick<PolicyUsage, "used" | "limit">): Standing => {
-  if (counted.limit === null || counted.limit === BigInt(0)) return "open"
-  if (counted.used >= counted.limit) return "used"
-  return counted.used * BigInt(5) >= counted.limit * BigInt(4) ? "nearly" : "room"
+export const standingOf = (counted: Pick<PolicyUsage, "policy" | "used" | "limit">): Standing => {
+  const limit = limitOf(counted)
+  if (limit === null || limit === BigInt(0)) return "open"
+  if (counted.used >= limit) return "used"
+  return counted.used * BigInt(5) >= limit * BigInt(4) ? "nearly" : "room"
 }
 
 /** How much of the UTC day has gone, 0 to 1. */
@@ -48,7 +59,7 @@ const tradesText = (count: bigint) => `${count} ${count === BigInt(1) ? "trade" 
 export const todayRoom = (usage: AgentUsage, name: string, now: Date): TodayRoom => {
   const shown = shownLimits(usage)
   const budget = shown.find((counted) => counted.policy === "trade" && counted.limit !== null)
-  const trades = shown.find((counted) => counted.policy === "tradesPerDay" && counted.limit !== null)
+  const trades = shown.find((counted) => counted.policy === "tradesPerDay" && limitOf(counted) !== null)
   const daily = [budget, trades].filter((counted) => counted !== undefined)
   const standing = daily.map(standingOf).reduce<Standing>(
     (worst, next) => STANDINGS.indexOf(next) > STANDINGS.indexOf(worst) ? next : worst,

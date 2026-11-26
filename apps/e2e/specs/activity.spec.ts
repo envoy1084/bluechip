@@ -91,7 +91,7 @@ test.describe("activity", () => {
 
       const details = page.getByRole("dialog", { name: /^Bought \$\d+\.\d{2} of SpaceX$/ })
       const receipt = details.getByRole("region", { name: "Bought SpaceX" })
-      await expect(receipt).toContainText(/You, today at \d{2}:\d{2}/)
+      await expect(details).toContainText(/You, today at \d{2}:\d{2}/)
       await expect(details.getByRole("definition")).toHaveText([
         /^[\d.]+ shares?$/,
         /^\$\d+\.\d{2} a share$/,

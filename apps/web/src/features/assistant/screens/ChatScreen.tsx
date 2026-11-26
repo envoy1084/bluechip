@@ -103,15 +103,6 @@ export function ChatScreen(
             assistant={assistant}
             initialMessage={initialMessage}
             Trade={Trade}
-            empty={
-              <>
-                <h2 className="text-[28px] font-semibold tracking-[-0.035em]">What should we do today?</h2>
-                <p className="max-w-[46ch] text-body-sm text-g-600">
-                  Ask about your money, trade, or set up an agent. Pick an agent in the box and its trades go through
-                  it.
-                </p>
-              </>
-            }
           />
         </div>
       </SidebarProvider>

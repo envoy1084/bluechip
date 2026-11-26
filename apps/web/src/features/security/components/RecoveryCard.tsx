@@ -4,11 +4,13 @@ import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
+import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { accountRecoveryAtom, cancelRecoveryAtom } from "../../../atoms/recovery.ts"
 import { SettingsRow, SettingsSection } from "../../../components/layout/SettingsSection.tsx"
 import { type Landing, SignedChangeDialog } from "../../../components/SignedChangeDialog.tsx"
+import { useNow } from "../../../hooks/useNow.ts"
 import { securityReactivityKey } from "../../../lib/api/client.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { removeRecoveryKeyAtom, setUpRecoveryAtom } from "../atoms/security.ts"
@@ -37,9 +39,11 @@ export function RecoveryCard() {
   const [sent, setSent] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelProblem, setCancelProblem] = useState<string | undefined>(undefined)
+  // The countdown to a waiting recovery moves on, and says "now" once it's due.
+  const now = useNow(60_000)
 
   if (!AsyncResult.isSuccess(recovery)) return null
-  const text = recoveryText(recovery.value, localTimeZone())
+  const text = recoveryText(recovery.value, DateTime.fromDateUnsafe(now), localTimeZone())
   const key = recovery.value.key
 
   const send = async () => {
@@ -83,6 +87,9 @@ export function RecoveryCard() {
           </Alert>
         ) :
         null}
+      {text.cancelled === null ?
+        null :
+        <SettingsRow icon="stop" title="Recovery cancelled" description={text.cancelled} />}
       <SettingsRow
         icon="key"
         title={text.cancellable ? (key?.label ?? "Recovery key") : text.title}
@@ -107,6 +114,7 @@ export function RecoveryCard() {
               variant="ghost"
               size="sm"
               className="text-loss"
+              aria-label={`Remove ${key.label ?? "your recovery key"}`}
               onClick={() => {
                 setSent(false)
                 setAction("remove")

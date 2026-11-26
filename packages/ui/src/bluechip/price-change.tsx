@@ -56,14 +56,17 @@ export function PriceChange({ value, amount, size, className, ...props }: PriceC
       {...props}
     >
       <Icon name={ARROW[direction]} size={size === "lg" ? 16 : 14} />
-      {amount !== undefined && (
+      {amount === undefined ? <NumberRoll value={value} format={formatPercent} /> : (
         <>
           <NumberRoll value={amount} format={formatChange} />
-          <span className="whitespace-pre">{" ("}</span>
+          {/* The parentheses hug the percent: one run of text, outside the row's gap. */}
+          <span className="inline-flex items-center whitespace-pre">
+            {" ("}
+            <NumberRoll value={value} format={formatPercent} />
+            {")"}
+          </span>
         </>
       )}
-      <NumberRoll value={value} format={formatPercent} />
-      {amount !== undefined && ")"}
     </span>
   )
 }

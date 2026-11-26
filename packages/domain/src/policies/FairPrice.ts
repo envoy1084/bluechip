@@ -69,7 +69,13 @@ export const fairPrice = Policy.make({
   examples: ["Never pay more than 0.5% over the market price", "Don't trade on weekends"],
   config: FairPriceConfig,
   fields: {
-    collarBps: new Policy.Field({ label: "Price protection", unit: "bps", min: 10, max: 500, choices: [50, 100, 200] }),
+    collarBps: new Policy.Field({
+      label: "Furthest from Chainlink's price",
+      unit: "bps",
+      min: 10,
+      max: 500,
+      choices: [50, 100, 200]
+    }),
     tradeWhilePaused: new Policy.Field({ label: "Trade while prices are paused", unit: "toggle" })
   },
   required: true,

@@ -26,7 +26,7 @@ import { RuleRow } from "./RuleRow.tsx"
  * new or removed.
  */
 export function SpecForm(
-  { spec, onChange, stocks, nameOf, template, before }: Readonly<{
+  { spec, onChange, stocks, nameOf, template, before, showProblems = true }: Readonly<{
     spec: AgentSpec
     onChange: (spec: AgentSpec) => void
     /** Every stock bluechip lists; the ones without a pool can't be picked unless the agent already trades them. */
@@ -35,6 +35,8 @@ export function SpecForm(
     /** The built-in template it started from, for its presets. */
     template: TemplateId | null
     before?: AgentSpec | undefined
+    /** Whether to say what keeps it from being locked: a new agent's only once you try to review it. */
+    showProblems?: boolean
   }>
 ) {
   const [opened, setOpened] = useState<ReadonlySet<PolicyId>>(() => new Set())
@@ -50,7 +52,7 @@ export function SpecForm(
     )
   }
   const [fineTuningOpen, setFineTuningOpen] = useState(false)
-  const problems = checkSpec(spec)
+  const problems = showProblems ? checkSpec(spec) : []
   const changes = before === undefined ? [] : compareSpecs(before, spec).policies
   const changeOf = (id: PolicyId) => changes.find((change) => change.policy === id)?.change
   const problemOf = (id: PolicyId, field: string | null) =>

@@ -12,6 +12,15 @@ test.describe("automations list", () => {
     await expect(page).toHaveURL(/\/automations\/new$/)
   })
 
+  test("with none, an example starts a new one on its trigger", async ({ page, user: _user }) => {
+    await page.goto("/automations")
+
+    await page.getByRole("list", { name: "What can start one" }).getByRole("link", { name: /^Price move/ }).click()
+
+    await expect(page).toHaveURL(/\/automations\/new\?trigger=priceMove$/)
+    await expect(sentence(page)).toHaveText(/^When .+ falls 10% from its high, buy \$50 of .+\.$/)
+  })
+
   test("your own automations are listed with their sentence, as yours", async ({ page, user: _user }) => {
     await saveOwn(page, "Monday buy")
 
@@ -24,14 +33,13 @@ test.describe("automations list", () => {
     )
   })
 
-  test("the overview counts what's running, and Needs attention shows none for a healthy one", async ({ page, user: _user }) => {
+  test("the overview counts what's running, with no filters for so few", async ({ page, user: _user }) => {
     await saveOwn(page, "Counted buy")
 
     await page.goto("/automations")
 
     await expect(page.getByRole("region", { name: "Overview" })).toContainText("1 automation watching for you")
-    await page.getByRole("tab", { name: /^Needs attention/ }).click()
-    await expect(page.getByRole("heading", { name: "Nothing needs attention" })).toBeVisible()
+    await expect(page.getByRole("tab", { name: /^Needs attention/ })).toBeHidden()
   })
 
   test("Pause on its row pauses it there", async ({ page, user: _user }) => {
@@ -92,6 +100,17 @@ test.describe("automation editor", () => {
     await expect(page.getByRole("button", { name: "Save automation" })).toBeDisabled()
   })
 
+  test("a message with nothing to say can't be saved", async ({ page, user: _user }) => {
+    await page.goto("/automations/new")
+
+    await page.getByRole("radiogroup", { name: "Action" }).getByRole("radio", { name: /^Tell me/ }).click()
+
+    await expect(page.getByRole("alert").filter({ hasText: "It can't run yet" })).toContainText(
+      "Then: Write what to tell you."
+    )
+    await expect(page.getByRole("button", { name: "Save automation" })).toBeDisabled()
+  })
+
   test("an edit is saved under its new name", async ({ page, user: _user }) => {
     await saveOwn(page, "Before the edit")
 
@@ -116,7 +135,7 @@ test.describe("automation page", () => {
     await expect(about).toContainText("You, with Face ID for each trade")
     await expect(about).toContainText("RanNot yet")
     await expect(about).toContainText("You set it up")
-    await expect(page.getByText(/^No runs yet\. It runs every Monday at 10:00 New York time\.$/)).toBeVisible()
+    await expect(page.getByText(/^No runs yet\.$/)).toBeVisible()
   })
 
   test("Pause stops it, and Resume starts it again", async ({ page, user: _user }) => {

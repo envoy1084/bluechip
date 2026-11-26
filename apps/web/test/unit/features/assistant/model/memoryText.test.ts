@@ -12,11 +12,11 @@ import { MEMORY } from "../../../../fixtures/Memories.ts"
 describe("provenance", () => {
   it.each(
     [
-      { name: "said", memory: MEMORY, expected: "You said it, on Fri 20 Nov, 10:00" },
+      { name: "said", memory: MEMORY, expected: "You said it on Fri 20 Nov, 10:00" },
       {
         name: "inferred, with how sure",
         memory: { ...MEMORY, source: "inferred", confidence: 0.724 },
-        expected: "Inferred, 72% sure, on Fri 20 Nov, 10:00"
+        expected: "Inferred on Fri 20 Nov, 10:00, 72% sure"
       }
     ] as const
   )("$name", ({ expected, memory }) => {
@@ -24,7 +24,7 @@ describe("provenance", () => {
   })
 
   it("in the viewer's time zone", () => {
-    assert.strictEqual(provenance(MEMORY, "Asia/Tokyo"), "You said it, on Fri 20 Nov, 19:00")
+    assert.strictEqual(provenance(MEMORY, "Asia/Tokyo"), "You said it on Fri 20 Nov, 19:00")
   })
 })
 

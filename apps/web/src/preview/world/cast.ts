@@ -157,7 +157,7 @@ const typical: Cast = {
     { id: automationId(2), name: "Keep the mix", agentId: keeper.id, kind: "rebalance", state: "active", asks: true },
     {
       id: automationId(3),
-      name: "Nvidia stop-loss",
+      name: "NVIDIA stop-loss",
       agentId: picker.id,
       kind: "stopLoss",
       state: "paused",
@@ -255,7 +255,7 @@ const heavy: Cast = {
     { id: automationId(2), name: "Keep the mix", agentId: keeper.id, kind: "rebalance", state: "active", asks: true },
     {
       id: automationId(3),
-      name: "Nvidia stop-loss",
+      name: "NVIDIA stop-loss",
       agentId: picker.id,
       kind: "stopLoss",
       state: "active",
@@ -325,7 +325,7 @@ const starter: Cast = {
   }],
   automations: [{
     id: automationId(1),
-    name: "Nvidia stop-loss",
+    name: "NVIDIA stop-loss",
     agentId: agentId(1),
     kind: "stopLoss",
     state: "active",

@@ -1,4 +1,4 @@
-// What needs you now, one line each with its way to act: a recovery under way, trades waiting for your Face ID,
+// What needs you now, one line each with its way to act: a recovery under way, trades waiting for your approval,
 // automations that need a look, agents that ran out or are about to, and, once you're settled in, a draft left
 // unlocked, cash no agent can trade, or no recovery key. The most pressing first.
 import type { Agent } from "@bluechip/domain/agents/Agent"
@@ -96,13 +96,13 @@ const approvalsNeed = (facts: NeedsFacts, now: Date): ReadonlyArray<Need> => {
 
   const sentences = [
     ...(from.length === 0 ? [] : [`From ${names(from)}.`]),
-    ...(ends === undefined ? [] : [`${count === 1 ? "It" : "The first"} ends ${untilText(new Date(ends), now)}.`])
+    ...(ends === undefined ? [] : [`${count === 1 ? "It" : "The first"} expires ${untilText(new Date(ends), now)}.`])
   ]
   return [{
     key: "approvals",
     tone: ends !== undefined && ends - now.getTime() < 60 * 60_000 ? "urgent" : "warn",
-    title: count === 1 ? "A trade waits for your Face ID" : `${count} trades wait for your Face ID`,
-    detail: sentences.length === 0 ? "Review it before it ends." : sentences.join(" "),
+    title: count === 1 ? "1 trade waits for your approval" : `${count} trades wait for your approval`,
+    detail: sentences.length === 0 ? "Review it before it expires." : sentences.join(" "),
     action: { _tag: "approvals" },
     actionLabel: "Review"
   }]
@@ -121,7 +121,7 @@ const automationsNeed = (automations: NeedsFacts["automations"]): ReadonlyArray<
         title: `${first.automation.name} needs attention`,
         detail: first.attention!,
         action: { _tag: "automation", automationId: first.automation.id },
-        actionLabel: "Look"
+        actionLabel: "Review"
       } :
       {
         key: "automations",
@@ -129,7 +129,7 @@ const automationsNeed = (automations: NeedsFacts["automations"]): ReadonlyArray<
         title: `${needLook.length} automations need attention`,
         detail: `${names(needLook.map((each) => each.automation.name))}.`,
         action: { _tag: "automations" },
-        actionLabel: "Look"
+        actionLabel: "Review"
       }
   ]
 }

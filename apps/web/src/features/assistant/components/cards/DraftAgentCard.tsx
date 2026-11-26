@@ -52,6 +52,7 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
 
   return (
     <AgentDraftCard
+      tag={draft ? "Draft agent" : "New agent"}
       agentId={agent.id}
       name={agent.name}
       detail={`Runs for ${SESSION_DAYS} days once locked. Pause it any time.`}
@@ -77,7 +78,7 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
             variant="secondary"
             render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
           >
-            Open {agent.name}
+            Open agent
             <Icon name="arrow-right" size={16} />
           </ButtonLink>
         )}

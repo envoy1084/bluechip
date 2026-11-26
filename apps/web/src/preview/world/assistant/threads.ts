@@ -61,7 +61,8 @@ export const threadOf = (
     mint,
     conversation,
     memories,
-    keep: (kept) => memories.unshift(...kept)
+    // A card about something already remembered (a showcase saving "never Tesla" again) doesn't list it twice.
+    keep: (kept) => memories.unshift(...kept.filter((memory) => !memories.some((known) => known.text === memory.text)))
   })
   const when = DateTime.toEpochMillis(mint.at(conversation.hoursAgo))
   // Only the cast's conversations ask about the scenario's guesses; a showcase shows its own cards.

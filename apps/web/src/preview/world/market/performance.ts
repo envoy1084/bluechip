@@ -1,6 +1,7 @@
 // How the account is doing, from its fills the way the server's ledger works it out: lots replayed FIFO per stock
 // (reconciled shares as flagged lots), profit realised and unrealised, costs, the daily profit chart, and each stock's,
 // agent's and automation's part, with a rebalancer's drift.
+import type { AutomationRun } from "@bluechip/domain/automations/Run"
 import { driftOf } from "@bluechip/domain/automations/triggers/Drift"
 import type { AgentId, AutomationId } from "@bluechip/domain/Ids"
 import { series } from "@bluechip/domain/ledger/Daily"
@@ -23,7 +24,7 @@ import {
 } from "@bluechip/domain/performance/Performance"
 import type { PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import type { Trade } from "@bluechip/domain/trading/Trade"
-import type { CastAgent, CastAutomation } from "../cast.ts"
+import type { CastAgent } from "../cast.ts"
 import type { MarketSlice, MarketWorld } from "./model.ts"
 import { priceAt, toPrice } from "./prices.ts"
 import { utc } from "./records.ts"
@@ -279,27 +280,24 @@ export const agentPerformanceOf = (world: MarketWorld, agentId: AgentId, now: nu
     decided: intents.filter((intent) => intent.decision !== null).length,
     blocked: blocked.length,
     blockedBy: [...policies].map(([policy, count]) => new BlockedBy({ policy, count })),
-    series: seriesOf(market, entries, { agentId }, now),
+    // Its results start the day it was made, not at the account's first trade.
+    series: seriesOf(market, entries, { agentId }, now).filter((point) =>
+      point.day >= dayOf(now - agent.ageDays * DAY)
+    ),
     drift: driftOfAgent(market, agent, now)
   })
 }
 
-const RUN_EXTRAS: Readonly<Record<CastAutomation["state"], { readonly skipped: number; readonly failed: number }>> = {
-  active: { skipped: 2, failed: 0 },
-  paused: { skipped: 1, failed: 0 },
-  done: { skipped: 0, failed: 0 },
-  failing: { skipped: 1, failed: 3 }
-}
-
-/** One automation's results, or `undefined` for an automation the cast doesn't have. */
+/**
+ * One automation's results, counting the runs it has (`runs`, newest first, as its page lists them) so the page says
+ * one number.
+ */
 export const automationPerformanceOf = (
   world: MarketWorld,
   automationId: AutomationId,
-  now: number
-): AutomationPerformance | undefined => {
-  const { cast, market } = world
-  const automation = cast.automations.find((candidate) => candidate.id === automationId)
-  if (automation === undefined) return undefined
+  runs: ReadonlyArray<Pick<AutomationRun, "outcome" | "firedAt">>
+): AutomationPerformance => {
+  const { market } = world
 
   const intents = market.intents.filter((record) => record.automationId === automationId).map(({ intent }) => intent)
   const tradeIds = new Set(intents.flatMap((intent) => (intent.tradeId === null ? [] : [intent.tradeId])))
@@ -313,36 +311,20 @@ export const automationPerformanceOf = (
     zero
   )
 
-  const asked = intents.filter((intent) => intent.decision?._tag === "Ask").length
-  const extras = cast.scenario === "newPerson" || cast.scenario === "starter" ?
-    { skipped: 0, failed: 0 } :
-    RUN_EXTRAS[automation.state]
-  const counts = {
-    proposed: intents.length - asked,
-    asked,
-    notified: automation.kind === "priceAlert" ? (cast.scenario === "heavy" ? 7 : 2) : 0,
-    skipped: extras.skipped,
-    failed: extras.failed
-  }
-  const runs = Object.values(counts).reduce((sum, count) => sum + count, 0)
-  const latest = Math.max(
-    ...intents.map((intent) => intent.createdAt.epochMilliseconds),
-    runs === 0 ? -Infinity : now - 2 * DAY
-  )
   const total = (side: "buy" | "sell") =>
     Usdc.make(trades.filter((trade) => trade.side === side).reduce((sum, trade) => sum + trade.usdc, zero))
 
   return new AutomationPerformance({
     automationId,
-    runs,
+    runs: runs.length,
     outcomes: (["proposed", "asked", "notified", "skipped", "failed"] as const)
-      .filter((outcome) => counts[outcome] > 0)
-      .map((outcome) => new RunCount({ outcome, count: counts[outcome] })),
+      .map((outcome) => new RunCount({ outcome, count: runs.filter((run) => run.outcome === outcome).length }))
+      .filter((row) => row.count > 0),
     trades: trades.length,
     bought: total("buy"),
     sold: total("sell"),
     realised,
     costs: costsOf(trades),
-    lastRunAt: runs === 0 ? null : utc(latest)
+    lastRunAt: runs[0]?.firedAt ?? null
   })
 }

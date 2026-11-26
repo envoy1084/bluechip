@@ -5,6 +5,7 @@ import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { formatMoney, formatRelative } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
+import { MarketPill } from "../../../components/MarketPill.tsx"
 import { bpsPercent, priceDollars } from "../../../lib/amounts.ts"
 import { referenceGap } from "./ReferenceGap.tsx"
 import { SessionNote } from "./SessionNote.tsx"
@@ -28,9 +29,10 @@ export function StockHeader({ stock }: Readonly<{ stock: Stock }>) {
       <div className="flex flex-wrap items-center gap-4">
         <TickerChip symbol={stock.symbol} size="lg" />
         <div className="grid min-w-0 gap-0.5">
-          <span className="flex flex-wrap items-center gap-x-2 text-label-sm text-g-500">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label-sm text-g-500">
             {stock.name} on Base
-            {price === null ? null : <SessionNote price={price} showPaused={false} />}
+            {price === null ? null : <SessionNote price={price} showPaused={false} onlyQuiet />}
+            <MarketPill />
           </span>
           {price === null ?
             <b className="text-title-1 font-semibold text-g-500">No price right now</b> :

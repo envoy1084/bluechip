@@ -315,8 +315,8 @@ layer(
                 "It needs your Face ID."
               ],
               [
-                `**${agent.name} needs your approval**\nBuy $150.00 of NVIDIA. Approve or decline it in bluechip with Face ` +
-                "ID.\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals"
+                `**${agent.name} needs your approval**\nBuy $150.00 of NVIDIA. Approve or decline it with Face ID.` +
+                "\n\nApprove in bluechip: http://localhost:3000/home?sheet=approvals"
               ],
               [{ channel: "push", status: "skipped", error: null }, {
                 channel: "telegram",

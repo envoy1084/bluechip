@@ -253,7 +253,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     kind: "dailyDigest",
     group: "digest",
     label: "Daily digest",
-    description: "One message each morning at 08:00 in your time zone, with what the digest held.",
+    description: "One message each morning at 08:00 in your time zone, with everything you held for it.",
     severity: "info",
     channels: ["inApp", "telegram"],
     defaults: ["inApp", "telegram"],

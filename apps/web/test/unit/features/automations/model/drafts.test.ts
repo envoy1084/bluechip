@@ -270,6 +270,15 @@ describe("newDraft", () => {
       settings: DEFAULT_SETTINGS
     })
   })
+
+  it("on the trigger given, about the stock given", () => {
+    const draft = newDraft(null, "MSFT", DEFAULT_SETTINGS, "priceMove")
+
+    assert.deepStrictEqual(draft.trigger, {
+      type: "priceMove",
+      config: { symbol: "MSFT", reference: "trailingHigh", bps: 1000, direction: "down" }
+    })
+  })
 })
 
 describe("stocksFor", () => {

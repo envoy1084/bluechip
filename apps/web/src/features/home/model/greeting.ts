@@ -22,7 +22,8 @@ export const todayLabel = (now: Date, zone: string): string =>
 
 /** Where the US market stands, as a sentence: open until its close, an extended session, or prices paused. */
 export const marketLine = (status: MarketStatus, now: Date, zone: string): string => {
-  const when = (at: DateTime.Utc) => whenText(DateTime.toDateUtc(at), now, zone)
+  // In your time, named once, as every time in bluechip is said.
+  const when = (at: DateTime.Utc) => `${whenText(DateTime.toDateUtc(at), now, zone)} your time`
 
   switch (status.session) {
     case "regular":

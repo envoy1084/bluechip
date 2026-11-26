@@ -2,16 +2,10 @@ import type { Quote, Stock } from "@bluechip/domain/market/Market"
 import { FairPriceCheck, OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { formatMoney, formatShareCount, formatTokenAmount } from "@bluechip/ui/lib/format"
-import { UsdcLogo } from "@bluechip/ui/logos/usdc"
-import { bpsPercent, priceDollars, shareCount } from "../../lib/amounts.ts"
+import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
+import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../lib/amounts.ts"
 
-const usdc = (units: bigint) => (
-  <>
-    <UsdcLogo size={14} />
-    {formatTokenAmount(units, "USDC", { decimals: 6 })}
-  </>
-)
+const usdc = (units: bigint) => formatMoney(usdcDollars(units))
 const shares = (units: bigint) => formatShareCount(shareCount(units))
 
 // The server's fair-price limits: 1% off Chainlink, 0.5% while prices are paused.
@@ -40,7 +34,10 @@ function FairPrice({ quote }: Readonly<{ quote: Quote }>) {
   )
 }
 
-/** What a quoted trade does: the stock, what you pay and get, at what price, the fair price check and the least out. */
+/**
+ * What a quoted trade does, in its side's words and in dollars, as the receipt will say it: the stock, what you pay
+ * (a buy) or sell (a sell), at what price, what you get about, the fair price check and the least out.
+ */
 export function QuoteSummary({ stock, quote }: Readonly<{ stock: Pick<Stock, "symbol" | "name">; quote: Quote }>) {
   const buying = quote.side === "buy"
   return (
@@ -49,7 +46,9 @@ export function QuoteSummary({ stock, quote }: Readonly<{ stock: Pick<Stock, "sy
         <TickerChip symbol={stock.symbol} size="sm" />
         {stock.name}
       </OrderPreviewRow>
-      <OrderPreviewRow label="You pay">{buying ? usdc(quote.usdc) : shares(quote.shares)}</OrderPreviewRow>
+      <OrderPreviewRow label={buying ? "You pay" : "You sell"}>
+        {buying ? usdc(quote.usdc) : shares(quote.shares)}
+      </OrderPreviewRow>
       <OrderPreviewRow label="Price">{formatMoney(priceDollars(quote.price))} a share</OrderPreviewRow>
       <OrderPreviewRow label="You get about">{buying ? shares(quote.shares) : usdc(quote.usdc)}</OrderPreviewRow>
       <OrderPreviewRow label="Fair price check">
@@ -77,7 +76,7 @@ export function QuoteSummarySkeleton({ stock, side }: Readonly<{ stock: Stock; s
           <TickerChip symbol={stock.symbol} size="sm" />
           {stock.name}
         </OrderPreviewRow>
-        <OrderPreviewRow label="You pay">{value("w-24")}</OrderPreviewRow>
+        <OrderPreviewRow label={side === "buy" ? "You pay" : "You sell"}>{value("w-24")}</OrderPreviewRow>
         <OrderPreviewRow label="Price">{value("w-28")}</OrderPreviewRow>
         <OrderPreviewRow label="You get about">{value("w-28")}</OrderPreviewRow>
         <OrderPreviewRow label="Fair price check">{value("w-20")}</OrderPreviewRow>

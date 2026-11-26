@@ -207,17 +207,15 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
         const started = yield* runs.start({ automationId, userId: row.userId, windowKey, trigger })
         if (started.row.outcome !== "running") return
 
-        const result = yield* run(row, started.row.id, trigger).pipe(
-          Effect.catchCause((cause) =>
-            Effect.logWarning(`Automation ${automationId} failed to run`, cause).pipe(
-              Effect.as({
-                outcome: "failed" as RunOutcome,
-                reason: "It couldn't run; it will try again on its next fire.",
-                conditions: [],
-                intentIds: []
-              })
-            )
+        // A failed run's reason is read after the fact, maybe once the automation has ended: it says what went
+        // wrong, never that it will try again.
+        const failed = (reason: string) => (cause: unknown) =>
+          Effect.logWarning(`Automation ${automationId} failed to run`, cause).pipe(
+            Effect.as({ outcome: "failed" as RunOutcome, reason, conditions: [], intentIds: [] })
           )
+        const result = yield* run(row, started.row.id, trigger).pipe(
+          Effect.catchTag("ChainError", failed("It couldn't read your balances just then, so nothing was traded.")),
+          Effect.catchCause(failed("Something went wrong on bluechip's side, so nothing was traded."))
         )
         yield* runs.finish(started.row.id, result)
         if (result.outcome === "skipped" || result.outcome === "failed") return

@@ -4,15 +4,16 @@ import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { ChatCardState } from "@bluechip/ui/bluechip/chat-card"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
-import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
-import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { useNow } from "../../../../hooks/useNow.ts"
 import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
 import { nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
+import { useApprovalGroup } from "../../hooks/useApprovalGroup.ts"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
 import { shownDecision } from "../../model/intentText.ts"
+import { ApprovalBody } from "../approvals/ApprovalBody.tsx"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { FilledTrade } from "../FilledTrade.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
@@ -24,44 +25,11 @@ const ENDED_QUIETLY: Partial<Record<Intent["status"], string>> = {
   cancelled: "You cancelled it."
 }
 
-/** Approve with Face ID or Decline, for a trade over the agent's largest trade. */
-function ApproveHere(
-  { flow, onApprove, onDecline }: Readonly<{
-    flow: ReturnType<typeof useApproveIntent>["flow"]
-    onApprove: () => void
-    onDecline: () => void
-  }>
-) {
-  const busy = flow.status === "preparing" || flow.status === "signing" || flow.status === "declining"
-
-  return (
-    <div className="grid gap-2.5">
-      {flow.status === "failed" ?
-        (
-          <Alert variant="destructive">
-            <AlertDescription>{flow.message}</AlertDescription>
-          </Alert>
-        ) :
-        null}
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button variant="ghost" loading={flow.status === "declining"} disabled={busy} onClick={onDecline}>
-          Decline
-        </Button>
-        <Button disabled={busy} aria-busy={busy || undefined} onClick={onApprove}>
-          {flow.status === "preparing" || flow.status === "signing" ?
-            <Spinner size={16} /> :
-            <Icon name="face-id" size={16} />}
-          <TextMorph>{flow.status === "signing" ? "Waiting for Face ID…" : "Approve with Face ID"}</TextMorph>
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 /**
- * A trade you asked the agent for (or your own, once signed), followed live, with its receipt once it fills: checked against its policies, then sent by the agent, waiting for
- * your Face ID (approve it right here), blocked by a policy, or waiting to be tried again. With `onDone`, an ended
- * trade offers to start another.
+ * A trade you asked the agent for (or your own, once signed), followed live, with its receipt once it fills: checked
+ * against its policies, then sent by the agent, waiting for your Face ID (the shared approval body, with the trades
+ * of its plan sent with it), blocked by a policy, or waiting to be tried again. With `onDone`, an ended trade offers
+ * to start another.
  */
 export function AgentTradeProgress(
   { intent: asked, nameOf, onDone }: Readonly<{
@@ -70,7 +38,10 @@ export function AgentTradeProgress(
     onDone?: () => void
   }>
 ) {
-  const { approve, decline, flow, intent } = useApproveIntent(asked)
+  const together = useApprovalGroup(asked)
+  const approval = useApproveIntent(asked, together)
+  const { flow, intent } = approval
+  const now = useNow(30_000)
   const status = INTENT_STATUS[intent.status]
   const decision = shownDecision(intent)
   const deciding = intent.status === "proposed" || intent.status === "deciding"
@@ -92,7 +63,8 @@ export function AgentTradeProgress(
 
   // Once sent, Base takes a couple of seconds: one place that turns from the wait into the fill or the failure, then
   // the receipt of what filled.
-  if (stage !== null) {
+  // Approved here with others of its plan: the approval body follows every trade sent with the signature.
+  if (stage !== null && !(flow.status === "approved" && together.length > 0)) {
     const text = tradeOutcome(stage, intent.leg.side, trade)
     return (
       <div className="grid gap-3">
@@ -118,7 +90,7 @@ export function AgentTradeProgress(
           </p>
         ) :
         null}
-      {decision !== null && !deciding ? <DecisionLine decision={decision} /> : null}
+      {decision !== null && !deciding && !needsYou ? <DecisionLine decision={decision} /> : null}
       {intent.status === "blocked" || quiet !== undefined ?
         (
           <p className="inline-flex items-center gap-1.5 text-label-sm text-g-600">
@@ -127,8 +99,8 @@ export function AgentTradeProgress(
           </p>
         ) :
         null}
-      {needsYou ?
-        <ApproveHere flow={flow} onApprove={() => void approve()} onDecline={() => void decline()} /> :
+      {needsYou || flow.status === "approved" ?
+        <ApprovalBody approval={approval} together={together} now={now} /> :
         null}
 
       {intent.status === "waiting" || intent.status === "proposed" || again !== null ?

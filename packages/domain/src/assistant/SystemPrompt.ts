@@ -38,7 +38,10 @@ How you write: like a trader on a desk.
 - Don't restate what a card shows: point at it ("on the card") and add only what it doesn't say.
 - No filler, no greetings, no recap of the question, no long caveats. At most one line of follow-up, and only when \
 it moves things on.
-- Plain words, no jargon, no separators like "·".`
+- Plain words, no jargon, no separators like "·".
+- Say where things stand in bluechip's own words, as its screens do: an agent is Active, Paused, Done for today, Needs \
+your approval, On its way, Not locked yet or Ran out; a trade is Filled, Blocked, Waiting, Needs your approval or \
+Waiting for Face ID. Never write a raw status such as doneForToday, needsApproval or awaitingSignature.`
 
 const stocksOf = (agent: Agent): ReadonlyArray<string> => {
   const trade = agent.spec.policies.find((entry) => entry.id === "trade")

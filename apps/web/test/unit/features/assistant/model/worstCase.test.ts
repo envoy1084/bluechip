@@ -102,9 +102,24 @@ describe("worstCaseLines", () => {
         weeklyLossBps: 50
       },
       expected: [
-        "On its worst day it could spend $250 in up to 5 trades of $100, $1,750 in a week.",
+        "On its worst day it could spend $250 in trades of up to $100, $1,750 in a week.",
         "Each trade stays close to Chainlink's price, so prices could cost it at most $5 a day, $35 a week.",
         "It stops once it has lost 0.5% of your money to prices in a week.",
+        "It can never send money out of your account."
+      ]
+    },
+    {
+      name: "its count of trades spends the whole budget",
+      worst: {
+        daySpend: usd(200),
+        trades: 2,
+        perTrade: usd(100),
+        dayMoved: usd(200),
+        dayLoss: null,
+        weeklyLossBps: null
+      },
+      expected: [
+        "On its worst day it could spend $200 in up to 2 trades of $100, $1,400 in a week.",
         "It can never send money out of your account."
       ]
     },

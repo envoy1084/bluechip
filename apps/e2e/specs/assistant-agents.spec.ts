@@ -17,7 +17,7 @@ const draftAppleWeekly = async (page: Page, replies: Replies) => {
       [{ text: "Here's the draft. Lock it with Face ID when you're happy." }]
     ]
   })
-  return page.getByRole("region", { name: "Draft agent" })
+  return page.getByRole("region", { name: /^(Draft agent|New agent)$/ })
 }
 
 /** Makes "Chip picker" through the new agent flow, then opens a new chat. */
@@ -40,8 +40,9 @@ test.describe("draft agent cards", () => {
 
     await card.getByRole("button", { name: "Lock with Face ID" }).click()
 
-    await expect(card.getByText("Active", { exact: true }).first()).toBeVisible()
-    await card.getByRole("link", { name: "Open Apple weekly" }).click()
+    await expect(page.getByRole("region", { name: "New agent" }).getByText("Active", { exact: true }).first())
+      .toBeVisible()
+    await card.getByRole("link", { name: "Open agent" }).click()
     await expect(page).toHaveURL(/\/agents\/agent_[0-9a-z]+$/)
   })
 
@@ -68,7 +69,7 @@ test.describe("draft agent cards", () => {
         [{ text: "Here's the draft, with its weekly buys." }]
       ]
     })
-    const card = page.getByRole("region", { name: "Draft agent" })
+    const card = page.getByRole("region", { name: /^(Draft agent|New agent)$/ })
     await expect(card.getByText("It comes with these automations. They start once it's live.")).toBeVisible()
 
     await card.getByRole("switch", { name: "Keep: Weekly buy of NVDA" }).click()
@@ -105,7 +106,7 @@ test.describe("policy change cards", () => {
     await card.getByRole("button", { name: "Approve with Face ID" }).click()
 
     await expect(card.getByText("Active", { exact: true })).toBeVisible()
-    await expect(card.getByRole("link", { name: "Open Chip picker" })).toBeVisible()
+    await expect(card.getByRole("link", { name: "Open agent" })).toBeVisible()
   })
 
   test("a renewal is signed with Face ID from the card", async ({ page, funded: _funded, replies }) => {
@@ -120,7 +121,7 @@ test.describe("policy change cards", () => {
     await card.getByRole("button", { name: "Renew with Face ID" }).click()
 
     await expect(card.getByText("Active", { exact: true })).toBeVisible()
-    await expect(card.getByRole("link", { name: "Open Chip picker" })).toBeVisible()
+    await expect(card.getByRole("link", { name: "Open agent" })).toBeVisible()
   })
 
   test("a removal is signed with Face ID from the card", async ({ page, funded: _funded, replies }) => {
@@ -183,7 +184,7 @@ test.describe("agent control cards", () => {
     await card.getByRole("button", { name: "Not now" }).click()
 
     await expect(card.getByText("You left it as it was.")).toBeVisible()
-    await expect(card.getByText("Not now", { exact: true })).toBeVisible()
+    await expect(card.getByText("Dismissed", { exact: true })).toBeVisible()
     await page.goto(`/agents/${agent.id}`)
     await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible()
   })

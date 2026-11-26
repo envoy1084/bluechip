@@ -28,7 +28,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hoo
 import { Link, useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
+import { type RefObject, useRef, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { ConfirmDialog } from "../../../components/ConfirmDialog.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
@@ -44,11 +44,13 @@ const reactivityKeys = [assistantReactivityKey]
  * while the dialog closes, so its words don't change on the way out.
  */
 function DeleteChatDialog(
-  { conversation, open, onOpenChange, current }: Readonly<{
+  { conversation, open, onOpenChange, current, returnFocus }: Readonly<{
     conversation: Conversation | null
     open: boolean
     onOpenChange: (open: boolean) => void
     current: ConversationId | null
+    /** The row's More button it was opened from, focused again when you keep the chat. */
+    returnFocus: RefObject<HTMLElement | null>
   }>
 ) {
   const remove = useAtomSet(deleteConversationAtom, { mode: "promise" })
@@ -57,6 +59,7 @@ function DeleteChatDialog(
   const confirm = (id: ConversationId) =>
     remove({ params: { id }, reactivityKeys }).then(
       () => {
+        toast.success("Chat deleted")
         if (id === current) void navigate({ to: "/chat/{-$conversationId}", params: { conversationId: undefined } })
       },
       () => toast.error("We couldn't delete that chat", { description: "Check your connection and try again." })
@@ -66,8 +69,11 @@ function DeleteChatDialog(
     <ConfirmDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={`Delete “${conversation?.title ?? "New chat"}”?`}
-      consequence="Its messages and cards go for good, and an answer still coming stops. What bluechip remembers from it stays on the memory page, and trades it made stay in your activity."
+      finalFocus={returnFocus}
+      title="Delete this chat?"
+      consequence={`“${
+        conversation?.title ?? "New chat"
+      }” and its cards go for good. If bluechip is still answering, it stops. What it remembers from the chat stays on the memory page, and any trades stay in your activity.`}
       action={{
         _tag: "danger",
         label: "Delete chat",
@@ -86,6 +92,8 @@ function Threads({ current }: Readonly<{ current: ConversationId | null }>) {
   const [now] = useState(() => new Date())
   const [deleting, setDeleting] = useState<Conversation | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const moreButtons = useRef(new Map<ConversationId, HTMLElement>())
+  const returnFocus = useRef<HTMLElement | null>(null)
 
   if (AsyncResult.isInitial(conversations)) {
     return (
@@ -120,14 +128,15 @@ function Threads({ current }: Readonly<{ current: ConversationId | null }>) {
                 render={<Link to="/chat/{-$conversationId}" params={{ conversationId: conversation.id }} />}
                 className="h-auto items-start py-2 pr-10"
               >
-                {/* `contents` keeps the avatar out of the button's `> span` label styles (flex-1, truncate). */}
-                {agent === undefined ?
-                  <Icon name="chat" className="mt-0.5" /> :
-                  (
-                    <i className="contents">
-                      <AgentAvatar agentId={agent.id} size="sm" />
-                    </i>
-                  )}
+                {
+                  /* One slot for the agent's butterfly or the chat icon, so every title starts at the same place; an
+                    `i`, not a span, keeps it out of the button's `> span` label styles (flex-1, truncate). */
+                }
+                <i className="grid h-[26px] w-[26px] shrink-0 place-items-center not-italic">
+                  {agent === undefined ?
+                    <Icon name="chat" size={18} /> :
+                    <AgentAvatar agentId={agent.id} size="sm" />}
+                </i>
                 <span className="grid gap-px">
                   <span className="truncate">{title}</span>
                   <span className="truncate text-caption font-normal text-g-500">
@@ -140,6 +149,10 @@ function Threads({ current }: Readonly<{ current: ConversationId | null }>) {
                 <DropdownMenuTrigger
                   render={
                     <Button
+                      ref={(button: HTMLButtonElement | null) => {
+                        if (button === null) moreButtons.current.delete(conversation.id)
+                        else moreButtons.current.set(conversation.id, button)
+                      }}
                       variant="ghost"
                       size="icon-sm"
                       aria-label={`More for ${title}`}
@@ -153,6 +166,7 @@ function Threads({ current }: Readonly<{ current: ConversationId | null }>) {
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={() => {
+                      returnFocus.current = moreButtons.current.get(conversation.id) ?? null
                       setDeleting(conversation)
                       setConfirming(true)
                     }}
@@ -165,7 +179,13 @@ function Threads({ current }: Readonly<{ current: ConversationId | null }>) {
           )
         })}
       </SidebarMenu>
-      <DeleteChatDialog conversation={deleting} open={confirming} onOpenChange={setConfirming} current={current} />
+      <DeleteChatDialog
+        conversation={deleting}
+        open={confirming}
+        onOpenChange={setConfirming}
+        current={current}
+        returnFocus={returnFocus}
+      />
     </>
   )
 }

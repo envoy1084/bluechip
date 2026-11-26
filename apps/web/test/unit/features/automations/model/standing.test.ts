@@ -24,9 +24,9 @@ describe("attentionOf", () => {
       {
         name: "its last run failed",
         automation: running,
-        runs: [{ outcome: "failed" }],
+        runs: [{ outcome: "failed", reason: "It couldn't read your balances just then, so nothing was traded." }],
         agent: { status: "active", paused: false },
-        expected: "Its last run didn't go through."
+        expected: "Its last run failed. It couldn't read your balances just then, so nothing was traded."
       },
       {
         name: "its agent is paused",
@@ -60,7 +60,7 @@ describe("attentionOf", () => {
       {
         name: "a running one whose agent can trade",
         automation: running,
-        runs: [{ outcome: "skipped" }],
+        runs: [{ outcome: "skipped", reason: "The market is closed." }],
         agent: { status: "active", paused: false },
         expected: null
       },
@@ -74,7 +74,7 @@ describe("attentionOf", () => {
       {
         name: "a paused one, even though its last run failed",
         automation: { status: "paused", agentId: AGENT },
-        runs: [{ outcome: "failed" }],
+        runs: [{ outcome: "failed", reason: "Something went wrong on bluechip's side, so nothing was traded." }],
         agent: { status: "active", paused: true },
         expected: null
       }

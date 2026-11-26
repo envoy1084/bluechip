@@ -1,7 +1,7 @@
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { Bps, Usdc } from "@bluechip/domain/market/Units"
 import { assert, describe, it } from "@effect/vitest"
-import { mixParts, movers } from "../../../../../src/features/home/model/holdings.ts"
+import { mixParts, movers, wholePercents } from "../../../../../src/features/home/model/holdings.ts"
 
 const NAMES: Readonly<Record<string, string>> = { AAPL: "Apple", NVDA: "Nvidia", MSFT: "Microsoft", TSLA: "Tesla" }
 const nameOf = (symbol: StockSymbol) => NAMES[symbol] ?? symbol
@@ -67,5 +67,17 @@ describe("mixParts", () => {
       ["TSLA", 14],
       ["others", 14]
     ])
+  })
+})
+
+describe("wholePercents", () => {
+  it.each([
+    { name: "already whole", percents: [30, 20, 50], expected: [30, 20, 50] },
+    { name: "thirds: the first takes the point left", percents: [100 / 3, 100 / 3, 100 / 3], expected: [34, 33, 33] },
+    { name: "12.5, 12.5, 75: 100, not 101", percents: [12.5, 12.5, 75], expected: [13, 12, 75] },
+    { name: "the biggest remainder takes the point", percents: [12.6, 12.3, 75.1], expected: [13, 12, 75] },
+    { name: "nothing", percents: [], expected: [] }
+  ])("$name", ({ expected, percents }) => {
+    assert.deepStrictEqual(wholePercents(percents.map((percent) => ({ percent }))), expected)
   })
 })

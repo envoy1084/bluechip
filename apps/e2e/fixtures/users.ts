@@ -25,12 +25,12 @@ export const signUp = async (page: Page): Promise<User> => {
   await page.getByRole("button", { name: "Create account with Face ID" }).click()
   await expect(page.getByRole("heading", { name: "Your account is ready" })).toBeVisible()
   await page.getByRole("button", { name: "Continue" }).click()
-  await expect(page.getByRole("heading", { name: "Where do you live?" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Are you a US citizen or resident?" })).toBeVisible()
   // The answer is read from the account first; Continue saves it only once the form shows it.
   await expect(page.getByText("You can use bluechip.")).toBeVisible()
   await page.getByRole("button", { name: "Continue" }).click()
-  await expect(page.getByRole("heading", { name: "Deposit cash", level: 1 })).toBeVisible()
-  await page.getByRole("button", { name: "Skip for now" }).click()
+  await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
+  await page.getByRole("button", { name: "Go to home" }).click()
   await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 
   const me = await (await page.request.get("/api/account", { headers: apiHeaders })).json() as {

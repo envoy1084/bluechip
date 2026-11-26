@@ -35,7 +35,7 @@ test.describe("memory cards", () => {
     await card.getByRole("link", { name: "See what bluechip remembers" }).click()
     await expect(page).toHaveURL(/\/memory$/)
     await expect(page.getByText("You never want Tesla.")).toBeVisible()
-    await expect(page.getByText(/^You said it, on /)).toBeVisible()
+    await expect(page.getByText(/^You said it on /)).toBeVisible()
   })
 
   test("a memory bluechip is asked to forget is gone from the memory page", async ({ page, user: _user, replies }) => {
@@ -64,7 +64,7 @@ test.describe("memory cards", () => {
     await expect(card.getByText("Remembered")).toBeVisible()
     await page.goto("/memory")
     await expect(page.getByText("You have kids.")).toBeVisible()
-    await expect(page.getByText(/^Inferred, 60% sure, on /)).toBeVisible()
+    await expect(page.getByText(/^Inferred on .*, 60% sure$/)).toBeVisible()
     await expect(page.getByRole("region", { name: /^To confirm/ })).toBeHidden()
   })
 
@@ -103,11 +103,13 @@ test.describe("the memory page", () => {
     await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })
 
-  test("a memory is deleted from its row", async ({ page, user: _user, replies }) => {
+  test("a memory is deleted from its row, once you confirm", async ({ page, user: _user, replies }) => {
     await rememberTesla(page, replies)
     await page.goto("/memory")
 
     await page.getByRole("button", { name: "Delete: You never want Tesla." }).click()
+    await page.getByRole("alertdialog", { name: "Delete this memory?" }).getByRole("button", { name: "Delete memory" })
+      .click()
 
     await expect(page.getByText("Nothing remembered yet")).toBeVisible()
   })

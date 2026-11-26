@@ -8,8 +8,8 @@ import { useState } from "react"
 import { SectionHeader } from "../../../components/layout/SectionHeader.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useListedAutomations } from "../hooks/useListedAutomations.ts"
-import { type Filter, shows, sortListed } from "../model/standing.ts"
-import { takesAutomations } from "../model/traders.ts"
+import { type Filter, FILTERS_FROM, shows, sortListed } from "../model/standing.ts"
+import { specOf, takesAutomations } from "../model/traders.ts"
 import { AutomationRows } from "./list/AutomationRows.tsx"
 import { AutomationsOverview, FilterTabs } from "./list/AutomationsOverview.tsx"
 import { FilterEmpty, NoAutomations } from "./list/ListEmpty.tsx"
@@ -50,7 +50,12 @@ export function AgentAutomations({ agent }: Readonly<{ agent: Agent }>) {
     const rows = listed.value
     if (rows.length === 0) {
       return (
-        <NoAutomations title="No automations yet" {...(open ? { actions: newAutomation("md") } : {})}>
+        <NoAutomations
+          title="No automations yet"
+          {...(open ?
+            { actions: newAutomation("md"), start: { specs: [specOf(agent)], agentId: agent.id } } :
+            {})}
+        >
           {open ?
             `Have ${agent.name} trade on a schedule, a price move or the news, always inside its rules.` :
             `${agent.name} can take automations once it runs.`}
@@ -58,13 +63,14 @@ export function AgentAutomations({ agent }: Readonly<{ agent: Agent }>) {
       )
     }
 
-    const shown = sortListed(rows.filter((row) => shows(row, filter)))
+    const filtered = rows.length < FILTERS_FROM ? "all" : filter
+    const shown = sortListed(rows.filter((row) => shows(row, filtered)))
     return (
       <>
         <AutomationsOverview listed={rows} now={now} compact />
-        <FilterTabs listed={rows} filter={filter} onChange={setFilter} />
-        {shown.length === 0 && filter !== "all"
-          ? <FilterEmpty filter={filter} />
+        {rows.length < FILTERS_FROM ? null : <FilterTabs listed={rows} filter={filter} onChange={setFilter} />}
+        {shown.length === 0 && filtered !== "all"
+          ? <FilterEmpty filter={filtered} />
           : <AutomationRows rows={shown} showTrader={false} now={now} />}
       </>
     )

@@ -3,6 +3,7 @@ import { assert, describe, it } from "@effect/vitest"
 import {
   countdown,
   dayGone,
+  limitOf,
   shownLimits,
   standingOf,
   todayRoom
@@ -51,6 +52,21 @@ describe("standingOf", () => {
     { name: "a limit of $0", used: 0, limit: 0, expected: "open" }
   ])("$name: $expected", ({ expected, limit, used }) => {
     assert.strictEqual(standingOf(budget(used, limit)), expected)
+  })
+
+  it("trades at the default count: open, whatever it made", () => {
+    assert.strictEqual(standingOf(trades(499, 500)), "open")
+  })
+})
+
+describe("limitOf", () => {
+  it.each([
+    { name: "a budget: its own limit", counted: budget(10, 250), expected: BigInt(250) * DOLLAR as bigint | null },
+    { name: "trades just under the default count", counted: trades(3, 499), expected: BigInt(499) },
+    { name: "trades at the default count: no limit of its own", counted: trades(3, 500), expected: null },
+    { name: "trades over the default count", counted: trades(3, 2000), expected: null }
+  ])("$name", ({ counted, expected }) => {
+    assert.strictEqual(limitOf(counted), expected)
   })
 })
 

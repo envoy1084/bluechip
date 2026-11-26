@@ -51,7 +51,7 @@ export const priceCross = Trigger.make({
   fields: {
     symbol: new Field({ label: "Stock", unit: "stock" }),
     level: new Field({ label: "Price", unit: "price", min: 1 }),
-    direction: new Field({ label: "Goes", unit: "choice" })
+    direction: new Field({ label: "Direction", unit: "choice" })
   },
   defaults: { symbol: "AAPL", level: Price.make(BigInt(25_000_000_000)), direction: "above" },
   check: (config, context) => [

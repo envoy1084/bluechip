@@ -1,4 +1,5 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
+import type { Trigger } from "@bluechip/domain/automations/Automation"
 import { DEFAULT_SETTINGS } from "@bluechip/domain/automations/Settings"
 import type { AgentId, RequestId } from "@bluechip/domain/Ids"
 import type { Stock } from "@bluechip/domain/market/Market"
@@ -16,13 +17,18 @@ import { localTimeZone } from "../../../lib/localTime.ts"
 import { changedKeys, createAutomationAtom } from "../atoms/automations.ts"
 import { AutomationEditor } from "../components/editor/AutomationEditor.tsx"
 import { ScreenState } from "../components/ScreenState.tsx"
-import { newDraft } from "../model/drafts.ts"
+import { catalogEntry, newDraft, whyUnavailable } from "../model/drafts.ts"
 import { specOf, stocksOf, takesAutomations, traderName } from "../model/traders.ts"
 
 const YOU = "you"
 
-/** A new automation: for `agentId` (from its page), or for whoever you pick (from the list), then the editor. */
-export function NewAutomationScreen({ agentId }: Readonly<{ agentId?: AgentId | undefined }>) {
+/**
+ * A new automation: for `agentId` (from its page), or for whoever you pick (from the list), then the editor, started
+ * on `trigger` when an example was picked (with the first agent that can run it, when you can't).
+ */
+export function NewAutomationScreen(
+  { agentId, trigger }: Readonly<{ agentId?: AgentId | undefined; trigger?: Trigger["type"] | undefined }>
+) {
   const agents = useAtomValue(agentsAtom)
   const stocks = useAtomValue(stocksAtom)
   const refreshAgents = useAtomRefresh(agentsAtom)
@@ -30,8 +36,15 @@ export function NewAutomationScreen({ agentId }: Readonly<{ agentId?: AgentId | 
 
   if (AsyncResult.isSuccess(agents) && AsyncResult.isSuccess(stocks)) {
     const traders = agents.value.filter(takesAutomations)
-    const start = traders.find((agent) => agent.id === agentId) ?? null
-    return <NewAutomation traders={traders} start={start} stocks={stocks.value} />
+    const runs = (agent: Agent | null) =>
+      trigger === undefined ||
+      whyUnavailable(catalogEntry("trigger", trigger), {
+          spec: agent === null ? null : specOf(agent),
+          trigger
+        }) === null
+    const start = traders.find((agent) => agent.id === agentId) ??
+      (runs(null) ? null : traders.find(runs) ?? null)
+    return <NewAutomation traders={traders} start={start} trigger={trigger ?? "schedule"} stocks={stocks.value} />
   }
   return (
     <ScreenState
@@ -47,9 +60,10 @@ export function NewAutomationScreen({ agentId }: Readonly<{ agentId?: AgentId | 
 }
 
 function NewAutomation(
-  { traders, start, stocks }: Readonly<{
+  { traders, start, trigger: startTrigger, stocks }: Readonly<{
     traders: ReadonlyArray<Agent>
     start: Agent | null
+    trigger: Trigger["type"]
     stocks: ReadonlyArray<Stock>
   }>
 ) {
@@ -79,7 +93,7 @@ function NewAutomation(
       <AutomationEditor
         // A different trader starts the automation again, on its stocks and rules.
         key={trader?.id ?? YOU}
-        initial={newDraft(trader?.id ?? null, choices[0]!.symbol, DEFAULT_SETTINGS)}
+        initial={newDraft(trader?.id ?? null, choices[0]!.symbol, DEFAULT_SETTINGS, startTrigger)}
         context={{ stocks: choices, nameOf, zone: localTimeZone() }}
         spec={spec}
         whoTrades={

@@ -1,21 +1,20 @@
 import type { Portfolio } from "@bluechip/domain/portfolio/Portfolio"
 import { MixBar, mixColor } from "@bluechip/ui/bluechip/mix-bar"
-import { PortfolioSummaryError, PortfolioSummarySkeleton } from "@bluechip/ui/bluechip/portfolio-summary"
-import { PriceChange } from "@bluechip/ui/bluechip/price-change"
+import { MoneyCard as MoneyCardFrame, MoneyCardSkeleton } from "@bluechip/ui/bluechip/portfolio-summary"
 import { Sparkline, sparklineTone } from "@bluechip/ui/bluechip/sparkline"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatMoney } from "@bluechip/ui/lib/format"
-import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom, portfolioHistoryAtom } from "../../../atoms/portfolio.ts"
+import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { usdcDollars } from "../../../lib/amounts.ts"
 import { moneySummary } from "../../../lib/moneySummary.ts"
-import { mixParts } from "../model/holdings.ts"
+import { mixParts, wholePercents } from "../model/holdings.ts"
 
 const WEEK = 7 * 86_400_000
 const TREND = { up: "up", down: "down", flat: "flat", brand: "flat" } as const
@@ -44,8 +43,9 @@ function WeekSpark({ portfolio }: Readonly<{ portfolio: Portfolio }>) {
 }
 
 /**
- * Your money: what it's worth with today's move and the week's shape, what it's in as one strip, and your cash with
- * Add cash. Loading keeps its shape; a failed read offers Try again.
+ * Your money on home, on the money card the portfolio shares: what it's worth with today's move and the week's shape,
+ * what it's in as one strip (whole percents that add up), and your cash with Add cash. Loading keeps its shape; a
+ * failed read offers Try again.
  */
 export function MoneyCard() {
   const portfolio = useAtomValue(portfolioAtom)
@@ -53,39 +53,31 @@ export function MoneyCard() {
   const openCash = useAtomSet(cashDialogAtom)
   const { nameOf } = useStockLookup()
 
-  if (AsyncResult.isInitial(portfolio)) return <PortfolioSummarySkeleton />
-  if (!AsyncResult.isSuccess(portfolio)) return <PortfolioSummaryError onRetry={refresh} />
+  if (AsyncResult.isInitial(portfolio)) return <MoneyCardSkeleton />
+  if (!AsyncResult.isSuccess(portfolio)) {
+    return <LoadProblem what="your money" onRetry={refresh} safe variant="card" />
+  }
 
   const { value, dayChange, dayChangePercent, cash } = moneySummary(portfolio.value, nameOf)
   const parts = mixParts(portfolio.value, nameOf)
+  const percents = wholePercents(parts)
 
   return (
-    <section aria-labelledby="money-title" className="grid gap-4 rounded-lg bg-white px-5 py-[18px] shadow-e2">
-      <div className="flex items-end justify-between gap-6">
-        <div className="grid gap-1">
-          <h2 id="money-title" className="text-label text-g-500">Your money</h2>
-          <NumberRoll
-            value={value}
-            format={formatMoney}
-            className="text-[34px] leading-none font-semibold tracking-[-0.04em]"
-          />
-          <span className="flex flex-wrap items-center gap-1.5 text-label text-g-500">
-            <PriceChange value={dayChangePercent} amount={dayChange} />
-            today
-          </span>
-        </div>
-        <WeekSpark portfolio={portfolio.value} />
-      </div>
-
+    <MoneyCardFrame
+      value={value}
+      dayChange={dayChange}
+      dayChangePercent={dayChangePercent}
+      aside={<WeekSpark portfolio={portfolio.value} />}
+    >
       {parts.length === 0 ? null : (
         <div className="grid gap-2">
           <MixBar parts={parts} />
           <ul className="flex flex-wrap gap-x-3.5 gap-y-1 text-label-sm" aria-hidden>
-            {parts.map((part) => (
+            {parts.map((part, index) => (
               <li key={part.id} className="flex items-center gap-1.5">
                 <i className="size-2 rounded-full" style={{ background: mixColor(part.id) }} />
                 <span className="text-g-700">{part.label}</span>
-                <span className="text-g-500 tabular-nums">{Math.round(part.percent)}%</span>
+                <span className="text-g-500 tabular-nums">{percents[index]}%</span>
               </li>
             ))}
           </ul>
@@ -98,6 +90,6 @@ export function MoneyCard() {
           <Icon name="plus" size={14} />Add cash
         </Button>
       </div>
-    </section>
+    </MoneyCardFrame>
   )
 }

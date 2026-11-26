@@ -2,9 +2,11 @@ import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import { profitRanges, valueRanges } from "../../../../../src/features/portfolio/model/chartRanges.ts"
 
+const NOTE = "Change in value, including deposits and withdrawals"
+
 describe("valueRanges", () => {
   it("no snapshots: the month alone, empty", () => {
-    assert.deepStrictEqual(valueRanges([]), [{ id: "1M", description: "Past 30 days", points: [] }])
+    assert.deepStrictEqual(valueRanges([]), [{ id: "1M", description: "Past 30 days", changeNote: NOTE, points: [] }])
   })
 
   it("snapshots all within the week: the month alone", () => {
@@ -16,7 +18,12 @@ describe("valueRanges", () => {
     assert.deepStrictEqual(valueRanges(points), [{
       id: "1M",
       description: "Past 30 days",
-      points: [{ value: 1000, label: "Thu 26 Nov, 08:00" }, { value: 1012.5, label: "Thu 26 Nov, 12:00" }]
+      changeNote: NOTE,
+      points: [{ value: 1000, label: "Thu 26 Nov, 08:00", tick: "26 Nov" }, {
+        value: 1012.5,
+        label: "Thu 26 Nov, 12:00",
+        tick: "26 Nov"
+      }]
     }])
   })
 
@@ -32,16 +39,22 @@ describe("valueRanges", () => {
       {
         id: "1W",
         description: "Past week",
-        points: [{ value: 960, label: "Thu 19 Nov, 12:00" }, { value: 1000, label: "Thu 26 Nov, 12:00" }]
+        changeNote: NOTE,
+        points: [{ value: 960, label: "Thu 19 Nov, 12:00", tick: "19 Nov" }, {
+          value: 1000,
+          label: "Thu 26 Nov, 12:00",
+          tick: "26 Nov"
+        }]
       },
       {
         id: "1M",
         description: "Past 30 days",
+        changeNote: NOTE,
         points: [
-          { value: 900, label: "Sun 1 Nov, 12:00" },
-          { value: 950, label: "Thu 19 Nov, 11:59" },
-          { value: 960, label: "Thu 19 Nov, 12:00" },
-          { value: 1000, label: "Thu 26 Nov, 12:00" }
+          { value: 900, label: "Sun 1 Nov, 12:00", tick: "1 Nov" },
+          { value: 950, label: "Thu 19 Nov, 11:59", tick: "19 Nov" },
+          { value: 960, label: "Thu 19 Nov, 12:00", tick: "19 Nov" },
+          { value: 1000, label: "Thu 26 Nov, 12:00", tick: "26 Nov" }
         ]
       }
     ])

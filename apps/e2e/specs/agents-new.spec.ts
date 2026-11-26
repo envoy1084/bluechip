@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures/test.ts"
-import { canRules, createAgent, dayFromNow, openRule, startAgent } from "../utils/agents.ts"
+import { canRules, createAgent, dayFromNow, openRule, setFloors, startAgent } from "../utils/agents.ts"
 
 test.describe("new agent: template step", () => {
   test("it offers the four templates and scratch, the Stock picker first", async ({ page, user: _user }) => {
@@ -75,6 +75,7 @@ test.describe("new agent: from each template to live", () => {
   test("a Stop-loss guard of Apple is live", async ({ page, funded: _funded }) => {
     await startAgent(page, "Stop-loss guard")
     await page.getByRole("button", { name: "AAPL Apple" }).click()
+    await setFloors(page, ["AAPL Apple"])
     await page.getByRole("button", { name: "Review" }).click()
 
     await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
@@ -133,7 +134,7 @@ test.describe("new agent: review", () => {
 
     await expect(page.getByText("The worst case")).toBeVisible()
     await expect(page.getByText(/^On its worst day/)).toHaveText(
-      "On its worst day, this agent could make 12 trades of up to $100 each, spending at most $250 on buys, only in NVIDIA. It can never move money out of your account."
+      "On its worst day, this agent could spend at most $250 on buys, up to $100 a trade, in at most 12 trades, only in NVIDIA. It can never move money out of your account."
     )
   })
 
@@ -144,18 +145,19 @@ test.describe("new agent: review", () => {
     await page.getByRole("button", { name: "Review" }).click()
 
     await expect(page.getByText(/^On its worst day/)).toHaveText(
-      "On its worst day, this agent could make one trade of up to $100 each, spending at most $250 on buys, only in NVIDIA. It can never move money out of your account."
+      "On its worst day, this agent could spend at most $250 on buys, up to $100 a trade, in at most one trade, only in NVIDIA. It can never move money out of your account."
     )
   })
 
   test("the worst case of a Stop-loss guard spends nothing", async ({ page, user: _user }) => {
     await startAgent(page, "Stop-loss guard")
     await page.getByRole("button", { name: "AAPL Apple" }).click()
+    await setFloors(page, ["AAPL Apple"])
 
     await page.getByRole("button", { name: "Review" }).click()
 
     await expect(page.getByText(/^On its worst day/)).toHaveText(
-      "On its worst day, this agent could make 4 trades of up to $100 each, only in Apple. It can never move money out of your account."
+      "On its worst day, this agent could sell up to $100 a trade, in at most 4 trades, only in Apple. It never buys, and it can never move money out of your account."
     )
   })
 
@@ -163,7 +165,7 @@ test.describe("new agent: review", () => {
     await startAgent(page, "Stock picker")
     await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
     await openRule(page, "Trade size")
-    await page.getByRole("textbox", { name: "Ask me above" }).fill("60")
+    await page.getByRole("textbox", { name: "Ask you above" }).fill("60")
 
     await page.getByRole("button", { name: "Review" }).click()
 

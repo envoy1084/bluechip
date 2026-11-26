@@ -32,7 +32,7 @@ export function SaveTemplateCard(
     <ChatCard
       tag="Template"
       icon="layers"
-      state={status === "pending" ? "Waiting for you" : status === "applied" ? "Saved" : "Not now"}
+      state={status === "pending" ? "Waiting for you" : status === "applied" ? "Saved" : "Dismissed"}
       tone={status === "pending" ? "waiting" : status === "applied" ? "done" : "quiet"}
       footer={status === "pending" ?
         <ChatCardAnswer busy={busy} confirmLabel="Save template" onConfirm={onConfirm} onDismiss={onDismiss} /> :

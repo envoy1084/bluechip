@@ -115,9 +115,9 @@ describe("intentProblem", () => {
 
 describe("waitingText", () => {
   it.each<{ count: number; expected: string }>([
-    { count: 0, expected: "Nothing waiting for you" },
-    { count: 1, expected: "1 trade waiting for you" },
-    { count: 2, expected: "2 trades waiting for you" }
+    { count: 0, expected: "Nothing waits for your approval" },
+    { count: 1, expected: "1 trade waits for your approval" },
+    { count: 2, expected: "2 trades wait for your approval" }
   ])("$count", ({ count, expected }) => {
     assert.strictEqual(waitingText(count), expected)
   })

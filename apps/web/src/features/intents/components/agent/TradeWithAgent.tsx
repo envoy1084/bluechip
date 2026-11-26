@@ -18,6 +18,7 @@ import { useState } from "react"
 import { stocksAtom } from "../../../../atoms/market.ts"
 import { portfolioAtom } from "../../../../atoms/portfolio.ts"
 import { AmountInput, type AmountUnit } from "../../../../components/fields/AmountInput.tsx"
+import { SectionHeader } from "../../../../components/layout/SectionHeader.tsx"
 import { QuoteSummary, QuoteSummarySkeleton } from "../../../../components/trading/QuoteSummary.tsx"
 import { useQuote } from "../../../../hooks/useQuote.ts"
 import { parseShares, parseUsdc, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
@@ -110,9 +111,12 @@ export function TradeWithAgent(
 
   return (
     <section aria-labelledby={`trade-${agent.id}`} className="grid content-start gap-2.5">
-      <h3 id={`trade-${agent.id}`} className="px-0.5 text-label-sm font-semibold text-g-500">
-        Trade with this agent
-      </h3>
+      <SectionHeader
+        id={`trade-${agent.id}`}
+        level="h3"
+        title="Trade with this agent"
+        description="Its rules decide before anything is sent."
+      />
       <div className="grid gap-3.5 rounded-lg bg-white p-[18px] shadow-e2">
         {asking.status === "asked" ?
           (

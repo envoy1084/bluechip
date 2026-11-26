@@ -5,7 +5,7 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as Array from "effect/Array"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { activityAtom } from "../../../atoms/activity.ts"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
@@ -93,9 +93,13 @@ export function ActivityScreen() {
   const [period, setPeriod] = useState<Period>("7d")
   const [pageTokens, setPageTokens] = useState<ReadonlyArray<string>>([""])
   const [selected, setSelected] = useState<ActivityItem | undefined>(undefined)
+  const opener = useRef<HTMLElement | null>(null)
   const [now] = useState(() => new Date())
 
   const pages = useAtomValue(activityPagesAtom(`${kind} ${period} ${pageTokens.join(" ")}`))
+  // An account with no activity at all has nothing to filter: the filters wait for its first item.
+  const everything = useAtomValue(activityAtom("all all"))
+  const nothingEver = AsyncResult.isSuccess(everything) && everything.value.items.length === 0
   const agents = useAtomValue(agentsAtom)
   const { names } = useStockLookup()
 
@@ -155,7 +159,7 @@ export function ActivityScreen() {
         <div className="overflow-hidden rounded-lg bg-white shadow-e2">
           {Object.entries(days).map(([day, dayItems]) => (
             <section key={day} aria-label={day}>
-              <h2 className="border-b border-g-100 bg-g-50/70 px-5 py-2 text-caption font-semibold tracking-[0.02em] text-g-500 uppercase">
+              <h2 className="border-b border-g-100 bg-g-50/70 px-5 py-2 text-caption font-semibold text-g-500">
                 {day}
               </h2>
               <ul>
@@ -165,7 +169,10 @@ export function ActivityScreen() {
                     item={item}
                     names={names}
                     agentName={(id) => agentNames.get(id)}
-                    onOpen={() => setSelected(item)}
+                    onOpen={(row) => {
+                      opener.current = row
+                      setSelected(item)
+                    }}
                   />
                 ))}
               </ul>
@@ -196,14 +203,16 @@ export function ActivityScreen() {
 
   return (
     <AppPage title="Activity" sub="Every trade, and every dollar in and out">
-      <ActivityFilters
-        kind={kind}
-        period={period}
-        onKind={(next) => filter({ kind: next })}
-        onPeriod={(next) => filter({ period: next })}
-      />
+      {nothingEver ? null : (
+        <ActivityFilters
+          kind={kind}
+          period={period}
+          onKind={(next) => filter({ kind: next })}
+          onPeriod={(next) => filter({ period: next })}
+        />
+      )}
       {body()}
-      <ActivityDetails item={selected} names={names} onClose={() => setSelected(undefined)} />
+      <ActivityDetails item={selected} names={names} opener={opener} onClose={() => setSelected(undefined)} />
     </AppPage>
   )
 }

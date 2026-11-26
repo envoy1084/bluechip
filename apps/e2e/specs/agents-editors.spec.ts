@@ -55,7 +55,7 @@ test.describe("rules step: presets", () => {
         "$250 a day $100 per trade 30% max in one",
         "$500 a day $400 per trade 40% max in one"
       ]],
-      ["Stop-loss guard", ["$0 a day $50 per trade", "$0 a day $100 per trade", "$0 a day $400 per trade"]]
+      ["Stop-loss guard", ["No buys $50 per trade", "No buys $100 per trade", "No buys $400 per trade"]]
     ] as const
   ) {
     test(`a ${template} offers its three presets, Balanced picked`, async ({ page, user: _user }) => {
@@ -101,7 +101,7 @@ test.describe("rules step: presets", () => {
 
     await expect(page.getByRole("textbox", { name: "Daily budget" })).toHaveValue("500")
     await openRule(page, "Trade size")
-    await expect(page.getByRole("textbox", { name: "Ask me above" })).toHaveValue("400")
+    await expect(page.getByRole("textbox", { name: "Ask you above" })).toHaveValue("400")
     await expect(canRules(page).nth(1)).toHaveText("Spend up to $500 a day")
   })
 
@@ -230,8 +230,9 @@ test.describe("rules step: stocks and direction", () => {
   test("no stock can't be reviewed", async ({ page, user: _user }) => {
     await startAgent(page, "Stock picker")
 
+    await review(page).click()
     await expect(page.getByText("Pick at least one stock.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("two stocks are named in its rules", async ({ page, user: _user }) => {
@@ -309,8 +310,9 @@ test.describe("rules step: daily budget", () => {
 
     await page.getByRole("textbox", { name: "Daily budget" }).fill("2010")
 
+    await review(page).click()
     await expect(page.getByText("Pick $0 to $2,000.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("$0 for an agent that buys can't be reviewed", async ({ page, user: _user }) => {
@@ -318,41 +320,44 @@ test.describe("rules step: daily budget", () => {
 
     await page.getByRole("textbox", { name: "Daily budget" }).fill("0")
 
+    await review(page).click()
     await expect(page.getByText("Give it a daily budget to buy with.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 })
 
 test.describe("rules step: trade size", () => {
-  test("Ask me above is the largest trade it makes alone", async ({ page, user: _user }) => {
+  test("Ask you above is the largest trade it makes alone", async ({ page, user: _user }) => {
     await stockPicker(page)
 
     await openRule(page, "Trade size")
-    await page.getByRole("textbox", { name: "Ask me above" }).fill("70")
+    await page.getByRole("textbox", { name: "Ask you above" }).fill("70")
 
     await expect(canRules(page)).toHaveText(
       CAN.with(2, "Trade up to $70 at a time, and ask you before anything bigger")
     )
   })
 
-  test("Ask me above under $10 can't be reviewed", async ({ page, user: _user }) => {
+  test("Ask you above under $10 can't be reviewed", async ({ page, user: _user }) => {
     await stockPicker(page)
 
     await openRule(page, "Trade size")
-    await page.getByRole("textbox", { name: "Ask me above" }).fill("5")
+    await page.getByRole("textbox", { name: "Ask you above" }).fill("5")
 
+    await review(page).click()
     await expect(page.getByText("Pick $10 to $1,000.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
-  test("Ask me above over the daily budget can't be reviewed", async ({ page, user: _user }) => {
+  test("Ask you above over the daily budget can't be reviewed", async ({ page, user: _user }) => {
     await stockPicker(page)
 
     await openRule(page, "Trade size")
-    await page.getByRole("textbox", { name: "Ask me above" }).fill("300")
+    await page.getByRole("textbox", { name: "Ask you above" }).fill("300")
 
+    await review(page).click()
     await expect(page.getByText("Can't be more than the daily budget ($250).")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("the smallest trade is the least it trades", async ({ page, user: _user }) => {
@@ -364,15 +369,16 @@ test.describe("rules step: trade size", () => {
     await expect(neverRules(page)).toHaveText(NEVER.with(2, "Make a trade under $20"))
   })
 
-  test("a smallest trade over Ask me above can't be reviewed", async ({ page, user: _user }) => {
+  test("a smallest trade over Ask you above can't be reviewed", async ({ page, user: _user }) => {
     await stockPicker(page)
     await openRule(page, "Trade size")
-    await page.getByRole("textbox", { name: "Ask me above" }).fill("50")
+    await page.getByRole("textbox", { name: "Ask you above" }).fill("50")
 
     await page.getByRole("textbox", { name: "Smallest trade" }).fill("60")
 
+    await review(page).click()
     await expect(page.getByText("Can't be more than the largest trade.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 })
 
@@ -392,8 +398,9 @@ test.describe("rules step: max in one stock and cash reserve", () => {
     await openRule(page, "Max in one stock")
     await page.getByRole("textbox", { name: "Max in one stock" }).fill("2")
 
+    await review(page).click()
     await expect(page.getByText("Pick 5% to 100%.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("a max in one stock of 100% leaves no room for the cash reserve", async ({ page, user: _user }) => {
@@ -403,8 +410,9 @@ test.describe("rules step: max in one stock and cash reserve", () => {
     await page.getByRole("textbox", { name: "Max in one stock" }).fill("100")
 
     await expect(neverRules(page)).toHaveText(NEVER.toSpliced(4, 1))
+    await review(page).click()
     await expect(page.getByText("Cash reserve plus max in one stock can't pass 100%.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("a larger cash reserve is its rule", async ({ page, user: _user }) => {
@@ -431,8 +439,9 @@ test.describe("rules step: max in one stock and cash reserve", () => {
     await openRule(page, "Cash reserve")
     await page.getByRole("textbox", { name: "Cash reserve" }).fill("60")
 
+    await review(page).click()
     await expect(page.getByText("Pick 0% to 50%.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 })
 
@@ -453,9 +462,10 @@ test.describe("rules step: target mix", () => {
     await openRule(page, "Target mix")
     await page.getByRole("textbox", { name: "Apple target, percent" }).fill("40")
 
+    await review(page).click()
     await expect(page.getByText("Over your 30% max in one stock. Agents won't buy past 30%.")).toBeVisible()
     await expect(page.getByText("No stock's target can pass the max in one stock (30%).")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("cash under the cash reserve can't be reviewed", async ({ page, user: _user }) => {
@@ -467,9 +477,10 @@ test.describe("rules step: target mix", () => {
     await page.getByRole("textbox", { name: "Apple target, percent" }).fill("50")
     await page.getByRole("textbox", { name: "Nvidia target, percent" }).fill("45")
 
+    await review(page).click()
     await expect(page.getByText("Below your 10% cash reserve. Agents keep 10% anyway.")).toBeVisible()
     await expect(page.getByText("Cash's target can't be under the cash reserve (10%).")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test("a stock taken out of the mix asks for its target", async ({ page, user: _user }) => {
@@ -477,8 +488,9 @@ test.describe("rules step: target mix", () => {
 
     await page.getByRole("button", { name: "Remove Nvidia" }).click()
 
+    await review(page).click()
     await expect(page.getByText("Give every stock a target.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 
   test(
@@ -575,7 +587,8 @@ test.describe("rules step: advanced", () => {
     await openRule(page, "Trades a day")
     await page.getByRole("textbox", { name: "Trades a day" }).fill("49")
 
+    await review(page).click()
     await expect(page.getByText("Pick 1 to 48.")).toBeVisible()
-    await expect(review(page)).toBeDisabled()
+    await expect(page.getByText("Fix what's marked to review it.")).toBeVisible()
   })
 })

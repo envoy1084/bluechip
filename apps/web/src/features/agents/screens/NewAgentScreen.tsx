@@ -171,7 +171,7 @@ function NewAgentFlow(
 
   if (step === "rules") {
     return (
-      <NewAgentShell step="Rules" wide>
+      <NewAgentShell step="Rules">
         <PoliciesStep
           spec={spec}
           template={originPresets(origin)}
@@ -186,7 +186,7 @@ function NewAgentFlow(
   }
 
   return (
-    <NewAgentShell step="Review" wide>
+    <NewAgentShell step="Review">
       <ReviewStep
         origin={origin}
         spec={spec}

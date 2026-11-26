@@ -5,6 +5,7 @@ import { NotFound } from "@bluechip/domain/Errors"
 import { PricePoint } from "@bluechip/domain/market/Market"
 import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
+import { findAutomation } from "../../world/agents.ts"
 import {
   agentPerformanceOf,
   automationPerformanceOf,
@@ -95,10 +96,10 @@ export const PerformanceHandlers = HttpApiBuilder.group(
         }),
       automation: ({ params }) =>
         Effect.suspend(() => {
-          const performance = automationPerformanceOf(preview.world, params.id, Date.now())
-          return performance === undefined ?
+          const record = findAutomation(preview.world.agents, params.id)
+          return record === undefined || record.automation.status === "deleted" ?
             Effect.fail(new NotFound({ resource: "automation", id: params.id })) :
-            Effect.succeed(performance)
+            Effect.succeed(automationPerformanceOf(preview.world, params.id, record.runs))
         })
     })
   })

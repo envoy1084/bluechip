@@ -50,3 +50,16 @@ export const mixParts = (
     ...(portfolio.cash === BigInt(0) ? [] : [{ id: "cash", label: "Cash", percent: share(portfolio.cash) }])
   ]
 }
+
+/**
+ * The mix's shares as whole percents that add up to 100, for its legend: each rounded down, then the points left over
+ * go to the parts that lost most in rounding (12.5 + 12.5 + 75 reads 13 + 12 + 75, not 101).
+ */
+export const wholePercents = (parts: ReadonlyArray<Pick<MixPart, "percent">>): ReadonlyArray<number> => {
+  const floors = parts.map((part) => Math.floor(part.percent))
+  const left = Math.round(parts.reduce((sum, part) => sum + part.percent, 0)) - floors.reduce((a, b) => a + b, 0)
+  const byRemainder = parts.map((part, index) => ({ index, remainder: part.percent - floors[index]! }))
+    .toSorted((a, b) => b.remainder - a.remainder || a.index - b.index)
+  for (const { index } of byRemainder.slice(0, Math.max(0, left))) floors[index]! += 1
+  return floors
+}

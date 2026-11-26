@@ -16,11 +16,15 @@ export interface World {
 }
 
 /** The world of `cast` as of `now`. */
-export const makeWorld = (cast: Cast, now: Date): World => ({
-  cast,
-  now,
-  account: makeAccount(cast, now),
-  market: makeMarket(cast, now),
-  agents: makeAgents(cast, now),
-  assistant: makeAssistant(cast, now)
-})
+export const makeWorld = (cast: Cast, now: Date): World => {
+  // The agents' journals and usage are told from the market's trades, so every page counts the same ones.
+  const market = makeMarket(cast, now)
+  return {
+    cast,
+    now,
+    account: makeAccount(cast, now),
+    market,
+    agents: makeAgents(cast, now, market),
+    assistant: makeAssistant(cast, now)
+  }
+}

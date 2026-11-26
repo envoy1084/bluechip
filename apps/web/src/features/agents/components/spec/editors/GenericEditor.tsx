@@ -15,6 +15,7 @@ export function GenericEditor({ id, context, problemOf, onSpecChange }: EditorPr
         <FieldEditor
           key={name}
           field={field}
+          title={policy.title}
           value={config[name]}
           context={context}
           problem={problemOf(name)}

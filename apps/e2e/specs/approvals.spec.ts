@@ -18,7 +18,8 @@ test.describe("approvals", () => {
 
     await expect(page.getByRole("heading", { name: "Approvals", level: 1 })).toBeVisible()
     await expect(page.getByText("When an agent's trade needs your approval, it shows up here.")).toBeVisible()
-    await expect(page.getByText("Nothing waiting for you")).toHaveCount(2)
+    await expect(page.getByText("Nothing waits for your approval")).toBeVisible()
+    await expect(page.getByText("All clear")).toBeVisible()
   })
 
   test("a trade over the agent's largest trade is listed with its reason, and the sidebar counts it", async ({ page, funded: _funded }) => {
@@ -27,7 +28,7 @@ test.describe("approvals", () => {
     await page.getByRole("link", { name: "Approvals" }).click()
 
     await expect(page.getByLabel("1 waiting")).toHaveText("1")
-    await expect(page.getByText("1 trade waiting for you")).toBeVisible()
+    await expect(page.getByText("1 trade waits for your approval")).toBeVisible()
     await expect(
       request(page).getByText(
         /^Over its \$100 limit, so it needs your approval\. Asked at \d{2}:\d{2}\.$/
@@ -37,14 +38,14 @@ test.describe("approvals", () => {
     await expect(request(page).getByRole("button", { name: "Approve with Face ID" })).toBeVisible()
   })
 
-  test("the header's Approvals button opens them in a sheet", async ({ page, funded: _funded }) => {
+  test("the top bar's Approvals button, on any page, opens them in a sheet", async ({ page, funded: _funded }) => {
     await askOverLargestTrade(page)
-    await page.goto("/home")
+    await page.goto("/stocks")
 
-    await page.getByRole("button", { name: "Approvals, 1 trade waiting for you" }).click()
+    await page.getByRole("button", { name: "Approvals, 1 to approve" }).click()
 
     const sheet = page.getByRole("dialog", { name: "Approvals" })
-    await expect(sheet.getByText("1 trade waiting for you")).toBeVisible()
+    await expect(sheet.getByText("1 trade waits for your approval")).toBeVisible()
     await expect(sheet.getByRole("region", { name: "Stock picker wants to buy $150.00 of NVIDIA" })).toBeVisible()
   })
 
@@ -69,7 +70,7 @@ test.describe("approvals", () => {
 
     const declined = page.getByRole("region", { name: "You declined: buy $150.00 of NVIDIA" })
     await expect(declined.getByText("Nothing was bought. Your cash is where it was.")).toBeVisible()
-    await expect(page.getByText("Nothing waiting for you")).toBeVisible()
+    await expect(page.getByText("Nothing waits for your approval")).toBeVisible()
     await expect(page.getByLabel("1 waiting")).toBeHidden()
     await declined.getByRole("button", { name: "Done" }).click()
     await expect(page.getByText("When an agent's trade needs your approval, it shows up here.")).toBeVisible()
@@ -81,7 +82,8 @@ test.describe("approvals", () => {
 
     await request(page).getByRole("button", { name: "Approve with Face ID" }).click()
 
-    const bought = page.getByRole("region", { name: "Bought $150.00 of NVIDIA" })
+    const bought = page.getByRole("region", { name: "You approved: buy $150.00 of NVIDIA" })
+    await expect(bought.getByText("Bought $150.00 of NVIDIA")).toBeVisible()
     await expect(bought.getByRole("button", { name: "Done" })).toBeVisible()
     await expect(page.getByLabel("1 waiting")).toBeHidden()
   })

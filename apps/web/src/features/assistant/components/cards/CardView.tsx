@@ -28,7 +28,11 @@ export function CardView(
   switch (card._tag) {
     case "Trade":
       return (
-        <ChatCard tag={card.intent.agentId === null ? "Your trade" : "Agent trade"} icon="agent" tone="quiet">
+        <ChatCard
+          tag={card.intent.agentId === null ? "Your trade" : "Agent trade"}
+          icon={card.intent.agentId === null ? "face-id" : "agent"}
+          tone="quiet"
+        >
           <Trade intent={card.intent} nameOf={nameOf} />
         </ChatCard>
       )

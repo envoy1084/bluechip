@@ -38,7 +38,14 @@ export function EntryTypeSelect(
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {entries.map((entry) => <SelectItem key={entry.type} value={entry.type}>{entry.title}</SelectItem>)}
+          {entries.map((entry) => (
+            <SelectItem key={entry.type} value={entry.type} className="items-start">
+              <span className="grid min-w-0 gap-0.5">
+                <span>{entry.title}</span>
+                <span className="text-label-sm font-normal text-g-500">{entry.summary}</span>
+              </span>
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       {picked === undefined ? null : <p className="text-label text-g-500">{picked.summary}</p>}

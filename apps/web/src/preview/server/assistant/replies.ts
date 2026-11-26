@@ -6,6 +6,7 @@ import { limitsOf } from "@bluechip/domain/automations/AgentLimits"
 import type { CardId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { type TemplateId, TEMPLATES } from "@bluechip/domain/policies/Templates"
+import { AGENT_STATES, type AgentState } from "@bluechip/ui/bluechip/agent-status"
 import { TICKERS } from "@bluechip/ui/lib/tickers"
 import { agentFor, type CardKind, makeCard, roundOf } from "../../world/assistant/cards.ts"
 import { draftAgentCard } from "../../world/assistant/cards/agentCards.ts"
@@ -23,7 +24,21 @@ import {
   searchHelp
 } from "../../world/assistant/reads.ts"
 import { own, type Round, say, searched, shows } from "../../world/assistant/rounds.ts"
-import type { CastAgent } from "../../world/cast.ts"
+import type { CastAgent, CastAgentState } from "../../world/cast.ts"
+
+// A cast agent's state in the app's words, as the agents page says it: "Done for today", never "doneForToday".
+const SHOWN_STATE: Readonly<Record<CastAgentState, AgentState>> = {
+  active: "active",
+  doneForToday: "stopped",
+  asking: "needs-approval",
+  paused: "paused",
+  draft: "unlocked",
+  locking: "sending",
+  updating: "sending",
+  removing: "sending",
+  expired: "expired",
+  removed: "removed"
+}
 
 export interface Reply {
   readonly rounds: ReadonlyArray<Round>
@@ -266,7 +281,9 @@ export const replyTo = (
   }
   if (/\b(my agents|agents do|today|activity|this week)\b/i.test(text)) {
     const rows = mint.cast.agents.filter((agent) => agent.state !== "removed").map((agent) =>
-      `| ${agent.name} | ${agent.stocks.map((symbol) => `[[${symbol}]]`).join(" ")} | ${agent.state} |`
+      `| ${agent.name} | ${agent.stocks.map((symbol) => `[[${symbol}]]`).join(" ")} | ${
+        AGENT_STATES[SHOWN_STATE[agent.state]].label
+      } |`
     )
     return {
       rounds: [[listAgents(mint)], [

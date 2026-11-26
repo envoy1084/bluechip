@@ -43,6 +43,10 @@ export const intentProblem = (error: unknown, side: "buy" | "sell"): string => {
   return tradeProblem(error, side)
 }
 
-/** "2 trades waiting for you", or that nothing is. */
+/** "2 trades wait for your approval", or that nothing does: said this way wherever approvals are counted. */
 export const waitingText = (count: number) =>
-  count === 0 ? "Nothing waiting for you" : count === 1 ? "1 trade waiting for you" : `${count} trades waiting for you`
+  count === 0 ?
+    "Nothing waits for your approval" :
+    count === 1 ?
+    "1 trade waits for your approval" :
+    `${count} trades wait for your approval`

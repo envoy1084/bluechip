@@ -3,7 +3,6 @@ import { createFileRoute, Navigate } from "@tanstack/react-router"
 import * as Schema from "effect/Schema"
 import { ChatScreen } from "../../../features/assistant/screens/ChatScreen.tsx"
 import { AgentTradeProgress } from "../../../features/intents/components/agent/AgentTradeProgress.tsx"
-import { ApprovalsBell } from "../../../features/intents/components/approvals/ApprovalsSheet.tsx"
 
 const isConversationId = Schema.is(ConversationId)
 const isAgentId = Schema.is(AgentId)
@@ -36,7 +35,8 @@ function ChatPage() {
       // The chat on screen getting its address: the same page, so no page transition.
       onStarted={(id) =>
         void navigate({ params: { conversationId: id }, search: {}, replace: true, viewTransition: false })}
-      approvals={<ApprovalsBell />}
+      // The approvals live in the frame's top bar, as on every page.
+      approvals={null}
       Trade={AgentTradeProgress}
     />
   )

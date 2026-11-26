@@ -6,6 +6,7 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
+import { ConfirmDialog } from "../../../../components/ConfirmDialog.tsx"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { assistantReactivityKey, confirmMemoryAtom, deleteMemoryAtom } from "../../atoms/assistant.ts"
 import { provenance, usage } from "../../model/memoryText.ts"
@@ -18,7 +19,8 @@ const CONFIRM_PROBLEM = "We couldn't reach bluechip just now. It isn't confirmed
 
 /**
  * One memory: its sentence, the agent it's about, where it came from and how answers used it. A guess offers
- * Remember and Not right; a kept memory is deleted from the button that shows on hover.
+ * Remember and Not right; a kept memory is deleted from the button that shows on hover, once you confirm (it can't
+ * come back, and its conversation turn goes with it).
  */
 export function MemoryRow(
   { memory, agentName, now }: Readonly<{ memory: Memory; agentName: string | undefined; now: Date }>
@@ -92,16 +94,22 @@ export function MemoryRow(
             </div>
           ) :
           (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Delete: ${memory.text}`}
-              loading={deleting}
-              onClick={() => void forget()}
-              className="shrink-0 text-g-400 hover:text-loss focus-visible:opacity-100 sm:opacity-0 sm:group-hover/memory:opacity-100 sm:group-focus-within/memory:opacity-100 sm:[@media(hover:none)]:opacity-100"
-            >
-              <Icon name="trash" size={16} />
-            </Button>
+            <ConfirmDialog
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Delete: ${memory.text}`}
+                  loading={deleting}
+                  className="shrink-0 text-g-400 hover:text-loss focus-visible:opacity-100 data-popup-open:opacity-100 sm:opacity-0 sm:group-hover/memory:opacity-100 sm:group-focus-within/memory:opacity-100 sm:[@media(hover:none)]:opacity-100"
+                />
+              }
+              triggerLabel={<Icon name="trash" size={16} />}
+              title="Delete this memory?"
+              consequence={`“${memory.text}” The assistant stops using it, and the conversation turn it came from ` +
+                "is deleted too. This can't be undone."}
+              action={{ _tag: "danger", label: "Delete memory", onConfirm: () => void forget() }}
+            />
           )}
       </div>
       {problem === null ? null : (

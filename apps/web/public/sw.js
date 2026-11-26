@@ -1,7 +1,8 @@
 // bluechip's service worker: shows web pushes (a notification's title, sentence and buttons, from the server's
 // `PushMessage`) and opens the page a push is about when it is clicked, in an open bluechip window if there is one.
 // A button (Pause all agents, Cancel recovery) acts right away with this browser's session, without Face ID, as the
-// bell's buttons do: both only take power away. A button that can't act (signed out, offline) opens the page instead.
+// bell's buttons do: both only take power away. Review, and a button that can't act (signed out, offline), opens the
+// page instead.
 
 // Each button's request to bluechip's API, on this origin (as the app's requests are).
 const REQUESTS = {

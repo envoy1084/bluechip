@@ -44,20 +44,20 @@ export const listedAgent = (
   }
 }
 
-export type AgentFilter = "all" | "active" | "attention" | "paused" | "drafts" | "expired"
+export type AgentFilter = "all" | "active" | "attention" | "paused" | "notLive" | "expired"
 
 export const AGENT_FILTERS: ReadonlyArray<{ readonly value: AgentFilter; readonly label: string }> = [
   { value: "all", label: "All" },
   { value: "active", label: "Active" },
   { value: "attention", label: "Needs attention" },
   { value: "paused", label: "Paused" },
-  { value: "drafts", label: "Drafts" },
+  { value: "notLive", label: "Not live yet" },
   { value: "expired", label: "Ran out" }
 ]
 
 /**
  * Whether the filter shows it. Active is every agent that may trade (done for today, waiting for you, a change on its
- * way); a draft is one not locked yet, or on its way to Base for the first time. Needs attention is what waits for
+ * way); not live yet is a draft, or one on its way to Base for the first time. Needs attention is what waits for
  * you: an approval, or a session that ran out.
  */
 export const shows = (listed: ListedAgent, filter: AgentFilter): boolean => {
@@ -72,7 +72,7 @@ export const shows = (listed: ListedAgent, filter: AgentFilter): boolean => {
       return state === "needs-approval" || state === "expired"
     case "paused":
       return state === "paused"
-    case "drafts":
+    case "notLive":
       return state === "unlocked" || (state === "sending" && agent.status === "locking")
     case "expired":
       return state === "expired"

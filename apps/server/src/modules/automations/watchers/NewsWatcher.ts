@@ -67,7 +67,7 @@ export class NewsWatcher extends Context.Service<NewsWatcher, {
             if (row.trigger.type !== "news" || !matchesNews(row.trigger.config, item)) continue
             const watched: ReadonlyArray<string> = row.trigger.config.symbols
             const trigger: TriggerData = {
-              summary: `A story: "${item.headline}"`,
+              summary: `A story: “${item.headline}”`,
               symbol: (item.symbols.find((symbol) => watched.includes(symbol)) ?? null) as StockSymbol | null,
               price: null,
               newsItemId: item.id

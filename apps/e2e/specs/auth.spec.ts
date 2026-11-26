@@ -2,15 +2,21 @@ import { addAuthenticator } from "../fixtures/authenticator.ts"
 import { expect, test } from "../fixtures/test.ts"
 
 test.describe("landing and legal", () => {
-  test("the landing page leads to sign-up and sign-in", async ({ page }) => {
+  test("the landing page leads to sign-up, and signs in right there", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.getByRole("heading", { name: "bluechip", level: 1 })).toBeVisible()
-    await page.getByRole("link", { name: "Create account" }).click()
+    await expect(page.getByRole("heading", { name: "You and your agents, trading stocks on Base", level: 1 }))
+      .toBeVisible()
+    await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
+    await page.getByRole("link", { name: "Create an account" }).click()
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
-    await page.goto("/")
-    await page.getByRole("link", { name: "Sign in" }).click()
-    await expect(page.getByRole("heading", { name: "Sign in to bluechip" })).toBeVisible()
+  })
+
+  test("the old sign-in page leads to the landing page", async ({ page }) => {
+    await page.goto("/signin")
+
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
   })
 
   test("the terms and the risk disclosure open from the welcome screen", async ({ page }) => {
@@ -40,7 +46,7 @@ test.describe("sign up", () => {
     await expect(page.getByRole("radio", { name: /Outside the United States/ })).toBeChecked()
     await expect(page.getByText("You can use bluechip.")).toBeVisible()
     await page.getByRole("button", { name: "Continue" }).click()
-    await expect(page.getByRole("heading", { name: "Deposit cash", level: 1 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
     await page.getByRole("button", { name: "Go to home" }).click()
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })
@@ -53,7 +59,9 @@ test.describe("sign up", () => {
     await page.getByRole("radio", { name: /In the United States/ }).click()
 
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
-    await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await expect(page.getByRole("button", { name: "Continue" })).toBeHidden()
+    await page.getByRole("button", { name: "Sign out" }).click()
+    await expect(page.getByRole("link", { name: "Create an account" })).toBeVisible()
   })
 
   test("a US answer is kept: signing in again returns to eligibility", async ({ page, context }) => {
@@ -64,8 +72,8 @@ test.describe("sign up", () => {
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
 
     await context.clearCookies()
-    await page.goto("/signin")
-    await page.getByRole("button", { name: "Sign in with Face ID" }).click()
+    await page.goto("/")
+    await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(page).toHaveURL(/\/welcome\/eligibility$/)
     await expect(page.getByRole("radio", { name: /In the United States/ })).toBeChecked()
@@ -87,11 +95,11 @@ test.describe("sign in and out", () => {
     await page.getByRole("link", { name: "Settings" }).click()
     await page.getByRole("button", { name: "Sign out" }).click()
 
-    await expect(page.getByRole("heading", { name: "Sign in to bluechip" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
     await page.goto("/home")
-    await expect(page).toHaveURL(/\/signin$/)
+    await expect(page).toHaveURL(/\/$/)
 
-    await page.getByRole("button", { name: "Sign in with Face ID" }).click()
+    await page.getByRole("button", { name: "Sign in with passkey" }).click()
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })
 
@@ -99,8 +107,16 @@ test.describe("sign in and out", () => {
     await context.clearCookies()
     await page.goto("/welcome")
 
-    await page.getByRole("button", { name: "Sign in with Face ID" }).click()
+    await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
+    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
+  })
+
+  test("a signed-in visitor to the landing and welcome pages goes home", async ({ page, user: _user }) => {
+    await page.goto("/")
+    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
+
+    await page.goto("/welcome")
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })
 
@@ -109,8 +125,8 @@ test.describe("sign in and out", () => {
     const otherPage = await other.newPage()
     await authenticator.copyTo(await addAuthenticator(otherPage))
 
-    await otherPage.goto("/signin")
-    await otherPage.getByRole("button", { name: "Sign in with Face ID" }).click()
+    await otherPage.goto("/")
+    await otherPage.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(otherPage.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
     await other.close()
@@ -118,18 +134,18 @@ test.describe("sign in and out", () => {
   })
 
   test("a device without a bluechip passkey can't sign in", async ({ page }) => {
-    await page.goto("/signin")
+    await page.goto("/")
 
-    await page.getByRole("button", { name: "Sign in with Face ID" }).click()
+    await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
-    await expect(page.getByText("That didn't work")).toBeVisible()
-    await page.getByRole("button", { name: "Create an account" }).click()
+    await expect(page.getByText("We couldn't sign you in")).toBeVisible()
+    await page.getByRole("link", { name: "Create an account" }).click()
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
   })
 
-  test("a signed-out visitor is sent to sign in", async ({ page }) => {
+  test("a signed-out visitor is sent to the landing page to sign in", async ({ page }) => {
     await page.goto("/portfolio")
 
-    await expect(page).toHaveURL(/\/signin$/)
+    await expect(page).toHaveURL(/\/$/)
   })
 })

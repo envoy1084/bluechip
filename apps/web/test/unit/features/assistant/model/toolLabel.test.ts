@@ -25,6 +25,35 @@ describe("toolLabel", () => {
       expected: "Searched the web"
     },
     {
+      name: "an automation drafted",
+      row: { id: "call-1", name: "createAutomation", state: "done", summary: null, params: null, result: null },
+      expected: "Drafted the automation"
+    },
+    {
+      name: "an automation paused",
+      row: {
+        id: "call-1",
+        name: "pauseAutomation",
+        state: "done",
+        summary: null,
+        params: { automationId: "automation-1", resume: false },
+        result: null
+      },
+      expected: "Ready to pause the automation"
+    },
+    {
+      name: "an automation resumed",
+      row: {
+        id: "call-1",
+        name: "pauseAutomation",
+        state: "running",
+        summary: null,
+        params: { automationId: "automation-1", resume: true },
+        result: null
+      },
+      expected: "Preparing to resume the automation…"
+    },
+    {
       name: "an unknown tool running",
       row: { id: "call-1", name: "later", state: "running", summary: null, params: null, result: null },
       expected: "Working on it…"

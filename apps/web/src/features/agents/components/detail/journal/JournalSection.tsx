@@ -102,7 +102,11 @@ export function JournalSection({ agent }: Readonly<{ agent: Agent }>) {
     return (
       <>
         {shown.length === 0 && filter !== "all" ?
-          <p className="px-5 py-6 text-center text-body-sm text-g-600">{EMPTY_FILTER[filter]}</p> :
+          (
+            <IllustratedEmpty illustration="notebook" variant="plain" compact title={EMPTY_FILTER[filter].title}>
+              {EMPTY_FILTER[filter].description}
+            </IllustratedEmpty>
+          ) :
           null}
         {Object.entries(days).map(([day, dayLines]) => (
           <section key={day} aria-label={day}>
@@ -151,7 +155,19 @@ export function JournalSection({ agent }: Readonly<{ agent: Agent }>) {
         level="h3"
         title="Journal"
         description="What it did and why, in bluechip's words, as it happened."
-        actions={<FilterTabs label="Show" value={filter} onChange={setFilter} options={JOURNAL_FILTERS} />}
+        actions={
+          <FilterTabs
+            label="Show"
+            value={filter}
+            onChange={setFilter}
+            options={JOURNAL_FILTERS.map((option) => ({
+              ...option,
+              ...(option.value === "all"
+                ? {}
+                : { count: lines.filter((line) => filterOf(line) === option.value).length })
+            }))}
+          />
+        }
       />
 
       {AsyncResult.isFailure(sessions) && (filter === "all" || filter === "rules") ?

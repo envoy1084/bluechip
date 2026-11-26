@@ -128,13 +128,17 @@ export const resultGallery = (context: ThreadContext): ReadonlyArray<Turn> => {
       getAgentJournal(mint, agent, [
         `Bought $50.00 of its first stock within its rules. Why: you asked for it.`,
         "Its weekly buy ran: nothing drifted past the trigger, so it skipped.",
-        "Asked you to approve a $400.00 buy, over its $100 largest trade."
+        "Asked you to approve a $400.00 buy, over its largest trade of $100."
       ])
     ]),
     turn("An empty journal", [getAgentJournal(mint, agent)]),
     turn("A journal that couldn't be read", [fails(mint, "getAgentJournal", { agentId: agent.id }, "")]),
     turn("Why one was blocked", [
-      explainDecision(mint, blocked, "Its stock cap refused it: the stock would be over its share of your money.")
+      explainDecision(
+        mint,
+        blocked,
+        "Its Max in one stock policy refused it: the stock would be over its share of your money."
+      )
     ]),
     turn("Why one waits", [
       explainDecision(mint, waiting, "Prices are paused and this agent doesn't trade on them. It tries again later.")

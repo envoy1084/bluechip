@@ -188,7 +188,7 @@ export const setAgentState = (ids: IdCounter, record: AgentRecord, state: AgentS
   const current = sessionOf(record, record.currentSessionId)!
   record.paused = state === "paused"
   if (state === "doneForToday") record.usage = { ...record.usage, trade: 1 }
-  else if (record.usage.trade >= 1) record.usage = { ...record.usage, trade: 0.35 }
+  else if (record.usage.trade >= 1) record.usage = { ...record.usage, trade: 0 }
 
   switch (state) {
     case "updating":

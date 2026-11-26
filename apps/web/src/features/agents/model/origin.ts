@@ -2,7 +2,7 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
-import { scratchSpec, templateSpec } from "@bluechip/domain/policies/SpecEdits"
+import { addPolicy, scratchSpec, templateSpec } from "@bluechip/domain/policies/SpecEdits"
 import { type SavedTemplate, type TemplateId, TEMPLATES } from "@bluechip/domain/policies/Templates"
 import { isTemplateId } from "./templateLabel.ts"
 
@@ -32,13 +32,13 @@ export const originLabel = (origin: Origin): string =>
 export const originPresets = (origin: Origin): TemplateId | null => origin.kind === "builtIn" ? origin.template : null
 
 /**
- * The policies an origin starts with: a built-in's balanced preset keeps the stocks already picked, or starts with the
- * template's own (a Rebalancer's four) when none are.
+ * The policies an origin starts with: a built-in's balanced preset over the stocks already picked (none are picked for
+ * you, whatever the template), with the rules it offers switched on (a Stop-loss guard's floor: it's what the guard
+ * is for). You switch off what you don't want.
  */
 export const originSpec = (origin: Origin, stocks: ReadonlyArray<StockSymbol>): AgentSpec => {
   if (origin.kind === "builtIn") {
-    const picked = stocks.length > 0 ? stocks : TEMPLATES[origin.template].defaultStocks
-    return templateSpec(origin.template, "balanced", picked)
+    return TEMPLATES[origin.template].options.reduce(addPolicy, templateSpec(origin.template, "balanced", stocks))
   }
   return origin.kind === "saved" ? origin.template.spec : scratchSpec()
 }

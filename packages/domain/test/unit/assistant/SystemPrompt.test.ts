@@ -68,6 +68,18 @@ describe("systemPrompt", () => {
     assert.include(prompt, "## The user's agents\nNone yet.")
   })
 
+  it("it asks for states in the app's words, never raw statuses", () => {
+    const prompt = systemPrompt({ today: "2026-11-26", agents: [], focus: null, memories: [] })
+
+    assert.include(
+      prompt,
+      "- Say where things stand in bluechip's own words, as its screens do: an agent is Active, Paused, Done for " +
+        "today, Needs your approval, On its way, Not locked yet or Ran out; a trade is Filled, Blocked, Waiting, Needs " +
+        "your approval or Waiting for Face ID. Never write a raw status such as doneForToday, needsApproval or " +
+        "awaitingSignature."
+    )
+  })
+
   it("it carries today's date", () => {
     const prompt = systemPrompt({ today: "2026-11-26", agents: [], focus: null, memories: [] })
 

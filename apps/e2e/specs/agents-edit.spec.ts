@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
-import { canRules, createAgent, createDraft, dayFromNow, openFineTuning } from "../utils/agents.ts"
+import { createAgent, createDraft, dayFromNow, openFineTuning } from "../utils/agents.ts"
 
 /** A Stock picker of NVIDIA, live, at its rules step to change them. */
 const editAgent = async (page: Page, template = "Stock picker", stocks = ["NVDA NVIDIA"]) => {
@@ -11,6 +11,10 @@ const editAgent = async (page: Page, template = "Stock picker", stocks = ["NVDA 
   return agent
 }
 
+// The rules at a glance's daily budget ("A day $100").
+const aDay = (page: Page) =>
+  page.getByRole("region", { name: "Its rules at a glance" }).getByText(/^A day/).locator("..")
+
 const changeRows = (page: Page) => page.getByRole("main").getByRole("list").first().getByRole("listitem")
 
 test.describe("edit rules: the rules step", () => {
@@ -18,7 +22,7 @@ test.describe("edit rules: the rules step", () => {
     await editAgent(page)
 
     await expect(page.getByRole("heading", { name: "Edit rules", level: 1 })).toBeVisible()
-    await expect(page.getByText("What it can and can never do")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "At a glance" })).toBeVisible()
     await expect(page.getByText(`Locked with Face ID until ${dayFromNow(90)}`)).toBeVisible()
     await expect(page.getByRole("button", { name: "Review changes" })).toBeDisabled()
     await expect(page.getByRole("button", { name: "Undo changes" })).toBeHidden()
@@ -30,8 +34,8 @@ test.describe("edit rules: the rules step", () => {
     await page.getByRole("textbox", { name: "Daily budget" }).fill("100")
 
     await expect(page.getByText("Stocks and direction", { exact: true }).locator("xpath=..")).toContainText("Tighter")
-    await expect(page.getByText("What it could do with these rules")).toBeVisible()
-    await expect(canRules(page).nth(1)).toHaveText("Spend up to $100 a day")
+    await expect(page.getByText("These changes aren't locked yet")).toBeVisible()
+    await expect(aDay(page)).toHaveText(/\$100/)
     await expect(page.getByRole("button", { name: "Review changes" })).toBeEnabled()
   })
 
@@ -70,12 +74,12 @@ test.describe("edit rules: review", () => {
 
     await page.getByRole("button", { name: "Review changes" }).click()
 
-    await expect(page.getByText("1 tighter, 0 looser")).toBeVisible()
-    await expect(changeRows(page)).toHaveText([/^Stocks and direction\s*Daily budget\s*\$250\s*\$100\s*Tighter$/])
+    await expect(page.getByText("1 tighter")).toBeVisible()
+    await expect(changeRows(page)).toHaveText([/^Daily budget\s*\$250\s*\$100\s*Tighter$/])
     await expect(page.getByText(
       "Overall this only narrows what it can do. Every change is locked on Base with Face ID and applies once it lands."
     )).toBeVisible()
-    await expect(canRules(page).nth(1)).toHaveText("Spend up to $100 a day")
+    await expect(aDay(page)).toHaveText(/\$100/)
   })
 
   test("another stock is looser and gives it more room", async ({ page, funded: _funded }) => {
@@ -84,7 +88,7 @@ test.describe("edit rules: review", () => {
 
     await page.getByRole("button", { name: "Review changes" }).click()
 
-    await expect(page.getByText("0 tighter, 1 looser")).toBeVisible()
+    await expect(page.getByText("1 looser")).toBeVisible()
     await expect(changeRows(page)).toHaveText([/^Stocks and direction\s*Stocks\s*NVIDIA\s*Apple and NVIDIA\s*Looser$/])
     await expect(page.getByText(
       "Overall this gives Edited one more room. Every change is locked on Base with Face ID and applies once it lands."
@@ -101,8 +105,8 @@ test.describe("edit rules: review", () => {
 
     await expect(page.getByText("1 tighter, 1 looser")).toBeVisible()
     await expect(changeRows(page)).toHaveText([
-      /^Max in one stock\s*Max in one stock\s*30%\s*New$/,
-      /^Weekly slippage\s*Weekly slippage\s*1%\s*Removed$/
+      /^Max in one stock\s*30%\s*New$/,
+      /^Weekly slippage\s*1%\s*Removed$/
     ])
   })
 
@@ -136,7 +140,7 @@ test.describe("edit rules: lock with Face ID", () => {
     await page.getByRole("button", { name: "Lock new rules with Face ID" }).click()
 
     await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
-    await expect(canRules(page).nth(1)).toHaveText("Spend up to $100 a day")
+    await expect(aDay(page)).toHaveText(/\$100/)
     await expect.poll(() => page.getByRole("region", { name: "Usage" }).ariaSnapshot()).toContain("$0 of $100")
   })
 
@@ -169,7 +173,7 @@ test.describe("edit rules: lock with Face ID", () => {
       .toBeVisible()
     await expect(page.getByRole("button", { name: "Try Face ID again" })).toBeVisible()
     await page.getByRole("main").getByRole("link", { name: "Edited one" }).click()
-    await expect(canRules(page).nth(1)).toHaveText("Spend up to $250 a day")
+    await expect(aDay(page)).toHaveText(/\$250/)
   })
 
   test("after a cancelled Face ID, trying again locks the change", async ({ page, authenticator, funded: _ }) => {
@@ -184,7 +188,7 @@ test.describe("edit rules: lock with Face ID", () => {
     await page.getByRole("button", { name: "Try Face ID again" }).click()
 
     await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
-    await expect(canRules(page).nth(1)).toHaveText("Spend up to $100 a day")
+    await expect(aDay(page)).toHaveText(/\$100/)
   })
 })
 

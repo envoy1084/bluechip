@@ -27,8 +27,8 @@ export type Upcoming =
 
 export interface ComingUp {
   readonly upcoming: ReadonlyArray<Upcoming>
-  /** "Nvidia stop-loss watches prices", one per live automation. */
-  readonly watching: ReadonlyArray<string>
+  /** One per live automation, said "NVIDIA stop-loss watches prices" with its name set apart. */
+  readonly watching: ReadonlyArray<{ readonly name: string; readonly watches: string }>
 }
 
 const DAY = 86_400_000
@@ -97,7 +97,7 @@ export const comingUp = (
     watching: active.flatMap((automation) => {
       const watcher = triggerOf(automation.trigger).watcher
       return automation.nextRunAt === null && watcher !== "schedule" ?
-        [`${automation.name} watches ${WATCHES[watcher]}`] :
+        [{ name: automation.name, watches: WATCHES[watcher] }] :
         []
     })
   }

@@ -9,6 +9,7 @@ import { castAgent } from "./agents/castAgents.ts"
 import { runEntries, sortJournal } from "./agents/journal.ts"
 import { addRun, runPlans } from "./agents/runs.ts"
 import type { Cast, CastAutomation } from "./cast.ts"
+import type { MarketSlice } from "./market/model.ts"
 
 export interface AgentsSlice {
   readonly ids: IdCounter
@@ -122,11 +123,11 @@ const savedTemplates = (cast: Cast, now: DateTime.Utc): Array<SavedTemplate> => 
   ]
 }
 
-/** The agents slice of `cast` as of `now`. */
-export const makeAgents = (cast: Cast, now: Date): AgentsSlice => {
+/** The agents slice of `cast` as of `now`, its trades the market's (`market`): the same ones every page counts. */
+export const makeAgents = (cast: Cast, now: Date, market: Pick<MarketSlice, "intents" | "trades">): AgentsSlice => {
   const at = DateTime.fromDateUnsafe(now)
   const ids: IdCounter = { next: 700_000 }
-  const agents = cast.agents.map((agent) => castAgent(ids, agent, at))
+  const agents = cast.agents.map((agent) => castAgent(ids, agent, at, market))
   const automations = cast.automations.map((automation) => castAutomation(ids, agents, automation, at))
     .toSorted((a, b) => DateTime.toEpochMillis(b.automation.createdAt) - DateTime.toEpochMillis(a.automation.createdAt))
   for (const agent of agents) sortJournal(agent)

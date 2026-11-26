@@ -8,7 +8,7 @@ export interface NewAgent {
   /** The stocks it trades, by symbol and name as the stock buttons read ("NVDA NVIDIA"). */
   readonly stocks?: ReadonlyArray<string>
   readonly name?: string
-  /** "Ask me above": the largest trade it makes without your approval, in dollars. */
+  /** "Ask you above": the largest trade it makes without your approval, in dollars. */
   readonly askAbove?: number
 }
 
@@ -32,13 +32,27 @@ export const openFineTuning = async (page: Page) => {
   if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click()
 }
 
+/**
+ * Gives each of a Stop-loss guard's stocks ("AAPL Apple") the floor `price`: the guard starts with its floor on, and
+ * can't be reviewed until every stock has one.
+ */
+export const setFloors = async (page: Page, stocks: ReadonlyArray<string>, price = 100) => {
+  await openFineTuning(page)
+  await openRule(page, "Stop-loss floor")
+  for (const stock of stocks) {
+    await page.getByRole("textbox", { name: stock.slice(stock.indexOf(" ") + 1), exact: true }).fill(String(price))
+  }
+}
+
 /** Sets an agent's rules and opens its review, named `agent.name` when given. */
 const reviewAgent = async (page: Page, agent: NewAgent) => {
   await startAgent(page, agent.template)
-  for (const stock of agent.stocks ?? ["NVDA NVIDIA"]) await page.getByRole("button", { name: stock }).click()
+  const stocks = agent.stocks ?? ["NVDA NVIDIA"]
+  for (const stock of stocks) await page.getByRole("button", { name: stock }).click()
+  if (agent.template === "Stop-loss guard") await setFloors(page, stocks)
   if (agent.askAbove !== undefined) {
     await openRule(page, "Trade size")
-    await page.getByRole("textbox", { name: "Ask me above" }).fill(String(agent.askAbove))
+    await page.getByRole("textbox", { name: "Ask you above" }).fill(String(agent.askAbove))
   }
 
   await page.getByRole("button", { name: "Review" }).click()
@@ -79,11 +93,13 @@ export const createDraft = async (
 
 const agentIdOf = (page: Page): string => new URL(page.url()).pathname.split("/").at(-1)!
 
-/** The sentences of the "It can" half of the rules card on the page (one card per screen). */
-export const canRules = (page: Page): Locator => page.locator("h4:text-is('It can') + ul").getByRole("listitem")
+/** The sentences of the "It can" half of the rules at a glance on the page (one card per screen). */
+export const canRules = (page: Page): Locator =>
+  page.getByRole("list", { name: "It can", exact: true }).first().getByRole("listitem")
 
-/** The sentences of the "It can never" half of the rules card on the page. */
-export const neverRules = (page: Page): Locator => page.locator("h4:text-is('It can never') + ul").getByRole("listitem")
+/** The sentences of the "It can never" half of the rules at a glance on the page. */
+export const neverRules = (page: Page): Locator =>
+  page.getByRole("list", { name: "It can never", exact: true }).first().getByRole("listitem")
 
 /** The agent state pill in the page's main area ("Active", "Paused", "Not locked yet"…). */
 export const statePill = (page: Page): Locator => page.getByRole("main").locator("[data-slot='agent-status']")

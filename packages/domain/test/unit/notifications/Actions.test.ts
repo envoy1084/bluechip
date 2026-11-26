@@ -4,14 +4,16 @@ import { assert, describe, it } from "@effect/vitest"
 describe("actionsOf", () => {
   it.each(
     [
-      { kind: "intentFilled", actions: ["pauseAll"] },
+      { kind: "approvalNeeded", actions: ["review"] },
+      { kind: "approvalExpiring", actions: ["review"] },
       { kind: "intentBlocked", actions: ["pauseAll"] },
-      { kind: "intentWaiting", actions: ["pauseAll"] },
-      { kind: "approvalNeeded", actions: ["pauseAll"] },
-      { kind: "approvalExpiring", actions: ["pauseAll"] },
+      { kind: "intentFilled", actions: [] },
+      { kind: "intentWaiting", actions: [] },
+      { kind: "automationFired", actions: [] },
       { kind: "recoveryRequested", actions: ["cancelRecovery"] },
       { kind: "recoveryCancelled", actions: [] },
       { kind: "agentPaused", actions: [] },
+      { kind: "deposit", actions: [] },
       { kind: "dailyDigest", actions: [] }
     ] as const
   )("$kind", ({ actions, kind }) => {

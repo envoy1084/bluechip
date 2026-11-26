@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger
 } from "@bluechip/ui/components/alert-dialog"
 import type { IconName } from "@bluechip/ui/icons/icon"
-import type { ReactElement, ReactNode } from "react"
+import type { ReactElement, ReactNode, RefObject } from "react"
 import type { PasskeyProblem } from "../lib/passkeyProblem.ts"
 
 /** What confirming does: a danger button that closes the dialog, or Face ID, which keeps it open while it works. */
@@ -45,7 +45,8 @@ export function ConfirmDialog(
     keepLabel = "Keep it",
     action,
     problem,
-    outcome
+    outcome,
+    finalFocus
   }: Readonly<{
     open?: boolean
     onOpenChange?: (open: boolean) => void
@@ -62,6 +63,8 @@ export function ConfirmDialog(
     /** Why the action didn't go; a cancelled Face ID reads as a quiet note, not an error. */
     problem?: PasskeyProblem | undefined
     outcome?: ReactNode
+    /** Where focus goes once it closes, when it was opened without `trigger` (from a menu, say). */
+    finalFocus?: RefObject<HTMLElement | null>
   }>
 ) {
   return (
@@ -70,7 +73,7 @@ export function ConfirmDialog(
       {...(onOpenChange === undefined ? {} : { onOpenChange: (next: boolean) => onOpenChange(next) })}
     >
       {trigger === undefined ? null : <AlertDialogTrigger render={trigger}>{triggerLabel}</AlertDialogTrigger>}
-      <AlertDialogContent>
+      <AlertDialogContent {...(finalFocus === undefined ? {} : { finalFocus })}>
         <AlertDialogIcon
           name={icon}
           {...(danger ? {} : { className: "bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]" })}

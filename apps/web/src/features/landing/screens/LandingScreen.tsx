@@ -1,19 +1,34 @@
 import { buttonVariants } from "@bluechip/ui/components/button"
+import { Icon } from "@bluechip/ui/icons/icon"
+import { Halftone } from "@bluechip/ui/motion/halftone"
 import { Link } from "@tanstack/react-router"
+import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
+import { PasskeySignIn } from "../../../components/PasskeySignIn.tsx"
+import { SignedInRedirect } from "../../../components/SignedInRedirect.tsx"
 
-// The landing page arrives with phase 015; until then it is the way in. Links, not buttons, so they work before the
-// page hydrates.
+/**
+ * Where people arrive: what bluechip is, Create an account, and Sign in with passkey right here. Someone already
+ * signed in goes on to home. Create an account is a link, so it works before the page hydrates.
+ */
 export function LandingScreen() {
   return (
-    <main className="grid min-h-dvh place-items-center p-6 [view-transition-name:page]">
-      <div className="grid justify-items-center gap-6 text-center">
-        <h1 className="text-display-2 font-semibold tracking-tight">bluechip</h1>
-        <p className="max-w-[40ch] text-body-lg text-g-600">You and your agents, trading stocks on Base.</p>
-        <div className="flex gap-3">
-          <Link to="/welcome" className={buttonVariants({ size: "lg" })}>Create account</Link>
-          <Link to="/signin" className={buttonVariants({ size: "lg", variant: "secondary" })}>Sign in</Link>
-        </div>
+    <OnboardingFrame>
+      <SignedInRedirect />
+      <div className="-mb-1.5 size-[210px]">
+        <Halftone scene="logo" className="size-full" />
       </div>
-    </main>
+      <OnboardingTitle title="You and your agents, trading stocks on Base">
+        Hire an agent, set its limits onchain, and let it trade tokenized US stocks for you.
+      </OnboardingTitle>
+      <div className="mt-2.5 grid w-full gap-2.5">
+        <Link to="/welcome" className={buttonVariants({ size: "lg", className: "w-full" })}>
+          Create an account<Icon name="arrow-right" size={16} />
+        </Link>
+        <PasskeySignIn />
+        <Link to="/recover" className={buttonVariants({ size: "lg", variant: "ghost", className: "w-full" })}>
+          Lost your passkey? Recover your account
+        </Link>
+      </div>
+    </OnboardingFrame>
   )
 }

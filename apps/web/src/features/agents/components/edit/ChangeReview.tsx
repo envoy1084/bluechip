@@ -11,7 +11,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { changeAgentAtom } from "../../atoms/agents.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
 import { useSpecCheck } from "../../hooks/useSpecCheck.ts"
-import { PolicyRules } from "../spec/PolicyRules.tsx"
+import { AgentAtAGlance } from "../spec/AgentAtAGlance.tsx"
 import { SpecChangeRows } from "../spec/SpecChangeRows.tsx"
 
 /**
@@ -45,7 +45,8 @@ export function ChangeReview(
           <div className="grid">
             <h3 className="text-[17px] font-semibold tracking-[-0.015em]">Edit rules</h3>
             <span className="text-label-sm text-g-500">
-              {shown.length - looser} tighter, {looser} looser
+              {[[shown.length - looser, "tighter"], [looser, "looser"]].filter(([count]) => count !== 0)
+                .map(([count, word]) => `${count} ${word}`).join(", ")}
             </span>
           </div>
           <Button variant="ghost" size="icon-sm" aria-label="Back to the rules" onClick={onBack}>
@@ -63,14 +64,7 @@ export function ChangeReview(
         </p>
       </div>
 
-      {check === undefined ? null : (
-        <div className="grid gap-2">
-          <span className="px-0.5 text-caption font-semibold tracking-[.06em] text-g-500 uppercase">
-            What it could do after
-          </span>
-          <PolicyRules description={check.description} />
-        </div>
-      )}
+      <AgentAtAGlance spec={spec} nameOf={nameOf} lockedLine="These changes aren't locked yet" />
 
       {checking.status === "failed" && (
         <Alert variant="destructive">

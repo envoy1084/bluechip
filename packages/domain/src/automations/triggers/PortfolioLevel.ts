@@ -53,7 +53,7 @@ export const portfolioLevel = Trigger.make({
   fields: {
     measure: new Field({ label: "Measure", unit: "choice" }),
     symbol: new Field({ label: "Stock", unit: "stock" }),
-    direction: new Field({ label: "Goes", unit: "choice" }),
+    direction: new Field({ label: "Direction", unit: "choice" }),
     bps: new Field({ label: "Share of your portfolio", unit: "bps", min: 100, max: 9900, step: 100 })
   },
   defaults: { measure: "cash", symbol: null, direction: "below", bps: 1000 },

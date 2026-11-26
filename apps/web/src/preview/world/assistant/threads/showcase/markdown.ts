@@ -63,7 +63,7 @@ export const longAnswers = (_context: ThreadContext): ReadonlyArray<Turn> => [
           "your money at once; spread across [[AAPL]], [[MSFT]], [[AMZN]] and cash, the same bad week becomes one " +
           "line in a table instead of the whole table. It doesn't make you right more often, and it won't stop a " +
           "market-wide fall, but it makes the outcome less about luck in one company and more about the market as a " +
-          "whole, which over long stretches has tended to rise. That's also why bluechip's agents carry a stock cap: " +
+          "whole, which over long stretches has tended to rise. That's also why bluechip's agents carry a Max in one stock policy: " +
           "it's diversification written down as a rule, so an enthusiastic agent can't quietly put everything into " +
           "its favourite stock while you're not looking.\n\n" +
           "A second paragraph, for rhythm: cash counts too. Keeping some lets you buy when prices drop without " +

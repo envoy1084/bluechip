@@ -1,12 +1,12 @@
-// The moment an agent's change lands, said once on its page: it went live, its new rules are locked, it was renewed,
-// it's trading again. Base takes a couple of seconds, so these replace any step tracker. Pausing needs no moment: the
-// paused alert says it.
+// The moment an agent's change lands, said once on its page: it went live, its new rules are locked, it was renewed.
+// Base takes a couple of seconds, so these replace any step tracker. Pausing and resuming need no moment: they're
+// instant, and the header's pill and button change in place.
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { compareSpecs } from "@bluechip/domain/policies/Catalog"
 import { dayLabel } from "./fieldText.ts"
 
 /** `removed` is only handed over to the list, since a removed agent's page goes back to it. */
-export type AgentMoment = "live" | "changed" | "renewed" | "resumed" | "removed"
+export type AgentMoment = "live" | "changed" | "renewed" | "removed"
 
 /** Where an agent stood, enough to tell which moment its next state is. */
 export interface AgentSnapshot {
@@ -27,7 +27,6 @@ export const agentMoment = (before: AgentSnapshot, after: AgentSnapshot): AgentM
   if (after.status !== "active") return null
   if (before.status === "locking") return "live"
   if (before.status === "updating") return before.renewing ? "renewed" : "changed"
-  if (before.paused && !after.paused) return "resumed"
   return null
 }
 
@@ -47,11 +46,9 @@ export const momentText = (
         title: `${agent.name} is renewed`,
         description: until === null ? "Same rules, new key." : `Same rules, locked until ${until}.`
       }
-    case "resumed":
-      return { title: `${agent.name} is trading again`, description: "It trades inside its rules." }
     case "removed":
       return {
-        title: `${agent.name} is removed`,
+        title: `${agent.name} was removed`,
         description: "It can never trade again. Your stocks and cash stay yours."
       }
   }

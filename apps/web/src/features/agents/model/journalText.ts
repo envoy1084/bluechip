@@ -18,7 +18,7 @@ export const MOMENT_LABEL: Readonly<Record<TradeMoment, string>> = {
   approved: "Approved",
   failed: "Didn't go through",
   declined: "Declined",
-  expired: "Ran out",
+  expired: "Timed out",
   cancelled: "Cancelled"
 }
 
@@ -30,7 +30,7 @@ export const momentNote = (moment: TradeMoment, side: "buy" | "sell"): string | 
     case "waiting":
       return null
     case "sent":
-      return "Within its policies, so it sent it itself."
+      return "Within its policies, so it sends it itself."
     case "approved":
       return "You approved it, and it waited for your Face ID."
     case "blocked":
@@ -105,9 +105,14 @@ export const RULES_AUTHOR: Readonly<Record<SessionAuthor, string>> = {
   automation: "Automation, signed by you"
 }
 
-/** What a filter says when the entries loaded so far have none of its kind. */
-export const EMPTY_FILTER: Readonly<Record<Exclude<JournalFilter, "all">, string>> = {
-  trades: "No trades in these entries.",
-  automations: "No automation runs in these entries.",
-  rules: "Its rules didn't change in these entries."
+/** What a filter says when the entries loaded so far have none of its kind: a title, and where they'd show. */
+export const EMPTY_FILTER: Readonly<
+  Record<Exclude<JournalFilter, "all">, { readonly title: string; readonly description: string }>
+> = {
+  trades: { title: "No trades yet", description: "Each trade it's asked for shows here, with what its rules decided." },
+  automations: {
+    title: "No automation runs yet",
+    description: "Each time one of its automations runs, it shows here."
+  },
+  rules: { title: "No rule changes yet", description: "Each time its rules are changed or renewed, it shows here." }
 }

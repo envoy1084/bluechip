@@ -24,7 +24,10 @@ const summary = (agent: Agent, templateLabel: string): string =>
       `locked until ${dayLabel(agent.lockedUntil)}`
   ].filter((part) => part !== null).join(", ")
 
-/** Who the agent is and what it's doing (and, when done for today, why and until when), with Pause and Remove. */
+/**
+ * Who the agent is and what it's doing (when done for today, why and until when; when paused, that it won't trade),
+ * with Pause or Resume in one place and Remove. Only an agent that may trade now can be paused.
+ */
 export function AgentHeader(
   { agent, state, limit, onRemove }: Readonly<{
     agent: Agent
@@ -35,11 +38,16 @@ export function AgentHeader(
     onRemove: () => void
   }>
 ) {
-  const { busy, failed, pause } = usePauseAgent(agent)
+  const { busy, failed, pause, resume } = usePauseAgent(agent)
   const templateLabel = useTemplateLabel(agent)
-  const promise = agent.template !== null && isTemplateId(agent.template) ? TEMPLATES[agent.template].summary : null
+  const promise = agent.status !== "removed" && agent.template !== null && isTemplateId(agent.template) ?
+    TEMPLATES[agent.template].summary :
+    null
   const removed = agent.status === "removed"
   const removable = agent.status === "draft" || agent.status === "active" || agent.status === "expired"
+  const trading = state === "active" || state === "stopped" || state === "needs-approval" ||
+    (state === "sending" && agent.status === "updating")
+  const resumable = agent.paused && isPausable(agent)
 
   return (
     <section className="flex flex-wrap items-center gap-4 rounded-lg bg-white p-5 shadow-e2">
@@ -58,14 +66,31 @@ export function AgentHeader(
         <span className="text-label-sm text-g-500">{summary(agent, templateLabel)}</span>
         {promise === null ? null : <span className="text-[13.5px] text-g-700">{promise}</span>}
         {state === "stopped" && limit !== null ? <span className="text-label-sm text-g-600">{limit}</span> : null}
-        {failed ? <p role="alert" className="text-label text-loss">We couldn't pause it just now. Try again.</p> : null}
+        {agent.paused && !removed ?
+          <span className="text-label-sm text-g-600">It won't trade until you resume it. Nothing was sold.</span> :
+          null}
+        {failed ?
+          (
+            <p role="alert" className="text-label text-loss">
+              We couldn't {agent.paused ? "resume" : "pause"} it just now. Try again.
+            </p>
+          ) :
+          null}
       </div>
       {removed ? null : (
         <div className="flex flex-wrap items-center gap-2">
-          {isPausable(agent) && !agent.paused ?
+          {resumable || (trading && !agent.paused) ?
             (
-              <Button variant="secondary" size="sm" loading={busy} onClick={() => void pause()}>
-                <Icon name="pause" size={14} />Pause
+              // One button for both, so pressing it keeps focus and the header doesn't move.
+              <Button
+                variant={resumable ? "primary" : "secondary"}
+                size="sm"
+                loading={busy}
+                focusableWhenDisabled
+                onClick={() => void (resumable ? resume() : pause())}
+              >
+                <Icon name={resumable ? "play" : "pause"} size={14} />
+                {resumable ? "Resume" : "Pause"}
               </Button>
             ) :
             null}

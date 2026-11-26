@@ -33,6 +33,8 @@ type NameOf = (symbol: StockSymbol) => string
 
 const stocksOf = (agent: Agent) => agentGlance(agent.spec).stocks
 
+const timesText = (count: number): string => count === 1 ? "once" : count === 2 ? "twice" : `${count} times`
+
 /** One agent: its butterfly and where it stands, its limits at a glance and what it can and never does. */
 export function AgentResult(
   { agent, description }: Readonly<{ agent: Agent; description: SpecDescription }>
@@ -43,7 +45,7 @@ export function AgentResult(
 
   return (
     <LookedResult
-      look={{ ...RESULT_LOOK.getAgent, title: agent.name }}
+      look={RESULT_LOOK.getAgent}
       state="ready"
       action={<OpenLink to="/agents/$agentId" params={{ agentId: agent.id }} />}
     >
@@ -142,7 +144,7 @@ export function AgentPerformanceResult(
   const total = performance.realised + performance.unrealised
   const losing = total < BigInt(0)
   const series = performance.series.map((point) => usdcDollars(point.total))
-  const blockedBy = performance.blockedBy.map((row) => `${policyOf(row.policy).title} ${row.count}`)
+  const blockedBy = performance.blockedBy.map((row) => `${policyOf(row.policy).title} ${timesText(row.count)}`)
 
   return (
     <LookedResult
@@ -152,7 +154,7 @@ export function AgentPerformanceResult(
     >
       <ChatResultHeadline
         value={<span className={losing ? "text-loss" : "text-gain"}>{formatChange(usdcDollars(total))}</span>}
-        detail={`In all, over ${performance.trades} ${performance.trades === 1 ? "trade" : "trades"}`}
+        detail={`In all, from ${performance.trades} ${performance.trades === 1 ? "trade" : "trades"}`}
         aside={series.length < 2 ?
           undefined :
           <Sparkline values={series} width={88} height={28} tone={losing ? "down" : "up"} area />}
@@ -160,7 +162,10 @@ export function AgentPerformanceResult(
       <ChatResultStats>
         <ChatResultStat label="Bought" value={formatMoney(usdcDollars(performance.bought))} />
         <ChatResultStat label="Sold" value={formatMoney(usdcDollars(performance.sold))} />
-        <ChatResultStat label="Blocked" value={`${performance.blocked} of ${performance.decided}`} />
+        <ChatResultStat
+          label="Blocked"
+          value={`${performance.blocked} of ${performance.decided} ${performance.decided === 1 ? "try" : "tries"}`}
+        />
       </ChatResultStats>
       {blockedBy.length === 0 ?
         null :

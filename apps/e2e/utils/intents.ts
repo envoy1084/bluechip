@@ -21,7 +21,7 @@ export const askToBuy = async (page: Page, dollars: number) => {
 
 /**
  * Makes a Stock picker for NVIDIA with a daily budget other than the template's $250 (`createAgent` keeps it), so its
- * "Ask me above" may go higher; locks it with Face ID and resolves on its page.
+ * "Ask you above" may go higher; locks it with Face ID and resolves on its page.
  */
 export const createAgentWithBudget = async (
   page: Page,
@@ -31,7 +31,7 @@ export const createAgentWithBudget = async (
   await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
   await page.getByRole("textbox", { name: "Daily budget" }).fill(String(rules.dailyBudget))
   await openRule(page, "Trade size")
-  await page.getByRole("textbox", { name: "Ask me above" }).fill(String(rules.askAbove))
+  await page.getByRole("textbox", { name: "Ask you above" }).fill(String(rules.askAbove))
 
   await page.getByRole("button", { name: "Review" }).click()
   await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()

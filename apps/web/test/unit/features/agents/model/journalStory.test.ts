@@ -51,7 +51,7 @@ describe("storyOf", () => {
       {
         name: "asking first",
         intent: { status: "needsApproval", decision: { _tag: "Ask" } },
-        expected: appleBuy({ moment: "needsApproval", decision: "It asks you first, so it needs your approval.", why })
+        expected: appleBuy({ moment: "needsApproval", decision: "It asks you first on every trade.", why })
       },
       {
         name: "waiting",

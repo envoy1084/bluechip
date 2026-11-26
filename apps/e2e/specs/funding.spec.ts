@@ -8,13 +8,16 @@ test.describe("add cash", () => {
     await page.goto("/welcome")
     await page.getByRole("button", { name: "Create account with Face ID" }).click()
     await page.getByRole("button", { name: "Continue" }).click()
-    await expect(page.getByRole("heading", { name: "Where do you live?" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Are you a US citizen or resident?" })).toBeVisible()
     await page.getByRole("button", { name: "Continue" }).click()
 
     await expect(page).toHaveURL(/\/welcome\/deposit$/)
-    await expect(page.getByRole("heading", { name: "Deposit cash", level: 1 })).toBeVisible()
-    await expect(page.getByText("Send USDC on Base to this address. It appears in your balance once it arrives."))
-      .toBeVisible()
+    await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
+    await expect(
+      page.getByText(
+        "Send USDC on Base to this address. It shows up here as soon as it lands, or add it later from home."
+      )
+    ).toBeVisible()
     const deposit = page.getByRole("region", { name: "Your deposit address" })
     await expect(
       deposit.getByRole("img", { name: /^QR code to send USDC on Base to 0x[0-9a-fA-F]{4}…[0-9a-fA-F]{4}$/ })
@@ -34,7 +37,7 @@ test.describe("add cash", () => {
     const dialog = page.getByRole("dialog", { name: "Add cash" })
     await expect(dialog.getByText("Send USDC on Base to your bluechip account. It shows up here as soon as it lands."))
       .toBeVisible()
-    await expect(dialog).toContainText(`${user.address.slice(0, 6)}…${user.address.slice(-4)}`)
+    await expect(dialog).toContainText(user.address)
     await expect(dialog.getByRole("button", { name: /test money/ })).toHaveCount(0)
     await user.fund(page)
     await expect(dialog.getByRole("region", { name: "Cash arrived" })).toContainText("$1,000.00")
@@ -78,9 +81,9 @@ test.describe("withdraw", () => {
 
     await dialog.getByRole("button", { name: "Review withdrawal" }).click()
 
-    await expect(dialog.getByRole("definition").nth(0)).toHaveText("$40.00 USDC")
-    await expect(dialog.getByRole("definition").nth(1)).toHaveText("0x0000…dEaD")
-    await expect(dialog.getByRole("definition").nth(2)).toHaveText("Base")
+    await expect(dialog.getByRole("definition").nth(0)).toHaveText("$40.00")
+    await expect(dialog.getByRole("definition").nth(1)).toHaveText(burn)
+    await expect(dialog.getByRole("definition").nth(2)).toHaveText("Base, as USDC")
     await expect(
       dialog.getByText(
         "This is your account's first transaction on Base, so it also sets the account up. You only do this once."
@@ -99,7 +102,7 @@ test.describe("withdraw", () => {
     await dialog.getByRole("textbox", { name: /^To this address on Base/ }).fill(burn)
 
     await expect(dialog.getByRole("textbox", { name: "Amount" })).toHaveAttribute("aria-invalid", "true")
-    await expect(dialog.getByText("You have $1,000.00 in cash. Add cash or lower the amount.")).toBeVisible()
+    await expect(dialog.getByText("You have $1,000.00 in cash. Lower the amount.")).toBeVisible()
     await expect(dialog.getByRole("button", { name: "Review withdrawal" })).toBeDisabled()
   })
 

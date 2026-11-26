@@ -1,9 +1,11 @@
 import { ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
+import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { AutomationRows } from "../components/list/AutomationRows.tsx"
@@ -11,7 +13,8 @@ import { AutomationsOverview, FilterTabs } from "../components/list/AutomationsO
 import { FilterEmpty, NoAutomations } from "../components/list/ListEmpty.tsx"
 import { TraderSelect } from "../components/list/TraderSelect.tsx"
 import { useListedAutomations } from "../hooks/useListedAutomations.ts"
-import { type Filter, shows, sortListed, type TraderFilter, tradesThrough } from "../model/standing.ts"
+import { type Filter, FILTERS_FROM, shows, sortListed, type TraderFilter, tradesThrough } from "../model/standing.ts"
+import { specOf, takesAutomations } from "../model/traders.ts"
 
 function NewAutomationButton({ size = "sm" }: Readonly<{ size?: "sm" | "md" }>) {
   return (
@@ -30,6 +33,8 @@ export function AutomationsScreen() {
   const [filter, setFilter] = useState<Filter>("all")
   const [trader, setTrader] = useState<TraderFilter>("all")
   const [now] = useState(() => new Date())
+  const agents = useAtomValue(agentsAtom)
+  const traders = AsyncResult.isSuccess(agents) ? agents.value.filter(takesAutomations) : []
 
   const body = () => {
     if (AsyncResult.isInitial(listed)) {
@@ -49,6 +54,7 @@ export function AutomationsScreen() {
       return (
         <NoAutomations
           title="No automations yet"
+          start={{ specs: [null, ...traders.map(specOf)] }}
           actions={
             <>
               <NewAutomationButton size="md" />
@@ -67,18 +73,22 @@ export function AutomationsScreen() {
     }
 
     // A trader whose automations are all gone shows everyone's again.
-    const picked = rows.some((row) => tradesThrough(row.automation, trader)) ? trader : "all"
+    const filters = rows.length >= FILTERS_FROM
+    const picked = filters && rows.some((row) => tradesThrough(row.automation, trader)) ? trader : "all"
+    const filtered = filters ? filter : "all"
     const theirs = rows.filter((row) => tradesThrough(row.automation, picked))
-    const shown = sortListed(theirs.filter((row) => shows(row, filter)))
+    const shown = sortListed(theirs.filter((row) => shows(row, filtered)))
     return (
       <>
         <AutomationsOverview listed={theirs} now={now} />
-        <div className="flex flex-wrap items-center gap-2.5">
-          <TraderSelect listed={rows} trader={picked} onChange={setTrader} />
-          <FilterTabs listed={theirs} filter={filter} onChange={setFilter} />
-        </div>
-        {shown.length === 0 && filter !== "all" ?
-          <FilterEmpty filter={filter} /> :
+        {!filters ? null : (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <TraderSelect listed={rows} trader={picked} onChange={setTrader} />
+            <FilterTabs listed={theirs} filter={filter} onChange={setFilter} />
+          </div>
+        )}
+        {shown.length === 0 && filtered !== "all" ?
+          <FilterEmpty filter={filtered} /> :
           <AutomationRows rows={shown} showTrader={picked === "all"} now={now} />}
       </>
     )

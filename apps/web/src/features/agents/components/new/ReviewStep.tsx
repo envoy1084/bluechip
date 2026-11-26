@@ -8,7 +8,7 @@ import { configOf } from "@bluechip/domain/policies/Policy"
 import { rebalance } from "@bluechip/domain/policies/Rebalance"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
-import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import { isNoTradeLimit, tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
@@ -28,6 +28,7 @@ import { type Origin, originLabel, originTemplate } from "../../model/origin.ts"
 import { SaveTemplate } from "../SaveTemplate.tsx"
 import { AgentAtAGlance } from "../spec/AgentAtAGlance.tsx"
 import { TargetMixBar } from "../spec/TargetMixBar.tsx"
+import { StepFoot } from "./NewAgentShell.tsx"
 
 /** Whether `name` can be an agent's name: something to call it, short enough for a card. */
 const nameProblem = (name: string): string | undefined => {
@@ -36,22 +37,40 @@ const nameProblem = (name: string): string | undefined => {
   return trimmed.length > MAX_NAME_LENGTH ? `Keep it to ${MAX_NAME_LENGTH} characters.` : undefined
 }
 
-/** The most it could do on its worst day, from its policies. */
+/**
+ * The most it could do on its worst day, from its policies, its money cap first: what it could spend, how big a trade,
+ * and how many trades only when that's a limit of its own.
+ */
 function WorstCase({ spec, nameOf }: Readonly<{ spec: AgentSpec; nameOf: (symbol: StockSymbol) => string }>) {
-  const count = configOf(spec.policies, tradesPerDay)?.count ?? 0
+  const perDay = configOf(spec.policies, tradesPerDay)
   const maxPerTrade = configOf(spec.policies, tradeSize)?.maxPerTrade ?? BigInt(0)
   const budget = configOf(spec.policies, trade)?.dailyBudget ?? BigInt(0)
   const stocks = configOf(spec.policies, trade)?.stocks ?? []
+  const count = perDay === undefined || isNoTradeLimit(perDay) ?
+    null :
+    (
+      <>
+        , in at most <b>{perDay.count === 1 ? "one trade" : `${perDay.count} trades`}</b>
+      </>
+    )
 
   return (
     <WorstCaseCard>
-      On its worst day, this agent could make <b>{count === 1 ? "one trade" : `${count} trades`}</b> of up to{" "}
-      <b>{formatDollars(maxPerTrade)}</b> each
-      {budget > BigInt(0) && (
-        <>
-          , spending at most <b>{formatDollars(budget)}</b> on buys
-        </>
-      )}, only in {listNames(stocks.map(nameOf))}. It can never move money out of your account.
+      {budget > BigInt(0) ?
+        (
+          <>
+            On its worst day, this agent could spend at most <b>{formatDollars(budget)}</b> on buys, up to{" "}
+            <b>{formatDollars(maxPerTrade)}</b> a trade{count}, only in{" "}
+            {listNames(stocks.map(nameOf))}. It can never move money out of your account.
+          </>
+        ) :
+        (
+          <>
+            On its worst day, this agent could sell up to <b>{formatDollars(maxPerTrade)}</b> a trade{count}, only in
+            {" "}
+            {listNames(stocks.map(nameOf))}. It never buys, and it can never move money out of your account.
+          </>
+        )}
     </WorstCaseCard>
   )
 }
@@ -169,15 +188,7 @@ export function ReviewStep(
           )}
         </div>
 
-        <AgentAtAGlance
-          spec={spec}
-          nameOf={nameOf}
-          action={
-            <Button variant="secondary" size="sm" onClick={onEdit}>
-              <Icon name="edit" size={14} />Edit rules
-            </Button>
-          }
-        />
+        <AgentAtAGlance spec={spec} nameOf={nameOf} />
 
         {automations}
 
@@ -222,20 +233,16 @@ export function ReviewStep(
             <AlertDescription>{editProblem}</AlertDescription>
           </Alert>
         )}
+      </div>
 
-        <PasskeyButton
-          size="lg"
-          disabled={!ready}
-          doneLabel="Sent"
-          onAuthenticate={async () => onSent(await sign(prepare))}
-          className="w-full"
-        >
-          Lock these rules with Face ID
-        </PasskeyButton>
-        <Button variant="ghost" className="w-full" onClick={onEdit}>
+      <StepFoot className="lg:col-span-2">
+        <Button variant="ghost" onClick={onEdit}>
           <Icon name="arrow-left" size={16} />Back to rules
         </Button>
-      </div>
+        <PasskeyButton disabled={!ready} doneLabel="Sent" onAuthenticate={async () => onSent(await sign(prepare))}>
+          Lock these rules with Face ID
+        </PasskeyButton>
+      </StepFoot>
     </div>
   )
 }

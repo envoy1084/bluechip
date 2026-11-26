@@ -84,8 +84,8 @@ describe("needsYou", () => {
       [{
         key: "approvals",
         tone: "warn",
-        title: "A trade waits for your Face ID",
-        detail: "From Tech picker. It ends in 5 h.",
+        title: "1 trade waits for your approval",
+        detail: "From Tech picker. It expires in 5 h.",
         action: { _tag: "approvals" },
         actionLabel: "Review"
       }]
@@ -108,7 +108,7 @@ describe("needsYou", () => {
 
     assert.deepStrictEqual(
       [need?.tone, need?.title, need?.detail],
-      ["urgent", "2 trades wait for your Face ID", "From Index keeper and Tech picker. The first ends in 40 min."]
+      ["urgent", "2 trades wait for your approval", "From Index keeper and Tech picker. The first expires in 40 min."]
     )
   })
 
@@ -131,7 +131,7 @@ describe("needsYou", () => {
         title: "Monthly split needs attention",
         detail: "Its last run didn't go through.",
         action: { _tag: "automation", automationId: SPLIT },
-        actionLabel: "Look"
+        actionLabel: "Review"
       }]
     )
   })
@@ -271,7 +271,7 @@ describe("needsYou", () => {
       }),
       [
         "Your account is being recovered",
-        "A trade waits for your Face ID",
+        "1 trade waits for your approval",
         "Amazon idea isn't trading yet",
         "Add a recovery key"
       ]

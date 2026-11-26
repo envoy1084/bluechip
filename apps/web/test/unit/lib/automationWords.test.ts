@@ -9,7 +9,7 @@ describe("standingOf", () => {
       { name: "active, never run", status: "active", runs: [], expected: "active" },
       { name: "paused, its last run failed", status: "paused", runs: ["failed"], expected: "paused" },
       { name: "done", status: "done", runs: ["proposed"], expected: "ended" },
-      { name: "expired", status: "expired", runs: [], expected: "ended" },
+      { name: "expired", status: "expired", runs: [], expected: "expired" },
       { name: "deleted", status: "deleted", runs: [], expected: "ended" }
     ] as const
   )("$name", ({ expected, runs, status }) => {

@@ -4,11 +4,11 @@ import { ChatComposer } from "@bluechip/ui/bluechip/chat-composer"
 import { ChatConversation, ChatConversationContent, ChatScrollButton } from "@bluechip/ui/bluechip/chat-conversation"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { type ReactNode, useCallback } from "react"
+import { useCallback } from "react"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useNow } from "../../../hooks/useNow.ts"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
@@ -17,27 +17,8 @@ import { budgetAtom } from "../atoms/assistant.ts"
 import type { useAssistant } from "../hooks/useAssistant.ts"
 import { AgentPicker } from "./AgentPicker.tsx"
 import type { CardViews } from "./cards/CardViews.ts"
+import { ChatStartHeading, useStartIdeas } from "./ChatStart.tsx"
 import { Thread } from "./Thread.tsx"
-
-interface Suggestion {
-  readonly icon: IconName
-  readonly ask: string
-  readonly hint: string
-}
-
-const SUGGESTIONS: ReadonlyArray<Suggestion> = [
-  { icon: "activity", ask: "What did my agents do today?", hint: "Their trades, refusals and approvals" },
-  { icon: "portfolio", ask: "How did I do this week?", hint: "Profit by stock and by agent" },
-  { icon: "agents", ask: "Create an agent that only rebalances", hint: "Set a target mix in words" },
-  { icon: "zap", ask: "Buy $50 of Apple every Monday", hint: "An automation from one sentence" }
-]
-
-const AGENT_SUGGESTIONS: ReadonlyArray<Suggestion> = [
-  { icon: "activity", ask: "What has this agent done this week?", hint: "Its trades and why" },
-  { icon: "stocks", ask: "Sell $50 of Nvidia", hint: "Through its rules" },
-  { icon: "zap", ask: "Add an automation to this agent", hint: "On a schedule, a price or the news" },
-  { icon: "pause", ask: "Pause this agent", hint: "Nothing trades until you resume" }
-]
 
 /** The column's width: one readable measure, centred. */
 const COLUMN = "mx-auto w-full max-w-[720px] px-4 md:px-6"
@@ -45,12 +26,10 @@ const COLUMN = "mx-auto w-full max-w-[720px] px-4 md:px-6"
 /**
  * One conversation in the chat page's centre column: the thread, which follows a streaming answer to the bottom,
  * then the composer with who the trades go through, the suggestions and a notice once the day's budget is spent.
- * `empty` is what shows before the first message.
  */
 export function Conversation(
-  { assistant, empty, initialMessage, Trade }: Readonly<{
+  { assistant, initialMessage, Trade }: Readonly<{
     assistant: ReturnType<typeof useAssistant>
-    empty: ReactNode
     /** Put in the box to edit or send, as when a suggestion elsewhere led here. */
     initialMessage?: string | undefined
     Trade: CardViews["Trade"]
@@ -62,6 +41,7 @@ export function Conversation(
   const { nameOf } = useStockLookup()
   const spent = AsyncResult.isSuccess(budget) && isSpent(budget.value)
   const fresh = state.entries.length === 0 && state.load === "ready"
+  const ideas = useStartIdeas(state.agentId)
 
   // Opening a conversation puts you in its box (keyed below, so it mounts again), as does the start screen turning
   // into the thread. Only where there is a mouse or trackpad: on touch screens it would pop the keyboard up.
@@ -107,12 +87,12 @@ export function Conversation(
         <div className={`${COLUMN} my-auto grid gap-6 py-10`}>
           <div className="grid justify-items-center gap-2 text-center">
             <Illustration name="chat" variant="halftone" size={132} animate className="-mb-1" />
-            {empty}
+            <ChatStartHeading agentId={state.agentId} />
           </div>
           {budgetNotice}
           {composer}
           <ul aria-label="Ideas to start with" className="grid gap-2.5 sm:grid-cols-2">
-            {(state.agentId === null ? SUGGESTIONS : AGENT_SUGGESTIONS).map((idea) => (
+            {ideas.map((idea) => (
               <li key={idea.ask}>
                 <button
                   type="button"
@@ -150,7 +130,7 @@ export function Conversation(
             state.load === "failed" ?
             <LoadProblem what="this conversation" onRetry={reload} size="sm" /> :
             state.entries.length === 0 ?
-            empty :
+            <ChatStartHeading agentId={state.agentId} /> :
             <Thread entries={state.entries} onCard={updateCard} onRetry={retry} Trade={Trade} nameOf={nameOf} />}
         </ChatConversationContent>
         <ChatScrollButton />

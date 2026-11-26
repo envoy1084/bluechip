@@ -350,7 +350,7 @@ describe("describeSpec", () => {
         "Spend up to $250 a day",
         "Trade up to $100 at a time, and ask you before anything bigger",
         "Trade on weekends and holidays, with a tighter price limit",
-        "Trade 500 times a day at most"
+        "Trade as often as its budget allows"
       ],
       never: [
         "Send money out of your account",
@@ -388,7 +388,7 @@ describe("describeSpec", () => {
         "Trade up to $200 at a time, and ask you before anything bigger",
         "Trade on weekends and holidays, with a tighter price limit",
         "Start rebalancing once your mix is 5% off target",
-        "Trade 500 times a day at most"
+        "Trade as often as its budget allows"
       ],
       never: [
         "Send money out of your account",

@@ -182,7 +182,7 @@ const controlResult = (card: Extract<Card, { readonly _tag: "AgentControl" }>): 
  * import { chatNotification } from "@bluechip/domain/channels/ChatCards"
  *
  * chatNotification({ kind: "approvalNeeded", title: "Tech picker needs your approval", body: "Buy $150.00 of NVIDIA.", link: "/home?sheet=approvals" } as never)
- * // => { markdown: "**Tech picker needs your approval**\nBuy $150.00 of NVIDIA.", actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }, { _tag: "PauseAll" }] }
+ * // => { markdown: "**Tech picker needs your approval**\nBuy $150.00 of NVIDIA.", actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }] }
  * ```
  *
  * @stability unstable
@@ -193,8 +193,9 @@ export const chatNotification = (
   notification: Pick<Notification, "kind" | "title" | "body" | "link">
 ): ChatReply => {
   const markdown = `**${notification.title}**\n${notification.body}`
-  const own = actionsOf(notification.kind).map((action): ChatAction =>
-    action === "pauseAll" ? { _tag: "PauseAll" } : { _tag: "CancelRecovery" }
+  // Review is the link itself ("Approve in bluechip"): a chat never signs.
+  const own = actionsOf(notification.kind).flatMap((action): Array<ChatAction> =>
+    action === "pauseAll" ? [{ _tag: "PauseAll" }] : action === "cancelRecovery" ? [{ _tag: "CancelRecovery" }] : []
   )
   if (notification.link === null) return reply(markdown, ...own)
   const label = notification.kind === "approvalNeeded" || notification.kind === "approvalExpiring" ?

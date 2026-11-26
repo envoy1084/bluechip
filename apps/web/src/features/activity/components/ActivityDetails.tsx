@@ -16,12 +16,14 @@ import { formatDate, formatMoney, formatShares } from "@bluechip/ui/lib/format"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
+import { type RefObject, useRef, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
-import { activityAt, activityStatus, activityTitle } from "../../../lib/activityText.ts"
-import { bpsPercent, priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
+import { activityAt, activityStatus, activityTitle, fairPriceText } from "../../../lib/activityText.ts"
+import { priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { receiptWhen } from "../model/receipt.ts"
+
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
 
 function Transaction({ txHash }: Readonly<{ txHash: string | null }>) {
   if (txHash === null) return <>Not on Base yet</>
@@ -42,21 +44,42 @@ function Transaction({ txHash }: Readonly<{ txHash: string | null }>) {
  * status and transaction.
  */
 export function ActivityDetails(
-  { item, names, onClose }: Readonly<{
+  { item, names, opener, onClose }: Readonly<{
     item: ActivityItem | undefined
     names: ReadonlyMap<StockSymbol, string>
+    /** The row that opened it, where focus goes back on close. */
+    opener: RefObject<HTMLElement | null>
     onClose: () => void
   }>
 ) {
+  const title = useRef<HTMLHeadingElement>(null)
+  const agents = useAtomValue(agentsAtom)
+  const [now] = useState(() => new Date())
+
+  // A filled trade says who sent it and when under the title; its receipt below then holds only what moved.
+  const filled = item?._tag === "Trade" && item.trade.status === "filled" ? item.trade : null
+  const by = filled === null ?
+    null :
+    filled.agentId === null ?
+    "You" :
+    (AsyncResult.isSuccess(agents) ? agents.value.find((each) => each.id === filled.agentId)?.name : undefined) ??
+      "An agent"
+
   return (
     <Sheet open={item !== undefined} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent>
+      <SheetContent initialFocus={title} finalFocus={opener}>
         {item !== undefined && (
           <>
             <SheetHeader>
-              <SheetTitle>{activityTitle(item, names)}</SheetTitle>
+              <SheetTitle ref={title} tabIndex={-1} className="outline-none">{activityTitle(item, names)}</SheetTitle>
               <SheetDescription>
-                {formatDate(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() })}
+                {filled === null ?
+                  formatDate(DateTime.toDateUtc(activityAt(item)), { timeZone: localTimeZone() }) :
+                  `${by}, ${
+                    lowerFirst(
+                      receiptWhen(DateTime.toDateUtc(filled.settledAt ?? filled.createdAt), now, localTimeZone())
+                    )
+                  }`}
               </SheetDescription>
             </SheetHeader>
             <SheetBody className="grid content-start gap-4">
@@ -89,15 +112,10 @@ export function ActivityDetails(
   )
 }
 
-/** A filled trade, kept: who sent it and when, what moved, then how its price compared with Chainlink's. */
+/** A filled trade, kept: what moved, then how its price compared with Chainlink's. */
 function Receipt(
   { trade, names }: Readonly<{ trade: Trade; names: ReadonlyMap<StockSymbol, string> }>
 ) {
-  const agents = useAtomValue(agentsAtom)
-  const [now] = useState(() => new Date())
-  const agent = AsyncResult.isSuccess(agents) ? agents.value.find((each) => each.id === trade.agentId) : undefined
-  const by = trade.agentId === null ? "You" : agent?.name ?? "An agent"
-
   return (
     <>
       <TradeReceipt
@@ -107,8 +125,9 @@ function Receipt(
         shares={shareCount(trade.shares)}
         price={priceDollars(trade.price)}
         total={usdcDollars(trade.usdc)}
-        by={by}
-        when={receiptWhen(DateTime.toDateUtc(trade.settledAt ?? trade.createdAt), now, localTimeZone())}
+        by=""
+        when=""
+        header={false}
         {...(trade.txHash === null ? {} : { txHash: trade.txHash })}
       />
       <OrderPreview>
@@ -126,9 +145,7 @@ function PriceCheckRows({ trade }: Readonly<{ trade: Trade }>) {
         {trade.referenceStatus === "paused" ? " (paused)" : ""}
       </OrderPreviewRow>
       <OrderPreviewRow label="Fair price check">
-        <FairPriceCheck>
-          {Math.abs(bpsPercent(trade.gapBps)).toFixed(2)}% {trade.gapBps > 0 ? "worse" : "better"} than Chainlink
-        </FairPriceCheck>
+        <FairPriceCheck>{fairPriceText(trade.gapBps)}</FairPriceCheck>
       </OrderPreviewRow>
     </>
   )
@@ -148,7 +165,7 @@ function TradeRows(
         {names.get(trade.symbol) ?? trade.symbol}
       </OrderPreviewRow>
       <OrderPreviewRow label={buying ? "You paid" : "You got"}>
-        {formatMoney(usdcDollars(trade.usdc))} USDC (quoted)
+        {formatMoney(usdcDollars(trade.usdc))} (quoted)
       </OrderPreviewRow>
       <OrderPreviewRow label="Shares">{formatShares(shareCount(trade.shares))}</OrderPreviewRow>
       <OrderPreviewRow label="Price">{formatMoney(priceDollars(trade.price))} a share</OrderPreviewRow>

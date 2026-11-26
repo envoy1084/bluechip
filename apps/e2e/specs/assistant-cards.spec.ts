@@ -120,7 +120,7 @@ test.describe("template cards", () => {
 
     await card.getByRole("button", { name: "Not now" }).click()
 
-    await expect(card.getByText("Not now", { exact: true })).toBeVisible()
+    await expect(card.getByText("Dismissed", { exact: true })).toBeVisible()
     await page.goto("/agents/new")
     await expect(page.getByRole("radio", { name: /^Stock picker/ })).toBeVisible()
     await expect(page.getByRole("radio", { name: /^Steady picks/ })).toBeHidden()

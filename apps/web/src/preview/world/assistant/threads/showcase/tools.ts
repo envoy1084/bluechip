@@ -61,7 +61,7 @@ export const everyToolRow = (context: ThreadContext): ReadonlyArray<Turn> => {
         ],
         [
           getAgentJournal(mint, agent),
-          ...(refused === null ? [] : [explainDecision(mint, refused, "Its stock cap refused it.")])
+          ...(refused === null ? [] : [explainDecision(mint, refused, "Its Max in one stock policy refused it.")])
         ],
         [
           listPolicies(mint),

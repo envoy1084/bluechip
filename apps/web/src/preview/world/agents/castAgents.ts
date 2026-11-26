@@ -1,16 +1,23 @@
 // A cast agent as it would be after the days it has lived: locked with a template's earlier preset, changed to the
 // cast's, a change that failed and renewals for long-lived ones (one after its session ran out), then put in its
-// cast state. Usage and the journal's trades follow its template.
+// cast state. Its journal's trades and today's usage are the market's trades through it, so its journal, history,
+// results and usage count the same ones.
 import { SESSION_DAYS } from "@bluechip/domain/agents/Agent"
-import { limitsOf } from "@bluechip/domain/automations/AgentLimits"
+import type { JournalEntryId } from "@bluechip/domain/Ids"
+import { JournalEntry, journalOfIntent } from "@bluechip/domain/journal/Journal"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { complete } from "@bluechip/domain/policies/Catalog"
+import { configOf } from "@bluechip/domain/policies/Policy"
 import { draftSpec, type Preset } from "@bluechip/domain/policies/Templates"
+import { trade } from "@bluechip/domain/policies/Trade"
+import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import type { Trade } from "@bluechip/domain/trading/Trade"
 import * as DateTime from "effect/DateTime"
 import type { CastAgent } from "../cast.ts"
+import type { IntentRecord, MarketSlice } from "../market/model.ts"
 import { type AgentRecord, type IdCounter, saveSession, sessionOf, type UsageLimit } from "./AgentRecord.ts"
 import { addSession, changedSpec, setAgentState } from "./AgentStates.ts"
-import { tradeHistory } from "./journal.ts"
+import { stockName } from "./stockName.ts"
 
 const EARLIER: Readonly<Record<Preset, Preset>> = {
   conservative: "balanced",
@@ -18,13 +25,46 @@ const EARLIER: Readonly<Record<Preset, Preset>> = {
   active: "balanced"
 }
 
-/** What a new agent has used today, by its template. */
+/** What a new agent has used of its gas and this week's slippage, by its template; its trades count the rest. */
 const usageFor = (template: string | null): Record<UsageLimit, number> =>
   template === "rebalancer" ?
-    { trade: 0.45, tradesPerDay: 0.02, gasBudget: 0.3, slippageBudget: 0.6 } :
+    { trade: 0, tradesPerDay: 0, gasBudget: 0.3, slippageBudget: 0.6 } :
     template === "stopLossGuard" ?
-    { trade: 0, tradesPerDay: 0.004, gasBudget: 0.05, slippageBudget: 0.1 } :
-    { trade: 0.3, tradesPerDay: 0.01, gasBudget: 0.1, slippageBudget: 0.2 }
+    { trade: 0, tradesPerDay: 0, gasBudget: 0.05, slippageBudget: 0.1 } :
+    { trade: 0, tradesPerDay: 0, gasBudget: 0.1, slippageBudget: 0.2 }
+
+const DAY = 86_400_000
+
+// Today's share of its daily budget and trades, from its trades that filled since midnight UTC.
+const usedToday = (
+  spec: AgentSpec,
+  trades: ReadonlyArray<Trade>,
+  now: DateTime.Utc
+): Pick<Record<UsageLimit, number>, "trade" | "tradesPerDay"> => {
+  const midnight = Math.floor(DateTime.toEpochMillis(now) / DAY) * DAY
+  const today = trades.filter((fill) => fill.status === "filled" && DateTime.toEpochMillis(fill.createdAt) >= midnight)
+  const spent = today.filter((fill) => fill.side === "buy").reduce((sum, fill) => sum + Number(fill.usdc), 0)
+  const budget = Number(configOf(spec.policies, trade)?.dailyBudget ?? BigInt(0))
+  const count = configOf(spec.policies, tradesPerDay)?.count ?? 0
+  return { trade: budget === 0 ? 0 : spent / budget, tradesPerDay: count === 0 ? 0 : today.length / count }
+}
+
+// Its intents as its journal tells them, each at its last change.
+const journalOf = (record: AgentRecord, intents: ReadonlyArray<IntentRecord>): Array<JournalEntry> =>
+  intents.flatMap(({ intent }) => {
+    const entry = intent.agentId === record.id ? journalOfIntent(intent, stockName) : undefined
+    if (entry === undefined) return []
+    return [
+      new JournalEntry({
+        id: `journal_${intent.id.slice(intent.id.indexOf("_") + 1)}` as JournalEntryId,
+        agentId: record.id,
+        at: intent.updatedAt,
+        kind: "intent",
+        entry,
+        refs: { intentId: intent.id }
+      })
+    ]
+  })
 
 // Locks `spec` again with a new key at `at`: the session before it replaced, or expired if it had run out.
 const renew = (ids: IdCounter, record: AgentRecord, at: DateTime.Utc) => {
@@ -46,7 +86,12 @@ const renew = (ids: IdCounter, record: AgentRecord, at: DateTime.Utc) => {
 }
 
 /** The cast agent with its history, as of `now`. */
-export const castAgent = (ids: IdCounter, cast: CastAgent, now: DateTime.Utc): AgentRecord => {
+export const castAgent = (
+  ids: IdCounter,
+  cast: CastAgent,
+  now: DateTime.Utc,
+  market: Pick<MarketSlice, "intents" | "trades">
+): AgentRecord => {
   const spec: AgentSpec = draftSpec(cast)
   const earlier = draftSpec({ ...cast, preset: EARLIER[cast.preset] })
   const createdAt = DateTime.subtract(now, { days: cast.ageDays, hours: 3 })
@@ -118,15 +163,16 @@ export const castAgent = (ids: IdCounter, cast: CastAgent, now: DateTime.Utc): A
     saveSession(record, record.currentSessionId!, { endedAt: DateTime.subtract(now, { days: 12 }) })
   }
 
-  // It trades until it stopped: its session's end, its removal, or a couple of days before you paused it.
-  const current = sessionOf(record, record.currentSessionId)
-  const until = cast.state === "expired" || cast.state === "removed" ?
-    current!.endedAt! :
-    cast.state === "paused" ?
-    DateTime.subtract(now, { days: 2 }) :
+  record.journal = journalOf(record, market.intents)
+  const today = usedToday(
+    spec,
+    market.trades.map((each) => each.trade).filter((fill) => fill.agentId === record.id),
     now
-  record.journal = current === undefined
-    ? []
-    : tradeHistory(ids, record, { limits: limitsOf(spec)!, from: createdAt, until })
+  )
+  record.usage = {
+    ...record.usage,
+    trade: Math.max(record.usage.trade, today.trade),
+    tradesPerDay: Math.max(record.usage.tradesPerDay, today.tradesPerDay)
+  }
   return record
 }

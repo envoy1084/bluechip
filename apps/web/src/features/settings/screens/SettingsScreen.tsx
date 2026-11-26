@@ -62,7 +62,7 @@ export function SettingsScreen() {
       />
       <Section
         title="Audit log"
-        description="Everything that happened to your account, saved as JSON."
+        description="Everything that happened to your account, yours to search and download."
         illustration="magnifier"
         action={
           <ButtonLink variant="secondary" size="sm" render={<Link to="/settings/audit" />}>

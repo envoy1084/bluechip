@@ -28,11 +28,15 @@ import {
 } from "@bluechip/domain/tools/PerformanceTools"
 import { Trade } from "@bluechip/domain/trading/Trade"
 import * as DateTime from "effect/DateTime"
+import { changeOf } from "../market/prices.ts"
 import { nameOf, priceOf, shares, usdc } from "./castRecords.ts"
 import type { Mint } from "./mint.ts"
 import { type Beat, read } from "./rounds.ts"
 
 const TOKEN = "0x2f8c0000000000000000000000000000000a11ce" as Address
+// A stock's move today, its own on a mixed day, so each holding moves by its own amount.
+const dayChange = (symbol: StockSymbol) => Bps.make(Math.round(changeOf(symbol, "mixed") * 10_000))
+
 const FEED = "0x7a3b0000000000000000000000000000000fee0d" as Address
 
 const marketPrice = (mint: Mint, symbol: StockSymbol) =>
@@ -54,7 +58,7 @@ const stockOf = (mint: Mint, symbol: StockSymbol, priced: boolean) =>
     reference: priced ?
       new ReferencePrice({ symbol, price: priceOf(symbol), updatedAt: mint.at(0.02), status: "live" }) :
       null,
-    change24h: priced ? Bps.make(152) : null
+    change24h: priced ? dayChange(symbol) : null
   })
 
 /** The cast's portfolio now; `empty` for an account with nothing in it yet. */
@@ -80,7 +84,7 @@ export const getPortfolio = (mint: Mint, empty = false): Beat => {
           ...holding,
           price: marketPrice(mint, holding.symbol),
           weightBps: Bps.make(value === BigInt(0) ? 0 : Number(holding.value * BigInt(10_000) / value)),
-          change24h: Bps.make(152)
+          change24h: dayChange(holding.symbol)
         })
       ),
       change24h: value / BigInt(80),
@@ -236,9 +240,13 @@ export const getAutomationPerformance = (mint: Mint, automationId: AutomationId,
     new AutomationPerformance({
       automationId,
       runs,
-      outcomes: [new RunCount({ outcome: "proposed", count: runs }), new RunCount({ outcome: "skipped", count: 1 })],
-      trades: runs,
-      bought: usdc(50 * runs),
+      // Every run but one traded; the other found nothing to do.
+      outcomes: runs === 0 ? [] : [
+        new RunCount({ outcome: "proposed", count: runs - 1 }),
+        new RunCount({ outcome: "skipped", count: 1 })
+      ],
+      trades: Math.max(0, runs - 1),
+      bought: usdc(50 * Math.max(0, runs - 1)),
       sold: usdc(0),
       realised: BigInt(0),
       costs: COSTS,

@@ -1,5 +1,6 @@
 // What a tool row says: each tool in words, while it runs and once it's done.
 import { RESEARCH_TOOL } from "@bluechip/domain/tools/Toolkit"
+import * as Predicate from "effect/Predicate"
 import type { ToolRow } from "./thread.ts"
 
 const LABELS: Readonly<Record<string, readonly [running: string, done: string]>> = {
@@ -28,6 +29,9 @@ const LABELS: Readonly<Record<string, readonly [running: string, done: string]>>
   changeAgentPolicies: ["Preparing the change", "Prepared the change"],
   renewAgent: ["Preparing the renewal", "Prepared the renewal"],
   removeAgent: ["Preparing the removal", "Prepared the removal"],
+  listAutomations: ["Reading your automations", "Read your automations"],
+  createAutomation: ["Drafting the automation", "Drafted the automation"],
+  pauseAutomation: ["Preparing to pause the automation", "Ready to pause the automation"],
   remember: ["Saving a memory", "Saved a memory"],
   forget: ["Forgetting a memory", "Forgot a memory"],
   listMemories: ["Reading your memories", "Read your memories"],
@@ -42,9 +46,17 @@ const LABELS: Readonly<Record<string, readonly [running: string, done: string]>>
 
 const FALLBACK = ["Working on it", "Done"] as const
 
+const RESUME_AUTOMATION = ["Preparing to resume the automation", "Ready to resume the automation"] as const
+
+// One tool both pauses and resumes an automation; its arguments say which.
+const labelsOf = (row: ToolRow): readonly [running: string, done: string] =>
+  row.name === "pauseAutomation" && Predicate.hasProperty(row.params, "resume") && row.params.resume === true ?
+    RESUME_AUTOMATION :
+    LABELS[row.name] ?? FALLBACK
+
 /** "Reading your portfolio…", "Read your portfolio", or "Didn't finish reading your portfolio". */
 export const toolLabel = (row: ToolRow): string => {
-  const [running, done] = LABELS[row.name] ?? FALLBACK
+  const [running, done] = labelsOf(row)
   if (row.state === "running") return `${running}…`
   if (row.state === "done") return done
   return `Didn't finish ${running.charAt(0).toLowerCase()}${running.slice(1)}`

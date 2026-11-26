@@ -1,12 +1,20 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
+import { toast } from "@bluechip/ui/components/toast"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { agentsAtom, pauseAllAgentsAtom, resumeAllAgentsAtom } from "../atoms/agents.ts"
 import { agentsReactivityKey } from "../lib/api/client.ts"
 
-/** Whether bluechip can pause it: anything locked or on its way to be, not a draft or a removed agent. */
-export const isPausable = (agent: Agent): boolean => agent.status !== "draft" && agent.status !== "removed"
+/**
+ * Whether pausing all of them pauses it: what the server's pause all pauses, an agent locked or with a lock, change or
+ * removal on its way. Not a draft, an agent that ran out or a removed one, which can't trade anyway.
+ */
+export const isPausable = (agent: Agent): boolean =>
+  agent.status === "locking" || agent.status === "active" || agent.status === "updating" ||
+  agent.status === "removing"
+
+const agentsWord = (count: number) => count === 1 ? "1 agent" : `${count} agents`
 
 /**
  * The kill switch over every agent: shown once one can be paused, and offering to resume once all of them are.
@@ -23,10 +31,16 @@ export function usePauseAll() {
   const allPaused = pausable.length > 0 && pausable.every((agent) => agent.paused)
 
   const toggle = async () => {
+    const resuming = allPaused
+    const count = pausable.filter((agent) => agent.paused === resuming).length
     setBusy(true)
     setFailed(false)
     try {
-      await (allPaused ? resumeAll : pauseAll)({ reactivityKeys: [agentsReactivityKey] })
+      await (resuming ? resumeAll : pauseAll)({ reactivityKeys: [agentsReactivityKey] })
+      toast.success(
+        resuming ? `Resumed ${agentsWord(count)}` : `Paused ${agentsWord(count)}`,
+        { description: resuming ? "They trade again within their rules." : "None of them trade until you resume them." }
+      )
     } catch {
       setFailed(true)
     } finally {

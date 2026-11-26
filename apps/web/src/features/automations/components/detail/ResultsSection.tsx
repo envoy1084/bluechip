@@ -1,16 +1,12 @@
-import type { AutomationId } from "@bluechip/domain/Ids"
 import type { AutomationPerformance } from "@bluechip/domain/performance/Performance"
 import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatChange, formatMoney } from "@bluechip/ui/lib/format"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
-import { useAtomValue } from "@effect/atom-react/Hooks"
-import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { usdcDollars } from "../../../../lib/amounts.ts"
 import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
 import { costsSentence } from "../../../../lib/performance.ts"
-import { automationPerformanceAtom } from "../../atoms/performance.ts"
 import { runsSentence } from "../../model/results.ts"
 import { OUTCOME_MARK } from "../RunStrip.tsx"
 
@@ -153,11 +149,7 @@ function Realised({ performance }: Readonly<{ performance: AutomationPerformance
 }
 
 /** What the automation's runs came to: how they ended, the money its trades moved, and what their sales locked in. */
-export function ResultsSection({ automationId }: Readonly<{ automationId: AutomationId }>) {
-  const result = useAtomValue(automationPerformanceAtom(automationId))
-  if (!AsyncResult.isSuccess(result) || result.value.runs === 0) return null
-
-  const performance = result.value
+export function ResultsSection({ performance }: Readonly<{ performance: AutomationPerformance }>) {
   return (
     <section aria-labelledby="results" className="grid gap-3">
       <div className="grid gap-0.5 px-0.5">

@@ -2,16 +2,17 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { compareSpecs } from "@bluechip/domain/policies/Catalog"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
+import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
+import { useAwaitingByAgent } from "../../../../hooks/useAwaitingByAgent.ts"
 import { lockAgentAtom } from "../../atoms/agents.ts"
 import { useAgentMoment } from "../../hooks/useAgentMoment.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
-import { usePauseAgent } from "../../hooks/usePauseAgent.ts"
 import { momentText } from "../../model/agentMoment.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 import { RenewButton } from "./RenewButton.tsx"
@@ -48,21 +49,19 @@ function NotLockedAlert({ agent }: Readonly<{ agent: Agent }>) {
   )
 }
 
-function PausedAlert({ agent }: Readonly<{ agent: Agent }>) {
-  const { busy, failed, resume } = usePauseAgent(agent)
-
+/** Its trades waiting for your approval, with the way to them. */
+function ApprovalsAlert({ awaiting }: Readonly<{ awaiting: number }>) {
   return (
-    <Alert variant="warning" icon="pause">
-      <AlertTitle>{agent.name} is paused</AlertTitle>
+    <Alert variant="info" icon="hand">
+      <AlertTitle>
+        {awaiting === 1 ? "1 trade waits for your approval" : `${awaiting} trades wait for your approval`}
+      </AlertTitle>
       <AlertDescription>
-        {failed ?
-          "We couldn't resume it just now. Try again." :
-          "It won't trade until you resume it. Nothing was sold."}
+        {awaiting === 1 ? "It's over what this agent may do alone" : "They're over what this agent may do alone"}, so it
+        sends nothing until you approve or decline with Face ID.
       </AlertDescription>
       <AlertAction>
-        <Button size="sm" loading={busy} onClick={() => void resume()}>
-          <Icon name="play" size={14} />Resume
-        </Button>
+        <ButtonLink size="sm" render={<Link to="/approvals" />}>Review</ButtonLink>
       </AlertAction>
     </Alert>
   )
@@ -111,9 +110,10 @@ function ExpiredAlert({ agent, ended }: Readonly<{ agent: Agent; ended: Date | n
 
 /**
  * What needs saying about the agent before anything else: removed, not locked, a change or renewal on its way, its
- * session ended, or paused.
+ * session ended, or trades waiting for your approval. Paused is said in the header, beside its Resume.
  */
 export function AgentAlerts({ agent, now }: Readonly<{ agent: Agent; now: Date }>) {
+  const awaiting = useAwaitingByAgent()?.get(agent.id) ?? 0
   const ended = agent.lockedUntil === null ? null : DateTime.toDateUtc(agent.lockedUntil)
   // A renewal locks the same policies again; anything else on its way is a change of them.
   const renewing = agent.pendingSpec !== null && compareSpecs(agent.spec, agent.pendingSpec).policies.length === 0
@@ -169,7 +169,7 @@ export function AgentAlerts({ agent, now }: Readonly<{ agent: Agent; now: Date }
           />
         ) :
         null}
-      {agent.paused ? <PausedAlert agent={agent} /> : null}
+      {awaiting > 0 ? <ApprovalsAlert awaiting={awaiting} /> : null}
     </>
   )
 }

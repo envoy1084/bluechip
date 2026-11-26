@@ -1,15 +1,21 @@
 // The cards bluechip applies when you confirm them: pausing or resuming agents, saving a template, keeping a memory.
 import type { Card } from "@bluechip/domain/assistant/Card"
+import { TemplateId, TEMPLATES } from "@bluechip/domain/policies/Templates"
 import { AgentControlCard as AgentControlView } from "@bluechip/ui/bluechip/agent-control-card"
 import { MemoryCard as MemoryView } from "@bluechip/ui/bluechip/memory-card"
 import { SaveTemplateCard as SaveTemplateView } from "@bluechip/ui/bluechip/save-template-card"
 import { ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
+import * as Schema from "effect/Schema"
 import { useCardAnswer } from "../../hooks/useCardAnswer.ts"
 import { MEMORY_KIND } from "../../model/cardText.ts"
 
 type OnCard = (card: Card) => void
+
+// The template a saved one started from, by its title ("the Stock picker template"); a saved template's id says nothing.
+const basedOnText = (basedOn: string | null): string | null =>
+  basedOn !== null && Schema.is(TemplateId)(basedOn) ? `the ${TEMPLATES[basedOn].title} template` : null
 
 export function AgentControlCard(
   { card, onCard }: Readonly<{ card: Extract<Card, { _tag: "AgentControl" }>; onCard: OnCard }>
@@ -37,7 +43,7 @@ export function SaveTemplateCard(
   return (
     <SaveTemplateView
       name={card.name}
-      basedOn={card.basedOn}
+      basedOn={basedOnText(card.basedOn)}
       can={card.description.can}
       never={card.description.never}
       status={card.status}

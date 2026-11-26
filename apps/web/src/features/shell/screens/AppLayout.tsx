@@ -51,7 +51,7 @@ const NAV: ReadonlyArray<
 /**
  * The frame of every signed-in page: the sidebar's navigation, then the page. What other features show in it comes
  * from the route: the approvals badge count, the sidebar's agents and kill switch, the cash dialogs, and what every
- * page's top bar ends with (the notifications bell).
+ * page's top bar ends with (approvals with their sheet, and the notifications panel).
  */
 export function AppLayout(
   { approvals, agents, pauseAll, dialogs, topBar }: Readonly<{

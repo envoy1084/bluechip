@@ -14,6 +14,7 @@ import { complete } from "./Catalog.ts"
 import { dollars } from "./Format.ts"
 import type { Target } from "./Rebalance.ts"
 import { Direction } from "./Trade.ts"
+import { NO_TRADE_LIMIT } from "./TradesPerDay.ts"
 
 /**
  * The agents bluechip offers: a Rebalancer keeps your target mix, a Stock picker trades a few stocks both ways, a
@@ -66,7 +67,10 @@ export interface Template {
   readonly maxDailyBudget: bigint
   readonly rules: ReadonlyArray<PolicyId>
   readonly options: ReadonlyArray<PolicyId>
-  /** The stocks a new agent starts with before you pick: a mix needs some to be a mix. */
+  /**
+   * The stocks the assistant drafts it with when you name none: a mix needs some to be a mix. The builder never picks
+   * for you; every template starts there with none.
+   */
   readonly defaultStocks: ReadonlyArray<StockSymbol>
   /** Its own budget and largest trade per preset, where the shared ones are too small for it. */
   readonly presets?: Partial<Record<Preset, { readonly dailyBudget: bigint; readonly maxPerTrade: bigint }>>
@@ -85,7 +89,7 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     title: "Rebalancer",
     summary: "Keeps your target mix, trading only to bring you back to it.",
     direction: "rebalance",
-    tradesPerDay: 500,
+    tradesPerDay: NO_TRADE_LIMIT,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(5000),
     rules: ["stockCap", "cashReserve", "rebalance", "slippageBudget"],
@@ -103,7 +107,7 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     title: "Stock picker",
     summary: "Buys and sells a few stocks you pick.",
     direction: "both",
-    tradesPerDay: 500,
+    tradesPerDay: NO_TRADE_LIMIT,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(2000),
     rules: ["stockCap", "cashReserve", "slippageBudget"],
@@ -115,7 +119,7 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     title: "Weekly buyer",
     summary: "Buys the stocks you pick on a schedule.",
     direction: "buy",
-    tradesPerDay: 500,
+    tradesPerDay: NO_TRADE_LIMIT,
     tradeWhilePaused: true,
     maxDailyBudget: dollars(500),
     rules: ["stockCap", "cashReserve", "slippageBudget"],
@@ -127,7 +131,7 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
     title: "Stop-loss guard",
     summary: "Only sells, to protect what you hold.",
     direction: "sell",
-    tradesPerDay: 500,
+    tradesPerDay: NO_TRADE_LIMIT,
     tradeWhilePaused: true,
     maxDailyBudget: BigInt(0),
     rules: ["slippageBudget"],

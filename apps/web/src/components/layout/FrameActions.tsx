@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext } from "react"
 
-/** What the app frame puts in every page's top bar, after the page's own actions (the notifications bell). */
+/** What the app frame puts in every page's top bar, after the page's own actions: approvals and notifications. */
 const FrameActionsContext = createContext<ReactNode>(null)
 
 export const FrameActionsProvider = FrameActionsContext.Provider

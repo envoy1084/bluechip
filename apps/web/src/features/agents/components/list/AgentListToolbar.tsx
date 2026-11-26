@@ -25,14 +25,10 @@ export function AgentListToolbar(
         label="Show"
         value={filter}
         onChange={onFilter}
-        options={AGENT_FILTERS.map((option) => ({
-          ...option,
-          count: counts[option.value],
-          warn: option.value === "attention"
-        }))}
+        options={AGENT_FILTERS.map((option) => ({ ...option, count: counts[option.value] }))}
       />
-      <div className="flex flex-[1_1_320px] items-center gap-2 sm:flex-none">
-        <InputGroup className="h-[34px] flex-1 bg-white sm:w-[220px]">
+      <div className="flex min-w-0 flex-[1_1_280px] items-center gap-2 sm:flex-none">
+        <InputGroup className="h-[34px] min-w-0 flex-1 bg-white sm:w-[220px]">
           <Icon name="search" size={15} />
           <InputGroupInput
             type="search"
@@ -48,7 +44,7 @@ export function AgentListToolbar(
           value={sort}
           onValueChange={(value) => value !== null && onSort(value as AgentSort)}
         >
-          <SelectTrigger size="sm" aria-label="Sort by" className="w-[168px] shrink-0 bg-white">
+          <SelectTrigger size="sm" aria-label="Sort by" className="w-auto shrink-0 bg-white sm:w-[168px]">
             <span className="flex items-center gap-1.5">
               <Icon name="sort" size={14} className="text-g-500" />
               <SelectValue />

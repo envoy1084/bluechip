@@ -19,6 +19,8 @@ export interface TradeReceiptProps {
   readonly when: string
   /** The transaction on Base, for the BaseScan link. */
   readonly txHash?: string
+  /** Its own heading (what moved, who and when). Off where the page around it already says so, as a sheet's title. */
+  readonly header?: boolean
   readonly className?: string
 }
 
@@ -27,7 +29,7 @@ export interface TradeReceiptProps {
  * activity's detail; the moment a trade fills is an `Outcome`.
  */
 export function TradeReceipt(
-  { side, symbol, name, shares, price, total, by, when, txHash, className }: TradeReceiptProps
+  { side, symbol, name, shares, price, total, by, when, txHash, header = true, className }: TradeReceiptProps
 ) {
   const buying = side === "buy"
 
@@ -37,17 +39,21 @@ export function TradeReceipt(
       aria-label={`${buying ? "Bought" : "Sold"} ${name}`}
       className={cn("grid gap-3.5 rounded-lg bg-white p-5 shadow-e2", className)}
     >
-      <header className="flex items-center gap-2.5">
-        <TickerChip symbol={symbol} />
-        <span className="grid">
-          <b className="text-[16px] font-semibold">
-            {buying ? "Bought" : "Sold"} {formatMoney(total)} of {name}
-          </b>
-          <span className="text-label-sm text-g-500">
-            {`${by}, ${when.charAt(0).toLowerCase()}${when.slice(1)}`}
-          </span>
-        </span>
-      </header>
+      {header ?
+        (
+          <header className="flex items-center gap-2.5">
+            <TickerChip symbol={symbol} />
+            <span className="grid">
+              <b className="text-[16px] font-semibold">
+                {buying ? "Bought" : "Sold"} {formatMoney(total)} of {name}
+              </b>
+              <span className="text-label-sm text-g-500">
+                {`${by}, ${when.charAt(0).toLowerCase()}${when.slice(1)}`}
+              </span>
+            </span>
+          </header>
+        ) :
+        null}
       <OrderPreview>
         <OrderPreviewRow label={buying ? "Shares bought" : "Shares sold"}>{formatShareCount(shares)}</OrderPreviewRow>
         <OrderPreviewRow label="Price">{formatMoney(price)} a share</OrderPreviewRow>

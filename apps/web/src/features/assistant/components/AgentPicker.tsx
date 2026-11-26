@@ -1,16 +1,18 @@
 import type { AgentId } from "@bluechip/domain/Ids"
-import { AccountAvatar, AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import { AccountAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { AgentStateAvatar } from "../../../components/AgentStateAvatar.tsx"
 
 // The Select's value for "My account": Base UI's items need a value, and `null` is its "nothing picked".
 const ACCOUNT = "account"
 
 /**
  * Who a new conversation's trades go through: one of your agents, or your own account. Picked before the first
- * message; once the conversation starts it stays, shown as its name alone.
+ * message; once the conversation starts it stays, shown as its name alone. Each agent's butterfly carries its state's dot
+ * (paused, done for today, ran out).
  */
 export function AgentPicker(
   { agentId, onChange, locked }: Readonly<{
@@ -28,7 +30,7 @@ export function AgentPicker(
     <span className="inline-flex min-w-0 items-center gap-1.5">
       {picked === undefined ?
         <AccountAvatar size="sm" aria-hidden /> :
-        <AgentAvatar agentId={picked.id} size="sm" />}
+        <AgentStateAvatar agent={picked} size="sm" />}
       <span className="truncate">{picked?.name ?? "My account"}</span>
     </span>
   )
@@ -42,7 +44,11 @@ export function AgentPicker(
       value={picked?.id ?? ACCOUNT}
       onValueChange={(value) => onChange(value === ACCOUNT || value === null ? null : value as AgentId)}
     >
-      <SelectTrigger size="sm" aria-label="Trades go through" className="w-auto max-w-[220px] gap-1.5">
+      <SelectTrigger
+        size="sm"
+        aria-label={`Trades go through: ${picked?.name ?? "My account"}`}
+        className="w-auto max-w-[220px] gap-1.5"
+      >
         <SelectValue>{() => name}</SelectValue>
       </SelectTrigger>
       <SelectContent>
@@ -51,7 +57,7 @@ export function AgentPicker(
         </SelectItem>
         {usable.map((agent) => (
           <SelectItem key={agent.id} value={agent.id}>
-            <AgentAvatar agentId={agent.id} size="sm" />
+            <AgentStateAvatar agent={agent} size="sm" />
             {agent.name}
           </SelectItem>
         ))}

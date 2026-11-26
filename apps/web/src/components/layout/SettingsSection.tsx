@@ -4,8 +4,8 @@ import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
 
 /**
- * A card of settings: its illustration, title and what it is for, then its rows; or, without rows, a card that leads
- * to a page of its own through `action`.
+ * A card of settings, named by its title: its illustration, title and what it is for, with `action` beside them (a
+ * status, a button), then its rows; or, without rows, a card that leads to a page of its own through `action`.
  */
 export function SettingsSection(
   { title, description, illustration, action, children }: Readonly<{
@@ -17,7 +17,7 @@ export function SettingsSection(
   }>
 ) {
   return (
-    <section className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2">
+    <section aria-label={title} className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2">
       {title === undefined ?
         null :
         (
@@ -42,10 +42,10 @@ export function SettingsSection(
   )
 }
 
-/** One setting: its icon, title and description, and what it offers on the right. */
+/** One setting: its icon, title and description (when its card hasn't said it already), and what it offers on the right. */
 export function SettingsRow(
   { title, description, icon, children }: Readonly<
-    { title: ReactNode; description: ReactNode; icon?: IconName; children?: ReactNode }
+    { title: ReactNode; description?: ReactNode; icon?: IconName; children?: ReactNode }
   >
 ) {
   return (
@@ -60,7 +60,7 @@ export function SettingsRow(
           )}
         <div className="grid min-w-0 gap-0.5">
           <b className="inline-flex items-center gap-2 text-sm font-semibold">{title}</b>
-          <span className="text-[13px] text-g-500">{description}</span>
+          {description === undefined ? null : <span className="text-[13px] text-g-500">{description}</span>}
         </div>
       </div>
       {children}

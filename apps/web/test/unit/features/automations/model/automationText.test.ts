@@ -51,7 +51,7 @@ describe("choiceLabel", () => {
       field: "direction",
       value: "above",
       config: {},
-      expected: "Goes above"
+      expected: "Rises above"
     },
     {
       name: "cash falling under",

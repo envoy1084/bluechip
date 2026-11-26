@@ -29,8 +29,29 @@ const TAG: Readonly<Record<PolicyChangeAction, string>> = {
   remove: "Removal"
 }
 
+/** A setting of a rule that changes: what it was and what it becomes (`null`: the rule is new, or goes). */
+export interface PolicyFieldChange {
+  readonly label: string
+  readonly before: string | null
+  readonly after: string | null
+}
+
+export interface PolicyRuleChange {
+  readonly title: string
+  readonly change: RuleChange
+  /** The settings that change, before → after. */
+  readonly fields?: ReadonlyArray<PolicyFieldChange>
+}
+
 const NONE: ReadonlyArray<string> = []
-const NO_CHANGES: ReadonlyArray<{ readonly title: string; readonly change: RuleChange }> = []
+const NO_CHANGES: ReadonlyArray<PolicyRuleChange> = []
+
+const fieldText = ({ after, before, label }: PolicyFieldChange): string =>
+  before === null
+    ? `${label}: ${after ?? ""}`
+    : after === null
+    ? `${label}: ${before}, gone`
+    : `${label}: ${before} → ${after}`
 
 export interface PolicyChangeCardProps {
   readonly action: PolicyChangeAction
@@ -38,8 +59,8 @@ export interface PolicyChangeCardProps {
   readonly name: string
   /** What signing does: "Locks the same rules with a new key for 90 more days." */
   readonly note: ReactNode
-  /** An update's rules, each with how it changes. */
-  readonly changes?: ReadonlyArray<{ readonly title: string; readonly change: RuleChange }>
+  /** An update's rules, each with how it changes and its settings before → after. */
+  readonly changes?: ReadonlyArray<PolicyRuleChange>
   /** The update gives the agent more room than it has now. */
   readonly looser?: boolean
   /** Its limits at a glance after an update: an `AgentGlance`. */
@@ -88,10 +109,17 @@ export function PolicyChangeCard(
           <ChatCardHeadline media={<AgentAvatar agentId={agentId} />} title={name} detail={note} />
           {changes.length === 0 ? null : (
             <ul className="grid divide-y divide-g-100 rounded-[12px] px-3 surface-well">
-              {changes.map(({ title, change }) => (
-                <li key={title} className="flex items-center justify-between gap-2 py-2 text-[13px]">
-                  <span className="text-g-800">{title}</span>
-                  <span className={cn("text-label-sm font-semibold", CHANGE[change].tone)}>{CHANGE[change].label}</span>
+              {changes.map(({ change, fields = [], title }) => (
+                <li key={title} className="grid gap-0.5 py-2 text-[13px]">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-g-800">{title}</span>
+                    <span className={cn("shrink-0 text-label-sm font-semibold", CHANGE[change].tone)}>
+                      {CHANGE[change].label}
+                    </span>
+                  </span>
+                  {fields.map((field) => (
+                    <span key={field.label} className="text-caption text-g-500 tabular-nums">{fieldText(field)}</span>
+                  ))}
                 </li>
               ))}
             </ul>

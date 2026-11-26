@@ -2,7 +2,9 @@ import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
 import { giveShares } from "../utils/trading.ts"
 
-const holdingRows = (page: Page) => page.getByRole("region", { name: "Holdings" }).getByRole("button")
+// Each stock is a link to its page; cash is a button that opens Add cash.
+const holdingRows = (page: Page) =>
+  page.getByRole("region", { name: "Holdings" }).locator("[data-slot=holding-row], [data-slot=cash-holding-row]")
 
 test.describe("portfolio", () => {
   test("with no money, it says how to start", async ({ page, user: _user }) => {

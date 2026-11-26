@@ -1,14 +1,22 @@
-import { AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
+import { Agent, AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
+import { draftSpec } from "@bluechip/domain/policies/Templates"
 import { assert, describe, it } from "@effect/vitest"
 import { type Glance, glanceOf, tradesWord } from "../../../../../src/features/agents/model/agentGlance.ts"
 import { listedAgent } from "../../../../../src/features/agents/model/agentList.ts"
-import { agent } from "../../../../fixtures/Agents.ts"
+import { agent, PICKER } from "../../../../fixtures/Agents.ts"
 
 const NOW = new Date("2026-11-26T12:00:00Z")
 
 describe("tradesWord", () => {
   it("a stock picker buys and sells", () => {
     assert.strictEqual(tradesWord(agent("active")), "Buys and sells")
+  })
+
+  it("a weekly buyer only buys", () => {
+    assert.strictEqual(
+      tradesWord({ spec: draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA"], targets: [] }) }),
+      "Only buys"
+    )
   })
 })
 
@@ -28,6 +36,11 @@ describe("glanceOf", () => {
       name: "a change on its way",
       listed: listedAgent(agent("updating"), NOW),
       expected: { _tag: "line", text: "Its new rules are on their way to Base", tone: "quiet" }
+    },
+    {
+      name: "a renewal on its way: the same rules again",
+      listed: listedAgent(new Agent({ ...agent("updating"), pendingSpec: PICKER }), NOW),
+      expected: { _tag: "line", text: "Its renewal is on its way to Base", tone: "quiet" }
     },
     {
       name: "a removal on its way",

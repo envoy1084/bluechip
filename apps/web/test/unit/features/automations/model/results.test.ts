@@ -1,6 +1,6 @@
 import { RunCount } from "@bluechip/domain/performance/Performance"
 import { assert, describe, it } from "@effect/vitest"
-import { runsSentence } from "../../../../../src/features/automations/model/results.ts"
+import { outcomesText, runsSentence, timesText } from "../../../../../src/features/automations/model/results.ts"
 
 describe("runsSentence", () => {
   it.each([
@@ -19,5 +19,26 @@ describe("runsSentence", () => {
     }
   ])("$name", ({ expected, outcomes, runs }) => {
     assert.strictEqual(runsSentence(runs, outcomes), expected)
+  })
+})
+
+describe("timesText", () => {
+  it.each([
+    { name: "never", runs: 0, expected: "Not yet" },
+    { name: "once", runs: 1, expected: "Once" },
+    { name: "several times", runs: 12, expected: "12 times" }
+  ])("$name", ({ expected, runs }) => {
+    assert.strictEqual(timesText(runs), expected)
+  })
+})
+
+describe("outcomesText", () => {
+  it("each outcome with its count, in the order given", () => {
+    const text = outcomesText([
+      new RunCount({ outcome: "proposed", count: 3 }),
+      new RunCount({ outcome: "failed", count: 2 })
+    ])
+
+    assert.strictEqual(text, "3 traded, 2 failed")
   })
 })

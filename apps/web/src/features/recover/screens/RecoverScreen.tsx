@@ -9,6 +9,7 @@ import { useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { useEffect, useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
+import { PasskeySignIn } from "../../../components/PasskeySignIn.tsx"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import {
@@ -102,13 +103,9 @@ export function RecoverScreen() {
             </Button>
           ) :
           step?.offer === "signIn" ?
-          (
-            <Button size="lg" className="w-full" onClick={() => navigate({ to: "/signin" })}>
-              <Icon name="face-id" size={18} />Sign in with your new passkey
-            </Button>
-          ) :
+          <PasskeySignIn variant="primary" label="Sign in with your new passkey" /> :
           null}
-        <Button size="lg" variant="ghost" className="w-full" onClick={() => navigate({ to: "/signin" })}>
+        <Button size="lg" variant="ghost" className="w-full" onClick={() => navigate({ to: "/" })}>
           Back to sign in
         </Button>
       </div>

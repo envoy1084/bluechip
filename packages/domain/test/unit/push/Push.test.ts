@@ -29,6 +29,24 @@ describe("pushMessageOf", () => {
       }
     },
     {
+      name: "an approval: Review, which opens its page",
+      kind: "approvalNeeded",
+      link: "/home?sheet=approvals",
+      expected: {
+        id: "notification_1",
+        title: "Title",
+        body: "Body.",
+        link: "/home?sheet=approvals",
+        actions: [{ action: "review", title: "Review", done: "Reviewed" }]
+      }
+    },
+    {
+      name: "a trade filled: no buttons",
+      kind: "intentFilled",
+      link: "/activity",
+      expected: { id: "notification_1", title: "Title", body: "Body.", link: "/activity", actions: [] }
+    },
+    {
       name: "the digest, without a page: no buttons, and home",
       kind: "dailyDigest",
       link: null,

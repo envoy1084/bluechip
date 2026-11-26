@@ -76,7 +76,7 @@ export function RemoveAllAgents() {
           danger: true,
           keep: count === 1 ? "Keep it" : "Keep them",
           title: count === 1 ? "Remove your agent?" : `Remove all ${count} agents?`,
-          description: "One Face ID revokes every agent's session onchain, so none of them can ever trade again. " +
+          description: "One Face ID takes back every agent's key, so none of them can ever trade again. " +
             "Your stocks and cash stay where they are.",
           action: "Remove with Face ID",
           pending: "Removing your agents",

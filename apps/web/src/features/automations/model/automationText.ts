@@ -34,9 +34,9 @@ export const choiceLabel = (type: string, field: string, value: string, config: 
     case "priceMove.direction":
       return value === "down" ? "Falls" : "Rises"
     case "priceCross.direction":
-      return value === "above" ? "Goes above" : "Goes below"
+      return value === "above" ? "Rises above" : "Falls below"
     case "portfolio.direction":
-      return value === "below" ? "Falls under" : "Grows over"
+      return value === "below" ? "Falls under" : "Rises over"
     case "portfolio.measure":
       return value === "cash" ? "Cash" : "A holding"
     case "judgment.preset":
@@ -60,7 +60,7 @@ export const TRIGGER_EXAMPLES: Readonly<Record<Trigger["type"], string>> = {
 export const ACTION_EXAMPLES: Readonly<Record<Action["type"], string>> = {
   buy: "Buy a dollar amount of stocks you pick",
   sell: "Sell a dollar amount of a stock",
-  sellShare: "Sell half, or all, of a holding",
+  sellShare: "Sell a quarter, half or all of a holding",
   rebalance: "Trade back to the target mix",
   notify: "Send you a message",
   ask: "Propose a trade for your Face ID"
@@ -85,9 +85,6 @@ export const WEEKDAYS: ReadonlyArray<{ readonly day: Weekday; readonly label: st
   { day: "saturday", label: "Sat", name: "Saturday" },
   { day: "sunday", label: "Sun", name: "Sunday" }
 ]
-
-/** How often it fired: "Not yet", "Once", "12 times". */
-export const firesText = (fires: number): string => fires === 0 ? "Not yet" : fires === 1 ? "Once" : `${fires} times`
 
 const PARTS: Readonly<Record<AutomationProblem["part"], string>> = {
   name: "Name",

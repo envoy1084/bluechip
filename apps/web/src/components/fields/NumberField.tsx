@@ -18,12 +18,15 @@ const SLIDER_FORMAT: Readonly<Record<NumberUnit, Intl.NumberFormatOptions>> = {
 /**
  * A number, typed or dragged, in the units people think in (dollars, percent). The slider covers the usual range
  * (`min` to `max`); with a `ceiling` above it, "Custom amount" swaps the slider for a wider box that takes anything up to
- * the ceiling, and a value past the slider opens that way. While the field is being typed in it keeps its own text, so
+ * the ceiling, and a value past the slider opens that way. The slider snaps to round values (multiples of `step` from
+ * zero, $5, $10… rather than $1, $6…), and its left end is `min` itself. While the field is being typed in it keeps its own text, so
  * clearing it to type a new number doesn't snap the value to zero; the value follows each number typed.
  */
 export function NumberField(
-  { label, help, value, min, max, ceiling, step, unit, problem, onChange }: Readonly<{
+  { label, labelHidden = false, help, value, min, max, ceiling, step, unit, problem, onChange }: Readonly<{
     label: string
+    /** Named for screen readers only, where the heading above already says it (a rule's own title). */
+    labelHidden?: boolean
     help?: string | undefined
     value: number
     min: number
@@ -42,12 +45,15 @@ export function NumberField(
   const canCustom = ceiling !== undefined && ceiling > max
   const [custom, setCustom] = useState(() => canCustom && value > max)
   const note = problem
+  const sliderMin = Math.floor(min / step) * step
 
   return (
     <div className="grid gap-1.5">
       <div className="flex items-center justify-between gap-3">
         <span className="inline-flex items-center gap-1.5">
-          <label htmlFor={id} className="text-[13.5px] font-medium text-g-700">{label}</label>
+          <label htmlFor={id} className={cn("text-[13.5px] font-medium text-g-700", labelHidden && "sr-only")}>
+            {label}
+          </label>
           <FieldHelp label={label} help={help} />
         </span>
         <span className="flex shrink-0 items-center gap-2">
@@ -101,11 +107,11 @@ export function NumberField(
 
       {custom ? null : (
         <Slider
-          min={min}
+          min={sliderMin}
           max={max}
           step={step}
-          value={Math.min(max, Math.max(min, value))}
-          onValueChange={(next) => onChange(typeof next === "number" ? next : next[0] ?? min)}
+          value={Math.min(max, Math.max(sliderMin, value))}
+          onValueChange={(next) => onChange(Math.max(min, typeof next === "number" ? next : next[0] ?? min))}
           thumbLabels={[label]}
           format={SLIDER_FORMAT[unit]}
           showValues={false}

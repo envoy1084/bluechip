@@ -6,8 +6,8 @@ import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
-import { MarketPill } from "../../../components/MarketPill.tsx"
 import { stockAtom } from "../atoms/market.ts"
+import { HoldingPanel } from "../components/HoldingPanel.tsx"
 import { PriceHistoryChart } from "../components/PriceHistoryChart.tsx"
 import { PricesPausedBanner } from "../components/PricesPausedBanner.tsx"
 import { QuoteBox } from "../components/QuoteBox.tsx"
@@ -22,7 +22,7 @@ export function StockScreen({ symbol }: Readonly<{ symbol: StockSymbol }>) {
     return stock.value === undefined ? <StockNotFound /> : <StockContent stock={stock.value} />
   }
   return (
-    <AppPage title={symbol} actions={<MarketPill className="hidden sm:inline-flex" />} width="wide">
+    <AppPage title={symbol} width="wide">
       {AsyncResult.isInitial(stock) ?
         (
           <div aria-busy className="grid gap-4">
@@ -30,7 +30,7 @@ export function StockScreen({ symbol }: Readonly<{ symbol: StockSymbol }>) {
             <SkeletonBlock className="h-64 w-full" />
           </div>
         ) :
-        <LoadProblem what="this stock" onRetry={refresh} />}
+        <LoadProblem what="this stock" onRetry={refresh} variant="card" />}
     </AppPage>
   )
 }
@@ -53,14 +53,14 @@ function StockContent({ stock }: Readonly<{ stock: Stock }>) {
           <Link to="/stocks" className="hover:text-ink">Stocks</Link> / {stock.name}
         </>
       }
-      actions={<MarketPill className="hidden sm:inline-flex" />}
       width="wide"
     >
       <div className="grid gap-4">
         <PricesPausedBanner />
         <StockHeader stock={stock} />
+        <HoldingPanel stock={stock} />
         <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <PriceHistoryChart symbol={stock.symbol} />
+          <PriceHistoryChart stock={stock} />
           <QuoteBox stock={stock} />
         </div>
       </div>

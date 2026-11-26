@@ -54,7 +54,9 @@ export const tradeCard = (
 ): Card => {
   const symbol = options.symbol ?? agent.stocks[0] ?? "NVDA"
   const largest = limitsOf(specOf(agent))?.maxPerTrade ?? usdc(100)
-  const dollars = options.dollars ?? (outcome === "asking" ? Number(largest) / 1e6 * 4 : 50)
+  // A trade over its largest trade is bigger than it, whichever way you answered it.
+  const overLargest = ["asking", "approved", "declined", "expired", "cancelled"].includes(outcome)
+  const dollars = options.dollars ?? (overLargest ? Number(largest) / 1e6 * 4 : 50)
   const at = mint.at(options.hoursAgo ?? 0)
 
   const passes: Decision = { _tag: "Passes", callGasLimit: BigInt(412_000) }

@@ -5,8 +5,9 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { CopyButton } from "../../../../components/CopyButton.tsx"
+import { SettingsRow, SettingsSection } from "../../../../components/layout/SettingsSection.tsx"
 import { channelKeys, channelLinksAtom, linkCodeAtom, unlinkAtom } from "../../atoms/notifications.ts"
-import { SettingsCard, SettingsRow } from "./SettingsCard.tsx"
 
 const formatDay = (date: DateTime.Utc) =>
   DateTime.toDateUtc(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -30,7 +31,7 @@ export function TelegramCard() {
   const code = made !== null && count <= countAtCode ? made : null
 
   return (
-    <SettingsCard
+    <SettingsSection
       title="Telegram"
       description="Talk to the same assistant in Telegram and get your notifications there. Nothing is signed there."
       illustration="plane"
@@ -85,8 +86,11 @@ export function TelegramCard() {
                 "Send this code to bluechip's bot in a private chat." :
                 `Send this code to ${code.bot} in a private chat. It works once, for 10 minutes.`}
             </p>
-            <span className="justify-self-start rounded-md bg-g-50 px-4 py-2.5 font-mono text-[22px] font-semibold tracking-[0.18em] shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)]">
-              {code.code}
+            <span className="flex items-center gap-2 justify-self-start">
+              <span className="rounded-md bg-g-50 px-4 py-2.5 font-mono text-[22px] font-semibold tracking-[0.18em] shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)]">
+                {code.code}
+              </span>
+              <CopyButton text={code.code} what="the code" size="md" />
             </span>
             <div className="flex flex-wrap gap-2">
               {code.deepLink === null ?
@@ -103,6 +107,6 @@ export function TelegramCard() {
             </div>
           </div>
         )}
-    </SettingsCard>
+    </SettingsSection>
   )
 }

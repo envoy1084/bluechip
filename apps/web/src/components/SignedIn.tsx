@@ -1,26 +1,39 @@
 import type { Me } from "@bluechip/domain/Account"
-import { Unauthenticated } from "@bluechip/domain/Errors"
+import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
+import { Logo } from "@bluechip/ui/bluechip/logo"
 import { Button } from "@bluechip/ui/components/button"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@bluechip/ui/components/dialog"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
-import { Navigate, useNavigate } from "@tanstack/react-router"
+import { Navigate } from "@tanstack/react-router"
 import * as Option from "effect/Option"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { meAtom } from "../atoms/account.ts"
+import { IllustratedEmpty } from "./IllustratedEmpty.tsx"
 import { LoadProblem } from "./LoadProblem.tsx"
+import { PasskeySignIn } from "./PasskeySignIn.tsx"
+
+/** A page of its own for when the account itself can't be shown: the logo, then what happened. */
+function Standalone({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <main className="grid min-h-dvh content-start justify-items-center gap-10 bg-canvas px-4 pt-6 pb-10">
+      <Logo />
+      <div className="w-full max-w-md">{children}</div>
+    </main>
+  )
+}
 
 /**
- * Renders its children for the signed-in user. Without a session it sends the visitor to sign in; if the session ends
- * while they are here (expired or signed out elsewhere), it says so instead of yanking the page away.
+ * Renders its children for the signed-in user. Without a session it sends the visitor to the landing page to sign
+ * in; if the session ends while they are here (expired or signed out elsewhere), it offers to sign in again on the
+ * spot instead of yanking the page away. An app older than the server asks for a reload.
  */
 export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNode }>) {
   const result = useAtomValue(meAtom)
   const refresh = useAtomRefresh(meAtom)
-  const navigate = useNavigate()
 
   if (AsyncResult.isSuccess(result)) return children(result.value)
   if (AsyncResult.isInitial(result)) {
@@ -31,10 +44,31 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
       </div>
     )
   }
-  const unauthenticated = Option.exists(AsyncResult.error(result), (error) => error instanceof Unauthenticated)
+
+  const error = AsyncResult.error(result)
+  if (Option.exists(error, (cause) => cause instanceof ClientOutdated)) {
+    return (
+      <Standalone>
+        <IllustratedEmpty
+          illustration="paper-plane"
+          size={120}
+          title="A new version of bluechip is ready"
+          action={
+            <Button onClick={() => window.location.reload()}>
+              <Icon name="refresh" size={14} />Reload
+            </Button>
+          }
+        >
+          Reload to keep using the app. Your agents keep trading inside their limits meanwhile.
+        </IllustratedEmpty>
+      </Standalone>
+    )
+  }
+
+  const unauthenticated = Option.exists(error, (cause) => cause instanceof Unauthenticated)
   // A failure keeps the last success: a user we already showed was signed in a moment ago.
   const wasSignedIn = Option.isSome(AsyncResult.value(result))
-  if (unauthenticated && !wasSignedIn) return <Navigate to="/signin" />
+  if (unauthenticated && !wasSignedIn) return <Navigate to="/" />
   if (unauthenticated) {
     return (
       <Dialog open>
@@ -44,12 +78,17 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
           <DialogDescription>
             For your safety you're signed out after 30 days, or when you sign out on another tab.
           </DialogDescription>
-          <Button className="mt-2" onClick={() => navigate({ to: "/signin" })}>
-            <Icon name="face-id" size={14} />Sign in with Face ID
-          </Button>
+          <div className="mt-2 grid w-full gap-2">
+            {/* Signing in refreshes the account, and this page carries on where it was. */}
+            <PasskeySignIn variant="primary" onSignedIn={() => undefined} />
+          </div>
         </DialogContent>
       </Dialog>
     )
   }
-  return <LoadProblem what="your account" onRetry={refresh} className="mx-auto mt-16 max-w-md" />
+  return (
+    <Standalone>
+      <LoadProblem what="your account" onRetry={refresh} variant="card" safe />
+    </Standalone>
+  )
 }

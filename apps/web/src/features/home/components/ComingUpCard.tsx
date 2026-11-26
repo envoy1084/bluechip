@@ -62,9 +62,11 @@ export function ComingUpCard({ comingUp, now }: Readonly<{ comingUp: ComingUp; n
           (
             <ul className={comingUp.upcoming.length === 0 ? "grid gap-1.5" : "grid gap-1.5 border-t border-g-100 pt-3"}>
               {comingUp.watching.map((line) => (
-                <li key={line} className="flex items-center gap-2 text-label-sm text-g-600">
+                <li key={line.name} className="flex items-center gap-2 text-label-sm text-g-600">
                   <Icon name="eye" size={14} className="shrink-0 text-g-400" />
-                  <span className="min-w-0 truncate">{line}</span>
+                  <span className="min-w-0 truncate">
+                    <b className="font-semibold text-g-800">{line.name}</b> watches {line.watches}
+                  </span>
                 </li>
               ))}
             </ul>

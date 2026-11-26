@@ -1,6 +1,6 @@
 import type { Automation } from "@bluechip/domain/automations/Automation"
 import type { Intent } from "@bluechip/domain/intents/Intent"
-import { PortfolioSummarySkeleton } from "@bluechip/ui/bluechip/portfolio-summary"
+import { MoneyCardSkeleton } from "@bluechip/ui/bluechip/portfolio-summary"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
@@ -37,12 +37,12 @@ function valueOr<A>(result: AsyncResult.AsyncResult<ReadonlyArray<A>, unknown>):
 /**
  * Home, shaped by where you are: the day and the market, then your money (or a welcome when there's none yet), what
  * needs you, the first steps while you're getting started, your agents, and what's coming up and moving today.
- * Sections with nothing to say stay out. From the route: the approvals bell (`bell`) and the way to open the approvals
- * (`onReviewApprovals`), the trades waiting for you, your automations with what needs a look, and the agents' tiles.
+ * Sections with nothing to say stay out, and what needs you waits until everything it reads has loaded, so it lands
+ * once, whole. From the route: the way to open the approvals (`onReviewApprovals`), the trades waiting for you, your
+ * automations with what needs a look, and the agents' tiles.
  */
 export function HomeScreen(
-  { bell, approvals, automations, agents: agentTiles, onReviewApprovals }: Readonly<{
-    bell: ReactNode
+  { approvals, automations, agents: agentTiles, onReviewApprovals }: Readonly<{
     approvals: AsyncResult.AsyncResult<ReadonlyArray<Pick<Intent, "agentId" | "expiresAt">>, unknown>
     automations: AsyncResult.AsyncResult<ReadonlyArray<HomeAutomation>, unknown>
     agents: ReactNode
@@ -79,18 +79,21 @@ export function HomeScreen(
     localTimeZone()
   )
   const holdings = AsyncResult.isSuccess(portfolio) ? portfolio.value.holdings : NOTHING
+  const loaded = setup !== undefined &&
+    !AsyncResult.isInitial(portfolio) && !AsyncResult.isInitial(agents) && !AsyncResult.isInitial(recovery) &&
+    !AsyncResult.isInitial(approvals) && !AsyncResult.isInitial(automations)
 
   return (
-    <AppPage title="Home" actions={bell}>
+    <AppPage title="Home">
       <Headline displayName={me.value.user.displayName} now={now} />
 
       {welcome ?
         <GettingStarted steps={setup.steps} welcome /> :
         emptyMoney && !AsyncResult.isSuccess(agents) ?
-        <PortfolioSummarySkeleton /> :
+        <MoneyCardSkeleton /> :
         <MoneyCard />}
 
-      <NeedsYou needs={needs} onReviewApprovals={onReviewApprovals} />
+      {loaded ? <NeedsYou needs={needs} onReviewApprovals={onReviewApprovals} /> : null}
 
       {setup?.stage === "starting" ? <GettingStarted steps={setup.steps} welcome={false} /> : null}
 
@@ -98,7 +101,7 @@ export function HomeScreen(
 
       <div className="grid gap-[18px] empty:hidden md:grid-cols-2 [&>*:only-child]:col-span-full">
         <ComingUpCard comingUp={comingUp(listed.map((each) => each.automation), valueOr(agents), now)} now={now} />
-        <MoversCard movers={movers(holdings)} held={holdings.length} nameOf={nameOf} />
+        <MoversCard movers={movers(holdings)} nameOf={nameOf} />
       </div>
     </AppPage>
   )

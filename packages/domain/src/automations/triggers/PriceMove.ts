@@ -85,7 +85,7 @@ export const priceMove = Trigger.make({
     symbol: new Field({ label: "Stock", unit: "stock" }),
     reference: new Field({ label: "From", unit: "choice" }),
     bps: new Field({ label: "By", unit: "bps", min: 100, max: 5000, step: 100, choices: [500, 1000, 2000] }),
-    direction: new Field({ label: "Way", unit: "choice" })
+    direction: new Field({ label: "Direction", unit: "choice" })
   },
   defaults: { symbol: "NVDA", reference: "trailingHigh", bps: 1000, direction: "down" },
   check: (config, context) => stockProblems("symbol", [config.symbol], context),

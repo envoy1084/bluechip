@@ -1,5 +1,11 @@
 import { assert, describe, it } from "@effect/vitest"
-import { activityDetail, activityProblem, activityStatus, activityTitle } from "../../../src/lib/activityText.ts"
+import {
+  activityDetail,
+  activityProblem,
+  activityStatus,
+  activityTitle,
+  fairPriceText
+} from "../../../src/lib/activityText.ts"
 import { appleTrade, cashTransfer, NAMES } from "../../fixtures/Activity.ts"
 
 describe("activityTitle", () => {
@@ -104,5 +110,15 @@ describe("activityProblem", () => {
     }
   ])("$name", ({ item, expected }) => {
     assert.strictEqual(activityProblem(item), expected)
+  })
+})
+
+describe("fairPriceText", () => {
+  it.each([
+    { name: "worse", gapBps: 9, expected: "0.09% worse than Chainlink" },
+    { name: "better", gapBps: -12, expected: "0.12% better than Chainlink" },
+    { name: "the same", gapBps: 0, expected: "Same as Chainlink" }
+  ])("$name", ({ expected, gapBps }) => {
+    assert.strictEqual(fairPriceText(gapBps), expected)
   })
 })

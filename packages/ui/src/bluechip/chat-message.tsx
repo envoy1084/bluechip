@@ -2,7 +2,7 @@ import { type ComponentProps, type ReactNode, useId } from "react"
 import { Button } from "../components/button.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
-import { ChatMarkdown } from "./chat-markdown.tsx"
+import { type ChatInternalLink, ChatMarkdown } from "./chat-markdown.tsx"
 import type { CitationSource } from "./citation-chip.tsx"
 
 export type ChatMessageStatus = "streaming" | "done" | "error"
@@ -17,10 +17,15 @@ export interface ChatMessageProps extends Omit<ComponentProps<"div">, "children"
   /** `streaming` shows three dots until text arrives, then a caret after it. Defaults to `done`. */
   readonly status?: ChatMessageStatus
   readonly sources?: ReadonlyArray<CitationSource>
-  /** Tool-call rows, shown above bluechip's text. */
+  /** Tool-call rows, shown first. */
   readonly toolCalls?: ReactNode
-  /** Cards that come with the answer (a proposal, an agent draft), shown below the text. */
+  /**
+   * What the tools found and the cards that came with them (a proposal, an agent draft), under the tool rows and
+   * above the text, so they stay put while the text streams in under them.
+   */
   readonly attachments?: ReactNode
+  /** How links to the app's own pages are drawn (`ChatMarkdown`'s `internalLink`). */
+  readonly internalLink?: ChatInternalLink | undefined
   /** With `status="error"`: what went wrong and what to try next. */
   readonly error?: string
   readonly onRetry?: () => void
@@ -56,7 +61,7 @@ function BotMark() {
 
 /**
  * One message in the chat. You on the right in a soft bubble; bluechip on the left with the chip mark and no
- * bubble, so long answers read like a page.
+ * bubble, so long answers read like a page: what it checked, what that found, its answer, then any problem.
  */
 export function ChatMessage({
   from,
@@ -65,6 +70,7 @@ export function ChatMessage({
   sources = NO_SOURCES,
   toolCalls,
   attachments,
+  internalLink,
   error,
   onRetry,
   className,
@@ -99,6 +105,7 @@ export function ChatMessage({
       <div className="grid max-w-[68ch] min-w-0 flex-1 content-start gap-2 pt-[3px] text-[14.5px] text-g-800">
         <span className="sr-only">bluechip:</span>
         {toolCalls}
+        {attachments}
         {streaming && text === "" ?
           (
             <output aria-label="bluechip is typing" className="inline-flex gap-1 py-2">
@@ -111,7 +118,7 @@ export function ChatMessage({
               ))}
             </output>
           ) :
-          text && <ChatMarkdown text={text} sources={sources} streaming={streaming} />}
+          text && <ChatMarkdown text={text} sources={sources} streaming={streaming} internalLink={internalLink} />}
         {status === "error" && (
           <div className="flex flex-wrap items-center gap-2 rounded-[10px] bg-warn-wash py-2 pr-2.5 pl-3 text-[13.5px] text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
             <Icon name="warning" size={14} />
@@ -119,7 +126,6 @@ export function ChatMessage({
             {onRetry && <Button variant="ghost" size="sm" onClick={onRetry}>Retry</Button>}
           </div>
         )}
-        {attachments}
       </div>
     </div>
   )

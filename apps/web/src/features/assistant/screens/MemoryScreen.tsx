@@ -2,13 +2,13 @@ import type { Memory, MemoryKind } from "@bluechip/domain/assistant/Memory"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { InputGroup, InputGroupButton, InputGroupInput } from "@bluechip/ui/components/input-group"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { Tabs, TabsCount, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ReactNode, useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { FilterTabs } from "../../../components/FilterTabs.tsx"
 import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
@@ -114,33 +114,29 @@ export function MemoryScreen() {
       )
     }
 
-    const counts = new Map(MEMORY_GROUPS.map((group) => [
-      group.kind,
-      found.filter((memory) => memory.kind === group.kind).length
-    ]))
+    // A kind's tab counts what its section lists: the memories it uses, not the guesses still to confirm.
+    const grouped = groupMemories(found)
+    const counts = new Map(grouped.groups.map((group) => [group.kind, group.memories.length]))
     const shownKind = kind !== "all" && (counts.get(kind) ?? 0) > 0 ? kind : "all"
-    const { groups, toConfirm } = groupMemories(
-      shownKind === "all" ? found : found.filter((memory) => memory.kind === shownKind)
-    )
+    const { groups, toConfirm } = shownKind === "all" ?
+      grouped :
+      { groups: grouped.groups.filter((group) => group.kind === shownKind), toConfirm: [] }
 
     return (
       <>
-        <Tabs variant="segmented" value={shownKind} onValueChange={(value) => setKind(value as MemoryKind | "all")}>
-          <TabsList
-            aria-label="Kind"
-            className="[&_[role=tab]]:h-7 [&_[role=tab]]:gap-1.5 [&_[role=tab]]:px-3 [&_[role=tab]]:text-label-sm"
-          >
-            <TabsTab value="all">
-              All<TabsCount>{found.length}</TabsCount>
-            </TabsTab>
-            {MEMORY_GROUPS.filter((group) => (counts.get(group.kind) ?? 0) > 0).map((group) => (
-              <TabsTab key={group.kind} value={group.kind}>
-                {group.label}
-                <TabsCount>{counts.get(group.kind)}</TabsCount>
-              </TabsTab>
-            ))}
-          </TabsList>
-        </Tabs>
+        <FilterTabs
+          label="Kind"
+          value={shownKind}
+          onChange={setKind}
+          options={[
+            { value: "all" as const, label: "All", count: found.length },
+            ...MEMORY_GROUPS.filter((group) => (counts.get(group.kind) ?? 0) > 0).map((group) => ({
+              value: group.kind,
+              label: group.label,
+              count: counts.get(group.kind) ?? 0
+            }))
+          ]}
+        />
 
         {toConfirm.length === 0 ? null : (
           <MemoryGroup

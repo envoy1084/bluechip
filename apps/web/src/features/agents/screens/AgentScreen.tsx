@@ -89,16 +89,12 @@ function AgentContent(
   return (
     <AppPage
       title={agent.name}
-      sub={
-        <>
-          <Link to="/agents" className="hover:text-ink">Agents</Link> / {agent.name}
-        </>
-      }
+      sub={<Link to="/agents" className="hover:text-ink">Agents</Link>}
       actions={agent.status === "removed" ? undefined : <Ask agent={agent} />}
       width="wide"
     >
       <div className="grid gap-4">
-        <AgentAlerts agent={agent} now={now} />
+        {removal.leaving ? null : <AgentAlerts agent={agent} now={now} />}
         <AgentHeader
           agent={agent}
           state={state}
@@ -129,7 +125,10 @@ function AgentContent(
               ))}
             </TabsNav>
           )}
-        <AgentPageContext value={{ agent, usage, nameOf }}>{children}</AgentPageContext>
+        {/* Named for view transitions: a new tab changes this alone (styles.css). */}
+        <div className="grid min-w-0 [view-transition-name:agent-tab]">
+          <AgentPageContext value={{ agent, usage, nameOf }}>{children}</AgentPageContext>
+        </div>
       </div>
     </AppPage>
   )

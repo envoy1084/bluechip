@@ -28,5 +28,6 @@ export function useRemoveAgent(agent: Agent) {
   const start = () =>
     run(() => remove({ params: { id: agent.id }, payload: { requestId: crypto.randomUUID() as RequestId } }))
 
-  return { signing, remove: start, reset }
+  // Removed by you here: the page is on its way back to the list, which says so.
+  return { signing, remove: start, reset, leaving: sent && removed }
 }

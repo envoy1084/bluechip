@@ -196,16 +196,19 @@ export function AutomationEditor(
     )
   }
 
-  // One column up to the large width, Save floating at the bottom; then the form beside a sticky column with the
-  // sentence and Save. The column's pieces join the page's grid while it is one column (`contents`).
+  // The page reads in the order it shows: the sentence, its name and who trades (which decides what the form offers),
+  // the form, then Save. One column up to the large width, Save floating at the bottom; then the form beside a sticky
+  // column with the sentence and Save. Save is in that column or after the form, whichever the width shows.
   return (
     <div ref={root} className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="lg:col-start-1 lg:row-start-1">{form}</div>
-      <div className="contents lg:sticky lg:top-[76px] lg:col-start-2 lg:row-start-1 lg:grid lg:min-w-0 lg:gap-3">
-        <div className="order-first lg:order-none">{summary}</div>
-        <div className="grid gap-3 empty:hidden max-lg:order-last">{saveProblems}</div>
-        {bar(true, "z-[5] max-lg:sticky max-lg:bottom-3 max-lg:order-last")}
+      <div className="grid min-w-0 gap-3 lg:sticky lg:top-[76px] lg:col-start-2 lg:row-start-1">
+        {summary}
+        <div className="grid gap-3 empty:hidden max-lg:hidden">{saveProblems}</div>
+        {bar(true, "z-[5] max-lg:hidden")}
       </div>
+      <div className="lg:col-start-1 lg:row-start-1">{form}</div>
+      <div className="grid gap-3 empty:hidden lg:hidden">{saveProblems}</div>
+      {bar(true, "sticky bottom-3 z-[5] lg:hidden")}
     </div>
   )
 }

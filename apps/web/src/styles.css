@@ -31,9 +31,35 @@
   from { opacity: 0; translate: 0 6px }
 }
 
+/*
+ * An agent's tabs: its content (`agent-tab`) moves as a page's does, on a new page and on a new tab. Between two of
+ * its tabs (the `agent-tab` type, router.tsx) the rest of the page, its header and tab bar, stays put.
+ */
+::view-transition-group(agent-tab) {
+  animation: none;
+}
+
+::view-transition-old(agent-tab) {
+  animation: 120ms cubic-bezier(.2, 0, 0, 1) both page-out;
+}
+
+::view-transition-new(agent-tab) {
+  animation: 200ms cubic-bezier(.2, 0, 0, 1) both page-in;
+}
+
+html:active-view-transition-type(agent-tab)::view-transition-old(page) {
+  display: none;
+}
+
+html:active-view-transition-type(agent-tab)::view-transition-new(page) {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(page),
-  ::view-transition-new(page) {
+  ::view-transition-new(page),
+  ::view-transition-old(agent-tab),
+  ::view-transition-new(agent-tab) {
     animation: none;
   }
 }

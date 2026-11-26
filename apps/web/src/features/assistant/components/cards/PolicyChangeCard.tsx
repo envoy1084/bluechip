@@ -1,7 +1,6 @@
 import { AgentRequest, transition } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
-import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { AGENT_STATES } from "@bluechip/ui/bluechip/agent-status"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
@@ -13,6 +12,8 @@ import { Link } from "@tanstack/react-router"
 import * as Result from "effect/Result"
 import { useState } from "react"
 import { useAgentState } from "../../../../hooks/useAgentState.ts"
+import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
+import { ruleChanges } from "../../../../lib/ruleChanges.ts"
 import { changeAgentAtom, confirmAgentAtom, removeAgentAtom, renewAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
 import { agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
@@ -52,6 +53,7 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
   const [request, setRequest] = useState(card.request)
   const [sent, setSent] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
+  const { nameOf } = useStockLookup()
   const action = ACTION[card.action]
 
   if (request === null) {
@@ -105,18 +107,23 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
   // Still to sign while the agent can take it: a change only while active, a renewal or removal once it ran out too.
   const waiting = !sent && Result.isSuccess(transition(agent.status, { _tag: "Sent", action: card.action }))
 
-  const landed = sent ? agentOutcome(card.action, agent.status, agent.name) : null
+  // Sent from here, or already on its way from elsewhere (the agent's page, another chat): say where it stands.
+  const onItsWay = agent.status === "updating" || agent.status === "removing"
+  const landed = sent || onItsWay ? agentOutcome(card.action, agent.status, agent.name) : null
   const locking = request.agent.pendingSpec ?? request.agent.spec
+  const note = !waiting ?
+    "Nothing to approve here now." :
+    card.action === "renew" && agent.status === "expired" ?
+    `${agent.name} ran out. Renewing locks the same rules with a new key for 90 more days.` :
+    action.note
 
   return (
     <PolicyChangeView
       action={card.action}
       agentId={agent.id}
       name={agent.name}
-      note={action.note}
-      changes={(card.changes?.policies ?? []).filter(({ policy }) => !policyOf(policy).hidden).map((
-        { policy, change }
-      ) => ({ title: policyOf(policy).title, change }))}
+      note={note}
+      changes={card.changes === null ? [] : ruleChanges(card.agent.spec, locking, card.changes, nameOf)}
       looser={card.changes?.overall === "looser"}
       glance={card.action === "remove" ? undefined : <SpecGlance spec={locking} />}
       can={card.description?.can ?? []}
@@ -131,7 +138,7 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
             variant="secondary"
             render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
           >
-            Open {agent.name}
+            Open agent
             <Icon name="arrow-right" size={16} />
           </ButtonLink>
         )}

@@ -1,7 +1,7 @@
 // The mock API's account, sign-in, test money and chain reads: your name and eligibility, the passkeys that own the
 // account (each change signed, then landing a few seconds later), the devices signed in, passkey sign-up and sign-in
 // as the made-up person, $1,000 of test money, and the few JSON-RPC reads a wallet makes.
-import { Account, Me, Passkey, PasskeyChange, User } from "@bluechip/domain/Account"
+import { Account, Device, Me, Passkey, PasskeyChange, User } from "@bluechip/domain/Account"
 import { BluechipApi } from "@bluechip/domain/Api"
 import { Conflict, NotFound } from "@bluechip/domain/Errors"
 import type { Address, PasskeyId, SigningRequestId } from "@bluechip/domain/Ids"
@@ -150,9 +150,13 @@ const AccountHandlers = HttpApiBuilder.group(
         preview.emit(accountChanged())
         yield* landLater(preview, (world) => {
           world.account.passkeys = world.account.passkeys.filter((candidate) => candidate.id !== passkey.id)
-          world.account.devices = world.account.devices.filter((device) =>
-            device.current || device.passkey !== passkey.label
-          )
+          // The server signs out every device signed in with it, this one too; the preview keeps this one, signed in
+          // with none.
+          world.account.devices = world.account.devices
+            .filter((device) => device.current || device.passkey !== passkey.label)
+            .map((device) =>
+              device.current && device.passkey === passkey.label ? new Device({ ...device, passkey: null }) : device
+            )
           world.account.deployed = true
           record(world.account, {
             actor: "owner",

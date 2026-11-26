@@ -1,9 +1,9 @@
 import { Button } from "@bluechip/ui/components/button"
 import { Switch } from "@bluechip/ui/components/switch"
 import { useAtomSet } from "@effect/atom-react/Hooks"
+import { SettingsRow, SettingsSection } from "../../../../components/layout/SettingsSection.tsx"
 import { pushKeys, unsubscribePushAtom } from "../../atoms/notifications.ts"
 import { type PushState, usePushDevice } from "../../hooks/usePushDevice.ts"
-import { SettingsCard, SettingsRow } from "./SettingsCard.tsx"
 
 const SAID: Readonly<Record<PushState, string>> = {
   loading: "Checking this browser.",
@@ -20,7 +20,7 @@ export function PushCard() {
   const remove = useAtomSet(unsubscribePushAtom, { mode: "promise" })
 
   return (
-    <SettingsCard title="Push notifications" description="Each device opts in on its own." illustration="phone">
+    <SettingsSection title="Push notifications" description="Each device opts in on its own." illustration="phone">
       <SettingsRow
         title="This device"
         description={push.failed ? "That didn't work. Nothing changed, so try again." : SAID[push.state]}
@@ -44,6 +44,6 @@ export function PushCard() {
           </Button>
         </SettingsRow>
       ))}
-    </SettingsCard>
+    </SettingsSection>
   )
 }

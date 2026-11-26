@@ -1,10 +1,10 @@
 import type { PortfolioPerformance } from "@bluechip/domain/performance/Performance"
 import type { Portfolio } from "@bluechip/domain/portfolio/Portfolio"
+import { MoneyCard } from "@bluechip/ui/bluechip/portfolio-summary"
 import { PriceChange, priceDirection } from "@bluechip/ui/bluechip/price-change"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatChange, formatMoney } from "@bluechip/ui/lib/format"
-import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { usdcDollars } from "../../../lib/amounts.ts"
 import { moneySummary } from "../../../lib/moneySummary.ts"
@@ -13,8 +13,8 @@ import { costsSentence, returnPercent } from "../../../lib/performance.ts"
 const TONE = { up: "text-gain", down: "text-loss", flat: "text-ink" } as const
 
 /**
- * Your money in one card: what it's worth and today's move, your profit in all (realised by sales and unrealised on
- * what you hold, FIFO), and what your trades cost.
+ * Your money on the portfolio, on the money card home shares: what it's worth and today's move, your profit in all
+ * (realised by sales and unrealised on what you hold, FIFO), and what your trades cost.
  */
 export function SummaryCard(
   { portfolio, performance }: Readonly<{
@@ -25,35 +25,24 @@ export function SummaryCard(
   const { value, dayChange, dayChangePercent } = moneySummary(portfolio, (symbol) => symbol)
 
   return (
-    <section
-      aria-labelledby="summary-title"
-      className="grid gap-4 rounded-lg bg-white px-5 py-[18px] shadow-e2"
+    <MoneyCard
+      value={value}
+      dayChange={dayChange}
+      dayChangePercent={dayChangePercent}
+      aside={
+        <>
+          {AsyncResult.isInitial(performance) && (
+            <div aria-busy className="grid gap-2">
+              <SkeletonBlock className="h-3.5 w-20" />
+              <SkeletonBlock className="h-6 w-32" />
+            </div>
+          )}
+          {AsyncResult.isSuccess(performance) && <ProfitInAll performance={performance.value} />}
+        </>
+      }
     >
-      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <div className="grid gap-1">
-          <h2 id="summary-title" className="text-label text-g-500">Your money</h2>
-          <NumberRoll
-            value={value}
-            format={formatMoney}
-            className="text-[32px] leading-none font-semibold tracking-[-0.04em]"
-          />
-          <span className="flex flex-wrap items-center gap-1.5 text-label text-g-500">
-            <PriceChange value={dayChangePercent} amount={dayChange} />
-            today
-          </span>
-        </div>
-
-        {AsyncResult.isInitial(performance) && (
-          <div aria-busy className="grid gap-2">
-            <SkeletonBlock className="h-3.5 w-20" />
-            <SkeletonBlock className="h-6 w-32" />
-          </div>
-        )}
-        {AsyncResult.isSuccess(performance) && <ProfitInAll performance={performance.value} />}
-      </div>
-
       {AsyncResult.isSuccess(performance) && <Breakdown performance={performance.value} />}
-    </section>
+    </MoneyCard>
   )
 }
 

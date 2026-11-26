@@ -151,6 +151,7 @@ test.describe("agent page", () => {
       "Make a trade under $5",
       "Trade more than 1% away from Chainlink's price",
       "Lose more than 1% of your money to prices in a week",
+      "Sell Apple above $100",
       "Change its own policies"
     ])
     await expect(page.getByText(`Locked with Face ID until ${dayFromNow(90)}`)).toBeVisible()

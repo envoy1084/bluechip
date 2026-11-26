@@ -44,12 +44,12 @@ test.describe("the chat page", () => {
   })
 
   test("an idea on the start screen asks it straight away", async ({ page, user: _user, replies }) => {
-    await replies.record({ to: "How did I do this week?", rounds: [[{ text: "You haven't traded yet this week." }]] })
+    await replies.record({ to: "What is bluechip?", rounds: [[{ text: "An app for tokenized stocks on Base." }]] })
 
-    await page.getByRole("button", { name: /^How did I do this week\?/ }).click()
+    await page.getByRole("button", { name: /^What is bluechip\?/ }).click()
 
-    await expect(lastTurn(page).getByText("You haven't traded yet this week.")).toBeVisible()
-    await expect(page.getByRole("button", { name: /^What did my agents do today\?/ })).toBeHidden()
+    await expect(lastTurn(page).getByText("An app for tokenized stocks on Base.")).toBeVisible()
+    await expect(page.getByRole("button", { name: /^How do I add money\?/ })).toBeHidden()
   })
 
   test("Stop ends an answer midway: what was written stays, then Stopped.", async ({ page, user: _user, replies }) => {
@@ -173,9 +173,11 @@ test.describe("chats sidebar", () => {
 
     await chats.getByRole("button", { name: "More for About Ford" }).click()
     await page.getByRole("menuitem", { name: "Delete" }).click()
-    const dialog = page.getByRole("alertdialog", { name: "Delete “About Ford”?" })
+    const dialog = page.getByRole("alertdialog", { name: "Delete this chat?" })
+    await expect(dialog.getByText("“About Ford” and its cards go for good.", { exact: false })).toBeVisible()
     await dialog.getByRole("button", { name: "Delete chat" }).click()
 
+    await expect(page.getByText("Chat deleted")).toBeVisible()
     await expect(page).toHaveURL(/\/chat$/)
     await expect(chats.getByRole("link", { name: /^About Ford/ })).toBeHidden()
     await expect(page.getByText(to, { exact: true })).toBeHidden()
@@ -194,6 +196,7 @@ test.describe("chats sidebar", () => {
     await page.getByRole("menuitem", { name: "Delete" }).click()
     await page.getByRole("alertdialog").getByRole("button", { name: "Keep it" }).click()
 
+    await expect(chats.getByRole("button", { name: "More for About Coca-Cola" })).toBeFocused()
     await expect(chats.getByRole("link", { name: /^About Coca-Cola/ })).toBeVisible()
     await expect(page.getByText(to, { exact: true })).toBeVisible()
   })
@@ -206,7 +209,7 @@ test.describe("chats sidebar", () => {
 
     await expect(page).toHaveURL(/\/chat$/)
     await expect(page.getByText(to, { exact: true })).toBeHidden()
-    await expect(page.getByRole("button", { name: /^What did my agents do today\?/ })).toBeVisible()
+    await expect(page.getByRole("button", { name: /^How do I add money\?/ })).toBeVisible()
   })
 
   test("with no chats yet, it says where they come from", async ({ page, user: _user }) => {

@@ -62,7 +62,10 @@ export function PresetPicker(
                   compact ? "mt-0.5 pt-1.5" : "mt-1.5 pt-2.5"
                 )}
               >
-                <PresetValue value={formatDollars(shown.dailySpend)} unit="a day" />
+                {/* An agent that only sells spends nothing: it reads as what it is, not as "$0 a day". */}
+                {shown.dailySpend === 0 ?
+                  <PresetValue value="No buys" unit="" /> :
+                  <PresetValue value={formatDollars(shown.dailySpend)} unit="a day" />}
                 {!compact && (
                   <>
                     <PresetValue value={formatDollars(shown.maxPerTrade)} unit="per trade" />

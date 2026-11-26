@@ -1,4 +1,4 @@
-import { allocationSegments, PortfolioSummary } from "@bluechip/ui/bluechip/portfolio-summary"
+import { allocationSegments, MoneyCard, PortfolioSummary } from "@bluechip/ui/bluechip/portfolio-summary"
 import { describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
 
@@ -57,5 +57,18 @@ describe("PortfolioSummary", () => {
     )
     await expect.element(screen.getByText(/^Nothing here yet/)).toBeVisible()
     await expect.element(screen.getByRole("button", { name: "Add cash" })).toBeVisible()
+  })
+})
+
+describe("MoneyCard", () => {
+  it("is a region named Your money, with the page's aside and detail", async () => {
+    const screen = await render(
+      <MoneyCard value={1000} dayChange={12} dayChangePercent={1.2} aside={<span>Profit in all</span>}>
+        <p>Cash line</p>
+      </MoneyCard>
+    )
+    const card = screen.getByRole("region", { name: "Your money" })
+    await expect.element(card.getByText("Profit in all")).toBeVisible()
+    await expect.element(card.getByText("Cash line")).toBeVisible()
   })
 })

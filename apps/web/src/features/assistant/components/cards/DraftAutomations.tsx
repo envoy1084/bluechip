@@ -56,10 +56,20 @@ export function DraftAutomations(
       </span>
       <ul aria-label="Its automations" className="grid gap-2">
         {shown.map((automation) => (
-          <li key={automation.requestId} className="flex items-start gap-3 text-[13.5px] text-g-800">
+          <li
+            key={automation.requestId}
+            className={`flex items-start gap-3 text-[13.5px] ${automation.kept ? "text-g-800" : "text-g-500"}`}
+          >
             <span className="grid min-w-0 flex-1 gap-0.5">
               {automation.automationId === null ?
-                <span className="font-medium">{automation.draft.name}</span> :
+                (
+                  <span className="font-medium">
+                    <span className={automation.kept ? undefined : "line-through decoration-g-400"}>
+                      {automation.draft.name}
+                    </span>
+                    {automation.kept ? null : <span className="ml-1.5 text-label-sm font-normal">Left out</span>}
+                  </span>
+                ) :
                 (
                   <Link
                     to="/automations/$automationId"
@@ -82,9 +92,7 @@ export function DraftAutomations(
                     setProblem(null)
                     keep({ params: { id: card.id, requestId: automation.requestId }, payload: { kept } })
                       .then(answered, () => setProblem(PROBLEM))
-                      .finally(() =>
-                        setBusy(false)
-                      )
+                      .finally(() => setBusy(false))
                   }}
                 />
               ) :

@@ -1,5 +1,5 @@
 // "Buy some Nvidia": a quote, a trade the agent sent, one over its largest trade waiting for you, your own trade whose
-// Face ID request ran out and, for a heavy user, one its stock cap refused.
+// Face ID request ran out and, for a heavy user, one its Max in one stock policy refused.
 import { agentFor } from "../cards.ts"
 import { approvalCard, tradeCard } from "../cards/tradeCards.ts"
 import { getQuote } from "../reads.ts"
@@ -85,7 +85,7 @@ export const buyIdea = ({ mint, conversation }: ThreadContext): ReadonlyArray<Tu
         }, tradeCard(mint, agent, "blocked", { symbol: "MSFT", dollars: 100, hoursAgo: at }))
       ], [
         say(
-          `${agent.name}'s stock cap refused it: Microsoft would be **34%** of your portfolio, and the agent may ` +
+          `${agent.name}'s Max in one stock policy refused it: Microsoft would be **34%** of your portfolio, and the agent may ` +
             "hold at most 30% of any one stock. Nothing was sent.\n\nYou could:\n\n" +
             "1. Buy less, about $40 fits under the cap.\n2. Raise the cap on the agent's page.\n" +
             "3. Buy it yourself, outside the agent's rules."

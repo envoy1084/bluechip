@@ -27,6 +27,16 @@ export function RemoveConfirm(
 
   const busy = signing.status === "preparing" || signing.status === "signing"
 
+  // Escape keeps the agent, as it closes a dialog; not while Face ID is on its way.
+  useEffect(() => {
+    if (busy) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onKeep()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [busy, onKeep])
+
   return (
     <section
       aria-labelledby={titleId}

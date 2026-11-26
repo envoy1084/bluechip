@@ -49,11 +49,11 @@ const request = (changes: Partial<RecoveryRequest>) =>
 describe("passkeyDescription", () => {
   it.each(
     [
-      { name: "synced, never used", changes: {}, expected: "Synced to your other devices, added Tue 24 Nov" },
+      { name: "synced, never used", changes: {}, expected: "Synced to your other devices, added 24 Nov 2026" },
       {
         name: "on one device, used",
         changes: { synced: false, lastUsedAt: at("2026-11-26T08:00:00Z") },
-        expected: "On one device only, added Tue 24 Nov, last used Thu 26 Nov"
+        expected: "On one device only, added 24 Nov 2026, last used 26 Nov 2026"
       },
       { name: "being added", changes: { status: "pending" }, expected: "Being added. Base takes it in a few seconds." },
       {
@@ -91,14 +91,18 @@ describe("deviceDescription", () => {
 })
 
 describe("recoveryText", () => {
+  const now = at("2026-11-28T00:00:00Z")
+
   it.each([
     {
       name: "no recovery key",
       recovery: { key: null, request: null },
       expected: {
         title: "No recovery key yet",
-        description: "Keep one on another device or a hardware key. You can cancel during the wait.",
-        cancellable: false
+        description: "Keep one on another device or a hardware key. If it ever asks to recover your account, you " +
+          "have 48 hours to cancel.",
+        cancellable: false,
+        cancelled: null
       }
     },
     {
@@ -106,29 +110,46 @@ describe("recoveryText", () => {
       recovery: { key: KEY, request: null },
       expected: {
         title: "YubiKey",
-        description: "Ready since Wed 25 Nov. It can replace your passkeys 48 hours after it asks, and you're told " +
+        description: "Ready since 25 Nov 2026. It can replace your passkeys 48 hours after it asks, and you're told " +
           "on every channel so you can cancel.",
-        cancellable: false
+        cancellable: false,
+        cancelled: null
       }
     },
     {
-      name: "a recovery waiting: cancellable",
+      name: "a recovery waiting: cancellable, with how long is left",
       recovery: { key: KEY, request: request({}) },
       expected: {
         title: "Someone asked to recover your account",
         description: "Your recovery key asked on Fri 27 Nov to replace your passkeys with Passkey on Android. It can " +
-          "go through from Sun 29 Nov, 10:00. Cancel it if this wasn't you.",
-        cancellable: true
+          "go through on Sun 29 Nov, 10:00, in 34 h. Cancel it if this wasn't you.",
+        cancellable: true,
+        cancelled: null
       }
     },
     {
-      name: "a cancelled recovery: the key as it is",
-      recovery: { key: KEY, request: request({ status: "cancelled" }) },
+      name: "a recovery past its wait: it can go through now",
+      recovery: { key: KEY, request: request({ executableAt: at("2026-11-27T23:00:00Z") }) },
+      expected: {
+        title: "Someone can recover your account now",
+        description: "Your recovery key asked on Fri 27 Nov to replace your passkeys with Passkey on Android. Its 48 " +
+          "hours are up, so it can go through now. Cancel it if this wasn't you.",
+        cancellable: true,
+        cancelled: null
+      }
+    },
+    {
+      name: "a recovery cancelled from Telegram: the key, and the cancel",
+      recovery: {
+        key: KEY,
+        request: request({ status: "cancelled", cancelledAt: at("2026-11-27T12:30:00Z"), cancelledFrom: "telegram" })
+      },
       expected: {
         title: "YubiKey",
-        description: "Ready since Wed 25 Nov. It can replace your passkeys 48 hours after it asks, and you're told " +
+        description: "Ready since 25 Nov 2026. It can replace your passkeys 48 hours after it asks, and you're told " +
           "on every channel so you can cancel.",
-        cancellable: false
+        cancellable: false,
+        cancelled: "A recovery asked for on Fri 27 Nov was cancelled from Telegram on Fri 27 Nov, 12:30."
       }
     },
     {
@@ -137,11 +158,12 @@ describe("recoveryText", () => {
       expected: {
         title: "Locking your recovery key",
         description: "It's ready once Base takes it.",
-        cancellable: false
+        cancellable: false,
+        cancelled: null
       }
     }
   ])("$name", ({ expected, recovery }) => {
-    assert.deepStrictEqual(recoveryText(new AccountRecovery(recovery), "UTC"), expected)
+    assert.deepStrictEqual(recoveryText(new AccountRecovery(recovery), now, "UTC"), expected)
   })
 })
 

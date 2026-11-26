@@ -109,7 +109,7 @@ export const notificationOfIntent = (intent: Intent, names: Names): Notification
       return intentDraft(intent, {
         kind: "approvalNeeded",
         title: `${names.agent ?? "A trade"} needs your approval`,
-        body: `${trade}. Approve or decline it in bluechip with Face ID.`,
+        body: `${trade}. Approve or decline it with Face ID.`,
         link: APPROVALS_LINK
       })
     case "expired":

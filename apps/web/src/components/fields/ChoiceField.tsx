@@ -4,8 +4,10 @@ import { FieldHelp } from "./FieldHelp.tsx"
 
 /** One of a few settings, each said in words. */
 export function ChoiceField<A extends string | number>(
-  { label, help, value, options, problem, onChange }: Readonly<{
+  { label, labelHidden = false, help, value, options, problem, onChange }: Readonly<{
     label: string
+    /** Named for screen readers only, where the heading above already says it (a rule's own title). */
+    labelHidden?: boolean
     help?: string | undefined
     value: A
     options: ReadonlyArray<{ readonly value: A; readonly label: string }>
@@ -19,7 +21,7 @@ export function ChoiceField<A extends string | number>(
     <div className="grid gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5">
-          <span className="text-[13.5px] font-medium text-g-700">{label}</span>
+          <span className={cn("text-[13.5px] font-medium text-g-700", labelHidden && "sr-only")}>{label}</span>
           <FieldHelp label={label} help={help} />
         </span>
         <ToggleGroup

@@ -24,6 +24,34 @@ export const TradesPerDayConfig = Schema.Struct({ count: Schema.Int })
 export type TradesPerDayConfig = typeof TradesPerDayConfig.Type
 
 /**
+ * The count every template and a new agent start with: high enough that its budget, not a count, stops it, so it
+ * reads as no limit of its own.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const NO_TRADE_LIMIT = 500
+
+/**
+ * Whether the count is no limit of its own: at or over {@link NO_TRADE_LIMIT}.
+ *
+ * **Example** (The default count)
+ *
+ * ```ts import.meta.vitest
+ * import { isNoTradeLimit } from "@bluechip/domain/policies/TradesPerDay"
+ *
+ * isNoTradeLimit({ count: 500 }) // => true
+ * isNoTradeLimit({ count: 12 }) // => false
+ * ```
+ *
+ * @stability unstable
+ * @category predicates
+ * @since 0.0.0
+ */
+export const isNoTradeLimit = (config: TradesPerDayConfig): boolean => config.count >= NO_TRADE_LIMIT
+
+/**
  * @stability unstable
  * @category policies
  * @since 0.0.0
@@ -41,9 +69,15 @@ export const tradesPerDay = Policy.make({
   },
   required: true,
   hidden: false,
-  defaults: { count: 500 },
+  defaults: { count: NO_TRADE_LIMIT },
   describe: (config) => ({
-    can: [config.count === 1 ? "Trade once a day at most" : `Trade ${config.count} times a day at most`],
+    can: [
+      isNoTradeLimit(config) ?
+        "Trade as often as its budget allows" :
+        config.count === 1 ?
+        "Trade once a day at most" :
+        `Trade ${config.count} times a day at most`
+    ],
     never: []
   }),
   compare: (before, after) => Policy.compareNumbers(before.count, after.count, "lower")

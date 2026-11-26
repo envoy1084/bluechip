@@ -55,7 +55,7 @@ export const everyTrade = ({ mint, conversation }: ThreadContext): ReadonlyArray
     trade(
       "blocked",
       "Buy $100 of Microsoft",
-      "Its stock cap refused it: nothing was sent.",
+      "Its Max in one stock policy refused it: nothing was sent.",
       { symbol: "MSFT", dollars: 100 }
     ),
     trade("waiting", "Buy $30 of Apple tonight", "The market is closed, so it waits for prices.", {

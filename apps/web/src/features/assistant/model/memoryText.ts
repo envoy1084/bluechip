@@ -3,10 +3,12 @@ import type { Memory, MemoryKind } from "@bluechip/domain/assistant/Memory"
 import { formatDate, formatRelative } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 
-/** "You said it, on Fri 20 Nov, 10:00" or "Inferred, 72% sure, on …", in the viewer's time zone. */
+/** "You said it on Fri 20 Nov, 10:00" or "Inferred on Fri 20 Nov, 10:00, 72% sure", in the viewer's time zone. */
 export const provenance = (memory: Memory, timeZone: string): string => {
-  const from = memory.source === "said" ? "You said it" : `Inferred, ${Math.round(memory.confidence * 100)}% sure`
-  return `${from}, on ${formatDate(DateTime.toDateUtc(memory.createdAt), { timeZone })}`
+  const on = formatDate(DateTime.toDateUtc(memory.createdAt), { timeZone })
+  return memory.source === "said" ?
+    `You said it on ${on}` :
+    `Inferred on ${on}, ${Math.round(memory.confidence * 100)}% sure`
 }
 
 /**

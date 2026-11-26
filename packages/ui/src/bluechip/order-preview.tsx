@@ -9,7 +9,7 @@ export function OrderPreview({ className, ...props }: ComponentProps<"dl">) {
   return (
     <dl
       data-slot="order-preview"
-      className={cn("rounded-[12px] px-3.5 py-0.5 text-left surface-well", className)}
+      className={cn("rounded-[12px] px-3 py-0.5 text-left surface-well", className)}
       {...props}
     />
   )

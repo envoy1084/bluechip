@@ -19,6 +19,7 @@ export const INTENT_STATUS: Readonly<Record<IntentStatus, StatusWords>> = {
   failed: { label: "Didn't go through", tone: "negative" },
   blocked: { label: "Blocked", tone: "negative" },
   declined: { label: "Declined", tone: "neutral" },
-  expired: { label: "Ran out", tone: "neutral" },
+  // "Ran out" is an agent whose session ended; a trade nobody decided in time timed out.
+  expired: { label: "Timed out", tone: "neutral" },
   cancelled: { label: "Cancelled", tone: "neutral" }
 }

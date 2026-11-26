@@ -10,7 +10,9 @@ export type MintSource = "seed" | "action" | "run"
 
 export type Counters = Record<MintSource, number>
 
-const BASE: Readonly<Record<MintSource, number>> = { seed: 10_000, action: 500_000, run: 900_000 }
+// Above the market's own ranges (its trades from 10,000, intents from 20,000, ...), so a chat's filled trade never
+// shares an id with one of the market's and shows that trade's fill.
+const BASE: Readonly<Record<MintSource, number>> = { seed: 200_000, action: 500_000, run: 900_000 }
 
 export interface Mint {
   readonly cast: Cast

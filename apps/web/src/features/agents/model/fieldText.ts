@@ -14,6 +14,14 @@ export const DIRECTION_LABELS: Readonly<Record<Direction, string>> = {
   rebalance: "Rebalance only"
 }
 
+/** Which way an agent trades, said of it: on its card, its tag and its rules at a glance. */
+export const DIRECTION_WORDS: Readonly<Record<Direction, string>> = {
+  both: "Buys and sells",
+  buy: "Only buys",
+  sell: "Only sells",
+  rebalance: "Only rebalances"
+}
+
 /** USDC units as dollars, for inputs and meters. */
 export const toDollars = (amount: bigint | number): number => Number(amount) / 1_000_000
 
@@ -49,8 +57,11 @@ export const fieldText = (field: Field, value: unknown, nameOf: (symbol: StockSy
   }
 }
 
-const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" })
+// en-GB shortens September to "Sept"; en-US's three-letter months keep every date the same width ("27 Sep").
+const monthFormat = new Intl.DateTimeFormat("en-US", { month: "short" })
 
 /** A day as the agent screens say it: "21 Feb". */
-export const dayLabel = (date: Date | DateTime.Utc): string =>
-  dayFormat.format(date instanceof Date ? date : DateTime.toDateUtc(date))
+export const dayLabel = (date: Date | DateTime.Utc): string => {
+  const day = date instanceof Date ? date : DateTime.toDateUtc(date)
+  return `${day.getDate()} ${monthFormat.format(day)}`
+}

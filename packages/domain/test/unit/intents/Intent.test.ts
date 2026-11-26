@@ -207,7 +207,7 @@ describe("describeDecision", () => {
     {
       name: "asking you first",
       decision: { _tag: "Ask" } as const,
-      expected: "It asks you first, so it needs your approval."
+      expected: "It asks you first on every trade."
     },
     {
       name: "refused",

@@ -15,6 +15,7 @@ import { withdrawalsAtom } from "../../../atoms/portfolio.ts"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { transferStatus } from "../../../lib/activityText.ts"
 import { usdcDollars } from "../../../lib/amounts.ts"
+import { localTimeZone } from "../../../lib/localTime.ts"
 
 const SHOWN = 3
 
@@ -86,12 +87,13 @@ function WithdrawalRow({ transfer }: Readonly<{ transfer: Transfer }>) {
 
       <span className="grid min-w-0 flex-1">
         <b className="text-body-sm font-semibold tabular-nums">{formatMoney(usdcDollars(transfer.amount))}</b>
-        <span className="flex min-w-0 items-center gap-1 text-label-sm text-g-500">
-          <span className="truncate">
-            {formatDate(DateTime.toDateUtc(transfer.createdAt), { time: false })}, to{" "}
-            <span title={transfer.to} className="font-mono tracking-[-0.01em]">{shortAddress(transfer.to)}</span>
+        {/* The date and the address wrap onto two lines on a phone rather than cut off. */}
+        <span className="flex min-w-0 flex-wrap items-center gap-x-1 text-label-sm text-g-500">
+          <span>{formatDate(DateTime.toDateUtc(transfer.createdAt), { time: false, timeZone: localTimeZone() })},</span>
+          <span className="inline-flex items-center gap-1">
+            to <span title={transfer.to} className="font-mono tracking-[-0.01em]">{shortAddress(transfer.to)}</span>
+            <CopyAddress address={transfer.to} />
           </span>
-          <CopyAddress address={transfer.to} />
         </span>
       </span>
 

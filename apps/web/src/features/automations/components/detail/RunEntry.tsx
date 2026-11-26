@@ -33,7 +33,8 @@ const neededFor = (automation: Automation, judgment: Judgment): number | null =>
 
 /**
  * One run on the timeline: its mark, the time and how it ended, what fired it, each condition it checked (passed or
- * not, with a model's answer where one decided it), why it ended so, and the trades it proposed.
+ * not, with a model's answer where one decided it), why it ended so (unless a condition already said it), and the
+ * trades it proposed.
  */
 export function RunEntry(
   { automation, run, judgments, symbols, Intent, index }: Readonly<{
@@ -47,6 +48,7 @@ export function RunEntry(
 ) {
   const node = NODE[run.outcome]
   const outcome = RUN_OUTCOME[run.outcome]
+  const saidByCondition = run.conditions.some((condition) => condition.reason === run.reason)
 
   return (
     <li
@@ -97,8 +99,8 @@ export function RunEntry(
                       />
                     </span>
                     <span>
-                      <b className="font-semibold text-ink">{catalogEntry("condition", condition.type).title}</b>{" "}
-                      <span className="text-g-600">{condition.reason}</span>
+                      <b className="font-semibold text-ink">{catalogEntry("condition", condition.type).title}</b>
+                      {judgment === undefined ? <span className="text-g-600">{` ${condition.reason}`}</span> : null}
                     </span>
                   </span>
                   {judgment === undefined ?
@@ -110,10 +112,12 @@ export function RunEntry(
           </ul>
         )}
 
-        <p className="flex items-start gap-1.5 text-label-sm text-g-600">
-          <Icon name="info" size={14} className="mt-px shrink-0 text-g-400" />
-          {run.reason}
-        </p>
+        {saidByCondition ? null : (
+          <p className="flex items-start gap-1.5 text-label-sm text-g-600">
+            <Icon name="info" size={14} className="mt-px shrink-0 text-g-400" />
+            {run.reason}
+          </p>
+        )}
 
         {run.intentIds.length === 0 ? null : (
           <div className="grid gap-1.5">

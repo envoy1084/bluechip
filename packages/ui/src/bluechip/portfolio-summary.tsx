@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { type ReactNode, useId } from "react"
 import { Button } from "../components/button.tsx"
 import { SkeletonBlock } from "../components/skeleton.tsx"
 import { Icon } from "../icons/icon.tsx"
@@ -152,6 +152,79 @@ export function PortfolioSummary(
           </>
         )}
     </section>
+  )
+}
+
+export interface MoneyCardProps {
+  /** Everything you have, in dollars: holdings plus cash. */
+  readonly value: number
+  /** How much it moved today, in dollars, and in percent. */
+  readonly dayChange: number
+  readonly dayChangePercent: number
+  /** Beside the value, at its right: the week's sparkline on home, the profit in all on the portfolio. */
+  readonly aside?: ReactNode
+  /** Under it: the mix and the cash on home, the breakdown of results on the portfolio. */
+  readonly children?: ReactNode
+  readonly className?: string
+}
+
+/**
+ * "Your money": one card wherever your money is the headline, home and the portfolio. Its value rolls to each new
+ * price, with today's move under it, `aside` at its right and the page's own detail under it.
+ */
+export function MoneyCard({ value, dayChange, dayChangePercent, aside, children, className }: MoneyCardProps) {
+  const title = useId()
+  return (
+    <section
+      data-slot="money-card"
+      aria-labelledby={title}
+      className={cn("grid gap-4 rounded-lg bg-white px-5 py-[18px] shadow-e2", className)}
+    >
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="grid gap-1">
+          <h2 id={title} className="text-label text-g-500">Your money</h2>
+          <NumberRoll
+            value={value}
+            format={formatMoney}
+            className="text-[34px] leading-none font-semibold tracking-[-0.04em]"
+          />
+          <span className="flex flex-wrap items-center gap-1.5 text-label text-g-500">
+            <PriceChange value={dayChangePercent} amount={dayChange} />
+            today
+          </span>
+        </div>
+        {aside}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+/**
+ * `MoneyCard` while it loads, line for line as it lands on home (value, today, the mix strip and its legend, the cash
+ * line with its button), so nothing below it moves when it arrives.
+ */
+export function MoneyCardSkeleton({ className }: { readonly className?: string }) {
+  return (
+    <div
+      aria-busy
+      aria-label="Loading your money"
+      className={cn("grid gap-4 rounded-lg bg-white px-5 py-[18px] shadow-e2", className)}
+    >
+      <div className="grid gap-1">
+        <SkeletonBlock className="h-[18px] w-20" />
+        <SkeletonBlock className="h-[34px] w-44" />
+        <SkeletonBlock className="h-[18px] w-36" />
+      </div>
+      <div className="grid gap-2">
+        <SkeletonBlock className="h-2.5 w-full rounded-full" />
+        <SkeletonBlock className="h-[17.5px] w-3/5" />
+      </div>
+      <div className="flex items-center justify-between gap-2 border-t border-g-100 pt-3">
+        <SkeletonBlock className="h-[18px] w-40" />
+        <SkeletonBlock className="h-[30px] w-[104px] rounded-sm" />
+      </div>
+    </div>
   )
 }
 

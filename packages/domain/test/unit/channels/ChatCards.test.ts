@@ -183,7 +183,7 @@ describe("chatNotification", () => {
         },
         expected: {
           markdown: "**Tech picker bought $50.00 of NVIDIA**\nIt filled.",
-          actions: [{ _tag: "Open", label: "Open in bluechip", path: "/activity" }, { _tag: "PauseAll" }]
+          actions: [{ _tag: "Open", label: "Open in bluechip", path: "/activity" }]
         }
       },
       {
@@ -191,7 +191,15 @@ describe("chatNotification", () => {
         notification: { kind: "approvalExpiring", title: "Expiring", body: "Soon.", link: "/home?sheet=approvals" },
         expected: {
           markdown: "**Expiring**\nSoon.",
-          actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }, { _tag: "PauseAll" }]
+          actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }]
+        }
+      },
+      {
+        name: "a policy stopped a trade: Pause all under the link",
+        notification: { kind: "intentBlocked", title: "Blocked", body: "Over its cap.", link: "/agents/agent_1" },
+        expected: {
+          markdown: "**Blocked**\nOver its cap.",
+          actions: [{ _tag: "Open", label: "Open in bluechip", path: "/agents/agent_1" }, { _tag: "PauseAll" }]
         }
       },
       {

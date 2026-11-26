@@ -156,9 +156,18 @@ describe("checkAutomation", () => {
     },
     {
       name: "drift for your own trades",
-      draft: draft({ trigger: { type: "drift", config: {} }, action: { type: "notify", config: { message: "" } } }),
+      draft: draft({
+        trigger: { type: "drift", config: {} },
+        action: { type: "notify", config: { message: "Your mix drifted." } }
+      }),
       spec: null,
       expected: [["trigger", null, null, "Only an agent with a target mix can watch drift."]]
+    },
+    {
+      name: "a message with nothing to say",
+      draft: draft({ action: { type: "notify", config: { message: "  " } } }),
+      spec: null,
+      expected: [["action", null, "message", "Write what to tell you."]]
     },
     {
       name: "a judgment on a schedule",
@@ -248,7 +257,7 @@ describe("asksFirst", () => {
     },
     {
       name: "a message on news",
-      draft: draft({ trigger: NEWS_ON_CHIPS, action: { type: "notify", config: { message: "" } } }),
+      draft: draft({ trigger: NEWS_ON_CHIPS, action: { type: "notify", config: { message: "Read this." } } }),
       expected: false
     }
   ])("$name", ({ draft, expected }) => {
@@ -301,8 +310,8 @@ describe("describeAutomation", () => {
     assert.deepStrictEqual(
       [description.sentence, description.settings],
       [
-        "When there is news about NVIDIA, Apple and \"chips\", if the news looks materially bad, ask you whether to " +
-        "sell half your NVIDIA.",
+        "When there is news about NVIDIA and Apple, or a story mentioning \"chips\", if the news looks materially bad, " +
+        "ask you whether to sell half your NVIDIA.",
         ["At most once an hour", "Asks you before trading on news"]
       ]
     )

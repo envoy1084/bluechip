@@ -8,7 +8,8 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { useState } from "react"
-import { auditData, auditExactTime, auditRecord, auditWhen } from "../model/auditDetails.ts"
+import { CopyButton } from "../../../components/CopyButton.tsx"
+import { auditData, auditExactTime, auditIds, auditRecord, auditWhen } from "../model/auditDetails.ts"
 import {
   actorLabel,
   AUDIT_TYPES,
@@ -98,7 +99,7 @@ function SubjectLink({ subject, className }: Readonly<{ subject: AuditSubject; c
 
 /**
  * One entry of the log as a table row: when, who, what happened with its kind's icon, and what it was about; the
- * row opens its record (every field, and its data as JSON). Narrow screens keep the sentence and fold the rest under
+ * row opens its record (when exactly, the agent by name, its ids to copy, its data). Narrow screens keep the sentence and fold the rest under
  * it.
  */
 export function AuditRow(
@@ -145,7 +146,9 @@ export function AuditRow(
             </span>
             <span className="grid min-w-0 gap-0.5">
               <span className="text-[13.5px] leading-snug font-[550] text-ink">{describeAudit(event)}</span>
-              <span className="truncate text-label-sm text-g-500 md:hidden">{who}, {when}</span>
+              <span className="truncate text-label-sm text-g-500 md:hidden">
+                {who}, {when[0]!.toLowerCase() + when.slice(1)}
+              </span>
             </span>
           </span>
         </TableCell>
@@ -177,17 +180,10 @@ export function AuditRow(
                 <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 gap-y-1.5 text-label-sm">
                   <dt className="text-g-500">Who</dt>
                   <dd className="text-g-700">{who}</dd>
-                  {auditRecord(event, timeZone).map((field) => (
+                  {auditRecord(event, timeZone, agentName).map((field) => (
                     <div key={field.label} className="contents">
                       <dt className="text-g-500">{field.label}</dt>
-                      <dd
-                        className={cn(
-                          "break-all text-g-700",
-                          field.label !== "When" && "font-mono text-[12px]"
-                        )}
-                      >
-                        {field.value}
-                      </dd>
+                      <dd className="text-g-700">{field.value}</dd>
                     </div>
                   ))}
                   {subject === undefined ? null : (
@@ -198,6 +194,18 @@ export function AuditRow(
                       </dd>
                     </>
                   )}
+                  <dt className="text-g-500">Ids</dt>
+                  <dd className="flex flex-wrap gap-1.5">
+                    {auditIds(event).map((each) => (
+                      <span
+                        key={each.label}
+                        className="inline-flex items-center gap-1 rounded-full bg-g-50 py-0.5 pr-0.5 pl-2.5 text-g-600 shadow-[inset_0_0_0_1px_var(--color-g-100)]"
+                      >
+                        {each.label}
+                        <CopyButton text={each.id} what={`the ${each.label.toLowerCase()}'s id`} />
+                      </span>
+                    ))}
+                  </dd>
                 </dl>
                 {data === null ?
                   null :

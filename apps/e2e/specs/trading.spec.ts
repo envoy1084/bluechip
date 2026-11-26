@@ -19,7 +19,7 @@ test.describe("buying on a stock's page", () => {
     await expect(box.getByText(/^About \d+\.\d+ shares for \$10\.00\.$/)).toBeVisible()
     const rows = box.getByRole("definition")
     await expect(rows.nth(0)).toHaveText("MSTRStrategy")
-    await expect(rows.nth(1)).toHaveText("10.00 USDC")
+    await expect(rows.nth(1)).toHaveText("$10.00")
     await expect(rows.nth(2)).toHaveText(/^\$\d+\.\d{2} a share$/)
     await expect(rows.nth(3)).toHaveText(/^\d+\.\d+ shares$/)
     await expect(rows.nth(4)).toHaveText("Within 1%")
@@ -66,7 +66,7 @@ test.describe("buying on a stock's page", () => {
 
     await box.getByRole("button", { name: "Max" }).click()
 
-    await expect(box.getByRole("textbox", { name: "Buy Strategy" })).toHaveValue("1000")
+    await expect(box.getByRole("textbox", { name: "Buy Strategy" })).toHaveValue("1000.00")
   })
 
   test("more than your cash is refused before any quote", async ({ page, funded: _funded }) => {

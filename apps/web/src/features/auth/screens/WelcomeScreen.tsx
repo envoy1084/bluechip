@@ -9,7 +9,9 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
-import { signInAtom, signUpAtom } from "../atoms/auth.ts"
+import { PasskeySignIn } from "../../../components/PasskeySignIn.tsx"
+import { SignedInRedirect } from "../../../components/SignedInRedirect.tsx"
+import { signUpAtom } from "../atoms/auth.ts"
 
 type Phase =
   | { readonly _tag: "Start"; readonly creating: boolean; readonly failed: boolean }
@@ -17,10 +19,8 @@ type Phase =
 
 export function WelcomeScreen() {
   const signUp = useAtomSet(signUpAtom, { mode: "promise" })
-  const signIn = useAtomSet(signInAtom, { mode: "promise" })
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>({ _tag: "Start", creating: false, failed: false })
-  const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
     setPhase({ _tag: "Start", creating: true, failed: false })
@@ -29,17 +29,11 @@ export function WelcomeScreen() {
       () => setPhase({ _tag: "Start", creating: false, failed: true })
     )
   }
-  const existing = () => {
-    setSigningIn(true)
-    signIn().then(
-      (me) => navigate({ to: me.user.eligibility === "outsideUs" ? "/home" : "/welcome/eligibility" }),
-      () => setSigningIn(false)
-    )
-  }
 
   if (phase._tag === "Start") {
     return (
-      <OnboardingFrame>
+      <OnboardingFrame step="Account">
+        <SignedInRedirect />
         <div className="-mb-1.5 size-[210px]">
           <Halftone scene="logo" className="size-full" />
         </div>
@@ -55,19 +49,10 @@ export function WelcomeScreen() {
           ) :
           null}
         <div className="mt-2.5 grid w-full gap-2.5">
-          <Button size="lg" className="w-full" loading={phase.creating} disabled={signingIn} onClick={create}>
+          <Button size="lg" className="w-full" loading={phase.creating} onClick={create}>
             <Icon name="face-id" size={18} />Create account with Face ID
           </Button>
-          <Button
-            size="lg"
-            variant="secondary"
-            className="w-full"
-            loading={signingIn}
-            disabled={phase.creating}
-            onClick={existing}
-          >
-            Sign in with Face ID
-          </Button>
+          <PasskeySignIn />
         </div>
         <p className="text-[12px] text-g-500">
           By continuing you agree to the{" "}
@@ -83,9 +68,7 @@ export function WelcomeScreen() {
     <OnboardingFrame step="Account">
       <section className="grid w-full animate-slide-up justify-items-center gap-1.5 rounded-[30px] bg-white/90 px-6 pt-7 pb-6 shadow-e4">
         <Seal playing className="mb-1 size-[136px]" label="Passkey saved" />
-        <h1 className="text-[28px] leading-[1.12] font-semibold tracking-[-0.035em] max-sm:text-2xl">
-          Your account is ready
-        </h1>
+        <OnboardingTitle title="Your account is ready" />
         <p className="text-label-sm text-gain">Passkey saved with Face ID</p>
         <div className="mt-4 grid w-full justify-items-center gap-2 border-t border-g-100 pt-5">
           <span className="text-label-sm font-medium text-g-500">Your account on Base</span>

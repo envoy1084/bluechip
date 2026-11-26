@@ -111,7 +111,8 @@ export const prepareIntents = (
       if (row.status === "awaitingSignature") return row
       const moved = advanceIntent(market, row.id, { _tag: "Prepared" }, now, {
         executor: "owner",
-        expiresAt: utc(plan.expiresAt)
+        // As the server: an approval keeps its own deadline, the signing window bounds only a trade without one.
+        expiresAt: row.expiresAt ?? utc(plan.expiresAt)
       })
       if (Result.isFailure(moved)) return row
       events.push(...moved.success.events)

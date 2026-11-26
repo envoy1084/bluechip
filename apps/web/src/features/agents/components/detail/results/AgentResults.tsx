@@ -2,13 +2,14 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { AgentPerformance } from "@bluechip/domain/performance/Performance"
 import { PortfolioChart } from "@bluechip/ui/bluechip/portfolio-chart"
 import { PriceChange } from "@bluechip/ui/bluechip/price-change"
-import { Button } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatChange, formatDate } from "@bluechip/ui/lib/format"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { IllustratedEmpty } from "../../../../../components/IllustratedEmpty.tsx"
+import { SectionHeader } from "../../../../../components/layout/SectionHeader.tsx"
+import { LoadProblem } from "../../../../../components/LoadProblem.tsx"
 import { usdcDollars } from "../../../../../lib/amounts.ts"
 import { returnPercent } from "../../../../../lib/performance.ts"
 import { agentPerformanceAtom } from "../../../atoms/performance.ts"
@@ -66,6 +67,20 @@ function Contribution({ performance }: Readonly<{ performance: AgentPerformance 
  * decided, and, for a rebalancer, its drift from its target mix.
  */
 export function AgentResults({ agent }: Readonly<{ agent: Agent }>) {
+  return (
+    <section aria-labelledby={`results-${agent.id}`} className="grid content-start gap-3">
+      <SectionHeader
+        id={`results-${agent.id}`}
+        level="h3"
+        title="Results"
+        description="What it made or lost since it started, what it moved and what that cost, from the ledger."
+      />
+      <ResultsBody agent={agent} />
+    </section>
+  )
+}
+
+function ResultsBody({ agent }: Readonly<{ agent: Agent }>) {
   const result = useAtomValue(agentPerformanceAtom(agent.id))
   const refresh = useAtomRefresh(agentPerformanceAtom(agent.id))
 
@@ -82,14 +97,7 @@ export function AgentResults({ agent }: Readonly<{ agent: Agent }>) {
       </div>
     )
   }
-  if (!AsyncResult.isSuccess(result)) {
-    return (
-      <div className="grid justify-items-center gap-3 rounded-lg bg-white py-10 text-center shadow-e2">
-        <p className="text-body-sm text-g-600">We couldn't read its results just now. Try again in a moment.</p>
-        <Button variant="secondary" size="sm" onClick={refresh}>Try again</Button>
-      </div>
-    )
-  }
+  if (!AsyncResult.isSuccess(result)) return <LoadProblem what="its results" onRetry={refresh} />
 
   const performance = result.value
   if (performance.trades === 0 && performance.decided === 0 && performance.drift === null) {
@@ -108,7 +116,7 @@ export function AgentResults({ agent }: Readonly<{ agent: Agent }>) {
           measure="profit"
           ranges={[{
             id: "All",
-            description: "Since its first trade",
+            description: "Since it started",
             points: performance.series.map((point) => ({
               value: usdcDollars(point.total),
               label: formatDate(new Date(`${point.day}T12:00:00Z`))

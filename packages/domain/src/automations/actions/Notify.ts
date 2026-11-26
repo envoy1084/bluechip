@@ -1,5 +1,5 @@
 /**
- * The `notify` action: tells you, with an optional message, and trades nothing.
+ * The `notify` action: tells you something in a message, and trades nothing.
  *
  * @since 0.0.0
  */
@@ -21,6 +21,9 @@ export const notify = Action.make({
   config: Schema.Struct({ message: Schema.String.check(Schema.isMaxLength(200)) }),
   fields: { message: new Field({ label: "Message", unit: "text" }) },
   defaults: { message: "" },
-  describe: (config) => config.message.trim() === "" ? "tell you" : `tell you: ${config.message.trim()}`,
+  check: (config) => config.message.trim() === "" ? [{ field: "message", message: "Write what to tell you." }] : [],
+  // The sentence ends with its own period, so a message's last one is dropped ("tell you: Apple is under $200").
+  describe: (config) =>
+    config.message.trim() === "" ? "tell you" : `tell you: ${config.message.trim().replace(/\.+$/u, "")}`,
   plan: null
 })

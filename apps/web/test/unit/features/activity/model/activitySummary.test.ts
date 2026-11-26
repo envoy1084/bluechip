@@ -67,7 +67,7 @@ describe("summaryTiles", () => {
     assert.deepStrictEqual(summaryTiles(totals, "all"), [
       { label: "Bought", value: "$100.00", detail: "2 buys" },
       { label: "Sold", value: "$40.00", detail: "1 sale" },
-      { label: "Added", value: "$0.00", detail: "None" },
+      { label: "Added", value: "None", detail: "In this period" },
       { label: "Withdrew", value: "$15.00", detail: "1 withdrawal" }
     ])
   })

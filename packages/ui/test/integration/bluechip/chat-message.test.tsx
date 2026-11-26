@@ -1,7 +1,7 @@
 import { ChatMessage } from "@bluechip/ui/bluechip/chat-message"
 import { describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
-import { userEvent } from "vitest/browser"
+import { page, userEvent } from "vitest/browser"
 
 const PORTFOLIO = { kind: "Account", from: "Your portfolio", title: "Holdings and limits", when: "Right now" } as const
 
@@ -83,6 +83,82 @@ describe("ChatMessage", () => {
       await expect.element(screen.getByText("max", { exact: false })).toBeVisible()
       expect(screen.container.querySelector("[data-streamdown=code-block]")).not.toBeNull()
     })
+
+    it("offers to copy a code block", async () => {
+      const screen = await render(<ChatMessage from="bluechip" text={"```ts\nconst max = 30\n```"} />)
+      await expect.element(screen.getByRole("button", { name: "Copy Code" })).toBeInTheDocument()
+    })
+  })
+
+  describe("links", () => {
+    it("draws a link to one of the app's pages with internalLink", async () => {
+      const screen = await render(
+        <ChatMessage
+          from="bluechip"
+          text="See [How agents work](/help/agents#policies)."
+          internalLink={({ children, className, href }) => (
+            <a href={href} className={className} data-internal="">{children}</a>
+          )}
+        />
+      )
+      await expect.element(screen.getByRole("link", { name: "How agents work" })).toHaveAttribute(
+        "data-internal",
+        ""
+      )
+    })
+
+    it("opens a link to one of the app's pages without asking", async () => {
+      const opened: Array<string> = []
+      const screen = await render(
+        <ChatMessage
+          from="bluechip"
+          text="See [Approvals](/help/approvals)."
+          internalLink={({ children, className, href }) => (
+            <a
+              href={href}
+              className={className}
+              onClick={(event) => {
+                event.preventDefault()
+                opened.push(href)
+              }}
+            >
+              {children}
+            </a>
+          )}
+        />
+      )
+      await userEvent.click(screen.getByRole("link", { name: "Approvals" }))
+      expect(opened).toEqual(["/help/approvals"])
+      await expect.element(page.getByRole("dialog")).not.toBeInTheDocument()
+    })
+
+    it("asks before opening another site", async () => {
+      const screen = await render(
+        <ChatMessage from="bluechip" text="See [Chainlink's feeds](https://data.chain.link/feeds)." />
+      )
+      await userEvent.click(screen.getByRole("link", { name: "Chainlink's feeds" }))
+      await expect.element(page.getByRole("dialog", { name: "Open data.chain.link?" })).toBeVisible()
+    })
+
+    it("stays put when you keep to bluechip", async () => {
+      const screen = await render(
+        <ChatMessage from="bluechip" text="See [Chainlink's feeds](https://data.chain.link/feeds)." />
+      )
+      await userEvent.click(screen.getByRole("link", { name: "Chainlink's feeds" }))
+      // Base UI's scroll lock keeps Playwright's stability check from settling in the test iframe; the click is real.
+      await userEvent.click(page.getByRole("button", { name: "Stay here" }), { force: true })
+      await expect.element(page.getByRole("dialog")).not.toBeInTheDocument()
+    })
+  })
+
+  it("puts what the tools found above the text, so it stays put as the text streams", async () => {
+    const screen = await render(
+      <ChatMessage from="bluechip" status="streaming" text="Nvidia is up." attachments={<p>Your portfolio</p>} />
+    )
+    await expect.element(screen.getByText("Nvidia is up.")).toBeVisible()
+    const found = screen.getByText("Your portfolio").element()
+    const text = screen.getByText("Nvidia is up.").element()
+    expect(found.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   describe("errors", () => {

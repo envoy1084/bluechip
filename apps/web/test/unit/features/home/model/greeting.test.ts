@@ -46,17 +46,17 @@ describe("marketLine", () => {
     })
 
   it.each([
-    { name: "open, closing today", fields: {}, expected: "The US market is open and closes at 21:00." },
+    { name: "open, closing today", fields: {}, expected: "The US market is open and closes at 21:00 your time." },
     { name: "open with no close known", fields: { closesAt: null }, expected: "The US market is open." },
     {
       name: "pre-market, opening today",
       fields: { session: "preMarket" as const, closesAt: null },
-      expected: "Pre-market trading now. The market opens at 14:30."
+      expected: "Pre-market trading now. The market opens at 14:30 your time."
     },
     {
       name: "overnight, opening tomorrow",
       fields: { session: "overnight" as const, opensAt: DateTime.makeUnsafe("2026-11-28T14:30:00Z"), closesAt: null },
-      expected: "Overnight trading now. The market opens tomorrow at 14:30."
+      expected: "Overnight trading now. The market opens tomorrow at 14:30 your time."
     },
     {
       name: "paused for the weekend",
@@ -66,12 +66,12 @@ describe("marketLine", () => {
         changesAt: DateTime.makeUnsafe("2026-11-30T01:00:00Z"),
         closesAt: null
       },
-      expected: "Prices are paused for the weekend and start again on Mon 30 Nov at 01:00."
+      expected: "Prices are paused for the weekend and start again on Mon 30 Nov at 01:00 your time."
     },
     {
       name: "paused with no reason",
       fields: { session: "paused" as const, changesAt: DateTime.makeUnsafe("2026-11-27T22:00:00Z"), closesAt: null },
-      expected: "Prices are paused and start again at 22:00."
+      expected: "Prices are paused and start again at 22:00 your time."
     }
   ])("$name", ({ expected, fields }) => {
     assert.strictEqual(marketLine(status(fields), NOW, "UTC"), expected)

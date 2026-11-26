@@ -6,8 +6,8 @@ import { ConnectionBanner } from "./ConnectionBanner.tsx"
 import { useFrameActions } from "./FrameActions.tsx"
 
 /**
- * A signed-in page: the top bar with its icon, title and actions (then the frame's own, the notifications bell), then
- * the page body with the connection banner.
+ * A signed-in page: the top bar with its icon, title and actions (then the frame's own: approvals and notifications),
+ * the connection note floating under it, then the page body.
  */
 export function AppPage(
   { title, sub, icon, actions, children, width = "default" }: Readonly<{
@@ -29,17 +29,20 @@ export function AppPage(
           <LogoMark className="md:hidden" />
           {icon}
           <div className="grid min-w-0">
-            <h1 className="text-[17px] leading-tight font-semibold tracking-[-0.02em]">{title}</h1>
-            {sub === undefined ? null : <span className="text-label-sm text-g-500">{sub}</span>}
+            <h1 className="truncate text-[17px] leading-tight font-semibold tracking-[-0.02em]">{title}</h1>
+            {sub === undefined ? null : <span className="truncate text-label-sm text-g-500">{sub}</span>}
           </div>
         </div>
         {actions === undefined && frameActions === null ?
           null :
           <div className="flex shrink-0 items-center gap-1.5">{actions}{frameActions}</div>}
+        {/* Floats just under the bar, over the page, so the page never moves when it shows. */}
+        <div className="pointer-events-none absolute inset-x-0 top-full flex justify-center px-4 pt-2 [&>*]:pointer-events-auto">
+          <ConnectionBanner />
+        </div>
       </header>
       <div className="grid flex-1 content-start px-4 pt-[18px] pb-7 [view-transition-name:page] md:px-8 md:pt-7 md:pb-14">
         <div className={cn("mx-auto grid w-full gap-[18px]", width === "wide" ? "max-w-[1040px]" : "max-w-[760px]")}>
-          <ConnectionBanner />
           {children}
         </div>
       </div>

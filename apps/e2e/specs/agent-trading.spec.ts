@@ -42,7 +42,7 @@ test.describe("asking an agent for a trade", () => {
     const lines = today.getByRole("listitem")
     await expect(lines.first()).toContainText("Buy $50.00 of NVIDIA")
     await expect(lines.first().getByText("Filled", { exact: true })).toBeVisible()
-    await expect(lines.filter({ hasText: "Within its policies, so it sent it itself." })).toContainText("Sent")
+    await expect(lines.filter({ hasText: "Within its policies, so it sends it itself." })).toContainText("Sent")
     await expect(lines.last()).toContainText("Rules locked with Face ID")
 
     await page.getByRole("tablist", { name: "Show" }).getByRole("tab", { name: "Rules" }).click()

@@ -2,7 +2,7 @@ import { StatusPill, type StatusTone } from "@bluechip/ui/bluechip/status-pill"
 import type { Standing } from "../../../model/usage.ts"
 
 const PILL: Readonly<Record<Exclude<Standing, "open">, { readonly label: string; readonly tone: StatusTone }>> = {
-  room: { label: "Room left", tone: "positive" },
+  room: { label: "Plenty left", tone: "positive" },
   nearly: { label: "Nearly used", tone: "attention" },
   used: { label: "Used up", tone: "negative" }
 }

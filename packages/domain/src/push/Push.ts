@@ -65,7 +65,7 @@ export const PushMessage = Schema.Struct({
   link: Schema.String,
   /** Buttons that act without opening the app (and without Face ID): `title` on the button, `done` once it worked. */
   actions: Schema.Array(Schema.Struct({
-    action: Schema.Literals(["pauseAll", "cancelRecovery"]),
+    action: Schema.Literals(["review", "pauseAll", "cancelRecovery"]),
     title: Schema.String,
     done: Schema.String
   }))

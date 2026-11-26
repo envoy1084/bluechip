@@ -55,6 +55,29 @@ describe("PortfolioChart", () => {
       expect(changeOf(screen.container)).toBe("+$469.39 (+3.98%)")
     })
 
+    it("a range's own change, when it has one, instead of the change since its first point", async () => {
+      const screen = await render(
+        <PortfolioChart
+          ranges={[{
+            ...WEEK,
+            change: { amount: 10, percent: 0.5 },
+            changeNote: "Change in value, including deposits"
+          }]}
+        />
+      )
+      await expect.element(screen.getByText("Change in value, including deposits")).toBeVisible()
+      expect(changeOf(screen.container)).toBe("+$10.00 (+0.50%)")
+    })
+
+    it("an axis tick reads the point's shorter label", async () => {
+      const screen = await render(
+        <PortfolioChart
+          ranges={[{ ...MONTH, points: MONTH.points.map((point) => ({ ...point, tick: point.label.slice(4) })) }]}
+        />
+      )
+      await expect.element(screen.getByText("26 Oct", { exact: true })).toBeVisible()
+    })
+
     it("shows no percent change for a range that starts at $0", async () => {
       const screen = await render(
         <PortfolioChart

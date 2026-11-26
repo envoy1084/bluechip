@@ -1,6 +1,7 @@
 import type { Device } from "@bluechip/domain/Account"
 import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Button } from "@bluechip/ui/components/button"
+import { toast } from "@bluechip/ui/components/toast"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -55,8 +56,14 @@ export function DevicesCard() {
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label={`Sign out ${device.device}`}
                 loading={busy === device.id}
-                onClick={() => void run(device.id, () => signOut(device.id))}
+                onClick={() =>
+                  void run(device.id, () =>
+                    signOut(device.id).then(
+                      () => toast.success(`${device.device} is signed out`),
+                      () => toast.error(`${device.device} is still signed in`, { description: "Try again." })
+                    ))}
               >
                 Sign out
               </Button>

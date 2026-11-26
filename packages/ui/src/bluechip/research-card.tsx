@@ -36,10 +36,10 @@ export function ResearchCard(
                   href={citation.url}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
-                  className="inline-flex min-w-0 items-center gap-1.5 text-[13.5px] font-semibold text-ink hover:text-blue"
+                  className="inline-flex min-w-0 items-start gap-1.5 text-[13.5px] font-semibold text-ink hover:text-blue"
                 >
-                  <span className="truncate">{citation.title || hostOf(citation.url)}</span>
-                  <Icon name="external" size={12} className="shrink-0 text-g-400" />
+                  <span className="line-clamp-2">{citation.title || hostOf(citation.url)}</span>
+                  <Icon name="external" size={12} className="mt-[4px] shrink-0 text-g-400" />
                 </a>
                 <span className="text-caption text-g-500">{hostOf(citation.url)}</span>
                 {citation.citedText === null ?

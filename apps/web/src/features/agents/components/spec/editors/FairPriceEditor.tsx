@@ -30,7 +30,7 @@ export function FairPriceEditor({ context, problemOf, onSpecChange }: EditorProp
         field={fairPrice.fields.tradeWhilePaused}
         value={config.tradeWhilePaused}
         context={context}
-        help="On weekends and holidays, within half its price protection."
+        help="On weekends and holidays, within half that distance."
         problem={problemOf("tradeWhilePaused")}
         onChange={(tradeWhilePaused) => set({ tradeWhilePaused: tradeWhilePaused as boolean })}
       />

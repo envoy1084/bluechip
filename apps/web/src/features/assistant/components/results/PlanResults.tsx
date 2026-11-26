@@ -23,6 +23,9 @@ import { OpenLink } from "./OpenLink.tsx"
 
 type NameOf = (symbol: StockSymbol) => string
 
+// A leg that has gone to Base, or got there: before that its step is still ahead of it.
+const SENT: ReadonlySet<Intent["status"]> = new Set(["sending", "confirming", "filled"])
+
 function Pill({ intent }: Readonly<{ intent: Intent }>) {
   const status = INTENT_STATUS[intent.status]
   return <StatusPill tone={status.tone}>{status.label}</StatusPill>
@@ -116,8 +119,16 @@ export function RebalanceResult(
             key={intent.id}
             media={<TickerChip symbol={intent.leg.symbol} size="sm" />}
             title={describeLeg(intent.leg, nameOf)}
-            {...(intent.batch === null ? {} : { detail: `Sent in step ${intent.batch.wave + 1}` })}
-            valueDetail={<Pill intent={intent} />}
+            // The step and the pill under the trade, so a long one keeps the row's width on a phone.
+            detail={
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {intent.batch === null ?
+                  null :
+                  `${SENT.has(intent.status) ? "Sent" : "Goes"} in step ${intent.batch.wave + 1}`}
+                <Pill intent={intent} />
+              </span>
+            }
+            wrap
           />
         ))}
       </ChatResultRows>

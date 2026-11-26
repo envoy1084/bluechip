@@ -146,15 +146,19 @@ export const draftFieldsOf = (
   settings: automation.settings
 })
 
-/** What a new automation starts as: every Monday at 10:00, buying $50 of the first stock it may trade. */
+/**
+ * What a new automation starts as: every Monday at 10:00 (or the catalog's defaults for `trigger`), buying $50 of the
+ * first stock it may trade.
+ */
 export const newDraft = (
   agentId: AgentId | null,
   stock: StockSymbol,
-  settings: Settings
+  settings: Settings,
+  trigger: Trigger["type"] = "schedule"
 ): DraftFields => ({
   name: "",
   agentId,
-  trigger: freshEntry("trigger", "schedule", stock) as Trigger,
+  trigger: freshEntry("trigger", trigger, stock) as Trigger,
   conditions: [],
   action: freshEntry("action", "buy", stock) as Action,
   settings

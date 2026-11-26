@@ -8,7 +8,7 @@ import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/
 import { formatDollars } from "@bluechip/ui/lib/agent-limits"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { toDollars } from "../../../model/fieldText.ts"
-import { standingOf } from "../../../model/usage.ts"
+import { limitOf, standingOf } from "../../../model/usage.ts"
 import { StandingPill } from "./StandingPill.tsx"
 
 const LIMIT: Partial<
@@ -16,7 +16,7 @@ const LIMIT: Partial<
 > = {
   trade: { title: "Daily budget", illustration: "wallet" },
   tradesPerDay: { title: "Trades today", illustration: "tally" },
-  slippageBudget: { title: "Lost to prices", illustration: "receipt" }
+  slippageBudget: { title: "Weekly slippage", illustration: "receipt" }
 }
 
 /**
@@ -33,7 +33,8 @@ export function LimitCard(
 ) {
   const dollars = counted.unit === "usd"
   const used = dollars ? toDollars(counted.used) : Number(counted.used)
-  const limit = counted.limit === null ? null : dollars ? toDollars(counted.limit) : Number(counted.limit)
+  const cap = limitOf(counted)
+  const limit = cap === null ? null : dollars ? toDollars(cap) : Number(cap)
   const show = (value: number) => dollars ? formatDollars(value) : value.toLocaleString("en-US")
   const standing = standingOf(counted)
   const { illustration, title } = LIMIT[counted.policy] ??
@@ -42,11 +43,11 @@ export function LimitCard(
   const weeklyBps = configOf(agent.spec.policies, slippageBudget)?.weeklyBps
 
   const footer = weekly ?
-    `Counted over the last 7 days${
+    `What it lost to prices over the last 7 days${
       weeklyBps === undefined ? "" : `; it stops at ${formatPercent(weeklyBps)} of your money`
     }.` :
     limit === null ?
-    "No limit." :
+    (counted.policy === "tradesPerDay" ? "No limit of its own: its budget stops it first." : "No limit.") :
     standing === "used" ?
     `None left. Starts again at ${resetAt}.` :
     `${show(Math.max(0, limit - used))} left until ${resetAt}.`
@@ -67,7 +68,9 @@ export function LimitCard(
           {...(dollars ? { format: (value: number) => formatDollars(value) } : {})}
           className="text-[28px] leading-none font-semibold tracking-[-0.03em]"
         />
-        <span className="text-label text-g-500 tabular-nums">{limit === null ? "" : `of ${show(limit)}`}</span>
+        <span className="text-label text-g-500 tabular-nums">
+          {weekly ? "lost" : limit === null ? "today" : `used of ${show(limit)}`}
+        </span>
       </div>
 
       {limit === null || limit === 0 || standing === "open" ?

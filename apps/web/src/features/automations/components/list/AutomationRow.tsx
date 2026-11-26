@@ -1,4 +1,4 @@
-import type { Automation } from "@bluechip/domain/automations/Automation"
+import { actionOf, type Automation } from "@bluechip/domain/automations/Automation"
 import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
@@ -8,7 +8,7 @@ import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { StandingPill } from "../../../../components/StandingPill.tsx"
 import { WhoChip } from "../../../../components/WhoChip.tsx"
-import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
+import { hasEnded, RUN_OUTCOME } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { useAutomationActions } from "../../hooks/useAutomationActions.ts"
 import type { ListedAutomation } from "../../hooks/useListedAutomations.ts"
@@ -25,10 +25,16 @@ const NOW_ICON: Readonly<Record<ReturnType<typeof nowLine>["kind"], IconName>> =
   ended: "flag"
 }
 
-/** Who trades, as the chip rows use: you with Face ID, or the agent with its butterfly. */
+/** Who trades, as the chip rows use: you with Face ID (or just you, for a message), or the agent with its butterfly. */
 function Trader({ row }: Readonly<{ row: ListedAutomation }>) {
-  const { agentId } = row.automation
-  if (agentId === null) return <WhoChip who={{ _tag: "source", source: "owner" }}>You, with Face ID</WhoChip>
+  const { agentId, action } = row.automation
+  if (agentId === null) {
+    return (
+      <WhoChip who={{ _tag: "source", source: "owner" }}>
+        {actionOf(action).plan === null ? "You, a message only" : "You, with Face ID"}
+      </WhoChip>
+    )
+  }
   return (
     <WhoChip who={{ _tag: "agent", id: agentId, name: row.agent?.name }}>
       {row.agent === null ? "A removed agent" : undefined}
@@ -80,7 +86,8 @@ export function AutomationRow(
   const current = nowLine(automation, now, zone)
   const last = runs?.[0]
   const lastAt = last?.firedAt ?? automation.lastFiredAt
-  const quiet = standing === "paused" || standing === "ended"
+  const ended = hasEnded(standing)
+  const quiet = standing === "paused" || ended
 
   return (
     <li
@@ -134,8 +141,8 @@ export function AutomationRow(
       </Link>
 
       <div className="col-start-2 flex items-center justify-between gap-3 sm:col-start-3 sm:row-start-1 sm:flex-col sm:items-end sm:justify-start">
-        {runs === undefined ? null : <RunStrip runs={runs} />}
-        {standing === "ended" ? null : <PauseToggle automation={automation} />}
+        {runs === undefined || runs.length === 0 ? null : <RunStrip runs={runs} />}
+        {ended ? null : <PauseToggle automation={automation} />}
       </div>
     </li>
   )

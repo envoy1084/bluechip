@@ -17,17 +17,17 @@ describe("costsSentence", () => {
     {
       name: "fees, slippage and gas",
       costs: new Costs({ fees: 50_000n, slippage: 36_230n, gasWei: 1_767_794_077_008_414n }),
-      expected: "$0.05 in pool fees, $0.04 of slippage and 0.001768 ETH of gas"
+      expected: "$0.05 in pool fees and $0.04 of slippage, plus 0.001768 ETH of gas"
     },
     {
       name: "slippage that beat Chainlink",
       costs: new Costs({ fees: 50_000n, slippage: -36_246n, gasWei: 0n }),
-      expected: "$0.05 in pool fees, $0.04 better than Chainlink and no gas"
+      expected: "$0.05 in pool fees and $0.04 better than Chainlink, no gas"
     },
     {
       name: "nothing at all",
       costs: new Costs({ fees: 0n, slippage: 0n, gasWei: 0n }),
-      expected: "$0.00 in pool fees, $0.00 of slippage and no gas"
+      expected: "$0.00 in pool fees and $0.00 of slippage, no gas"
     }
   ])("$name", ({ costs, expected }) => {
     assert.strictEqual(costsSentence(costs), expected)

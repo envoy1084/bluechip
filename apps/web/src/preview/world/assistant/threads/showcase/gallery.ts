@@ -76,6 +76,13 @@ export const cardGallery = (context: ThreadContext): ReadonlyArray<Turn> => {
   }
   const drafted = (name: string, status: Agent["status"], template: CastAgent["template"] = "weeklyBuyer") =>
     draftedAgent(mint, { name, template, preset: "balanced", stocks: ["AAPL", "MSFT"], targets: [] }, status)
+  // The cast agent as it is now, so a change of its rules compares against the rules it has.
+  const live = (status: Agent["status"]) =>
+    draftedAgent(
+      mint,
+      { name: cast.name, template: cast.template, preset: cast.preset, stocks: cast.stocks, targets: cast.targets },
+      status
+    )
   const leftOut = (shown: Card): Card =>
     shown._tag !== "DraftAgent" ? shown : {
       ...shown,
@@ -147,53 +154,53 @@ export const cardGallery = (context: ThreadContext): ReadonlyArray<Turn> => {
     ),
     turn(
       "A draft with an automation left out",
-      card("draftAgent", leftOut(draftAgentCard(mint, drafted("Weekly duo, trimmed", "draft"))))
+      card("draftAgent", leftOut(draftAgentCard(mint, drafted("Weekly pair", "draft"))))
     ),
     turn(
       "A draft without automations",
       card("draftAgent", draftAgentCard(mint, drafted("Duo picker", "draft", "stockPicker")))
     ),
-    turn("A draft being locked", card("draftAgent", draftAgentCard(mint, drafted("Weekly duo, locking", "locking")))),
+    turn("A draft being locked", card("draftAgent", draftAgentCard(mint, drafted("Steady duo", "locking")))),
     turn(
       "Live, its automations starting",
-      card("draftAgent", draftAgentCard(mint, drafted("Weekly duo, starting", "active")))
+      card("draftAgent", draftAgentCard(mint, drafted("Monday duo", "active")))
     ),
     turn(
       "Live, its automations started",
       card(
         "draftAgent",
-        draftAgentCard(mint, drafted("Weekly duo, live", "active"), {
+        draftAgentCard(mint, drafted("Duo buyer", "active"), {
           started: [mint.id("automation") as AutomationId, mint.id("automation") as AutomationId]
         })
       )
     ),
     turn(
       "Tighter rules for an agent",
-      card("changeAgentPolicies", policyChangeCard(mint, cast, drafted(cast.name, "active", cast.template), "update"))
+      card("changeAgentPolicies", policyChangeCard(mint, cast, live("active"), "update"))
     ),
     turn(
       "Looser rules, flagged",
       card(
         "changeAgentPolicies",
-        policyChangeCard(mint, cast, drafted(cast.name, "active", cast.template), "update", true)
+        policyChangeCard(mint, cast, live("active"), "update", true)
       )
     ),
     turn(
       "A change already on its way",
-      card("changeAgentPolicies", policyChangeCard(mint, cast, drafted(cast.name, "updating", cast.template), "update"))
+      card("changeAgentPolicies", policyChangeCard(mint, cast, live("updating"), "update"))
     ),
     turn(
       "Renew a running agent",
-      card("renewAgent", policyChangeCard(mint, cast, drafted(cast.name, "active"), "renew"))
+      card("renewAgent", policyChangeCard(mint, cast, live("active"), "renew"))
     ),
     turn(
       "Renew one that ran out",
-      card("renewAgent", policyChangeCard(mint, cast, drafted(cast.name, "expired"), "renew"))
+      card("renewAgent", policyChangeCard(mint, cast, live("expired"), "renew"))
     ),
-    turn("Remove an agent", card("removeAgent", policyChangeCard(mint, cast, drafted(cast.name, "active"), "remove"))),
+    turn("Remove an agent", card("removeAgent", policyChangeCard(mint, cast, live("active"), "remove"))),
     turn(
       "One being removed",
-      card("removeAgent", policyChangeCard(mint, cast, drafted(cast.name, "removing"), "remove"))
+      card("removeAgent", policyChangeCard(mint, cast, live("removing"), "remove"))
     ),
     turn("A removed draft", card("removeAgent", policyChangeCard(mint, cast, drafted("Old draft", "draft"), "remove"))),
     ...(["pauseAgent", "resumeAgent", "pauseAll", "saveTemplate", "automationCreate", "automationEdit"] as const)

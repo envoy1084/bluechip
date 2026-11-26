@@ -24,7 +24,7 @@ test.describe("performance", () => {
     await page.goto("/portfolio")
 
     const card = results(page, "Your money")
-    await expect(card.getByText(/^1 trade: \$\d+\.\d{2} in pool fees, /)).toBeVisible()
+    await expect(card.getByText(/^1 trade: \$\d+\.\d{2} in pool fees and /)).toBeVisible()
     await expect(card).toContainText("on $50.00 you paid")
     const lines = results(page, "By stock and agent").getByRole("link")
     await expect(lines.first()).toHaveAccessibleName(/NVIDIA Cost \$50\.00, worth \$\d/)

@@ -6,7 +6,7 @@ import { choiceLabel } from "../../model/automationText.ts"
 
 /**
  * A model's answer to one condition: the question, yes or no, how sure on a bar against how sure it had to be
- * (`neededBps`, when the automation says), its reason, the story it read and the model that answered.
+ * (`neededBps`, when the automation says), its reason and the story it read.
  */
 export function JudgmentCard(
   { judgment, neededBps }: Readonly<{ judgment: Judgment; neededBps: number | null }>
@@ -56,7 +56,7 @@ export function JudgmentCard(
       <p className="flex items-start gap-1.5 border-t border-g-100 pt-2 text-caption text-g-500">
         <Icon name="news" size={13} className="mt-px shrink-0" />
         <span>
-          Read “{judgment.inputs.headline}”, answered by {judgment.model}
+          Read “{judgment.inputs.headline}”, answered by the assistant
         </span>
       </p>
     </div>

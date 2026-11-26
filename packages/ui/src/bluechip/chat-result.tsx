@@ -10,6 +10,8 @@ export interface ChatResultProps extends Omit<ComponentProps<"section">, "childr
   /** What was read: "Your portfolio", "Prices". Also its accessible name. */
   readonly title: string
   readonly icon: IconName
+  /** In the icon's place: the ticker chip of the stock it read. */
+  readonly media?: ReactNode
   readonly state?: ChatResultState
   /** The way to the full page, top right: an "Open" link. */
   readonly action?: ReactNode
@@ -26,7 +28,7 @@ export interface ChatResultProps extends Omit<ComponentProps<"section">, "childr
  * line.
  */
 export function ChatResult(
-  { title, icon, state = "ready", action, message, children, footer, className, ...props }: ChatResultProps
+  { title, icon, media, state = "ready", action, message, children, footer, className, ...props }: ChatResultProps
 ) {
   return (
     <section
@@ -39,7 +41,7 @@ export function ChatResult(
     >
       <header className="flex min-h-9 items-center justify-between gap-2 pt-1.5 pr-1.5 pl-3.5">
         <span className="inline-flex min-w-0 items-center gap-1.5 text-label-sm font-semibold text-g-500">
-          <Icon name={icon} size={14} />
+          {media ?? <Icon name={icon} size={14} />}
           <span className="truncate">{title}</span>
         </span>
         {state === "ready" || state === "empty" ? action : null}
@@ -115,10 +117,14 @@ export interface ChatResultRowProps extends Omit<ComponentProps<"li">, "children
   readonly value?: ReactNode
   /** Under the value: its change, a share. */
   readonly valueDetail?: ReactNode
+  /** Lets a long title (a memory in your words) take two lines instead of one. */
+  readonly wrap?: boolean
 }
 
 /** One compact row: what it is with a muted line, and its number at the right. */
-export function ChatResultRow({ media, title, detail, value, valueDetail, className, ...props }: ChatResultRowProps) {
+export function ChatResultRow(
+  { media, title, detail, value, valueDetail, wrap = false, className, ...props }: ChatResultRowProps
+) {
   return (
     <li
       data-slot="chat-result-row"
@@ -127,7 +133,7 @@ export function ChatResultRow({ media, title, detail, value, valueDetail, classN
     >
       {media}
       <span className="grid min-w-0 flex-1 gap-px">
-        <span className="truncate text-[13.5px] font-[550] text-ink">{title}</span>
+        <span className={cn("text-[13.5px] font-[550] text-ink", wrap ? "line-clamp-2" : "truncate")}>{title}</span>
         {detail === undefined ? null : <span className="text-caption text-g-500">{detail}</span>}
       </span>
       {value === undefined && valueDetail === undefined ?
@@ -150,7 +156,7 @@ export function ChatResultStats({ className, ...props }: ComponentProps<"dl">) {
     <dl
       data-slot="chat-result-stats"
       className={cn(
-        "grid grid-cols-[repeat(auto-fit,minmax(96px,1fr))] gap-x-3 gap-y-2 rounded-[10px] px-3 py-2.5 surface-well",
+        "grid grid-cols-[repeat(auto-fit,minmax(96px,1fr))] gap-x-3 gap-y-2 rounded-[12px] px-3 py-2.5 surface-well",
         className
       )}
       {...props}

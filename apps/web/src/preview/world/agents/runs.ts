@@ -65,7 +65,7 @@ const triggerData = (ids: IdCounter, record: AutomationRecord, headline: string)
     }
     case "news":
       return {
-        summary: `A story: "${headline}"`,
+        summary: `A story: “${headline}”`,
         symbol: trigger.config.symbols[0] ?? null,
         price: null,
         newsItemId: nextId(ids, "news") as NewsItemId
@@ -159,7 +159,7 @@ export const addRun = (
       case "notified":
         return action.type === "notify" && action.config.message !== "" ? action.config.message : `${trigger.summary}`
       case "failed":
-        return "It couldn't run; it will try again on its next fire."
+        return "Something went wrong on bluechip's side, so nothing was traded."
       case "skipped":
         if (skip === "agent") return "Its agent is paused or can't trade."
         if (skip === "nothing" || (skip === "condition" && conditions.length === 0)) {

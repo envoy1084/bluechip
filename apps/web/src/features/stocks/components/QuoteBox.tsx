@@ -10,9 +10,10 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { ButtonCheck } from "@bluechip/ui/motion/button-check"
-import { useAtomValue } from "@effect/atom-react/Hooks"
+import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
+import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AmountInput, type AmountUnit } from "../../../components/fields/AmountInput.tsx"
 import { QuoteSummary, QuoteSummarySkeleton } from "../../../components/trading/QuoteSummary.tsx"
@@ -24,11 +25,14 @@ import { amountHint } from "../model/amountHint.ts"
 import { referenceGap } from "./ReferenceGap.tsx"
 import { TradeProgress } from "./TradeProgress.tsx"
 
-/** What to look at twice before signing: paused prices, or the stock market and Chainlink far apart. */
-function TradeWarnings({ stock }: Readonly<{ stock: Stock }>) {
+/**
+ * What to look at twice before signing: paused prices (once there is a trade to sign, since the page's banner already
+ * says prices are paused), or the stock market and Chainlink far apart.
+ */
+function TradeWarnings({ stock, quoted }: Readonly<{ stock: Stock; quoted: boolean }>) {
   const status = useMarketStatus()
   const gap = referenceGap(stock)
-  const paused = status?.session === "paused"
+  const paused = status?.session === "paused" && quoted
   const apart = gap !== null && Math.abs(gap) > 1
 
   if (!paused && !apart) return null
@@ -53,6 +57,7 @@ function TradeWarnings({ stock }: Readonly<{ stock: Stock }>) {
  */
 export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
   const portfolio = useAtomValue(portfolioAtom)
+  const openCash = useAtomSet(cashDialogAtom)
   const [side, setSide] = useState<QuoteSide>("buy")
   const [unit, setUnit] = useState<AmountUnit>("usd")
   const [text, setText] = useState("")
@@ -101,13 +106,15 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
       { _tag: "Empty", side, symbol: stock.symbol, held }
   )
 
-  // Max: all the cash for a buy, every share for a sell, in the unit shown.
+  // Max: all the cash for a buy, every share for a sell, in the unit shown. Dollars round down to the cent, so the
+  // field never holds more than there is.
+  const cents = (usdc: bigint) => (Number(usdc / BigInt(10_000)) / 100).toFixed(2)
   const max = () => {
     if (price === null) return
     const all = side === "buy" ? cash : held
     if (side === "buy") {
-      setText(unit === "usd" ? String(usdcDollars(all)) : String(shareCount(sharesFor(Usdc.make(all), price))))
-    } else setText(unit === "shares" ? String(shareCount(all)) : String(usdcDollars(valueOf(Shares.make(all), price))))
+      setText(unit === "usd" ? cents(all) : String(shareCount(sharesFor(Usdc.make(all), price))))
+    } else setText(unit === "shares" ? String(shareCount(all)) : cents(valueOf(Shares.make(all), price)))
   }
 
   const switchUnit = (next: AmountUnit) => {
@@ -184,12 +191,25 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
             text={text}
             hint={hint}
             invalid={over || belowMinimum}
-            quickAmounts={side === "buy" ? [50, 100, 150] : []}
+            quickAmounts={side === "buy" && cash > BigInt(0) ? [50, 100, 150] : []}
             onMax={(side === "buy" ? cash : held) === BigInt(0) ? undefined : max}
             onTextChange={setText}
             onUnitChange={switchUnit}
           />
         )}
+
+      {side === "buy" && stock.tradable && (cash === BigInt(0) || over) ?
+        (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md px-3.5 py-2.5 surface-well">
+            <span className="text-label text-g-700">
+              {cash === BigInt(0) ? `Add cash to buy ${stock.name}.` : "Add cash, or lower the amount."}
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => openCash("add")}>
+              <Icon name="plus" size={14} />Add cash
+            </Button>
+          </div>
+        ) :
+        null}
 
       {quote.status === "loading" && <QuoteSummarySkeleton stock={stock} side={side} />}
       {quote.status === "ready" && <QuoteSummary stock={stock} quote={quote.quote} />}
@@ -199,7 +219,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
         </Alert>
       )}
 
-      <TradeWarnings stock={stock} />
+      <TradeWarnings stock={stock} quoted={quote.status === "ready"} />
 
       {flow.status === "failed" && (
         <Alert variant="destructive">

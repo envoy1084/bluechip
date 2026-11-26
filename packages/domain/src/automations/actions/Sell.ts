@@ -85,7 +85,7 @@ const SHARES: Readonly<Record<number, string>> = { 10_000: "all", 5000: "half", 
 export const sellShare = Action.make({
   type: "sellShare",
   title: "Sell part of a holding",
-  summary: "Sells a share of what you hold of a stock: half, all of it, or a percentage.",
+  summary: "Sells a quarter, half or all of what you hold of a stock.",
   aliases: ["sell half", "sell all", "sell everything", "stop loss", "exit"],
   examples: ["sell half your NVIDIA", "sell all of it"],
   config: SellShareConfig,

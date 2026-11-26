@@ -79,7 +79,7 @@ test.describe("home", () => {
     await page.goto("/home")
 
     const needs = page.getByRole("region", { name: "Needs you" })
-    await expect(needs.getByText("A trade waits for your Face ID")).toBeVisible()
+    await expect(needs.getByText("1 trade waits for your approval")).toBeVisible()
     await needs.getByRole("button", { name: "Review" }).click()
 
     await expect(page.getByRole("dialog", { name: "Approvals" })).toBeVisible()

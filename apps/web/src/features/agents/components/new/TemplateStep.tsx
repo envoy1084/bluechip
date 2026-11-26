@@ -1,3 +1,4 @@
+import { formatDollars, listNames } from "@bluechip/domain/policies/Format"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { type SavedTemplate, templateInfos } from "@bluechip/domain/policies/Templates"
 import { trade } from "@bluechip/domain/policies/Trade"
@@ -14,9 +15,9 @@ import { useId, useState } from "react"
 import { LoadProblem } from "../../../../components/LoadProblem.tsx"
 import { templatesReactivityKey } from "../../../../lib/api/client.ts"
 import { deleteTemplateAtom, templatesAtom } from "../../atoms/policies.ts"
-import { DIRECTION_LABELS } from "../../model/fieldText.ts"
+import { DIRECTION_WORDS } from "../../model/fieldText.ts"
 import { type Origin, originKey, SCRATCH } from "../../model/origin.ts"
-import { uiTemplate } from "../../model/templateLabel.ts"
+import { isTemplateId, uiTemplate } from "../../model/templateLabel.ts"
 import { StepFoot } from "./NewAgentShell.tsx"
 
 const BUILT_IN = templateInfos()
@@ -51,18 +52,30 @@ function TemplateCard(
   )
 }
 
-/** The user's saved templates, after they load; a failed load leaves the built-ins to pick from. */
+const illustrationOf = (template: string | null): IllustrationName =>
+  (template !== null && isTemplateId(template) ?
+    AGENT_TEMPLATES.find((each) => each.name === uiTemplate(template))?.illustration :
+    undefined) ?? "certificate"
+
+/**
+ * The user's saved templates, after they load, each told apart by what it holds: its stocks and daily budget ("NVDA
+ * and AAPL, $250 a day"), with the picture of the template it came from. A failed load leaves the built-ins.
+ */
 function SavedCards({ saved }: Readonly<{ saved: ReadonlyArray<SavedTemplate> }>) {
   return saved.map((template) => {
-    const direction = configOf(template.spec.policies, trade)?.direction
+    const config = configOf(template.spec.policies, trade)
+    const stocks = config === undefined || config.stocks.length === 0 ? "No stocks yet" : listNames(config.stocks)
+    const budget = config === undefined || config.dailyBudget === BigInt(0) ?
+      "no buys" :
+      `${formatDollars(config.dailyBudget)} a day`
     return (
       <TemplateCard
         key={template.id}
         value={template.id}
         title={template.name}
-        summary="Its rules start as you saved them."
-        tag={direction === undefined ? "Saved" : DIRECTION_LABELS[direction]}
-        illustration="key"
+        summary={`${stocks}, ${budget}.`}
+        tag={config === undefined ? "Saved" : `Saved, ${DIRECTION_WORDS[config.direction].toLowerCase()}`}
+        illustration={illustrationOf(template.basedOn)}
       />
     )
   })
@@ -126,9 +139,8 @@ export function TemplateStep(
             value={info.id}
             title={info.title}
             summary={info.summary}
-            tag={DIRECTION_LABELS[info.direction]}
-            illustration={AGENT_TEMPLATES.find((template) => template.name === uiTemplate(info.id))?.illustration ??
-              "certificate"}
+            tag={DIRECTION_WORDS[info.direction]}
+            illustration={illustrationOf(info.id)}
           />
         ))}
         <SavedCards saved={saved} />

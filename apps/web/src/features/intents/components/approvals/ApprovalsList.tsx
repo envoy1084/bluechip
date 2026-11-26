@@ -2,24 +2,14 @@ import type { Intent } from "@bluechip/domain/intents/Intent"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { agentsAtom } from "../../../../atoms/agents.ts"
 import { approvalsAtom } from "../../../../atoms/approvals.ts"
 import { IllustratedEmpty } from "../../../../components/IllustratedEmpty.tsx"
 import { LoadProblem } from "../../../../components/LoadProblem.tsx"
-import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
+import { useNow } from "../../../../hooks/useNow.ts"
 import { type ApprovalGroup, approvalGroups } from "../../model/approvalGroups.ts"
 import { ApprovalRequest } from "./ApprovalRequest.tsx"
-
-// "Expires in 14 min" stays right while the list is open.
-function useMinuteClock(): Date {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30_000)
-    return () => clearInterval(timer)
-  }, [])
-  return now
-}
 
 /**
  * Every agent's trade waiting for your Face ID, newest first. One you approve or decline here stays until you press
@@ -29,8 +19,8 @@ export function ApprovalsList() {
   const approvals = useAtomValue(approvalsAtom)
   const refresh = useAtomRefresh(approvalsAtom)
   const agents = useAtomValue(agentsAtom)
-  const { nameOf, stockOf } = useStockLookup()
-  const now = useMinuteClock()
+  // "Expires in 14 min" stays right while the list is open.
+  const now = useNow(30_000)
   const [handled, setHandled] = useState<ReadonlyArray<ApprovalGroup>>([])
 
   if (AsyncResult.isInitial(approvals)) {
@@ -57,7 +47,7 @@ export function ApprovalsList() {
 
   if (shown.length === 0) {
     return (
-      <IllustratedEmpty illustration="passkey" size={120} variant="outline" compact title="Nothing waiting for you">
+      <IllustratedEmpty illustration="passkey" size={120} variant="outline" compact title="All clear">
         When an agent's trade needs your approval, it shows up here.
       </IllustratedEmpty>
     )
@@ -72,8 +62,6 @@ export function ApprovalsList() {
             together={group.together}
             agentName={agentName(group.intent)}
             now={now}
-            stockOf={stockOf}
-            nameOf={nameOf}
             onHandled={() =>
               setHandled((kept) => kept.some((done) => done.intent.id === group.intent.id) ? kept : [...kept, group])}
             onDone={() => setHandled((kept) => kept.filter((done) => done.intent.id !== group.intent.id))}

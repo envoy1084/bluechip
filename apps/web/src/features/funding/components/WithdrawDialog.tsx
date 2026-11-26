@@ -1,7 +1,6 @@
 import type { Address, RequestId } from "@bluechip/domain/Ids"
 import type { Usdc } from "@bluechip/domain/market/Units"
 import type { SigningRequest, Transfer } from "@bluechip/domain/portfolio/Transfer"
-import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
 import { MoneyInput } from "@bluechip/ui/bluechip/money-input"
 import { OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { Outcome, OutcomeLink } from "@bluechip/ui/bluechip/outcome"
@@ -122,6 +121,7 @@ function WithdrawForm(
         available={usdcDollars(cash)}
         showMax
         emptyHint={`You have ${formatMoney(usdcDollars(cash))} in cash.`}
+        overAvailable="Lower the amount."
         onValueChange={(value) => setAmount(value === null ? null : parseUsdc(String(value)))}
       />
 
@@ -168,11 +168,12 @@ function WithdrawReview(
   return (
     <div className="grid gap-4">
       <OrderPreview>
-        <OrderPreviewRow label="You send">{formatMoney(usdcDollars(amount))} USDC</OrderPreviewRow>
-        <OrderPreviewRow label="To">
-          <span className="font-mono">{shortAddress(to)}</span>
+        <OrderPreviewRow label="You send">{formatMoney(usdcDollars(amount))}</OrderPreviewRow>
+        <OrderPreviewRow label="To" className="items-start">
+          {/* Every character, before a send that can't be undone. */}
+          <span className="min-w-0 font-mono text-label break-all">{to}</span>
         </OrderPreviewRow>
-        <OrderPreviewRow label="Network">Base</OrderPreviewRow>
+        <OrderPreviewRow label="Network">Base, as USDC</OrderPreviewRow>
       </OrderPreview>
 
       {request.deploysAccount && (
@@ -215,16 +216,18 @@ function WithdrawProgress({ transfer, onDone }: Readonly<{ transfer: Transfer; o
   const latest = AsyncResult.isSuccess(withdrawals) ?
     withdrawals.value.items.find((item) => item.id === transfer.id) ?? transfer :
     transfer
-  const text = withdrawalOutcome(latest.status, latest.amount, shortAddress(latest.to))
+  const text = withdrawalOutcome(latest.status, latest.amount, latest.to)
 
   return (
     <Outcome
       tone={text.tone}
       title={text.title}
-      description={text.description}
+      description={latest.status === "pending" ?
+        `${text.description} It carries on if you close this.` :
+        text.description}
       actions={
         <Button variant={latest.status === "pending" ? "ghost" : "secondary"} className="w-full" onClick={onDone}>
-          {latest.status === "pending" ? "Close, it keeps going" : "Done"}
+          {latest.status === "pending" ? "Close" : "Done"}
         </Button>
       }
     >

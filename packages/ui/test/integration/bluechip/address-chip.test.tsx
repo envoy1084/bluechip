@@ -37,6 +37,11 @@ describe("AddressChip", () => {
     await expect.element(screen.getByText("0x7a3F…B9d4")).toBeVisible()
   })
 
+  it("full: the whole address", async () => {
+    const screen = await render(<AddressChip address={ADDRESS} full />)
+    await expect.element(screen.getByText(ADDRESS, { exact: true })).toBeVisible()
+  })
+
   it("copies the full address and announces it", async () => {
     await clipboard(true)
     const screen = await render(<AddressChip address={ADDRESS} />)

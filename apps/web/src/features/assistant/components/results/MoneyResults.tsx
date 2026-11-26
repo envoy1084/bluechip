@@ -84,7 +84,7 @@ export function PortfolioResult(
                 key={holding.symbol}
                 media={<TickerChip symbol={holding.symbol} size="sm" />}
                 title={nameOf(holding.symbol)}
-                detail={`${formatShareCount(shareCount(holding.shares))} shares, ${
+                detail={`${formatShareCount(shareCount(holding.shares))}, ${
                   Math.round(bpsPercent(holding.weightBps))
                 }% of your money`}
                 value={money(holding.value)}

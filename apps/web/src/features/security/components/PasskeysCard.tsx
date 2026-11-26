@@ -81,6 +81,7 @@ export function PasskeysCard() {
                 variant="ghost"
                 size="sm"
                 className="text-loss"
+                aria-label={`Remove ${passkey.label ?? "this passkey"}`}
                 onClick={() => {
                   setSent(undefined)
                   setChange({ action: "remove", passkey })
@@ -119,7 +120,10 @@ export function PasskeysCard() {
           {
             danger: true,
             title: `Remove ${change.passkey.label ?? "this passkey"}?`,
-            description: "It can no longer sign in or approve anything, and devices signed in with it are signed out.",
+            description: change.passkey.current ?
+              "This device signs in with it. It can no longer sign in or approve anything, and every device " +
+              "signed in with it is signed out, this one too: you'll sign in again with another passkey." :
+              "It can no longer sign in or approve anything, and devices signed in with it are signed out.",
             action: "Remove with Face ID",
             pending: "Removing the passkey",
             done: "The passkey is removed",

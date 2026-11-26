@@ -48,7 +48,7 @@ export const describeDecision = (decision: Decision): string => {
     case "OverLargestTrade":
       return `Over its ${formatDollars(decision.maxPerTrade)} limit, so it needs your approval.`
     case "Ask":
-      return "It asks you first, so it needs your approval."
+      return "It asks you first on every trade."
     case "Refused":
       return `Blocked by ${policyOf(decision.policy).title}: ${decision.message}`
     case "Wait": {

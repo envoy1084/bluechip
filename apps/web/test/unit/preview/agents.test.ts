@@ -91,7 +91,7 @@ describe("preview agents, policies and automations", () => {
       assert.deepStrictEqual(budget.used, budget.limit)
     }))
 
-  it.effect("starter: one agent with a little of today's budget used, and a stop-loss that hasn't run", () =>
+  it.effect("starter: one agent with today's fill counted against its budget, and a stop-loss that hasn't run", () =>
     Effect.gen(function*() {
       const { client, store } = yield* previewApi("starter")
       const agentId = store.cast.agents[0]!.id
@@ -102,17 +102,29 @@ describe("preview agents, policies and automations", () => {
 
       const budget = usage.policies.find((counted) => counted.policy === "trade")!
       assert.deepStrictEqual(agents.map((agent) => [agent.status, agent.paused]), [["active", false]])
-      assert.deepStrictEqual([budget.used, budget.limit], [BigInt(30_000_000), BigInt(100_000_000)])
+      assert.deepStrictEqual([budget.used, budget.limit], [BigInt(25_539_333), BigInt(100_000_000)])
       assert.deepStrictEqual(
         automations.map((automation) => [automation.status, automation.fires, automation.lastFiredAt]),
         [["active", 0, null]]
       )
     }))
 
+  it.effect("heavy: an agent's journal tells the same filled trades its results count", () =>
+    Effect.gen(function*() {
+      const { client, store } = yield* previewApi("heavy")
+      const id = store.cast.agents[0]!.id
+
+      const results = yield* client.performance.agent({ params: { id } })
+      const filled = store.world.agents.agents[0]!.journal.map((entry) => storyOf(entry, stockName))
+        .filter((story) => story._tag === "Trade" && story.moment === "filled")
+
+      assert.strictEqual(filled.length, results.trades)
+    }))
+
   it.effect("heavy: a long journal pages through every entry once", () =>
     Effect.gen(function*() {
       const { client, store } = yield* previewApi("heavy")
-      const id = store.cast.agents[2]!.id
+      const id = store.cast.agents[0]!.id
 
       const first = yield* client.agents.journal({ params: { id }, query: { pageSize: 20 } })
       const second = yield* client.agents.journal({
@@ -122,11 +134,11 @@ describe("preview agents, policies and automations", () => {
 
       assert.deepStrictEqual(
         new Set([...first.items, ...second.items].map((entry) => entry.id)).size,
-        store.world.agents.agents[2]!.journal.length
+        store.world.agents.agents[0]!.journal.length
       )
     }))
 
-  it.effect("heavy: every journal entry reads into its parts, and the trades show every moment", () =>
+  it.effect("heavy: every journal entry reads into its parts, and its trades are the market's, in every end", () =>
     Effect.gen(function*() {
       const { store } = yield* previewApi("heavy")
       const stories = store.world.agents.agents.flatMap((record) =>
@@ -142,11 +154,9 @@ describe("preview agents, policies and automations", () => {
           [],
           new Set([
             "filled",
-            "sent",
             "blocked",
             "needsApproval",
             "waiting",
-            "approved",
             "failed",
             "declined",
             "expired",

@@ -4,25 +4,56 @@ import * as DateTime from "effect/DateTime"
 import {
   deviceName,
   isChangeable,
+  notificationDays,
+  notificationTime,
   settingsSections,
-  timeAgo,
   withChannel
 } from "../../../../../src/features/notifications/model/notificationText.ts"
 
 const NOW = DateTime.makeUnsafe("2026-11-26T12:00:00Z")
 
-describe("timeAgo", () => {
+describe("notificationTime", () => {
   it.each(
     [
-      { at: "2026-11-26T11:59:30Z", expected: "Just now" },
-      { at: "2026-11-26T11:55:00Z", expected: "5 min ago" },
-      { at: "2026-11-26T11:00:00Z", expected: "1 h ago" },
-      { at: "2026-11-25T13:00:00Z", expected: "23 h ago" },
-      { at: "2026-11-25T11:00:00Z", expected: "Yesterday" },
-      { at: "2026-11-20T09:00:00Z", expected: "20 Nov" }
+      { name: "under a minute", at: "2026-11-26T11:59:30Z", zone: "UTC", expected: "Just now" },
+      { name: "5 minutes", at: "2026-11-26T11:55:00Z", zone: "UTC", expected: "5 min ago" },
+      { name: "an hour ago: the clock time", at: "2026-11-26T11:00:00Z", zone: "UTC", expected: "11:00" },
+      { name: "earlier today", at: "2026-11-26T00:30:00Z", zone: "UTC", expected: "00:30" },
+      { name: "yesterday", at: "2026-11-25T13:00:00Z", zone: "UTC", expected: "Yesterday, 13:00" },
+      { name: "older: the date", at: "2026-11-20T09:00:00Z", zone: "UTC", expected: "Fri 20 Nov, 09:00" },
+      {
+        name: "in the viewer's zone: today in UTC is yesterday in New York",
+        at: "2026-11-26T03:00:00Z",
+        zone: "America/New_York",
+        expected: "Yesterday, 22:00"
+      }
     ] as const
-  )("$at", ({ at, expected }) => {
-    assert.strictEqual(timeAgo(DateTime.makeUnsafe(at), NOW), expected)
+  )("$name", ({ at, expected, zone }) => {
+    assert.strictEqual(notificationTime(DateTime.makeUnsafe(at), NOW, zone), expected)
+  })
+})
+
+describe("notificationDays", () => {
+  const at = (iso: string) => ({ createdAt: DateTime.makeUnsafe(iso) })
+
+  it("today's, then earlier", () => {
+    const today = at("2026-11-26T09:00:00Z")
+    const yesterday = at("2026-11-25T22:00:00Z")
+
+    assert.deepStrictEqual(notificationDays([today, yesterday], NOW, "UTC"), [
+      { title: "Today", notifications: [today] },
+      { title: "Earlier", notifications: [yesterday] }
+    ])
+  })
+
+  it("only earlier ones: no Today", () => {
+    const old = at("2026-11-20T09:00:00Z")
+
+    assert.deepStrictEqual(notificationDays([old], NOW, "UTC"), [{ title: "Earlier", notifications: [old] }])
+  })
+
+  it("none: nothing", () => {
+    assert.deepStrictEqual(notificationDays([], NOW, "UTC"), [])
   })
 })
 

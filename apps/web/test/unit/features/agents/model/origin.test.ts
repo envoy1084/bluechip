@@ -61,6 +61,22 @@ describe("originSpec", () => {
     assert.deepStrictEqual(originSpec(BUILT_IN, ["NVDA"]), templateSpec("weeklyBuyer", "balanced", ["NVDA"]))
   })
 
+  it("a Rebalancer with nothing picked: no stocks picked for you", () => {
+    assert.deepStrictEqual(
+      originSpec({ kind: "builtIn", template: "rebalancer" }, []),
+      templateSpec("rebalancer", "balanced", [])
+    )
+  })
+
+  it("a Stop-loss guard: its floor switched on, with no floors set yet", () => {
+    const spec = originSpec({ kind: "builtIn", template: "stopLossGuard" }, ["NVDA"])
+
+    assert.deepStrictEqual(spec.policies.find((entry) => entry.id === "stopLossFloor"), {
+      id: "stopLossFloor",
+      config: { floors: [] }
+    })
+  })
+
   it("a saved template: its own policies, whatever was picked", () => {
     assert.deepStrictEqual(originSpec(FROM_SAVED, ["MSFT"]), PICKER)
   })

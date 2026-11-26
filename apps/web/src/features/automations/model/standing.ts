@@ -10,17 +10,17 @@ import { RUN_OUTCOME, type Standing } from "../../../lib/automationWords.ts"
 import { dayHeading, yourDateTime } from "../../../lib/localTime.ts"
 
 /**
- * Why a running automation needs a look, or `null`: its last run failed, or its agent can't trade for it (paused,
+ * Why a running automation needs a look, or `null`: its last run failed (and why), or its agent can't trade for it (paused,
  * session ended, removed). `agent` is the agent it trades through: `null` when none of yours has its id, `undefined`
  * while your agents load. Your own trades have none to check.
  */
 export const attentionOf = (
   automation: Pick<Automation, "status" | "agentId">,
-  runs: ReadonlyArray<Pick<AutomationRun, "outcome">>,
+  runs: ReadonlyArray<Pick<AutomationRun, "outcome" | "reason">>,
   agent: Pick<Agent, "status" | "paused"> | null | undefined
 ): string | null => {
   if (automation.status !== "active") return null
-  if (runs[0]?.outcome === "failed") return "Its last run didn't go through."
+  if (runs[0]?.outcome === "failed") return `Its last run failed. ${runs[0].reason}`
   if (automation.agentId === null || agent === undefined) return null
   if (agent === null || agent.status === "removed") return "Its agent was removed, so it can't trade."
   if (agent.status === "expired") return "Its agent's session ended, so it can't trade until you renew it."
@@ -36,6 +36,9 @@ export const FILTERS: ReadonlyArray<{ readonly value: Filter; readonly label: st
   { value: "paused", label: "Paused" },
   { value: "attention", label: "Needs attention" }
 ]
+
+/** Fewer automations than this read at a glance, so a list shows no filters. */
+export const FILTERS_FROM = 4
 
 /** One automation as the list reads it: where it stands and whether it needs a look. */
 export interface Listed {
@@ -64,7 +67,7 @@ export type TraderFilter = "all" | "you" | AgentId
 export const tradesThrough = (automation: Pick<Automation, "agentId">, trader: TraderFilter): boolean =>
   trader === "all" ? true : trader === "you" ? automation.agentId === null : automation.agentId === trader
 
-const RANK: Readonly<Record<Standing, number>> = { failing: 1, active: 1, paused: 2, ended: 3 }
+const RANK: Readonly<Record<Standing, number>> = { failing: 1, active: 1, paused: 2, expired: 3, ended: 3 }
 
 /**
  * Automations in the order a list shows them: those that need a look first, then the running ones by their next run

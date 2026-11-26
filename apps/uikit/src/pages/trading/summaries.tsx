@@ -1,5 +1,7 @@
 import { HoldingDetail, HoldingDetailSkeleton } from "@bluechip/ui/bluechip/holding-detail"
 import {
+  MoneyCard,
+  MoneyCardSkeleton,
   PortfolioSummary,
   PortfolioSummaryError,
   PortfolioSummarySkeleton
@@ -81,6 +83,21 @@ export function PortfolioSection() {
           <PortfolioSummaryError onRetry={() => {}} className="w-full" />
         </Demo>
       </States>
+      <Demo label="Money card, shared by home and the portfolio" className="grid gap-3">
+        <MoneyCard
+          value={value}
+          dayChange={184.3}
+          dayChangePercent={1.37}
+          aside={<span className="text-label text-g-500">Aside: a sparkline or the profit in all</span>}
+          className="w-full max-w-[520px]"
+        >
+          <div className="flex items-center justify-between gap-2 border-t border-g-100 pt-3 text-label text-g-500">
+            <span>{formatMoney(cash)} in cash to invest</span>
+            {ADD_CASH}
+          </div>
+        </MoneyCard>
+        <MoneyCardSkeleton className="w-full max-w-[520px]" />
+      </Demo>
     </Section>
   )
 }

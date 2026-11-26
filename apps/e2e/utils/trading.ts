@@ -48,6 +48,6 @@ export const withdraw = async (page: Page, dollars: number, to: string) => {
   await dialog.getByRole("textbox", { name: /^To this address on Base/ }).fill(to)
   await dialog.getByRole("button", { name: "Review withdrawal" }).click()
   await dialog.getByRole("button", { name: "Withdraw with Face ID" }).click()
-  // "Done" replaces "Close, it keeps going" once Base confirms it.
+  // "Done" replaces "Close" once Base confirms it.
   await dialog.getByRole("button", { name: "Done", exact: true }).click()
 }

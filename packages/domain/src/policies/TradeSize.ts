@@ -45,7 +45,7 @@ export const tradeSize = Policy.make({
   config: TradeSizeConfig,
   fields: {
     maxPerTrade: new Policy.Field({
-      label: "Ask me above",
+      label: "Ask you above",
       unit: "usd",
       min: Number(dollars(10)),
       sliderMax: Number(dollars(1000)),

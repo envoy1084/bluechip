@@ -3,9 +3,9 @@ import { Switch } from "@bluechip/ui/components/switch"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
 import { TimeField } from "../../../../components/fields/TimeField.tsx"
+import { SettingsRow, SettingsSection } from "../../../../components/layout/SettingsSection.tsx"
 import { zoneLabel } from "../../../../lib/timeZones.ts"
 import { notificationKeys, setQuietHoursAtom } from "../../atoms/notifications.ts"
-import { SettingsCard, SettingsRow } from "./SettingsCard.tsx"
 
 /** Quiet hours: push and Telegram wait until they end, in your time zone. Security notifications never wait. */
 export function QuietHoursCard(
@@ -21,7 +21,7 @@ export function QuietHoursCard(
   const current = quietHours ?? { from: "22:00", to: "07:00" }
 
   return (
-    <SettingsCard
+    <SettingsSection
       title="Quiet hours"
       description="Push and Telegram wait until they end. Security notifications never wait."
       illustration="moon"
@@ -62,6 +62,6 @@ export function QuietHoursCard(
             </div>
           </SettingsRow>
         )}
-    </SettingsCard>
+    </SettingsSection>
   )
 }

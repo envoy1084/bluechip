@@ -32,7 +32,10 @@ export function UsageCard(
           <>
             <UsageHero agent={agent} usage={usage.value} now={now} resetAt={resetAt} />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {shownLimits(usage.value).map((counted) => (
+              {/* The hero's headline and dial already say the daily budget; a card of it would say it a third time. */}
+              {shownLimits(usage.value).filter((counted) => counted.policy !== "trade" || counted.limit === null).map((
+                counted
+              ) => (
                 <LimitCard
                   key={counted.policy}
                   agent={agent}

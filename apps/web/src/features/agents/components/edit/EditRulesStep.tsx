@@ -1,14 +1,14 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
-import { checkSpec, compareSpecs, describeSpec } from "@bluechip/domain/policies/Catalog"
+import { checkSpec, compareSpecs } from "@bluechip/domain/policies/Catalog"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { dayLabel } from "../../model/fieldText.ts"
 import { isTemplateId } from "../../model/templateLabel.ts"
-import { PolicyRules } from "../spec/PolicyRules.tsx"
+import { AgentAtAGlance } from "../spec/AgentAtAGlance.tsx"
 import { SpecForm } from "../spec/SpecForm.tsx"
 
 /** The agent's rules to change, marked against the ones in force, with what the new ones allow beside them. */
@@ -41,11 +41,14 @@ export function EditRulesStep(
         before={agent.spec}
       />
 
-      <div className="grid min-w-0 gap-2.5 lg:sticky lg:top-[76px]">
-        <span className="text-caption font-semibold tracking-[.06em] text-g-500 uppercase">
-          {unchanged ? "What it can and can never do" : "What it could do with these rules"}
-        </span>
-        <PolicyRules description={describeSpec(spec, nameOf)} lockedUntil={unchanged ? lockedUntil : undefined} />
+      <div className="min-w-0 lg:sticky lg:top-[76px]">
+        <AgentAtAGlance
+          spec={spec}
+          nameOf={nameOf}
+          lockedLine={unchanged ?
+            (lockedUntil === undefined ? "Locked with Face ID" : `Locked with Face ID until ${lockedUntil}`) :
+            "These changes aren't locked yet"}
+        />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-ink/7 pt-4 lg:col-span-2">

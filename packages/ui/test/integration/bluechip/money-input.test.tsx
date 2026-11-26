@@ -90,6 +90,13 @@ describe("checkMoneyInput", () => {
     })
   })
 
+  it("an amount over your cash where adding cash isn't the way: its own next step", () => {
+    expect(checkMoneyInput(2000, { ...limits, overAvailable: "Lower the amount." })).toStrictEqual({
+      status: "error",
+      message: "You have $1,497.64 in cash. Lower the amount."
+    })
+  })
+
   it("an amount equal to your cash", () => {
     expect(checkMoneyInput(1497.64, { available: 1497.64 })).toStrictEqual({ status: "valid" })
   })

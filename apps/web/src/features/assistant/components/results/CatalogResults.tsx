@@ -21,6 +21,10 @@ import { more, OpenLink } from "./OpenLink.tsx"
 
 const SHOWN = 4
 
+// A section heading inside a line, "Approvals: when you're asked"; an acronym ("USDC on Base") keeps its capitals.
+const sectionText = (section: string): string =>
+  /^\p{Lu}\p{Lu}/u.test(section) ? section : `${section.charAt(0).toLowerCase()}${section.slice(1)}`
+
 const day = (at: DateTime.Utc) => formatDate(DateTime.toDateUtc(at), { timeZone: localTimeZone(), time: false })
 
 /** Your automations as compact rows: what each does in a sentence, and whether it's on. */
@@ -156,6 +160,7 @@ export function MemoriesResult(
             key={"id" in entry ? entry.id : `${entry.kind}:${entry.sourceId}`}
             media={<Icon name="book" size={16} className="text-g-500" />}
             title={entry.text}
+            wrap
             detail={"id" in entry ?
               entry.confirmedAt === null ? "Waiting for you to confirm" : `Since ${day(entry.createdAt)}` :
               `${RECALLED[entry.kind]}, ${day(entry.at)}`}
@@ -177,7 +182,7 @@ export function HelpResult({ passages, state }: Readonly<{ passages: ReadonlyArr
             {best.citation.title}
             {best.citation.section === null ?
               null :
-              <span className="font-normal text-g-500">{`, ${best.citation.section}`}</span>}
+              <span className="font-normal text-g-500">{`: ${sectionText(best.citation.section)}`}</span>}
           </b>
           <p className="line-clamp-3 text-label text-g-700">{best.text}</p>
           <OutcomeLink href={best.citation.url} className="justify-self-start">Read more</OutcomeLink>
@@ -190,7 +195,7 @@ export function HelpResult({ passages, state }: Readonly<{ passages: ReadonlyArr
               <OutcomeLink href={passage.citation.url}>
                 {passage.citation.section === null ?
                   passage.citation.title :
-                  `${passage.citation.title}, ${passage.citation.section}`}
+                  `${passage.citation.title}: ${sectionText(passage.citation.section)}`}
               </OutcomeLink>
             </li>
           ))}

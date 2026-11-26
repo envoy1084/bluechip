@@ -2,7 +2,7 @@ import type { RegistrationCredential } from "@bluechip/domain/WebAuthn"
 import { startRegistration } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import { accountReactivityKey, BluechipApiClient } from "../../../lib/api/client.ts"
-import { asCredential, ceremonyOptions, signWithPasskey } from "../../../lib/passkey.ts"
+import { asCredential, ceremonyOptions } from "../../../lib/passkey.ts"
 
 /** Creates a passkey (Face ID / Touch ID), then the account it owns, and signs in. */
 export const signUpAtom = BluechipApiClient.runtime.fn(
@@ -24,15 +24,7 @@ export const signUpAtom = BluechipApiClient.runtime.fn(
   { reactivityKeys: [accountReactivityKey] }
 )
 
-/** Signs in with any passkey this site knows; the browser offers the user's passkeys. */
-export const signInAtom = BluechipApiClient.runtime.fn(
-  Effect.fnUntraced(function*() {
-    const client = yield* BluechipApiClient
-    const ceremony = yield* client.auth.loginOptions()
-    const credential = yield* signWithPasskey(ceremony.options)
-    return yield* client.auth.loginVerify({ payload: { challengeId: ceremony.challengeId, credential } })
-  }),
-  { reactivityKeys: [accountReactivityKey] }
-)
-
 export const setEligibilityAtom = BluechipApiClient.mutation("account", "setEligibility")
+
+/** Ends this browser's session: the way out for someone bluechip can't serve. */
+export const signOutAtom = BluechipApiClient.mutation("auth", "logout")

@@ -56,7 +56,7 @@ describe("PresetPicker", () => {
     )
   })
 
-  it("leaves out the stock cap when its amounts have none", async () => {
+  it("an agent that never buys: no buys, and no stock cap", async () => {
     const screen = await render(
       <PresetPicker
         amounts={{
@@ -67,7 +67,7 @@ describe("PresetPicker", () => {
       />
     )
     expect(screen.getByRole("radio", { name: /Balanced/ }).element().textContent).toBe(
-      "BalancedMost people start here$0a day$100per trade"
+      "BalancedMost people start hereNo buys$100per trade"
     )
   })
 

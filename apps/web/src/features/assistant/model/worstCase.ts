@@ -60,13 +60,19 @@ const percent = (bps: number) => `${(bps / 100).toLocaleString("en-US", { maximu
 /** The worst case in sentences, for the draft's card. */
 export const worstCaseLines = (worst: WorstCase): ReadonlyArray<string> => {
   const count = worst.trades === 1 ? "one trade" : `up to ${worst.trades} trades`
-  const sizes = worst.trades === null ?
+  const counted = worst.trades === null ?
     "" :
     worst.perTrade === null ?
     ` in ${count}` :
     ` in ${count} of ${dollars(worst.perTrade)}`
+  // Its count of trades says how it spends only when they can't add up to more than the budget: $250 a day is never
+  // "500 trades of $100".
+  const sizes =
+    worst.trades !== null && worst.perTrade !== null && BigInt(worst.trades) * worst.perTrade > worst.daySpend ?
+      ` in trades of up to ${dollars(worst.perTrade)}` :
+      counted
   const spending = worst.daySpend === BigInt(0) ?
-    `It never spends your cash: it only sells${sizes === "" ? "" : `,${sizes.replace(" in", "")} a day`}.` :
+    `It never spends your cash: it only sells${counted === "" ? "" : `,${counted.replace(" in", "")} a day`}.` :
     `On its worst day it could spend ${dollars(worst.daySpend)}${sizes}, ${dollars(worst.daySpend * WEEK)} in a week.`
 
   const prices = worst.dayLoss === null ?

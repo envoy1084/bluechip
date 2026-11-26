@@ -1,5 +1,5 @@
 /**
- * The `buy` action: an amount of dollars split across stocks.
+ * The `buy` action: a dollar amount split across stocks.
  *
  * @since 0.0.0
  */
@@ -112,7 +112,7 @@ const splitProblems = (config: BuyConfig, context: CheckContext): ReadonlyArray<
 export const buy = Action.make({
   type: "buy",
   title: "Buy",
-  summary: "Buys an amount of dollars, split across the stocks you pick.",
+  summary: "Buys a dollar amount, split across the stocks you pick.",
   aliases: ["invest", "add to", "purchase", "dollar cost average"],
   examples: ["buy $50 of Apple", "buy $100 split across Apple and NVIDIA"],
   config: BuyConfig,

@@ -4,6 +4,7 @@ import * as DateTime from "effect/DateTime"
 import {
   auditData,
   auditExactTime,
+  auditIds,
   auditRecord,
   auditWhen
 } from "../../../../../src/features/audit/model/auditDetails.ts"
@@ -38,36 +39,56 @@ describe("auditExactTime", () => {
 })
 
 describe("auditRecord", () => {
-  it("your own entry: when, the action, the subject and its id", () => {
-    assert.deepStrictEqual(auditRecord(AUDIT_EVENT, "UTC"), [
-      { label: "When", value: "Fri 27 Nov 2026, 10:00:00" },
-      { label: "Action", value: "device.signedIn" },
-      { label: "Subject", value: "session session_01" },
-      { label: "Entry", value: "audit_01jdzm3q8gfr9ab6t7c5h2kxyz" }
-    ])
+  it("your own entry: when, in words", () => {
+    assert.deepStrictEqual(auditRecord(AUDIT_EVENT, "UTC"), [{ label: "When", value: "Fri 27 Nov 2026, 10:00:00" }])
   })
 
-  it("an agent's entry names the agent once when it acted itself", () => {
+  it("an agent's entry names the agent", () => {
     const event = new AuditEvent({ ...AUDIT_EVENT, actor: "agent", actorId: "agent_01", agentId: "agent_01" })
-    assert.deepStrictEqual(auditRecord(event, "UTC").map((field) => field.label), [
-      "When",
-      "Action",
-      "Subject",
-      "Agent",
-      "Entry"
+
+    assert.deepStrictEqual(auditRecord(event, "UTC", (id) => id === "agent_01" ? "Tech picker" : undefined), [
+      { label: "When", value: "Fri 27 Nov 2026, 10:00:00" },
+      { label: "Agent", value: "Tech picker" }
     ])
   })
 
-  it("an actor other than the agent is named too", () => {
-    const event = new AuditEvent({ ...AUDIT_EVENT, actorId: "user_01", agentId: "agent_01" })
-    assert.deepStrictEqual(auditRecord(event, "UTC").map((field) => field.label), [
-      "When",
-      "Action",
-      "Subject",
-      "Agent",
-      "Actor",
-      "Entry"
+  it("an agent no longer listed: the name the entry carries", () => {
+    const event = new AuditEvent({ ...AUDIT_EVENT, agentId: "agent_01", data: { name: "Index keeper" } })
+
+    assert.deepStrictEqual(auditRecord(event, "UTC")[1], { label: "Agent", value: "Index keeper" })
+  })
+})
+
+describe("auditIds", () => {
+  it("the entry's and its subject's, named", () => {
+    assert.deepStrictEqual(auditIds(AUDIT_EVENT), [
+      { label: "Entry", id: "audit_01jdzm3q8gfr9ab6t7c5h2kxyz" },
+      { label: "Device", id: "session_01" }
     ])
+  })
+
+  it("a trade by an agent: the agent's too", () => {
+    const event = new AuditEvent({
+      ...AUDIT_EVENT,
+      action: "intent.filled",
+      subjectType: "intent",
+      subjectId: "intent_01",
+      agentId: "agent_01"
+    })
+
+    assert.deepStrictEqual(auditIds(event).map((each) => each.label), ["Entry", "Trade", "Agent"])
+  })
+
+  it("an entry about the agent itself: its id once", () => {
+    const event = new AuditEvent({
+      ...AUDIT_EVENT,
+      action: "agent.paused",
+      subjectType: "agent",
+      subjectId: "agent_01",
+      agentId: "agent_01"
+    })
+
+    assert.deepStrictEqual(auditIds(event).map((each) => each.label), ["Entry", "Agent"])
   })
 })
 

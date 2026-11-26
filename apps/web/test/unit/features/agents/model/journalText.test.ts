@@ -15,7 +15,7 @@ describe("momentNote", () => {
     { moment: "filled", side: "buy", expected: null },
     { moment: "needsApproval", side: "buy", expected: null },
     { moment: "waiting", side: "buy", expected: null },
-    { moment: "sent", side: "buy", expected: "Within its policies, so it sent it itself." },
+    { moment: "sent", side: "buy", expected: "Within its policies, so it sends it itself." },
     { moment: "approved", side: "buy", expected: "You approved it, and it waited for your Face ID." },
     { moment: "blocked", side: "buy", expected: "Nothing was bought. Your cash is where it was." },
     { moment: "failed", side: "sell", expected: "Nothing was sold. Your stocks are where they were." },

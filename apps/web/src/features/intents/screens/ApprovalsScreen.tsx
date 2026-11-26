@@ -9,8 +9,7 @@ export function ApprovalsScreen() {
 
   return (
     <AppPage title="Approvals" sub={waitingText(count)}>
-      <section aria-labelledby="waiting-for-you" className="grid gap-2.5">
-        <h2 id="waiting-for-you" className="px-0.5 text-label-sm font-semibold text-g-500">Waiting for you</h2>
+      <section aria-label="Waiting for you" className="grid gap-2.5">
         <ApprovalsList />
       </section>
     </AppPage>

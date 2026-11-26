@@ -89,21 +89,26 @@ const STARTING_STOCKS: Readonly<Record<TemplateId, ReadonlyArray<StockSymbol>>> 
 export const addAgentFromTemplate = defineAction("agents.add", (world, template, preset) => {
   const id = template as TemplateId
   const stocks = STARTING_STOCKS[id]
-  const record = castAgent(world.agents.ids, {
-    id: nextId(world.agents.ids, "agent") as AgentId,
-    name: `New ${TEMPLATES[id].title.toLowerCase()}`,
-    template: id,
-    preset: preset as Preset,
-    stocks,
-    targets: id === "rebalancer" ?
-      [...stocks.map((asset) => ({ asset, weight: 2000 })), {
-        asset: "USDC" as const,
-        weight: 10_000 - 2000 * stocks.length
-      }] :
-      [],
-    state: "active",
-    ageDays: 0
-  }, DateTime.nowUnsafe())
+  const record = castAgent(
+    world.agents.ids,
+    {
+      id: nextId(world.agents.ids, "agent") as AgentId,
+      name: `New ${TEMPLATES[id].title.toLowerCase()}`,
+      template: id,
+      preset: preset as Preset,
+      stocks,
+      targets: id === "rebalancer" ?
+        [...stocks.map((asset) => ({ asset, weight: 2000 })), {
+          asset: "USDC" as const,
+          weight: 10_000 - 2000 * stocks.length
+        }] :
+        [],
+      state: "active",
+      ageDays: 0
+    },
+    DateTime.nowUnsafe(),
+    world.market
+  )
   world.agents.agents.push(record)
   return changed(record)
 })

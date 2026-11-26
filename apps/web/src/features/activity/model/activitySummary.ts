@@ -50,25 +50,21 @@ export const activityTotals = (items: ReadonlyArray<ActivityItem>): ActivityTota
   }
 }
 
-const count = (n: number, one: string, many: string) => n === 0 ? "None" : `${n} ${n === 1 ? one : many}`
+// A tile with nothing in it says so once ("None, in this period"), not "$0.00" over "None".
+const tile = (label: string, amount: bigint, n: number, one: string, many: string): SummaryTile =>
+  n === 0 ?
+    { label, value: "None", detail: "In this period" } :
+    { label, value: formatMoney(usdcDollars(amount)), detail: `${n} ${n === 1 ? one : many}` }
 
 /** The tiles the strip shows for a filter: trades' for Trades, cash's for Cash, both for All. */
 export const summaryTiles = (totals: ActivityTotals, kind: typeof ActivityKind.Type): ReadonlyArray<SummaryTile> => {
   const trades: ReadonlyArray<SummaryTile> = [
-    { label: "Bought", value: formatMoney(usdcDollars(totals.bought)), detail: count(totals.buys, "buy", "buys") },
-    { label: "Sold", value: formatMoney(usdcDollars(totals.sold)), detail: count(totals.sells, "sale", "sales") }
+    tile("Bought", totals.bought, totals.buys, "buy", "buys"),
+    tile("Sold", totals.sold, totals.sells, "sale", "sales")
   ]
   const cash: ReadonlyArray<SummaryTile> = [
-    {
-      label: "Added",
-      value: formatMoney(usdcDollars(totals.added)),
-      detail: count(totals.deposits, "deposit", "deposits")
-    },
-    {
-      label: "Withdrew",
-      value: formatMoney(usdcDollars(totals.withdrew)),
-      detail: count(totals.withdrawals, "withdrawal", "withdrawals")
-    }
+    tile("Added", totals.added, totals.deposits, "deposit", "deposits"),
+    tile("Withdrew", totals.withdrew, totals.withdrawals, "withdrawal", "withdrawals")
   ]
   if (kind === "trades") return trades
   if (kind === "cash") return cash

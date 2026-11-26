@@ -15,13 +15,17 @@ export interface AddressChipProps extends Omit<ComponentProps<"span">, "children
   readonly network?: boolean
   /** `inline` turns the copy icon into a check for a moment; `toast` also shows a toast. */
   readonly feedback?: "inline" | "toast"
+  /** The whole address, wrapping, where every character matters before sending; shortened otherwise. */
+  readonly full?: boolean
 }
 
 /**
  * An account address, shortened, with a copy button. Only shown where you need it: deposits and receipts. Copying
  * shows a check for 1.6 s and is announced.
  */
-export function AddressChip({ address, network = true, feedback = "inline", className, ...props }: AddressChipProps) {
+export function AddressChip(
+  { address, network = true, feedback = "inline", full = false, className, ...props }: AddressChipProps
+) {
   const [copied, setCopied] = useState<"idle" | "copied" | "failed">("idle")
 
   useEffect(() => {
@@ -50,7 +54,8 @@ export function AddressChip({ address, network = true, feedback = "inline", clas
       data-slot="address-chip"
       data-state={copied}
       className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-full bg-white py-1 pr-1 pl-3 text-[13.5px] font-[550] surface-field",
+        "inline-flex max-w-full items-center gap-2 bg-white py-1 pr-1 pl-3 text-[13.5px] font-[550] surface-field",
+        full ? "rounded-[14px]" : "rounded-full",
         className
       )}
       {...props}
@@ -62,13 +67,19 @@ export function AddressChip({ address, network = true, feedback = "inline", clas
           className="size-2 shrink-0 rounded-full bg-blue shadow-[0_0_0_2.5px_var(--color-blue-100)]"
         />
       )}
-      <span title={address} className="truncate font-mono text-label tracking-[-0.01em]">{shortAddress(address)}</span>
+      <span
+        title={address}
+        className={cn("font-mono text-label tracking-[-0.01em]", full ? "min-w-0 break-all" : "truncate")}
+      >
+        {full ? address : shortAddress(address)}
+      </span>
       <button
         type="button"
         aria-label="Copy address"
         onClick={copy}
         className={cn(
-          "grid size-7 shrink-0 cursor-pointer place-items-center rounded-full bg-g-50 text-g-500 transition-colors duration-fast ease-brand",
+          // 28 px under a mouse, 40 px under a finger.
+          "grid size-7 shrink-0 cursor-pointer place-items-center rounded-full bg-g-50 text-g-500 transition-colors duration-fast ease-brand pointer-coarse:size-10",
           "hover:bg-g-100 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue"
         )}
       >

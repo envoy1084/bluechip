@@ -191,9 +191,9 @@ export const savedAutomation = (options: {
   requestKey: options.requestKey
 })
 
-/** Counts its runs that fired (a skipped one didn't), and its last. */
+/** Counts its runs that fired (as the server does: a skipped or failed one didn't), and its last. */
 export const countFires = (record: AutomationRecord, now: DateTime.Utc) => {
-  const fired = record.runs.filter((run) => run.outcome !== "skipped")
+  const fired = record.runs.filter((run) => run.outcome !== "skipped" && run.outcome !== "failed")
   saveAutomation(record, {
     fires: fired.length,
     lastFiredAt: fired[0]?.firedAt ?? null,

@@ -35,8 +35,11 @@ const choicesOf = (field: Field, value: number): ReadonlyArray<number> | undefin
 }
 
 export function FieldEditor(
-  { field, value, context, help, choiceLabel, disabled, problem, onChange }: Readonly<{
+  { field, title, value, context, help, choiceLabel, disabled, problem, onChange }: Readonly<{
     field: Field
+    /** The title of the rule it edits: a label that only repeats it is left to screen readers. */
+    title?: string
+
     value: unknown
     context: FieldContext
     help?: string | undefined
@@ -47,7 +50,7 @@ export function FieldEditor(
     onChange: (value: unknown) => void
   }>
 ) {
-  const common = { label: field.label, help, problem }
+  const common = { label: field.label, labelHidden: field.label === title, help, problem }
 
   switch (field.unit) {
     case "usd": {
@@ -113,7 +116,16 @@ export function FieldEditor(
       )
     }
     case "toggle":
-      return <ToggleField {...common} checked={value === true} disabled={disabled ?? false} onChange={onChange} />
+      return (
+        <ToggleField
+          label={field.label}
+          help={help}
+          problem={problem}
+          checked={value === true}
+          disabled={disabled ?? false}
+          onChange={onChange}
+        />
+      )
     case "stocks":
       return (
         <StockField

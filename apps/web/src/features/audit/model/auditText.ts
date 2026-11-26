@@ -76,11 +76,17 @@ export const describeAudit = (event: AuditEvent): string => {
   return describe === undefined ? event.action : describe(named ?? "A passkey")
 }
 
-/** Who acted, in words: an agent by its name when `agentName` knows it (or the entry carries it). */
+// What your recovery key did is told as its own, not yours: someone else may hold it.
+const BY_RECOVERY_KEY = new Set(["recovery.signedIn", "recovery.requested", "recovery.completed"])
+
+/**
+ * Who acted, in words: an agent by its name when `agentName` knows it (or the entry carries it); your recovery key
+ * for what it did.
+ */
 export const actorLabel = (event: AuditEvent, agentName: (id: string) => string | undefined = () => undefined) => {
   switch (event.actor) {
     case "owner":
-      return "You"
+      return BY_RECOVERY_KEY.has(event.action) ? "Your recovery key" : "You"
     case "agent": {
       const id = event.actorId ?? event.agentId
       return (id === null ? undefined : agentName(id)) ?? auditField(event, "name") ?? "An agent"

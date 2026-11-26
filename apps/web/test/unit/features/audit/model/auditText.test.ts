@@ -58,6 +58,12 @@ describe("actorLabel", () => {
     )
   })
 
+  it("your recovery key, for what it did", () => {
+    const event = new AuditEvent({ ...AUDIT_EVENT, action: "recovery.signedIn", subjectType: "recovery" })
+
+    assert.strictEqual(actorLabel(event), "Your recovery key")
+  })
+
   it("an agent, without names to look up", () => {
     assert.strictEqual(actorLabel(new AuditEvent({ ...AUDIT_EVENT, actor: "agent", actorId: "agent_01" })), "An agent")
   })

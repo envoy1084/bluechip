@@ -1,5 +1,7 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
+import { actionOf } from "@bluechip/domain/automations/Automation"
 import type { AutomationDetail } from "@bluechip/domain/automations/Run"
+import type { AutomationPerformance } from "@bluechip/domain/performance/Performance"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { StatGrid, StatTile } from "@bluechip/ui/bluechip/stat-tile"
 import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
@@ -12,11 +14,12 @@ import * as DateTime from "effect/DateTime"
 import type { ComponentType } from "react"
 import { ConfirmDialog } from "../../../../components/ConfirmDialog.tsx"
 import { StandingPill } from "../../../../components/StandingPill.tsx"
-import { RUN_OUTCOME, standingOf } from "../../../../lib/automationWords.ts"
-import { localTimeZone } from "../../../../lib/localTime.ts"
+import { hasEnded, RUN_OUTCOME, standingOf } from "../../../../lib/automationWords.ts"
+import { localTimeZone, yourDateTime } from "../../../../lib/localTime.ts"
 import { useAutomationActions } from "../../hooks/useAutomationActions.ts"
-import { CREATED_BY, firesText } from "../../model/automationText.ts"
+import { CREATED_BY } from "../../model/automationText.ts"
 import { catalogEntry } from "../../model/drafts.ts"
+import { outcomesText, timesText } from "../../model/results.ts"
 import { stocksIn } from "../../model/sentence.ts"
 import { attentionOf, nowLine, untilText } from "../../model/standing.ts"
 import { AutomationSentence } from "../AutomationSentence.tsx"
@@ -27,11 +30,15 @@ import { SettingsChips } from "./SettingsChips.tsx"
 /** Draws an agent's state beside its name; it comes from the agents feature, through the route. */
 export type AgentStateView = ComponentType<{ agent: Agent }>
 
-/** Who trades: you with Face ID, or the agent with its avatar, a link to it and its state. */
+/**
+ * Who trades: you with Face ID (or just you, told, for an automation that trades nothing), or the agent with its
+ * avatar, a link to it and its state.
+ */
 function Trader(
-  { agentId, agent, AgentState }: Readonly<{
+  { agentId, agent, trades, AgentState }: Readonly<{
     agentId: string | null
     agent: Agent | null | undefined
+    trades: boolean
     AgentState: AgentStateView
   }>
 ) {
@@ -39,11 +46,19 @@ function Trader(
     return (
       <span className="flex items-center gap-2.5 text-label text-g-600">
         <span className="grid size-[34px] place-items-center rounded-md bg-[linear-gradient(180deg,#f4f7ff,#e8eeff)] text-blue shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08)]">
-          <Icon name="face-id" size={18} />
+          <Icon name={trades ? "face-id" : "bell"} size={18} />
         </span>
-        <span>
-          <b className="font-semibold text-ink">You</b>, with Face ID for each trade
-        </span>
+        {trades ?
+          (
+            <span>
+              <b className="font-semibold text-ink">You</b>, with Face ID for each trade
+            </span>
+          ) :
+          (
+            <span>
+              <b className="font-semibold text-ink">You</b> get a message, and nothing is traded
+            </span>
+          )}
       </span>
     )
   }
@@ -74,8 +89,10 @@ function Trader(
  * settings as chips.
  */
 export function AutomationHero(
-  { detail, agent, now, AgentState }: Readonly<{
+  { detail, performance, agent, now, AgentState }: Readonly<{
     detail: AutomationDetail
+    /** What its runs came to, once known: the page's one count of its runs. */
+    performance: AutomationPerformance | undefined
     agent: Agent | null | undefined
     now: Date
     AgentState: AgentStateView
@@ -89,7 +106,7 @@ export function AutomationHero(
   const standing = standingOf(automation, runs)
   const attention = attentionOf(automation, runs, agent)
   const current = nowLine(automation, now, zone)
-  const ended = standing === "ended"
+  const ended = hasEnded(standing)
   const last = runs[0]
   const lastAt = last?.firedAt ?? automation.lastFiredAt
 
@@ -117,51 +134,53 @@ export function AutomationHero(
             />
           </p>
 
-          <Trader agentId={automation.agentId} agent={agent} AgentState={AgentState} />
+          <Trader
+            agentId={automation.agentId}
+            agent={agent}
+            trades={actionOf(automation.action).plan !== null}
+            AgentState={AgentState}
+          />
 
           {attention === null ?
             null :
             (
               <p className="flex items-start gap-2 rounded-md bg-warn-wash px-3 py-2.5 text-label-sm font-medium text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]">
                 <Icon name="warning" size={15} className="mt-px shrink-0" />
-                <span>
-                  {attention}
-                  {last?.outcome === "failed" ? ` ${last.reason}` : ""}
-                </span>
+                <span>{attention}</span>
               </p>
             )}
 
-          {ended ? null : (
-            <div className="flex flex-wrap items-center gap-2">
-              {automation.status === "paused" ?
-                (
-                  <Button size="sm" loading={busy} onClick={() => void setStatus("active")}>
-                    <Icon name="play" size={14} />Resume
-                  </Button>
-                ) :
-                (
-                  <Button variant="secondary" size="sm" loading={busy} onClick={() => void setStatus("paused")}>
-                    <Icon name="pause" size={14} />Pause
-                  </Button>
-                )}
-              <EditAutomationSheet automation={automation} agent={agent} />
-              <ConfirmDialog
-                trigger={<Button variant="ghost" size="sm" className="text-loss hover:bg-loss-wash hover:text-loss" />}
-                triggerLabel={
-                  <>
-                    <Icon name="trash" size={14} />Delete
-                  </>
-                }
-                title={`Delete “${automation.name}”?`}
-                consequence="It stops at once and won't run again. Trades it already proposed stay as they are."
-                action={{
-                  _tag: "danger",
-                  label: "Delete automation",
-                  onConfirm: () => void remove(() => navigate({ to: "/automations" }))
-                }}
-              />
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {ended ? null : automation.status === "paused" ?
+              (
+                <Button size="sm" loading={busy} onClick={() => void setStatus("active")}>
+                  <Icon name="play" size={14} />Resume
+                </Button>
+              ) :
+              (
+                <Button variant="secondary" size="sm" loading={busy} onClick={() => void setStatus("paused")}>
+                  <Icon name="pause" size={14} />Pause
+                </Button>
+              )}
+            {ended ? null : <EditAutomationSheet automation={automation} agent={agent} />}
+            <ConfirmDialog
+              trigger={<Button variant="ghost" size="sm" className="text-loss hover:bg-loss-wash hover:text-loss" />}
+              triggerLabel={
+                <>
+                  <Icon name="trash" size={14} />Delete
+                </>
+              }
+              title={`Delete “${automation.name}”?`}
+              consequence={ended ?
+                "It goes from your automations. Its trades stay in your activity." :
+                "It stops at once and won't run again. Trades it already proposed stay as they are."}
+              action={{
+                _tag: "danger",
+                label: "Delete automation",
+                onConfirm: () => void remove(() => navigate({ to: "/automations" }))
+              }}
+            />
+          </div>
 
           {problem === null ? null : (
             <Alert variant="destructive">
@@ -173,7 +192,13 @@ export function AutomationHero(
 
       <div className="grid gap-4 border-t border-g-100 bg-g-50/50 px-5 py-4 sm:px-6">
         <StatGrid>
-          <StatTile label="Ran" value={firesText(automation.fires)} />
+          <StatTile
+            label="Ran"
+            value={performance === undefined ? "…" : timesText(performance.runs)}
+            {...(performance === undefined || performance.runs === 0 ?
+              {} :
+              { detail: outcomesText(performance.outcomes) })}
+          />
           <StatTile
             label="Last ran"
             value={lastAt === null ? "Never" : formatRelative(DateTime.toDateUtc(lastAt), now, { timeZone: zone })}
@@ -184,7 +209,7 @@ export function AutomationHero(
             (
               <StatTile
                 label="Next run"
-                value={formatDate(DateTime.toDateUtc(automation.nextRunAt), { timeZone: zone })}
+                value={yourDateTime(DateTime.toDateUtc(automation.nextRunAt), zone)}
                 detail={untilText(automation.nextRunAt, now)}
               />
             )}

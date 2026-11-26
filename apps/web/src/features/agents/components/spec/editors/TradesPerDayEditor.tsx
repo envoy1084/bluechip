@@ -1,6 +1,6 @@
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { withConfig } from "@bluechip/domain/policies/SpecEdits"
-import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
+import { NO_TRADE_LIMIT, tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { useNow } from "../../../../../hooks/useNow.ts"
 import { dailyResetText } from "../../../../../lib/localTime.ts"
 import { FieldEditor } from "../fields/FieldEditor.tsx"
@@ -15,9 +15,12 @@ export function TradesPerDayEditor({ context, problemOf, onSpecChange }: EditorP
   return (
     <FieldEditor
       field={tradesPerDay.fields.count}
+      title={tradesPerDay.title}
       value={config.count}
       context={context}
-      help={`The most trades it sends in a day. Resets at ${dailyResetText(now)}.`}
+      help={`The most trades it sends in a day; ${NO_TRADE_LIMIT} or more is no limit of its own. Resets at ${
+        dailyResetText(now)
+      }.`}
       problem={problemOf("count")}
       onChange={(count) => onSpecChange(withConfig(context.spec, "tradesPerDay", { count }))}
     />

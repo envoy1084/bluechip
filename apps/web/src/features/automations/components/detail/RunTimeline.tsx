@@ -68,7 +68,7 @@ export function RunTimeline(
         {runs.length === 0 ?
           (
             <p className="px-5 py-5 text-label text-g-600">
-              No runs yet. It runs {automation.description.trigger}.
+              {ended ? "It ended without running." : "No runs yet."}
             </p>
           ) :
           Object.entries(days).map(([day, dayRuns]) => (

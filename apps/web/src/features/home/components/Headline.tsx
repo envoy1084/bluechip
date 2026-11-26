@@ -1,3 +1,4 @@
+import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { marketStatusAtom } from "../../../atoms/market.ts"
@@ -15,8 +16,11 @@ export function Headline({ displayName, now }: Readonly<{ displayName: string | 
       <h2 className="text-[26px] leading-tight font-semibold tracking-[-0.035em] text-balance">
         {greeting(now, displayName, zone)}
       </h2>
+      {/* Held open while the market loads, so the page under it doesn't move when the line arrives. */}
       {AsyncResult.isSuccess(status) ?
         <p className="text-body-sm text-pretty text-g-600">{marketLine(status.value, now, zone)}</p> :
+        AsyncResult.isInitial(status) ?
+        <SkeletonBlock className="h-[1lh] w-64 max-w-full text-body-sm" /> :
         null}
     </div>
   )

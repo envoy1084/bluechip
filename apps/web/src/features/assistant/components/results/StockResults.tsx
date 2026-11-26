@@ -50,6 +50,7 @@ export function StockResult(
   return (
     <LookedResult
       look={{ ...RESULT_LOOK.getStock, title: nameOf(symbol) }}
+      media={<TickerChip symbol={symbol} size="sm" />}
       state={state}
       action={<OpenLink to="/stocks/$symbol" params={{ symbol }} />}
     >
@@ -78,7 +79,7 @@ export function StockResult(
         null :
         (
           <ChatResultStats>
-            <ChatResultStat label="You hold" value={`${formatShareCount(shareCount(performance.shares))} shares`} />
+            <ChatResultStat label="You hold" value={formatShareCount(shareCount(performance.shares))} />
             <ChatResultStat label="Worth" value={formatMoney(usdcDollars(performance.value))} />
             <ChatResultStat
               label="Profit"

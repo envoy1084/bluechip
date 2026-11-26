@@ -68,8 +68,8 @@ describe("shows", () => {
       listed: listedAgent(agent("active", { paused: true }), NOW),
       expected: ["all", "paused"]
     },
-    { name: "a draft", listed: listedAgent(agent("draft"), NOW), expected: ["all", "drafts"] },
-    { name: "a first lock on its way", listed: listedAgent(agent("locking"), NOW), expected: ["all", "drafts"] },
+    { name: "a draft", listed: listedAgent(agent("draft"), NOW), expected: ["all", "notLive"] },
+    { name: "a first lock on its way", listed: listedAgent(agent("locking"), NOW), expected: ["all", "notLive"] },
     {
       name: "one that ran out",
       listed: listedAgent(agent("expired"), NOW),
@@ -81,7 +81,7 @@ describe("shows", () => {
       expected: ["all", "attention", "expired"]
     }
   ])("$name", ({ expected, listed }) => {
-    const filters: ReadonlyArray<AgentFilter> = ["all", "active", "attention", "paused", "drafts", "expired"]
+    const filters: ReadonlyArray<AgentFilter> = ["all", "active", "attention", "paused", "notLive", "expired"]
 
     assert.deepStrictEqual(filters.filter((filter) => shows(listed, filter)), expected)
   })
@@ -101,13 +101,13 @@ describe("filterCounts", () => {
       active: 2,
       attention: 2,
       paused: 0,
-      drafts: 1,
+      notLive: 1,
       expired: 1
     })
   })
 
   it("no agents: every count is 0", () => {
-    assert.deepStrictEqual(filterCounts([]), { all: 0, active: 0, attention: 0, paused: 0, drafts: 0, expired: 0 })
+    assert.deepStrictEqual(filterCounts([]), { all: 0, active: 0, attention: 0, paused: 0, notLive: 0, expired: 0 })
   })
 })
 

@@ -14,10 +14,12 @@ const QUIET = Duration.minutes(30)
  * feed goes quiet overnight), or paused for the weekend or a holiday.
  */
 export function SessionNote(
-  { price, showPaused = true }: Readonly<{
+  { price, showPaused = true, onlyQuiet = false }: Readonly<{
     price: MarketPrice
     /** Off where the page already says prices are paused (the stock page's banner and trade warning). */
     showPaused?: boolean
+    /** Only an old last trade, where a market pill beside it already says the session. */
+    onlyQuiet?: boolean
   }>
 ) {
   const status = useMarketStatus()
@@ -41,6 +43,7 @@ export function SessionNote(
     )
   }
 
+  if (onlyQuiet) return null
   const regular = status.session === "regular"
   return (
     <span className="inline-flex items-center gap-[5px] text-caption text-g-500">

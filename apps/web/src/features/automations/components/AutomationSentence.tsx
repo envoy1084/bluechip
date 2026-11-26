@@ -5,8 +5,8 @@ import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { sentenceParts } from "../model/sentence.ts"
 
 /**
- * A sentence of an automation (what it does, what fired a run) with each stock it names behind its chip and each
- * amount in bold. `symbols` are the stocks it may name.
+ * A sentence of an automation (what it does, what fired a run) with each stock it names behind its chip (the first
+ * time; after that by name alone) and each amount in bold. `symbols` are the stocks it may name.
  */
 export function AutomationSentence(
   { sentence, symbols, className }: Readonly<{
@@ -17,6 +17,7 @@ export function AutomationSentence(
 ) {
   const { nameOf } = useStockLookup()
   const parts = sentenceParts(sentence, symbols.map((symbol) => ({ symbol, name: nameOf(symbol) })))
+  const chipped = new Set<StockSymbol>()
 
   return (
     <span className={cn("text-pretty", className)}>
@@ -26,6 +27,8 @@ export function AutomationSentence(
         if (part.kind === "amount") {
           return <b key={key} className="font-semibold text-ink tabular-nums">{part.text}</b>
         }
+        if (chipped.has(part.symbol)) return <b key={key} className="font-semibold text-ink">{part.text}</b>
+        chipped.add(part.symbol)
         // A sentence that names the stock by its symbol shows the chip alone.
         if (part.text === part.symbol) {
           return <TickerChip key={key} symbol={part.symbol} size="sm" className="mx-px align-[0.12em]" />

@@ -45,7 +45,6 @@ import { Route as AppAgentsAgentIdJournalRouteImport } from './routes/_app/agent
 import { Route as AppAgentsAgentIdResultsRouteImport } from './routes/_app/agents/$agentId.results'
 import { Route as AppAgentsAgentIdUsageRouteImport } from './routes/_app/agents/$agentId.usage'
 import { Route as AppAgentsAgentIdEditRouteImport } from './routes/_app/agents/$agentId_.edit'
-import { Route as AppAutomationsAutomationIdEditRouteImport } from './routes/_app/automations/$automationId_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -230,12 +229,6 @@ const AppAgentsAgentIdEditRoute = AppAgentsAgentIdEditRouteImport.update({
   path: '/agents/$agentId/edit',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAutomationsAutomationIdEditRoute =
-  AppAutomationsAutomationIdEditRouteImport.update({
-    id: '/automations/$automationId_/edit',
-    path: '/automations/$automationId/edit',
-    getParentRoute: () => AppRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -272,7 +265,6 @@ export interface FileRoutesByFullPath {
   '/agents/$agentId/results': typeof AppAgentsAgentIdResultsRoute
   '/agents/$agentId/usage': typeof AppAgentsAgentIdUsageRoute
   '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
-  '/automations/$automationId/edit': typeof AppAutomationsAutomationIdEditRoute
   '/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -309,7 +301,6 @@ export interface FileRoutesByTo {
   '/agents/$agentId/results': typeof AppAgentsAgentIdResultsRoute
   '/agents/$agentId/usage': typeof AppAgentsAgentIdUsageRoute
   '/agents/$agentId/edit': typeof AppAgentsAgentIdEditRoute
-  '/automations/$automationId/edit': typeof AppAutomationsAutomationIdEditRoute
   '/agents/$agentId': typeof AppAgentsAgentIdIndexRoute
 }
 export interface FileRoutesById {
@@ -349,7 +340,6 @@ export interface FileRoutesById {
   '/_app/agents/$agentId/results': typeof AppAgentsAgentIdResultsRoute
   '/_app/agents/$agentId/usage': typeof AppAgentsAgentIdUsageRoute
   '/_app/agents/$agentId_/edit': typeof AppAgentsAgentIdEditRoute
-  '/_app/automations/$automationId_/edit': typeof AppAutomationsAutomationIdEditRoute
   '/_app/agents/$agentId/': typeof AppAgentsAgentIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -389,7 +379,6 @@ export interface FileRouteTypes {
     | '/agents/$agentId/results'
     | '/agents/$agentId/usage'
     | '/agents/$agentId/edit'
-    | '/automations/$automationId/edit'
     | '/agents/$agentId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -426,7 +415,6 @@ export interface FileRouteTypes {
     | '/agents/$agentId/results'
     | '/agents/$agentId/usage'
     | '/agents/$agentId/edit'
-    | '/automations/$automationId/edit'
     | '/agents/$agentId'
   id:
     | '__root__'
@@ -465,7 +453,6 @@ export interface FileRouteTypes {
     | '/_app/agents/$agentId/results'
     | '/_app/agents/$agentId/usage'
     | '/_app/agents/$agentId_/edit'
-    | '/_app/automations/$automationId_/edit'
     | '/_app/agents/$agentId/'
   fileRoutesById: FileRoutesById
 }
@@ -737,13 +724,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentsAgentIdEditRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/automations/$automationId_/edit': {
-      id: '/_app/automations/$automationId_/edit'
-      path: '/automations/$automationId/edit'
-      fullPath: '/automations/$automationId/edit'
-      preLoaderRoute: typeof AppAutomationsAutomationIdEditRouteImport
-      parentRoute: typeof AppRoute
-    }
   }
 }
 
@@ -788,7 +768,6 @@ interface AppRouteChildren {
   AppPortfolioIndexRoute: typeof AppPortfolioIndexRoute
   AppStocksIndexRoute: typeof AppStocksIndexRoute
   AppAgentsAgentIdEditRoute: typeof AppAgentsAgentIdEditRoute
-  AppAutomationsAutomationIdEditRoute: typeof AppAutomationsAutomationIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -812,7 +791,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppPortfolioIndexRoute: AppPortfolioIndexRoute,
   AppStocksIndexRoute: AppStocksIndexRoute,
   AppAgentsAgentIdEditRoute: AppAgentsAgentIdEditRoute,
-  AppAutomationsAutomationIdEditRoute: AppAutomationsAutomationIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

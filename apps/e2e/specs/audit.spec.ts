@@ -55,14 +55,14 @@ test.describe("audit log", () => {
 
     await page.getByTestId("audit-event").first().getByRole("button", { name: /^Details: / }).click()
 
-    await expect(page.getByText("device.signedIn")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Copy the entry's id" })).toBeVisible()
   })
 
-  test("Export JSON downloads the log", async ({ page, user: _user }) => {
+  test("Export downloads the log", async ({ page, user: _user }) => {
     await page.goto("/settings/audit")
 
     const download = page.waitForEvent("download")
-    await page.getByRole("button", { name: "Export JSON" }).click()
+    await page.getByRole("button", { name: "Export" }).click()
     const file = await download
 
     expect(file.suggestedFilename()).toMatch(/^bluechip-audit-\d{4}-\d{2}-\d{2}\.json$/)

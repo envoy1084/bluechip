@@ -1,6 +1,6 @@
-import { formatMarketTime } from "@bluechip/ui/lib/format"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import * as DateTime from "effect/DateTime"
+import { yourDateTime } from "../../../lib/localTime.ts"
 import { useMarketStatus } from "../hooks/useMarketStatus.ts"
 
 /**
@@ -19,8 +19,8 @@ export function PricesPausedBanner() {
           Prices are paused for the {status.pausedFor === "holiday" ? "holiday" : "weekend"}
         </b>
         <span className="text-label text-g-600">
-          Stock tokens still trade, with no live price to compare against. Prices move again{" "}
-          {formatMarketTime(DateTime.toDateUtc(status.changesAt))}.
+          Stock tokens still trade, with no live price to compare against. Prices move again on{" "}
+          {yourDateTime(DateTime.toDateUtc(status.changesAt))}.
         </span>
       </output>
     </div>

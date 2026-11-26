@@ -40,7 +40,7 @@ export function AgentControlCard(
     <ChatCard
       tag={resume ? "Resume" : "Pause"}
       icon={resume ? "play" : "pause"}
-      state={status === "pending" ? "Waiting for you" : status === "applied" ? "Done" : "Not now"}
+      state={status === "pending" ? "Waiting for you" : status === "applied" ? "Done" : "Dismissed"}
       tone={status === "pending" ? "waiting" : status === "applied" ? "done" : "quiet"}
       footer={status === "pending" ?
         <ChatCardAnswer busy={busy} confirmLabel={title} onConfirm={onConfirm} onDismiss={onDismiss} /> :

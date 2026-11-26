@@ -8,14 +8,12 @@ export const NEW_AGENT_STEPS = ["Start", "Rules", "Review"] as const
 export type NewAgentStep = (typeof NEW_AGENT_STEPS)[number]
 
 /**
- * The new agent page: where it is in the three steps, then the step. Locking and its result follow Review without a
- * step of their own (`step` is null): they're the end of it.
+ * The new agent page: where it is in the three steps, then the step, every step at the same width so the steps stay
+ * put. Locking and its result follow Review without a step of their own (`step` is null): they're the end of it.
  */
-export function NewAgentShell(
-  { step, wide = false, children }: Readonly<{ step: NewAgentStep | null; wide?: boolean; children: ReactNode }>
-) {
+export function NewAgentShell({ step, children }: Readonly<{ step: NewAgentStep | null; children: ReactNode }>) {
   return (
-    <AppPage title="New agent" width={wide ? "wide" : "default"}>
+    <AppPage title="New agent" width="wide">
       {step === null ?
         null :
         <FlowSteps steps={NEW_AGENT_STEPS} current={NEW_AGENT_STEPS.indexOf(step)} className="-mt-1 max-w-[360px]" />}
@@ -24,12 +22,16 @@ export function NewAgentShell(
   )
 }
 
-/** The way back and the way on, under a step. */
+/**
+ * The way back and the way on, under every step in the same place: back on the left, on on the right. On a phone it
+ * stays at the bottom of the screen, so the way on is never below it.
+ */
 export function StepFoot({ children, className }: Readonly<{ children: ReactNode; className?: string }>) {
   return (
     <div
       className={cn(
         "flex flex-wrap items-center justify-between gap-2.5 pt-2",
+        "max-sm:sticky max-sm:bottom-0 max-sm:z-[5] max-sm:-mx-4 max-sm:border-t max-sm:border-ink/6 max-sm:bg-canvas/95 max-sm:px-4 max-sm:py-3 max-sm:backdrop-blur",
         className
       )}
     >
