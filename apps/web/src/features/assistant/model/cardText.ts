@@ -3,6 +3,7 @@ import type { AgentStatus } from "@bluechip/domain/agents/Agent"
 import type { MemoryKind } from "@bluechip/domain/assistant/Memory"
 import { Conflict, InvalidSpec, Unavailable } from "@bluechip/domain/Errors"
 import * as DateTime from "effect/DateTime"
+import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 
 /** Why confirming or dismissing a card didn't go, in words. */
 export const cardProblem = (error: unknown): string => {
@@ -15,7 +16,7 @@ export const cardProblem = (error: unknown): string => {
 export const signingProblem = (error: unknown): string => {
   if (error instanceof InvalidSpec) return error.problems.map((problem) => problem.message).join(" ")
   if (error instanceof Conflict) return "This agent has another change on its way. Try again once it lands."
-  if (error instanceof Unavailable) return "We couldn't reach Base just now. Nothing changed, so try again in a moment."
+  if (error instanceof Unavailable) return unavailableProblem(error)
   return "Face ID was cancelled or the request couldn't be sent. Nothing changed."
 }
 

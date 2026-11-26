@@ -98,6 +98,12 @@ describe("intentProblem", () => {
       expected: "We couldn't reach Base just now. Nothing changed, so try again in a moment."
     },
     {
+      name: "no ETH for the network fee",
+      error: new Unavailable({ dependency: "gas", retryAfterSeconds: null }),
+      expected:
+        "Your account has no ETH to pay Base's network fee. Send a little ETH on Base to your account's address, then try again. Nothing changed."
+    },
+    {
       name: "another conflict: as a trade problem",
       error: new Conflict({ reason: "requestIdReused" }),
       expected: "Face ID was cancelled or the trade couldn't be sent. Nothing was bought."

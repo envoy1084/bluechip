@@ -1,6 +1,6 @@
 // How an intent reads on screen: its status as a pill, the time it waits until, why a request didn't go, and how many
 // wait for you.
-import { Conflict, Unavailable } from "@bluechip/domain/Errors"
+import { Conflict } from "@bluechip/domain/Errors"
 import type { Decision, Intent, IntentStatus } from "@bluechip/domain/intents/Intent"
 import { formatRelative, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
@@ -59,7 +59,6 @@ export const intentProblem = (error: unknown, side: "buy" | "sell"): string => {
     }
     if (error.reason === "intentClosed") return "This trade has already moved on, so there's nothing to do."
   }
-  if (error instanceof Unavailable) return "We couldn't reach Base just now. Nothing changed, so try again in a moment."
   return tradeProblem(error, side)
 }
 

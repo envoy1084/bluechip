@@ -2,6 +2,7 @@ import { type Agent, AgentRequest } from "@bluechip/domain/agents/Agent"
 import { Conflict, InvalidSpec, Unavailable } from "@bluechip/domain/Errors"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
+import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 import { confirmAgentAtom } from "../atoms/agents.ts"
 
 export type AgentSigning =
@@ -15,7 +16,7 @@ export type AgentSigning =
 const problemOf = (error: unknown): string => {
   if (error instanceof InvalidSpec) return error.problems.map((problem) => problem.message).join(" ")
   if (error instanceof Conflict) return "This agent has another change on its way. Try again once it lands."
-  if (error instanceof Unavailable) return "We couldn't reach Base just now. Nothing changed, so try again in a moment."
+  if (error instanceof Unavailable) return unavailableProblem(error)
   return "Face ID was cancelled or the request couldn't be sent. Nothing changed."
 }
 

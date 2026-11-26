@@ -3,7 +3,8 @@ import {
   InsufficientCash,
   InsufficientShares,
   PriceCheckFailed,
-  QuoteUnavailable
+  QuoteUnavailable,
+  Unavailable
 } from "@bluechip/domain/Errors"
 import { assert, describe, it } from "@effect/vitest"
 import { tradeProblem } from "../../../src/lib/tradeProblem.ts"
@@ -55,6 +56,20 @@ describe("tradeProblem", () => {
     assert.strictEqual(
       tradeProblem(new PriceCheckFailed({ symbol: "NVDA", reason: "stale", gapBps: 0, limitBps: 100 }), "buy"),
       "Chainlink's price isn't updating, so there's nothing to check the trade against. Nothing was bought."
+    )
+  })
+
+  it("no ETH for the network fee: what's missing and what to do", () => {
+    assert.strictEqual(
+      tradeProblem(new Unavailable({ dependency: "gas", retryAfterSeconds: null }), "buy"),
+      "Your account has no ETH to pay Base's network fee. Send a little ETH on Base to your account's address, then try again. Nothing changed."
+    )
+  })
+
+  it("Base unreachable", () => {
+    assert.strictEqual(
+      tradeProblem(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 }), "sell"),
+      "We couldn't reach Base just now. Nothing changed, so try again in a moment."
     )
   })
 

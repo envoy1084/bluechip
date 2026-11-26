@@ -51,6 +51,12 @@ describe("signingProblem", () => {
       expected: "We couldn't reach Base just now. Nothing changed, so try again in a moment."
     },
     {
+      name: "no ETH for the network fee: what's missing and what to do",
+      error: new Unavailable({ dependency: "gas", retryAfterSeconds: null }),
+      expected:
+        "Your account has no ETH to pay Base's network fee. Send a little ETH on Base to your account's address, then try again. Nothing changed."
+    },
+    {
       name: "anything else: Face ID cancelled",
       error: new QuoteUnavailable({ symbol: "NVDA", reason: "noPrice" }),
       expected: "Face ID was cancelled or the request couldn't be sent. Nothing changed."

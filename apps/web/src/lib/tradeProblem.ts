@@ -1,6 +1,13 @@
-import { InsufficientCash, InsufficientShares, PriceCheckFailed, QuoteUnavailable } from "@bluechip/domain/Errors"
+import {
+  InsufficientCash,
+  InsufficientShares,
+  PriceCheckFailed,
+  QuoteUnavailable,
+  Unavailable
+} from "@bluechip/domain/Errors"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { bpsPercent, shareCount, usdcDollars } from "./amounts.ts"
+import { unavailableProblem } from "./unavailableProblem.ts"
 
 /** Why a trade didn't start, in words: nothing moved in any of these. */
 export const tradeProblem = (error: unknown, side: "buy" | "sell"): string => {
@@ -19,5 +26,6 @@ export const tradeProblem = (error: unknown, side: "buy" | "sell"): string => {
         bpsPercent(error.limitBps)
       }% allowed. ${nothing}`
   }
+  if (error instanceof Unavailable) return unavailableProblem(error)
   return `Face ID was cancelled or the trade couldn't be sent. ${nothing}`
 }
