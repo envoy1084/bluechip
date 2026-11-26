@@ -11,12 +11,15 @@ import { AgentsApi } from "./api/AgentsApi.ts"
 import { AssistantApi } from "./api/AssistantApi.ts"
 import { AuthApi } from "./api/AuthApi.ts"
 import { AutomationsApi } from "./api/AutomationsApi.ts"
+import { ChannelsApi } from "./api/ChannelsApi.ts"
 import { DevApi } from "./api/DevApi.ts"
 import { EventsApi } from "./api/EventsApi.ts"
 import { IntentsApi } from "./api/IntentsApi.ts"
 import { MarketApi } from "./api/MarketApi.ts"
+import { NotificationsApi } from "./api/NotificationsApi.ts"
 import { PoliciesApi } from "./api/PoliciesApi.ts"
 import { PortfolioApi } from "./api/PortfolioApi.ts"
+import { PushApi } from "./api/PushApi.ts"
 import { SystemApi } from "./api/SystemApi.ts"
 import { TradesApi } from "./api/TradesApi.ts"
 import { TransfersApi } from "./api/TransfersApi.ts"
@@ -45,6 +48,9 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(AutomationsApi)
   .add(ActivityApi)
   .add(AssistantApi)
+  .add(NotificationsApi)
+  .add(PushApi)
+  .add(ChannelsApi)
   .add(DevApi)
   .middleware(DefectReporting)
   .middleware(ContractCheck)

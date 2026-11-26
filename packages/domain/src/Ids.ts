@@ -468,3 +468,60 @@ export const DocumentId = typeId("document").pipe(
  * @since 0.0.0
  */
 export type DocumentId = typeof DocumentId.Type
+
+/**
+ * A notification in the user's notification center.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const NotificationId = typeId("notification").pipe(
+  Schema.brand("NotificationId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/NotificationId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type NotificationId = typeof NotificationId.Type
+
+/**
+ * A browser's push subscription (one per device that opted in).
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const PushSubscriptionId = typeId("pushsub").pipe(
+  Schema.brand("PushSubscriptionId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/PushSubscriptionId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type PushSubscriptionId = typeof PushSubscriptionId.Type
+
+/**
+ * A chat on a platform (Telegram) linked to a user's account.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const ChannelLinkId = typeId("channellink").pipe(
+  Schema.brand("ChannelLinkId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/ChannelLinkId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type ChannelLinkId = typeof ChannelLinkId.Type

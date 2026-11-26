@@ -7,8 +7,10 @@
 import * as Duration from "effect/Duration"
 import * as Schema from "effect/Schema"
 import { Agent } from "./agents/Agent.ts"
+import { AutomationRun } from "./automations/Run.ts"
 import { Intent } from "./intents/Intent.ts"
 import { MarketPrice } from "./market/Market.ts"
+import { Notification } from "./notifications/Notification.ts"
 import { Transfer } from "./portfolio/Transfer.ts"
 import { Trade } from "./trading/Trade.ts"
 
@@ -38,12 +40,19 @@ export const LiveEvent = Schema.TaggedUnion({
   TransferUpdated: { transfer: Transfer },
   /** One of the user's trades changed status (only sent to its owner). */
   TradeUpdated: { trade: Trade },
-  /** One of the user's agents changed: its status, limits or pause (only sent to its owner). */
-  AgentChanged: { agent: Agent },
+  /**
+   * One of the user's agents changed: its status, limits or pause (only sent to its owner). `change` names the changes
+   * notifications tell: you paused it, or a renewal landed.
+   */
+  AgentChanged: { agent: Agent, change: Schema.optionalKey(Schema.Literals(["paused", "renewed"])) },
   /** One of the user's intents changed: decided, waiting, sent, filled, approved, blocked… (only sent to its owner). */
   IntentChanged: { intent: Intent },
   /** The user's balances changed: refetch the portfolio (only sent to its owner). */
-  PortfolioChanged: {}
+  PortfolioChanged: {},
+  /** One of the user's automations ended a run (only sent to its owner). */
+  AutomationRan: { run: AutomationRun, automationName: Schema.String },
+  /** A new notification in the user's center (only sent to its owner). */
+  NotificationAdded: { notification: Notification }
 }).annotate({ identifier: "@bluechip/domain/Events/LiveEvent" })
 
 /**

@@ -119,13 +119,20 @@ export class Message extends Schema.Class<Message>("@bluechip/domain/assistant/C
 }) {}
 
 /**
- * Where a conversation happens: the web app (chat platforms come later).
+ * Where a conversation happens: the web app, or a linked Telegram chat.
  *
  * @stability unstable
  * @category schemas
  * @since 0.0.0
  */
-export const Surface = Schema.Literals(["web"])
+export const Surface = Schema.Literals(["web", "telegram"])
+
+/**
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export type Surface = typeof Surface.Type
 
 /**
  * The longest message you can send, in characters.
