@@ -67,7 +67,8 @@ describe("settingsSections", () => {
         ["trades", "agents", "automations", "money", "security", "digest"],
         [
           { kind: "deposit", channels: ["inApp"], digest: false },
-          { kind: "withdrawal", channels: ["inApp", "push", "telegram"], digest: false }
+          { kind: "withdrawal", channels: ["inApp", "push", "telegram"], digest: false },
+          { kind: "balanceUnexplained", channels: ["inApp", "push", "telegram"], digest: false }
         ]
       ]
     )
