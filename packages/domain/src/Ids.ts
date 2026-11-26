@@ -337,3 +337,77 @@ export const RunId = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLeng
  * @since 0.0.0
  */
 export type RunId = typeof RunId.Type
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const AutomationId = typeId("automation").pipe(
+  Schema.brand("AutomationId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/AutomationId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type AutomationId = typeof AutomationId.Type
+
+/**
+ * One time an automation's trigger fired.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const AutomationRunId = typeId("run").pipe(
+  Schema.brand("AutomationRunId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/AutomationRunId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type AutomationRunId = typeof AutomationRunId.Type
+
+/**
+ * One typed question a model answered while an automation ran.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const JudgmentId = typeId("judgment").pipe(
+  Schema.brand("JudgmentId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/JudgmentId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type JudgmentId = typeof JudgmentId.Type
+
+/**
+ * A news story bluechip read.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const NewsItemId = typeId("news").pipe(
+  Schema.brand("NewsItemId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/NewsItemId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type NewsItemId = typeof NewsItemId.Type
