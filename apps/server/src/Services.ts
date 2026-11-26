@@ -34,11 +34,13 @@ import { DeskLive } from "./modules/intents/Desk.ts"
 import { ExpireIntentsCron } from "./modules/intents/ExpireCron.ts"
 import { Intents } from "./modules/intents/Intents.ts"
 import { IntentStore } from "./modules/intents/IntentStore.ts"
+import { AgentJournal } from "./modules/journal/AgentJournal.ts"
 import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
 import { Stocks } from "./modules/market/Stocks.ts"
 import { ConversationMemory } from "./modules/memory/ConversationMemory.ts"
+import { MemoryDecayCron } from "./modules/memory/DecayCron.ts"
 import { RecallEmbedCron } from "./modules/memory/EmbedCron.ts"
 import { Memories } from "./modules/memory/Memories.ts"
 import { MemoryExtractor } from "./modules/memory/MemoryExtractor.ts"
@@ -68,6 +70,7 @@ export const ServicesLive = Layer.mergeAll(
   ExpireAgentsCron,
   PortfolioSnapshotCron,
   RecallEmbedCron,
+  MemoryDecayCron,
   Assistant.layer,
   FireAutomationLive,
   PriceWatcher.watch,
@@ -120,6 +123,7 @@ export const ServicesLive = Layer.mergeAll(
       Recall.layer
     )
   ),
+  Layer.provideMerge(AgentJournal.layer),
   Layer.provideMerge(
     Layer.mergeAll(LiveEvents.layer, Namera.layer, AccountBalances.layer, DevChain.layer, RecallIndex.layer)
   )

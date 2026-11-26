@@ -5,10 +5,12 @@
  * @since 0.0.0
  */
 import * as Tool from "effect/ai/Tool"
+import * as DateTime from "effect/DateTime"
 import * as Schema from "effect/Schema"
 import { Agent, AgentName, AgentSession, AgentUsage } from "../agents/Agent.ts"
 import { Card, describeCard } from "../assistant/Card.ts"
 import { Intent } from "../intents/Intent.ts"
+import { JournalEntry } from "../journal/Journal.ts"
 import { SpecDescription } from "../policies/Catalog.ts"
 import { listNames } from "../policies/Format.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
@@ -110,6 +112,33 @@ export const GetAgentHistory = Tool.make("getAgentHistory", {
       ...sessions.map((session) => `Session ${session.id}: ${session.status}, by ${session.createdBy}`),
       ...intents.map((intent) => `Trade ${intent.id}: ${intent.leg.side} ${intent.leg.symbol}, ${intent.status}`)
     ])
+}).annotate(Risk, "read")
+
+/**
+ * @stability unstable
+ * @category tools
+ * @since 0.0.0
+ */
+export const GetAgentJournal = Tool.make("getAgentJournal", {
+  description: "An agent's journal, newest first: what it did and why, written by bluechip as it happened (its " +
+    "trades and their decisions, fills and refusals, the user's approvals, its automations' runs and judgments). " +
+    "Use it to answer what an agent did, when and why.",
+  parameters: Schema.Struct({
+    agentId: AgentIdParam,
+    limit: Schema.NullOr(Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 50 }))).annotate({
+      description: "How many entries, 1 to 50; null for 20."
+    })
+  }),
+  success: Schema.Array(JournalEntry),
+  failure: ToolProblem,
+  failureMode: "return",
+  dependencies: [Caller],
+  toModelOutput: (entries) =>
+    say(
+      entries.length === 0 ?
+        "Nothing in its journal yet." :
+        entries.map((entry) => `${DateTime.formatIso(entry.at)}: ${entry.entry}`)
+    )
 }).annotate(Risk, "read")
 
 /**

@@ -210,6 +210,15 @@ export const MIN_CONFIDENCE = 0.5
 export const CONFIRM_CONFIDENCE = 0.8
 
 /**
+ * A guess left unconfirmed this many days is stale, and dropped.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const STALE_GUESS_DAYS = 30
+
+/**
  * What to do with one candidate: nothing, keep it (confirmed or waiting for you), refresh the memory it repeats, or
  * replace the memory it contradicts (the new one keeps a note of the old).
  *

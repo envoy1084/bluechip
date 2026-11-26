@@ -182,8 +182,27 @@ export class RecordedModel extends Context.Service<RecordedModel, {
               )
             }
 
-            // A turn's notes or a conversation's title, for the message quoted between the tags.
             const prompt = options.prompt.content.map(textOf).join("\n")
+
+            // A conversation's summary: what the user said in the transcript, in order.
+            if (
+              options.responseFormat.type === "json" && options.responseFormat.objectName === "conversation_summary"
+            ) {
+              const transcript = /<transcript>\n([\s\S]*)\n<\/transcript>/.exec(prompt)?.[1] ?? ""
+              const said = transcript.split("\n").flatMap((line) => line.startsWith("User: ") ? [line.slice(6)] : [])
+              return Effect.succeed(
+                [
+                  { type: "text", text: JSON.stringify({ summary: `The user said: ${said.join(" Then: ")}` }) },
+                  {
+                    type: "finish",
+                    reason: "stop",
+                    usage: { inputTokens: { uncached: 400, total: 400 }, outputTokens: { total: 40 } }
+                  }
+                ] satisfies Array<Response.PartEncoded>
+              )
+            }
+
+            // A turn's notes or a conversation's title, for the message quoted between the tags.
             const quoted = /<user_message>\n([\s\S]*)\n<\/user_message>/.exec(prompt)?.[1] ?? ""
             const notes = replies.get(quoted)?.notes
             const answer =

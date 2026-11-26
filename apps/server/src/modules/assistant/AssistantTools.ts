@@ -29,6 +29,7 @@ import { AgentRequests } from "../agents/AgentRequests.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Automations } from "../automations/Automations.ts"
 import { Intents } from "../intents/Intents.ts"
+import { AgentJournal } from "../journal/AgentJournal.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
 import { Stocks } from "../market/Stocks.ts"
@@ -143,6 +144,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
   const templates = yield* SavedTemplates
   const memories = yield* Memories
   const recall = yield* Recall
+  const journal = yield* AgentJournal
   const cards = yield* Cards
   const live = yield* LiveEvents
   const automations = yield* Automations
@@ -241,6 +243,9 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
       const sessions = yield* agents.sessions(caller, agentId)
       const page = yield* intents.list(caller, { agentId, pageSize: 10 })
       return { sessions, intents: page.items }
+    }, asProblem),
+    getAgentJournal: Effect.fn("AssistantTools.getAgentJournal")(function*({ agentId, limit }) {
+      return yield* journal.read(yield* Caller, agentId, { limit: limit ?? undefined })
     }, asProblem),
     explainDecision: Effect.fn("AssistantTools.explainDecision")(function*({ intentId }) {
       const intent = yield* intents.find(yield* Caller, intentId)

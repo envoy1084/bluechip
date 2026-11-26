@@ -39,7 +39,14 @@ const EMBED_RUN = 512
  * embeds it, which also re-embeds entries another model made.
  */
 export class RecallIndex extends Context.Service<RecallIndex, {
-  readonly index: (sources: ReadonlyArray<RecallSource>) => Effect.Effect<void>
+  /**
+   * Writes the sources' entries and embeds them; with `background`, the embedding runs on its own fiber, for writers
+   * on a path that mustn't wait for the embedder (an intent moving on).
+   */
+  readonly index: (
+    sources: ReadonlyArray<RecallSource>,
+    options?: { readonly background?: boolean | undefined }
+  ) => Effect.Effect<void>
   /**
    * Embeds entries without a vector of the current model (everyone's, the job; or one user's); returns how many it
    * embedded.
@@ -51,6 +58,7 @@ export class RecallIndex extends Context.Service<RecallIndex, {
     Effect.gen(function*() {
       const db = yield* Database
       const embeddings = yield* Embeddings
+      const scope = yield* Effect.scope
 
       // Embeds rows by id, keeping only vectors for text that didn't change meanwhile.
       const embed = Effect.fnUntraced(function*(rows: ReadonlyArray<{ readonly id: string; readonly text: string }>) {
@@ -69,7 +77,10 @@ export class RecallIndex extends Context.Service<RecallIndex, {
         return rows.length
       })
 
-      const index = Effect.fn("RecallIndex.index")(function*(sources: ReadonlyArray<RecallSource>) {
+      const index = Effect.fn("RecallIndex.index")(function*(
+        sources: ReadonlyArray<RecallSource>,
+        options: { readonly background?: boolean | undefined } = {}
+      ) {
         const written: Array<{ readonly id: string; readonly text: string }> = []
         for (const source of sources) {
           const text = source.text.trim()
@@ -96,9 +107,11 @@ export class RecallIndex extends Context.Service<RecallIndex, {
           written.push(row!)
         }
 
-        yield* embed(written).pipe(
+        const embedded = embed(written).pipe(
           Effect.catchTag("AiError", (error) => Effect.logWarning("Embedding recall entries failed", error))
         )
+        if (options.background === true) yield* Effect.forkIn(embedded, scope)
+        else yield* embedded
       })
 
       const embedPending = Effect.fn("RecallIndex.embedPending")(function*(

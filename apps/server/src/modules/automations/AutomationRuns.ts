@@ -2,12 +2,15 @@ import type { JudgmentAnswer, JudgmentPreset } from "@bluechip/domain/automation
 import type { ConditionRecord, RunOutcome, TriggerData } from "@bluechip/domain/automations/Run"
 import { AutomationRun, Judgment } from "@bluechip/domain/automations/Run"
 import {
+  type AgentId,
   type AutomationId,
   type AutomationRunId,
   IntentId,
   type JudgmentId,
-  type NewsItemId
+  type NewsItemId,
+  type UserId
 } from "@bluechip/domain/Ids"
+import { journalOfJudgment, journalOfRun } from "@bluechip/domain/journal/Journal"
 import { and, desc, eq, inArray } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -15,7 +18,8 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
-import { automationRuns, judgments } from "./tables.ts"
+import { AgentJournal } from "../journal/AgentJournal.ts"
+import { automationRuns, automations, judgments } from "./tables.ts"
 
 export type RunRow = typeof automationRuns.$inferSelect
 
@@ -50,7 +54,7 @@ const LATEST_RUNS = 20
 /**
  * Each fire of an automation, once per window: started when its trigger fires (`start` returns the run already made
  * for that window), then ended with its conditions' results, its outcome and the intents it proposed; and the
- * judgments a model answered on the way.
+ * judgments a model answered on the way. An agent's runs and judgments go into its journal.
  */
 export class AutomationRuns extends Context.Service<AutomationRuns, {
   /** The run for this window, made now (`created`) or earlier. */
@@ -87,6 +91,19 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
     AutomationRuns,
     Effect.gen(function*() {
       const db = yield* Database
+      const journal = yield* AgentJournal
+
+      // The agent's automation a run belongs to, when it trades for an agent.
+      const agentAutomationOf = Effect.fnUntraced(function*(runId: string) {
+        const [found] = yield* db.select({
+          automationId: automations.id,
+          name: automations.name,
+          agentId: automations.agentId,
+          userId: automations.userId
+        }).from(automationRuns).innerJoin(automations, eq(automations.id, automationRuns.automationId))
+          .where(eq(automationRuns.id, runId as `run_${string}`)).pipe(Effect.orDie)
+        return found?.agentId === null ? undefined : found
+      })
 
       const start = Effect.fn("AutomationRuns.start")(function*(input: {
         readonly automationId: string
@@ -133,6 +150,17 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
           conditions: result.conditions,
           intentIds: [...result.intentIds]
         }).where(eq(automationRuns.id, id as `run_${string}`)).returning().pipe(Effect.orDie)
+
+        const automation = yield* agentAutomationOf(id)
+        if (automation !== undefined) {
+          yield* journal.write({
+            userId: automation.userId as UserId,
+            agentId: automation.agentId as AgentId,
+            kind: "automation",
+            entry: journalOfRun({ automationName: automation.name, outcome: result.outcome, reason: result.reason }),
+            refs: { automationId: automation.automationId as AutomationId, runId: id as AutomationRunId }
+          })
+        }
         return row!
       })
 
@@ -155,6 +183,25 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
           answer: input.answer,
           at: yield* DateTime.now
         }).pipe(Effect.orDie)
+
+        const automation = yield* agentAutomationOf(input.runId)
+        if (automation !== undefined) {
+          yield* journal.write({
+            userId: automation.userId as UserId,
+            agentId: automation.agentId as AgentId,
+            kind: "judgment",
+            entry: journalOfJudgment({
+              automationName: automation.name,
+              headline: input.headline,
+              answer: input.answer
+            }),
+            refs: {
+              automationId: automation.automationId as AutomationId,
+              runId: input.runId as AutomationRunId,
+              judgmentId: id as JudgmentId
+            }
+          })
+        }
         return id as JudgmentId
       })
 

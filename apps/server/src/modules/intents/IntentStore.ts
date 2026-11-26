@@ -1,3 +1,4 @@
+import { stocks } from "@bluechip/chain/Contracts"
 import { Conflict, NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, IntentId, TradeId, UserId } from "@bluechip/domain/Ids"
@@ -10,6 +11,8 @@ import {
   type Leg,
   transition
 } from "@bluechip/domain/intents/Intent"
+import { journalOfIntent } from "@bluechip/domain/journal/Journal"
+import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { and, desc, eq, inArray, isNotNull, lt, or } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -21,8 +24,11 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
+import { AgentJournal } from "../journal/AgentJournal.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { intents } from "./tables.ts"
+
+const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
 export type IntentRow = typeof intents.$inferSelect
 
@@ -114,6 +120,7 @@ export class IntentStore extends Context.Service<IntentStore, {
       const db = yield* Database
       const live = yield* LiveEvents
       const audit = yield* AuditLog
+      const journal = yield* AgentJournal
 
       const find = Effect.fn("IntentStore.find")(function*(id: string) {
         const [row] = yield* db.select().from(intents).where(eq(intents.id, id as `intent_${string}`)).pipe(
@@ -206,7 +213,19 @@ export class IntentStore extends Context.Service<IntentStore, {
             .set({ ...changes, ...decision, status: next.success, updatedAt: yield* DateTime.now })
             .where(eq(intents.id, row.id)).returning().pipe(Effect.orDie)
 
-          yield* live.publish(LiveEvent.cases.IntentChanged.make({ intent: toIntent(updated!) }), row.userId as UserId)
+          // The agent's journal first, so whoever hears of the change can read it there.
+          const intent = toIntent(updated!)
+          const entry = intent.agentId === null ? undefined : journalOfIntent(intent, nameOf)
+          if (entry !== undefined) {
+            yield* journal.write({
+              userId: row.userId as UserId,
+              agentId: intent.agentId!,
+              kind: "intent",
+              entry,
+              refs: { intentId: intent.id }
+            })
+          }
+          yield* live.publish(LiveEvent.cases.IntentChanged.make({ intent }), row.userId as UserId)
           // Who moved it: you sign, decline and cancel (pausing or removing an agent cancels its intents); the agent's
           // key sends; the rest is bluechip deciding and following.
           const byOwner = event._tag === "Signed" || event._tag === "Declined" || event._tag === "Cancelled"
@@ -222,6 +241,7 @@ export class IntentStore extends Context.Service<IntentStore, {
               ? { decision: Schema.encodeSync(Schema.toCodecJson(Decision))(event.decision) }
               : {}
           })
+
           return updated!
         }
       )
