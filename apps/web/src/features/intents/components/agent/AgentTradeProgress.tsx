@@ -1,6 +1,7 @@
 import { describeLeg } from "@bluechip/domain/intents/Describe"
 import { type Intent, isEnded } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
+import { ChatCardState } from "@bluechip/ui/bluechip/chat-card"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
@@ -104,9 +105,16 @@ export function AgentTradeProgress(
     <div className="grid gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <b className="text-[15px] font-semibold tracking-[-0.01em]">{trade}</b>
-        <span className={cn("rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap", status.tone)}>
-          {status.label}
-        </span>
+        <ChatCardState>
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2 py-px text-[11.5px] font-semibold whitespace-nowrap",
+              status.tone
+            )}
+          >
+            {status.label}
+          </span>
+        </ChatCardState>
       </div>
 
       {deciding ?

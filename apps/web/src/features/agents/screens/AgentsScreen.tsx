@@ -8,27 +8,17 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtom, useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
-import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
-import { agentsAtAGlanceAtom } from "../atoms/agents.ts"
 import { agentMomentAtom } from "../atoms/moment.ts"
 import { AgentListCard } from "../components/list/AgentListCard.tsx"
 import { AgentListToolbar } from "../components/list/AgentListToolbar.tsx"
-import {
-  type AgentFilter,
-  type AgentSort,
-  filterCounts,
-  listedAgent,
-  matches,
-  shows,
-  sortAgents
-} from "../model/agentList.ts"
+import { useListedAgents } from "../hooks/useListedAgents.ts"
+import { type AgentFilter, type AgentSort, filterCounts, matches, shows, sortAgents } from "../model/agentList.ts"
 import { momentText } from "../model/agentMoment.ts"
-import { hasSession } from "../model/agentState.ts"
 
 const PLACEHOLDER_CARDS = ["a", "b", "c"]
 
@@ -92,21 +82,7 @@ function AgentList(
   const [sort, setSort] = useState<AgentSort>("recent")
   const { nameOf } = useStockLookup()
 
-  const reads = useAtomValue(agentsAtAGlanceAtom(agents.filter(hasSession).map((agent) => agent.id).join(" ")))
-  const readOf = new Map(reads.map((read) => [read.id, read]))
-  const listed = agents.map((agent) => {
-    const read = readOf.get(agent.id)
-    const lastTrade = read === undefined ?
-      null :
-      AsyncResult.isSuccess(read.lastTrade) ?
-      read.lastTrade.value.items[0] ?? null :
-      undefined
-    return listedAgent(agent, now, {
-      ...(read !== undefined && AsyncResult.isSuccess(read.usage) ? { usage: read.usage.value } : {}),
-      lastTradeAt: lastTrade === undefined || lastTrade === null ? lastTrade : DateTime.toDateUtc(lastTrade.updatedAt),
-      awaiting: awaiting.get(agent.id) ?? 0
-    })
-  })
+  const listed = useListedAgents(agents, awaiting, now)
 
   const shown = sortAgents(
     listed.filter((each) => shows(each, filter) && matches(each.agent, query, nameOf)),

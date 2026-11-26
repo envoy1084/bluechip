@@ -1,4 +1,5 @@
-import type { ComponentProps, ReactNode } from "react"
+import { type ComponentProps, createContext, type ReactNode, useContext, useState } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "../components/button.tsx"
 import { Icon, type IconName } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
@@ -25,13 +26,28 @@ export interface ChatCardProps extends Omit<ComponentProps<"section">, "children
   readonly footer?: ReactNode
 }
 
+// Where a card's header keeps its state: set inside a `ChatCard`, `undefined` outside one.
+const StateSlot = createContext<HTMLElement | null | undefined>(undefined)
+
+/**
+ * A state that belongs in the card's header, opposite its tag, when its content is drawn inside a `ChatCard` (a live
+ * trade that knows its own status); outside a card it stays where it is.
+ */
+export function ChatCardState({ children }: { readonly children: ReactNode }) {
+  const slot = useContext(StateSlot)
+  if (slot === undefined) return children
+  return slot === null ? null : createPortal(children, slot)
+}
+
 /**
  * A card the assistant shows in the conversation: a quiet tag and its state, the one fact that matters, then what you
- * can do about it.
+ * can do about it. Its content can put a live state in the header with `ChatCardState`.
  */
 export function ChatCard(
   { tag, icon, state, tone = "waiting", children, footer, className, ...props }: ChatCardProps
 ) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
+
   return (
     <section
       data-slot="chat-card"
@@ -56,8 +72,11 @@ export function ChatCard(
             {state}
           </span>
         )}
+        <span ref={setSlot} data-slot="chat-card-state-slot" className="contents" />
       </header>
-      <div className="grid gap-3 px-4 pt-2.5 pb-4">{children}</div>
+      <div className="grid gap-3 px-4 pt-2.5 pb-4">
+        <StateSlot value={slot}>{children}</StateSlot>
+      </div>
       {footer === undefined ?
         null :
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-g-100 px-4 py-3">{footer}</div>}

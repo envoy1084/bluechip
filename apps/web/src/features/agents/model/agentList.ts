@@ -132,3 +132,26 @@ export const sortAgents = (listed: ReadonlyArray<ListedAgent>, sort: AgentSort):
       }
     }
   })
+
+const FEATURED_RANK: Readonly<Record<ListedAgent["state"], number>> = {
+  "needs-approval": 0,
+  active: 1,
+  stopped: 1,
+  sending: 2,
+  paused: 3,
+  unlocked: 4,
+  expired: 5,
+  removed: 6
+}
+
+/**
+ * The agents a glance shows, `count` at most: those waiting for you first, then the ones trading (latest trade
+ * first), on their way to Base, paused, drafts, and those that ran out. Removed agents never show.
+ */
+export const featuredAgents = (listed: ReadonlyArray<ListedAgent>, count: number): ReadonlyArray<ListedAgent> =>
+  listed
+    .filter((each) => each.state !== "removed")
+    .toSorted((a, b) =>
+      FEATURED_RANK[a.state] - FEATURED_RANK[b.state] || lastActive(b) - lastActive(a) || byName(a, b)
+    )
+    .slice(0, count)

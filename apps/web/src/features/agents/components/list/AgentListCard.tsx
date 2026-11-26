@@ -18,7 +18,8 @@ const FILL = {
   full: "bg-[linear-gradient(180deg,#ef5a3a,var(--color-loss))]"
 } as const
 
-function GlanceLine({ glance }: Readonly<{ glance: Glance }>) {
+/** Today's budget as a meter with its words, or the line its state says. */
+export function GlanceLine({ glance }: Readonly<{ glance: Glance }>) {
   if (glance._tag === "line") {
     return (
       <span

@@ -1,18 +1,42 @@
+import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
-import { buy, giveShares, withdraw } from "../utils/trading.ts"
+import { createAgent } from "../utils/agents.ts"
+import { askToBuy, tradeCard } from "../utils/intents.ts"
+import { giveShares } from "../utils/trading.ts"
+
+const gettingStarted = (page: Page) => page.getByRole("region", { name: /^(Welcome to bluechip|Getting started)$/ })
 
 test.describe("home", () => {
-  test("a new person is greeted and asked to add cash", async ({ page, user: _user }) => {
+  test("a new person is greeted, welcomed with the first steps and asked to add cash", async ({ page, user: _user }) => {
     await expect(page.getByRole("heading", { level: 2, name: /^Good (morning|afternoon|evening)$/ })).toBeVisible()
     await expect(
       page.getByText(new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }))
     )
       .toBeVisible()
     await expect(page.getByRole("region", { name: "Your money" })).toBeHidden()
+    const welcome = page.getByRole("region", { name: "Welcome to bluechip" })
+    await expect(welcome.getByRole("progressbar", { name: "Steps done" })).toHaveAttribute(
+      "aria-valuetext",
+      "0 of 5 done"
+    )
+    await expect(welcome.getByText("Send USDC on Base. It's yours to invest or take out at any time.")).toBeVisible()
 
-    await page.getByRole("main").getByRole("button", { name: "Add cash" }).click()
+    await welcome.getByRole("button", { name: "Add cash" }).click()
 
     await expect(page.getByRole("dialog", { name: "Add cash" })).toBeVisible()
+  })
+
+  test("a new person can ask the assistant from the welcome", async ({ page, user: _user }) => {
+    await page.getByRole("region", { name: "Welcome to bluechip" }).getByRole("link", { name: "Ask the assistant" })
+      .click()
+
+    await expect(page).toHaveURL(/\/chat$/)
+    await expect(page.getByRole("heading", { name: "New chat", level: 1 })).toBeVisible()
+  })
+
+  test("home has no chat or activity of its own", async ({ page, user: _user }) => {
+    await expect(page.getByRole("textbox", { name: "Message bluechip" })).toBeHidden()
+    await expect(page.getByRole("region", { name: "Latest activity" })).toBeHidden()
   })
 
   test("your money shows the total, all of it in cash, with Add cash", async ({ page, funded: _funded }) => {
@@ -20,9 +44,50 @@ test.describe("home", () => {
 
     const money = page.getByRole("region", { name: "Your money" })
     await expect(money).toContainText("$1,000.00")
-    await expect(money.getByRole("img")).toHaveAccessibleName("Cash 100%")
+    await expect(money.getByRole("img", { name: "Cash 100%" })).toBeVisible()
     await expect(money).toContainText("$1,000.00 in cash to invest")
     await expect(money.getByRole("button", { name: "Add cash" })).toBeVisible()
+  })
+
+  test("with cash in, getting started ticks it and offers a first agent", async ({ page, funded: _funded }) => {
+    await page.reload()
+
+    const steps = gettingStarted(page)
+    await expect(steps.getByRole("heading", { name: "Getting started" })).toBeVisible()
+    await expect(steps.getByRole("progressbar", { name: "Steps done" })).toHaveAttribute(
+      "aria-valuetext",
+      "1 of 5 done"
+    )
+    await steps.getByRole("link", { name: "New agent" }).click()
+
+    await expect(page).toHaveURL(/\/agents\/new$/)
+  })
+
+  test("your agents show on home and lead to theirs", async ({ page, funded: _funded }) => {
+    const { id } = await createAgent(page, { name: "Home agent" })
+    await page.getByRole("link", { name: "Home" }).click()
+
+    await page.getByRole("region", { name: "Your agents" }).getByRole("link", { name: /^Home agent/ }).click()
+
+    await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
+  })
+
+  test("a trade waiting for you needs you, and Review opens the approvals", async ({ page, funded: _funded }) => {
+    await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
+    await askToBuy(page, 150)
+    await expect(tradeCard(page).getByText("Needs your approval", { exact: true })).toBeVisible()
+    await page.goto("/home")
+
+    const needs = page.getByRole("region", { name: "Needs you" })
+    await expect(needs.getByText("A trade waits for your Face ID")).toBeVisible()
+    await needs.getByRole("button", { name: "Review" }).click()
+
+    await expect(page.getByRole("dialog", { name: "Approvals" })).toBeVisible()
+  })
+
+  test("nothing needs a new person", async ({ page, user: _user }) => {
+    await expect(page.getByRole("region", { name: "Your agents" })).toBeHidden()
+    await expect(page.getByRole("region", { name: "Needs you" })).toBeHidden()
   })
 
   // fixme: pins $100 prices; the stack now runs at the devnet's captured prices (backlog W8)
@@ -35,50 +100,5 @@ test.describe("home", () => {
     await expect(page.getByRole("region", { name: "Your money" })).toContainText("$1,400.00")
     await expect(page.getByRole("main")).toContainText("+$8.00")
     await expect(page.getByRole("main")).toContainText("+0.57%")
-  })
-
-  test("the latest activity lists a withdrawal and leads to the rest", async ({ page, funded: _funded }) => {
-    await withdraw(page, 12, "0x000000000000000000000000000000000000dEaD")
-
-    await page.getByRole("link", { name: "Home" }).click()
-
-    const latest = page.getByRole("region", { name: "Latest activity" })
-    await expect(latest.getByText("Withdrew $12.00")).toBeVisible()
-    await expect(latest.getByText("To 0x0000…dEaD on Base")).toBeVisible()
-    await latest.getByRole("link", { name: "See all" }).click()
-    await expect(page.getByRole("heading", { name: "Activity", level: 1 })).toBeVisible()
-  })
-
-  test.fixme(
-    "the latest activity lists a buy (bug: on a holiday the chain runs days ahead of the server's clock, so every swap's deadline has passed)",
-    async ({ page, funded: _funded }) => {
-      await buy(page, "SPCX", 10)
-
-      await page.getByRole("link", { name: "Home" }).click()
-
-      const latest = page.getByRole("region", { name: "Latest activity" })
-      await expect(latest.getByText(/^Bought \$\d+\.\d{2} of SpaceX$/)).toBeVisible()
-      await expect(latest.getByText(/^\d+\.\d+ shares at \$\d+\.\d{2}$/)).toBeVisible()
-    }
-  )
-
-  test("home has no chat of its own", async ({ page, user: _user }) => {
-    await expect(page.getByRole("heading", { name: "Ask bluechip" })).toBeVisible()
-    await expect(page.getByRole("textbox", { name: "Message bluechip" })).toBeHidden()
-  })
-
-  test("a suggestion opens a new chat with it in the box, not sent", async ({ page, user: _user }) => {
-    await page.getByRole("link", { name: "How did I do this week?" }).click()
-
-    await expect(page).toHaveURL(/\/chat\?ask=/)
-    await expect(page.getByRole("textbox", { name: "Message bluechip" })).toHaveValue("How did I do this week?")
-    await expect(page.locator("[data-slot=\"chat-message\"]")).toHaveCount(0)
-  })
-
-  test("New chat opens the chat page", async ({ page, user: _user }) => {
-    await page.getByRole("region", { name: "Ask bluechip" }).getByRole("link", { name: "New chat" }).click()
-
-    await expect(page).toHaveURL(/\/chat$/)
-    await expect(page.getByRole("heading", { name: "New chat", level: 1 })).toBeVisible()
   })
 })

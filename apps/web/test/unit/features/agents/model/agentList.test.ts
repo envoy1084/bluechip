@@ -4,6 +4,7 @@ import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { assert, describe, it } from "@effect/vitest"
 import {
   type AgentFilter,
+  featuredAgents,
   filterCounts,
   listedAgent,
   matches,
@@ -160,5 +161,39 @@ describe("sortAgents", () => {
     ]
 
     assert.deepStrictEqual(sortAgents(tied, "spent").map((each) => each.agent.name), ["Alpha", "Beta"])
+  })
+})
+
+describe("featuredAgents", () => {
+  const ids = ["a", "b", "c", "d", "e", "f"].map((letter) => AgentId.make(`agent_01jd8v4t5m6n7a8q9r0s1t2v3${letter}`))
+  const trading = (id: number, name: string, lastTradeAt: string) =>
+    listedAgent(agent("active", { id: ids[id]!, name }), NOW, { lastTradeAt: new Date(lastTradeAt) })
+
+  it("waiting for you first, then trading by latest trade, then paused, drafts and those that ran out", () => {
+    const listed = [
+      listedAgent(agent("expired", { id: ids[0]!, name: "Ran out" }), NOW),
+      listedAgent(agent("draft", { id: ids[1]!, name: "Draft" }), NOW),
+      trading(2, "Older trade", "2026-11-24T10:00:00Z"),
+      listedAgent(agent("active", { id: ids[3]!, name: "Paused", paused: true }), NOW),
+      trading(4, "Newer trade", "2026-11-26T10:00:00Z"),
+      listedAgent(agent("active", { id: ids[5]!, name: "Asking" }), NOW, { awaiting: 1 })
+    ]
+
+    assert.deepStrictEqual(
+      featuredAgents(listed, 10).map((each) => each.agent.name),
+      ["Asking", "Newer trade", "Older trade", "Paused", "Draft", "Ran out"]
+    )
+  })
+
+  it("no more than the count", () => {
+    const listed = [trading(0, "One", "2026-11-26T10:00:00Z"), trading(1, "Two", "2026-11-25T10:00:00Z")]
+
+    assert.deepStrictEqual(featuredAgents(listed, 1).map((each) => each.agent.name), ["One"])
+  })
+
+  it("never a removed agent", () => {
+    const listed = [listedAgent(agent("removed", { id: ids[0]! }), NOW)]
+
+    assert.deepStrictEqual(featuredAgents(listed, 4), [])
   })
 })

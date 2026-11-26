@@ -1,6 +1,6 @@
-// An agent's results in words and shares, for its Results page: how often its policies held it back, and what its
-// trades cost against what they moved.
-import type { AgentPerformance, Costs } from "@bluechip/domain/performance/Performance"
+// An agent's results in words and numbers: how often its policies held it back, what its trades cost against what
+// they moved, and what it made this week.
+import type { AgentPerformance, Costs, PnlPoint } from "@bluechip/domain/performance/Performance"
 import type { PolicyId } from "@bluechip/domain/policies/AgentSpec"
 
 const times = (count: number) => (count === 1 ? "once" : count === 2 ? "twice" : `${count} times`)
@@ -31,4 +31,20 @@ export const costShare = (
   const dollars = performance.costs.fees + performance.costs.slippage
   const moved = performance.bought + performance.sold
   return { dollars, percent: moved === BigInt(0) ? null : (Number(dollars) / Number(moved)) * 100 }
+}
+
+/**
+ * What it made or lost over the last 7 days, from its daily series (oldest first): its total today less its total a
+ * week ago, or all of it when it started within the week. `null` before it has any.
+ */
+export const weekContribution = (
+  series: ReadonlyArray<Pick<PnlPoint, "day" | "total">>,
+  now: Date
+): bigint | null => {
+  const latest = series.at(-1)
+  if (latest === undefined) return null
+
+  const weekAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10)
+  const before = series.findLast((point) => point.day <= weekAgo)
+  return latest.total - (before?.total ?? BigInt(0))
 }

@@ -1,101 +1,105 @@
-import { usdcTransferRequest } from "@bluechip/chain/funding/PaymentRequest"
-import { DepositCard } from "@bluechip/ui/bluechip/deposit-card"
-import { Button, ButtonLink } from "@bluechip/ui/components/button"
-import { Icon } from "@bluechip/ui/icons/icon"
-import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
-import { Link } from "@tanstack/react-router"
+import type { Automation } from "@bluechip/domain/automations/Automation"
+import type { Intent } from "@bluechip/domain/intents/Intent"
+import { PortfolioSummarySkeleton } from "@bluechip/ui/bluechip/portfolio-summary"
+import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
 import { meAtom } from "../../../atoms/account.ts"
-import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
+import { agentsAtom } from "../../../atoms/agents.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
+import { accountRecoveryAtom } from "../../../atoms/recovery.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
-import { MarketPill } from "../../../components/MarketPill.tsx"
-import { MoneySummary } from "../../../components/MoneySummary.tsx"
-import { network } from "../../../lib/wallet.ts"
+import { useNow } from "../../../hooks/useNow.ts"
+import { useStockLookup } from "../../../hooks/useStockLookup.ts"
+import { localTimeZone } from "../../../lib/localTime.ts"
+import { ComingUpCard } from "../components/ComingUpCard.tsx"
+import { GettingStarted } from "../components/GettingStarted.tsx"
+import { Headline } from "../components/Headline.tsx"
+import { MoneyCard } from "../components/MoneyCard.tsx"
+import { MoversCard } from "../components/MoversCard.tsx"
+import { NeedsYou } from "../components/NeedsYou.tsx"
+import { useSetup } from "../hooks/useSetup.ts"
+import { comingUp } from "../model/comingUp.ts"
+import { movers } from "../model/holdings.ts"
+import { type AutomationAttention, needsYou } from "../model/needsYou.ts"
 
-// The visitor's own day and time of day.
-const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
-
-const greeting = () => {
-  const hour = new Date().getHours()
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
+/** An automation as home reads it, from the automations feature: what's next for it, and whether it needs a look. */
+export interface HomeAutomation extends AutomationAttention {
+  readonly automation: Pick<Automation, "id" | "name" | "status" | "nextRunAt" | "agentId" | "trigger">
 }
 
-const SUGGESTIONS = ["What did my agents do today?", "How did I do this week?", "Create an agent that only rebalances"]
+const NOTHING: ReadonlyArray<never> = []
+
+function valueOr<A>(result: AsyncResult.AsyncResult<ReadonlyArray<A>, unknown>): ReadonlyArray<A> {
+  return AsyncResult.isSuccess(result) ? result.value : NOTHING
+}
 
 /**
- * The day's greeting, your money (or the way to add cash when there is none), the way to ask bluechip, and the
- * latest activity. `approvals` is the approvals bell, from the intents feature; `latest` the latest activity.
+ * Home, shaped by where you are: the day and the market, then your money (or a welcome when there's none yet), what
+ * needs you, the first steps while you're getting started, your agents, and what's coming up and moving today.
+ * Sections with nothing to say stay out. From the route: the approvals bell (`bell`) and the way to open the approvals
+ * (`onReviewApprovals`), the trades waiting for you, your automations with what needs a look, and the agents' tiles.
  */
-export function HomeScreen({ approvals, latest }: Readonly<{ approvals: ReactNode; latest: ReactNode }>) {
+export function HomeScreen(
+  { bell, approvals, automations, agents: agentTiles, onReviewApprovals }: Readonly<{
+    bell: ReactNode
+    approvals: AsyncResult.AsyncResult<ReadonlyArray<Pick<Intent, "agentId" | "expiresAt">>, unknown>
+    automations: AsyncResult.AsyncResult<ReadonlyArray<HomeAutomation>, unknown>
+    agents: ReactNode
+    onReviewApprovals: () => void
+  }>
+) {
   const me = useAtomValue(meAtom)
   const portfolio = useAtomValue(portfolioAtom)
-  const openCash = useAtomSet(cashDialogAtom)
+  const agents = useAtomValue(agentsAtom)
+  const recovery = useAtomValue(accountRecoveryAtom)
+  const { nameOf } = useStockLookup()
+  const now = useNow(60_000)
+  const setup = useSetup(
+    AsyncResult.isSuccess(me) ? me.value.user : undefined,
+    AsyncResult.isSuccess(automations) ? automations.value.length > 0 : undefined,
+    now
+  )
   if (!AsyncResult.isSuccess(me)) return null
 
-  const { account, user } = me.value
-  const empty = AsyncResult.isSuccess(portfolio) && portfolio.value.value === BigInt(0)
+  const welcome = setup?.stage === "welcome"
+  const settled = setup?.stage === "settled"
+  const emptyMoney = AsyncResult.isSuccess(portfolio) && portfolio.value.value === BigInt(0)
+  const listed = valueOr(automations)
+  const needs = needsYou(
+    {
+      approvals: valueOr(approvals),
+      agents: valueOr(agents),
+      automations: listed,
+      recovery: AsyncResult.isSuccess(recovery) ? recovery.value : null,
+      cash: AsyncResult.isSuccess(portfolio) ? portfolio.value.cash : null,
+      settled
+    },
+    now,
+    localTimeZone()
+  )
+  const holdings = AsyncResult.isSuccess(portfolio) ? portfolio.value.holdings : NOTHING
 
   return (
-    <AppPage
-      title="Home"
-      actions={
-        <>
-          <MarketPill className="hidden sm:inline-flex" />
-          {approvals}
-        </>
-      }
-    >
-      <div className="grid gap-0.5">
-        <span className="text-label-sm font-medium text-g-500">
-          {today()}
-        </span>
-        <h2 className="text-[26px] font-semibold tracking-[-0.035em]">
-          {user.displayName === null ? greeting() : `${greeting()}, ${user.displayName}`}
-        </h2>
+    <AppPage title="Home" actions={bell}>
+      <Headline displayName={me.value.user.displayName} now={now} />
+
+      {welcome ?
+        <GettingStarted steps={setup.steps} welcome /> :
+        emptyMoney && !AsyncResult.isSuccess(agents) ?
+        <PortfolioSummarySkeleton /> :
+        <MoneyCard />}
+
+      <NeedsYou needs={needs} onReviewApprovals={onReviewApprovals} />
+
+      {setup?.stage === "starting" ? <GettingStarted steps={setup.steps} welcome={false} /> : null}
+
+      {welcome ? null : agentTiles}
+
+      <div className="grid gap-[18px] empty:hidden md:grid-cols-2 [&>*:only-child]:col-span-full">
+        <ComingUpCard comingUp={comingUp(listed.map((each) => each.automation), valueOr(agents), now)} now={now} />
+        <MoversCard movers={movers(holdings)} held={holdings.length} nameOf={nameOf} />
       </div>
-
-      {empty ? null : <MoneySummary />}
-
-      {empty && (
-        <DepositCard
-          address={account.address}
-          paymentRequest={usdcTransferRequest({ network, recipient: account.address as `0x${string}` })}
-          title="Add cash"
-          description="Send USDC on Base to this address. It appears in your balance once it arrives."
-          footer={
-            <Button size="sm" onClick={() => openCash("add")}>
-              <Icon name="plus" size={14} />Add cash
-            </Button>
-          }
-        />
-      )}
-
-      <section aria-labelledby="ask-bluechip" className="grid gap-2.5 rounded-lg bg-white px-5 py-[18px] shadow-e2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="ask-bluechip" className="text-body-sm font-semibold">Ask bluechip</h2>
-          <ButtonLink size="sm" render={<Link to="/chat/{-$conversationId}" params={{ conversationId: undefined }} />}>
-            <Icon name="chat" size={14} />New chat
-          </ButtonLink>
-        </div>
-        <ul className="flex flex-wrap gap-1.5">
-          {SUGGESTIONS.map((suggestion) => (
-            <li key={suggestion}>
-              <Link
-                to="/chat/{-$conversationId}"
-                params={{ conversationId: undefined }}
-                search={{ ask: suggestion }}
-                className="inline-flex rounded-full bg-g-50 px-[11px] py-1.5 text-label-sm font-medium text-g-700 shadow-[0_0_0_1px_rgba(10,11,13,.08)] transition-[box-shadow,color] duration-fast ease-brand hover:text-ink hover:shadow-[0_0_0_1px_rgba(42,91,255,.3)]"
-              >
-                {suggestion}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {latest}
     </AppPage>
   )
 }
