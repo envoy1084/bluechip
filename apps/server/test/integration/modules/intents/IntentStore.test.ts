@@ -1,4 +1,5 @@
 import { DevChain } from "@bluechip/chain/DevChain"
+import { Conflict } from "@bluechip/domain/Errors"
 import { RequestId } from "@bluechip/domain/Ids"
 import { Intent } from "@bluechip/domain/intents/Intent"
 import { assert, describe, layer } from "@effect/vitest"
@@ -35,6 +36,39 @@ layer(TestAgents.layer, { excludeTestServices: true })("IntentStore", (it) => {
         const approvals = yield* user.api.intents.approvals()
 
         assert.deepStrictEqual([intent.status, approvals], ["expired", []])
+      }))
+
+    it.effect("409: an approval that expired while you were signing it isn't sent", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const created = yield* user.api.intents.create({
+          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("NVDA", 150) }
+        })
+        assert.instanceOf(created, Intent)
+        const { intent: open } = yield* user.events.next(
+          "IntentChanged",
+          ({ intent }) => intent.id === created.id && intent.status === "needsApproval"
+        )
+        const request = yield* user.api.intents.approve({
+          params: { id: created.id },
+          payload: { requestId: RequestId.make(randomUUID()) }
+        })
+
+        yield* Effect.gen(function*() {
+          yield* TestClock.setTime(DateTime.toEpochMillis(open.expiresAt!) + 1)
+          yield* (yield* IntentStore).expire({ userId: me.id })
+        }).pipe(Effect.provide(TestClock.layer()))
+        const error = yield* Effect.flip(user.api.intents.confirm({
+          params: { id: request.id },
+          payload: { credential: user.authenticator.authenticate(request.options) }
+        }))
+        const intent = yield* user.api.intents.intent({ params: { id: created.id } })
+
+        assert.deepStrictEqual(
+          [{ ...error }, intent.status, intent.tradeId],
+          [{ ...new Conflict({ reason: "intentClosed" }) }, "expired", null]
+        )
       }))
 
     it.effect("an approval still within its 6 hours stays open", () =>

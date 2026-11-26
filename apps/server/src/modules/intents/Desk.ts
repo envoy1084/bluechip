@@ -1,5 +1,5 @@
 import { refusalFrom } from "@bluechip/chain/policies/Refusals"
-import { NotFound, SignatureRejected, Unavailable } from "@bluechip/domain/Errors"
+import { Conflict, NotFound, SignatureRejected, Unavailable } from "@bluechip/domain/Errors"
 import type { Address, SigningRequestId, UserId } from "@bluechip/domain/Ids"
 import { isEnded } from "@bluechip/domain/intents/Intent"
 import { Trade } from "@bluechip/domain/trading/Trade"
@@ -49,7 +49,7 @@ export const AccountDesk = Entity.make("AccountDesk", [
       credential: AuthenticationCredential
     },
     success: Trade,
-    error: Schema.Union([NotFound, SignatureRejected, Unavailable])
+    error: Schema.Union([NotFound, Conflict, SignatureRejected, Unavailable])
   })
 ])
 

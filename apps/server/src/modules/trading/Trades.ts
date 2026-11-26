@@ -2,7 +2,7 @@ import { ChainClient } from "@bluechip/chain/ChainClient"
 import { stocks } from "@bluechip/chain/Contracts"
 import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
 import {
-  type Conflict,
+  Conflict,
   InsufficientCash,
   InsufficientShares,
   type NotFound,
@@ -87,11 +87,15 @@ export class Trades extends Context.Service<Trades, {
     | Conflict
     | Unavailable
   >
+  /**
+   * Sends a trade signed with your passkey. One prepared for an intent that has moved on while you signed (an
+   * approval that expired or was declined, or its agent paused) is refused with `Conflict`, never sent.
+   */
   readonly confirm: (
     owner: Owner,
     id: SigningRequestId,
     credential: typeof AuthenticationCredential.Type
-  ) => Effect.Effect<Trade, NotFound | SignatureRejected | Unavailable>
+  ) => Effect.Effect<Trade, NotFound | Conflict | SignatureRejected | Unavailable>
 }>()("@bluechip/server/Trades") {
   static readonly layer = Layer.effect(
     Trades,
@@ -246,6 +250,10 @@ export class Trades extends Context.Service<Trades, {
         const { passkey, request } = yield* signing.claim(owner, id, "trade", credential)
         const payload = request.payload
         const quote = Schema.decodeSync(quoteCodec)(payload["quote"]!)
+        const waiting = yield* intents.find(payload["intentId"]!)
+        if (waiting !== undefined && waiting.status !== "awaitingSignature") {
+          return yield* new Conflict({ reason: "intentClosed" })
+        }
         const userOpHash = yield* operations.send(passkey, request.userOperation, credential)
 
         const row = yield* ledger.record({
@@ -267,6 +275,7 @@ export class Trades extends Context.Service<Trades, {
           createdAt: yield* DateTime.now
         })
 
+        // Read again: the send takes a moment, and an expiry or a decline may have landed meanwhile.
         const intent = yield* intents.find(payload["intentId"]!)
         if (intent !== undefined) {
           yield* intents.advance(intent, { _tag: "Signed" }, { userOpHash, tradeId: row.id }).pipe(
