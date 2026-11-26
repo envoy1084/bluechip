@@ -41,7 +41,7 @@ export const LIMIT_FIELDS: ReadonlyArray<LimitFieldSpec> = [
   {
     field: "dailySpend",
     label: "Daily spend",
-    help: "The most it can spend in a day. Resets at midnight New York time.",
+    help: "The most it can spend in a day. Resets at midnight UTC.",
     min: 0,
     max: 2000,
     step: 10,

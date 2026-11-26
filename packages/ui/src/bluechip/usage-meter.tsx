@@ -33,7 +33,7 @@ export interface UsageMeterProps extends Omit<ComponentProps<"div">, "children">
 
 /** How much of today's spending limit an agent has used, with what's left and when it resets. Amounts roll. */
 export function UsageMeter(
-  { used, limit, label = "Spent today", resetsAt = "midnight New York time", className, ...props }: UsageMeterProps
+  { used, limit, label = "Spent today", resetsAt = "midnight UTC", className, ...props }: UsageMeterProps
 ) {
   const level = usageLevel(used, limit)
   const percent = limit > 0 ? Math.min(100, (used / limit) * 100) : 100

@@ -25,9 +25,9 @@ export const AGENT_STATES: Readonly<Record<AgentState, AgentStateInfo>> = {
     dot: "waiting"
   },
   stopped: {
-    label: "Stopped by limit",
-    description: "It used today's limit. It starts again at midnight New York time.",
-    dot: "stopped"
+    label: "Done for today",
+    description: "It used one of today's limits. It starts again at midnight UTC.",
+    dot: "idle"
   },
   expired: {
     label: "Expired",
@@ -41,7 +41,7 @@ const STATE_ICON: Readonly<Record<AgentState, IconName | undefined>> = {
   active: undefined,
   paused: "pause",
   "needs-approval": "hand",
-  stopped: "stop-sign",
+  stopped: "clock",
   expired: "hourglass",
   removed: "trash"
 }
@@ -54,7 +54,7 @@ export const agentStatusVariants = cva(
         active: "bg-gain-wash text-gain shadow-[inset_0_0_0_1px_var(--color-gain-line)]",
         paused: "bg-warn-wash text-warn shadow-[inset_0_0_0_1px_var(--color-warn-line)]",
         "needs-approval": "bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]",
-        stopped: "bg-loss-wash text-loss shadow-[inset_0_0_0_1px_var(--color-loss-line)]",
+        stopped: "bg-g-50 text-g-700 shadow-[inset_0_0_0_1px_var(--color-g-200)]",
         expired: "bg-g-50 text-g-600 shadow-[inset_0_0_0_1px_var(--color-g-200)]",
         removed: "bg-g-50 text-g-600 line-through shadow-[inset_0_0_0_1px_var(--color-g-200)]"
       }

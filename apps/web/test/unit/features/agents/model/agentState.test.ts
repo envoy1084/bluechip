@@ -1,6 +1,6 @@
 import { type Agent, AgentUsage, PolicyUsage } from "@bluechip/domain/agents/Agent"
 import { assert, describe, it } from "@effect/vitest"
-import { agentDot, agentState, hasSession } from "../../../../../src/features/agents/model/agentState.ts"
+import { agentDot, agentState, hasSession, limitLine } from "../../../../../src/features/agents/model/agentState.ts"
 import { agent } from "../../../../fixtures/Agents.ts"
 
 const NOW = new Date("2026-11-26T12:00:00Z")
@@ -89,9 +89,37 @@ describe("agentDot", () => {
     { state: "sending", expected: "waiting" },
     { state: "active", expected: "active" },
     { state: "paused", expected: "paused" },
-    { state: "stopped", expected: "stopped" },
+    { state: "stopped", expected: "idle" },
     { state: "expired", expected: "idle" }
   ])("$state: $expected", ({ expected, state }) => {
     assert.strictEqual(agentDot(state), expected)
+  })
+})
+
+// The project runs in UTC (vitest.config.ts), so the viewer's midnight is midnight UTC here.
+describe("limitLine", () => {
+  it.each<{ name: string; policy: PolicyUsage; expected: string | null }>([
+    {
+      name: "today's budget used up",
+      policy: new PolicyUsage({ policy: "trade", unit: "usd", used: 100_000_000n, limit: 100_000_000n }),
+      expected: "Used today's $100 budget. Starts again at 00:00 your time, midnight UTC."
+    },
+    {
+      name: "every trade of the day made",
+      policy: new PolicyUsage({ policy: "tradesPerDay", unit: "count", used: 12n, limit: 12n }),
+      expected: "Made all 12 of today's trades. Starts again at 00:00 your time, midnight UTC."
+    },
+    {
+      name: "today's gas used up",
+      policy: new PolicyUsage({ policy: "gasBudget", unit: "wei", used: 5n, limit: 5n }),
+      expected: "Used today's gas budget. Starts again at 00:00 your time, midnight UTC."
+    },
+    {
+      name: "just under every limit",
+      policy: new PolicyUsage({ policy: "trade", unit: "usd", used: 99_999_999n, limit: 100_000_000n }),
+      expected: null
+    }
+  ])("$name", ({ expected, policy }) => {
+    assert.strictEqual(limitLine(new AgentUsage({ policies: [policy] }), NOW), expected)
   })
 })

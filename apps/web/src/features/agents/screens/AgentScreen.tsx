@@ -15,7 +15,7 @@ import { AgentAlerts } from "../components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "../components/detail/AgentHeader.tsx"
 import { RemoveConfirm } from "../components/detail/RemoveConfirm.tsx"
 import { useRemoveAgent } from "../hooks/useRemoveAgent.ts"
-import { agentState, hasSession } from "../model/agentState.ts"
+import { agentState, hasSession, limitLine } from "../model/agentState.ts"
 
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { AgentNotFound } from "../components/detail/AgentNotFound.tsx"
@@ -105,7 +105,12 @@ function AgentContent(
     >
       <div className="grid gap-4">
         <AgentAlerts agent={agent} now={now} />
-        <AgentHeader agent={agent} state={state} onRemove={() => setConfirming(true)} />
+        <AgentHeader
+          agent={agent}
+          state={state}
+          limit={usage !== undefined && AsyncResult.isSuccess(usage) ? limitLine(usage.value, now) : null}
+          onRemove={() => setConfirming(true)}
+        />
         {confirming && removable && removal.signing.status !== "sent" ?
           (
             <RemoveConfirm

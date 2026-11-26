@@ -23,9 +23,15 @@ const summary = (agent: Agent, templateLabel: string): string =>
       `locked until ${dayLabel(agent.lockedUntil)}`
   ].filter((part) => part !== null).join(", ")
 
-/** Who the agent is and what it's doing, with Pause and Remove. */
+/** Who the agent is and what it's doing (and, when done for today, why and until when), with Pause and Remove. */
 export function AgentHeader(
-  { agent, state, onRemove }: Readonly<{ agent: Agent; state: AgentDisplayState; onRemove: () => void }>
+  { agent, state, limit, onRemove }: Readonly<{
+    agent: Agent
+    state: AgentDisplayState
+    /** Why it's done for today and when it starts again, while a limit stops it. */
+    limit: string | null
+    onRemove: () => void
+  }>
 ) {
   const { busy, failed, pause } = usePauseAgent(agent)
   const templateLabel = useTemplateLabel(agent)
@@ -43,6 +49,7 @@ export function AgentHeader(
         </div>
         <span className="text-label-sm text-g-500">{summary(agent, templateLabel)}</span>
         {promise === null ? null : <span className="text-[13.5px] text-g-700">{promise}</span>}
+        {state === "stopped" && limit !== null ? <span className="text-label-sm text-g-600">{limit}</span> : null}
         {failed ? <p role="alert" className="text-label text-loss">We couldn't pause it just now. Try again.</p> : null}
       </div>
       {removed ? null : (

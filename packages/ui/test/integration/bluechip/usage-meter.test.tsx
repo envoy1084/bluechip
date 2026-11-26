@@ -52,7 +52,7 @@ describe("UsageMeter", () => {
 
   it("says when it resets once the limit is reached", async () => {
     const screen = await render(<UsageMeter used={200} limit={200} />)
-    expect(noteOf(screen.container)).toBe("Limit reached. Resets at midnight New York time.")
+    expect(noteOf(screen.container)).toBe("Limit reached. Resets at midnight UTC.")
   })
 
   it("says the reset time it's given", async () => {
