@@ -7,13 +7,13 @@ import { configOf, type Field } from "@bluechip/domain/policies/Policy"
 import type { Target } from "@bluechip/domain/policies/Rebalance"
 import { stockCap } from "@bluechip/domain/policies/StockCap"
 import { type Direction, trade } from "@bluechip/domain/policies/Trade"
+import { ChoiceField } from "../../../../../components/fields/ChoiceField.tsx"
+import { NumberField } from "../../../../../components/fields/NumberField.tsx"
+import { StockField } from "../../../../../components/fields/StockField.tsx"
+import { ToggleField } from "../../../../../components/fields/ToggleField.tsx"
 import { fieldText, toDollars } from "../../../model/fieldText.ts"
-import { ChoiceField } from "./ChoiceField.tsx"
 import { DirectionField } from "./DirectionField.tsx"
 import { MixField } from "./MixField.tsx"
-import { NumberField } from "./NumberField.tsx"
-import { StockField } from "./StockField.tsx"
-import { ToggleField } from "./ToggleField.tsx"
 
 /** What a field's editor may read besides its own value: the whole draft, the stocks bluechip lists. */
 export interface FieldContext {

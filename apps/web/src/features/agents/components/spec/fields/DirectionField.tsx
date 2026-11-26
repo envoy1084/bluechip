@@ -1,6 +1,6 @@
 import { Direction } from "@bluechip/domain/policies/Trade"
+import { ChoiceField } from "../../../../../components/fields/ChoiceField.tsx"
 import { DIRECTION_LABELS } from "../../../model/fieldText.ts"
-import { ChoiceField } from "./ChoiceField.tsx"
 
 const HELP: Readonly<Record<Direction, string>> = {
   both: "It may buy and sell the stocks you pick.",
