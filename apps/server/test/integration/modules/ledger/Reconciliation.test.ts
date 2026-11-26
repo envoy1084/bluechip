@@ -59,5 +59,31 @@ layer(TestUsers.layer, { excludeTestServices: true })("Reconciliation", (it) => 
         ])
         assert.isTrue(lots[0]!.cost > BigInt(0))
       }))
+
+    it.effect("a stock sent out of the account outside bluechip: what is left stays flagged, and an alert", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const reconciliation = yield* Reconciliation
+        const devnet = yield* Devnet
+        yield* reconciliation.check({ userId: user.id })
+        yield* devnet.mintShares(user.account, "MSFT", BigInt(300_000_000))
+        yield* reconciliation.check({ userId: user.id })
+
+        yield* devnet.sendSharesOut(user.account, "MSFT", BigInt(100_000_000))
+        yield* reconciliation.check({ userId: user.id })
+        const { notification } = yield* user.events.next(
+          "NotificationAdded",
+          ({ notification }) => notification.title.includes("left")
+        )
+        const lots = yield* (yield* Ledger).openLots(user.id, "MSFT")
+
+        assert.deepStrictEqual(
+          [notification.kind, notification.title, notification.link],
+          ["balanceUnexplained", "1 share of Microsoft left your account outside bluechip", "/portfolio"]
+        )
+        assert.deepStrictEqual(lots.map((lot) => [lot.symbol, lot.remaining, lot.flagged]), [
+          ["MSFT", BigInt(200_000_000), true]
+        ])
+      }))
   })
 })
