@@ -13,7 +13,11 @@ const SECTIONS: ReadonlyArray<{ readonly to: string; readonly label: string; rea
   { to: "/overlays", label: "Overlays", icon: "layers" },
   { to: "/navigation", label: "Navigation", icon: "menu" },
   { to: "/bluechip", label: "Money & activity", icon: "wallet" },
+  { to: "/trading", label: "Portfolio & trading", icon: "pie" },
   { to: "/agents", label: "Agents & chat", icon: "agent" },
+  { to: "/cards", label: "Chat cards", icon: "chat" },
+  { to: "/agent-builder", label: "Agent builder", icon: "shield" },
+  { to: "/end-states", label: "End states", icon: "check-circle" },
   { to: "/motion", label: "Motion", icon: "play" },
   { to: "/illustrations", label: "Illustrations", icon: "image" }
 ]

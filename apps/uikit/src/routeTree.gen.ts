@@ -10,19 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AgentBuilderRouteImport } from './routes/agent-builder'
 import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as BluechipRouteImport } from './routes/bluechip'
+import { Route as CardsRouteImport } from './routes/cards'
 import { Route as DisplayRouteImport } from './routes/display'
+import { Route as EndStatesRouteImport } from './routes/end-states'
 import { Route as FormsRouteImport } from './routes/forms'
 import { Route as FoundationsRouteImport } from './routes/foundations'
 import { Route as IllustrationsRouteImport } from './routes/illustrations'
 import { Route as MotionRouteImport } from './routes/motion'
 import { Route as NavigationRouteImport } from './routes/navigation'
 import { Route as OverlaysRouteImport } from './routes/overlays'
+import { Route as TradingRouteImport } from './routes/trading'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentBuilderRoute = AgentBuilderRouteImport.update({
+  id: '/agent-builder',
+  path: '/agent-builder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentsRoute = AgentsRouteImport.update({
@@ -35,9 +44,19 @@ const BluechipRoute = BluechipRouteImport.update({
   path: '/bluechip',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CardsRoute = CardsRouteImport.update({
+  id: '/cards',
+  path: '/cards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DisplayRoute = DisplayRouteImport.update({
   id: '/display',
   path: '/display',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EndStatesRoute = EndStatesRouteImport.update({
+  id: '/end-states',
+  path: '/end-states',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FormsRoute = FormsRouteImport.update({
@@ -70,94 +89,127 @@ const OverlaysRoute = OverlaysRouteImport.update({
   path: '/overlays',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TradingRoute = TradingRouteImport.update({
+  id: '/trading',
+  path: '/trading',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agent-builder': typeof AgentBuilderRoute
   '/agents': typeof AgentsRoute
   '/bluechip': typeof BluechipRoute
+  '/cards': typeof CardsRoute
   '/display': typeof DisplayRoute
+  '/end-states': typeof EndStatesRoute
   '/forms': typeof FormsRoute
   '/foundations': typeof FoundationsRoute
   '/illustrations': typeof IllustrationsRoute
   '/motion': typeof MotionRoute
   '/navigation': typeof NavigationRoute
   '/overlays': typeof OverlaysRoute
+  '/trading': typeof TradingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agent-builder': typeof AgentBuilderRoute
   '/agents': typeof AgentsRoute
   '/bluechip': typeof BluechipRoute
+  '/cards': typeof CardsRoute
   '/display': typeof DisplayRoute
+  '/end-states': typeof EndStatesRoute
   '/forms': typeof FormsRoute
   '/foundations': typeof FoundationsRoute
   '/illustrations': typeof IllustrationsRoute
   '/motion': typeof MotionRoute
   '/navigation': typeof NavigationRoute
   '/overlays': typeof OverlaysRoute
+  '/trading': typeof TradingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agent-builder': typeof AgentBuilderRoute
   '/agents': typeof AgentsRoute
   '/bluechip': typeof BluechipRoute
+  '/cards': typeof CardsRoute
   '/display': typeof DisplayRoute
+  '/end-states': typeof EndStatesRoute
   '/forms': typeof FormsRoute
   '/foundations': typeof FoundationsRoute
   '/illustrations': typeof IllustrationsRoute
   '/motion': typeof MotionRoute
   '/navigation': typeof NavigationRoute
   '/overlays': typeof OverlaysRoute
+  '/trading': typeof TradingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agent-builder'
     | '/agents'
     | '/bluechip'
+    | '/cards'
     | '/display'
+    | '/end-states'
     | '/forms'
     | '/foundations'
     | '/illustrations'
     | '/motion'
     | '/navigation'
     | '/overlays'
+    | '/trading'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agent-builder'
     | '/agents'
     | '/bluechip'
+    | '/cards'
     | '/display'
+    | '/end-states'
     | '/forms'
     | '/foundations'
     | '/illustrations'
     | '/motion'
     | '/navigation'
     | '/overlays'
+    | '/trading'
   id:
     | '__root__'
     | '/'
+    | '/agent-builder'
     | '/agents'
     | '/bluechip'
+    | '/cards'
     | '/display'
+    | '/end-states'
     | '/forms'
     | '/foundations'
     | '/illustrations'
     | '/motion'
     | '/navigation'
     | '/overlays'
+    | '/trading'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentBuilderRoute: typeof AgentBuilderRoute
   AgentsRoute: typeof AgentsRoute
   BluechipRoute: typeof BluechipRoute
+  CardsRoute: typeof CardsRoute
   DisplayRoute: typeof DisplayRoute
+  EndStatesRoute: typeof EndStatesRoute
   FormsRoute: typeof FormsRoute
   FoundationsRoute: typeof FoundationsRoute
   IllustrationsRoute: typeof IllustrationsRoute
   MotionRoute: typeof MotionRoute
   NavigationRoute: typeof NavigationRoute
   OverlaysRoute: typeof OverlaysRoute
+  TradingRoute: typeof TradingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -167,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-builder': {
+      id: '/agent-builder'
+      path: '/agent-builder'
+      fullPath: '/agent-builder'
+      preLoaderRoute: typeof AgentBuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agents': {
@@ -183,11 +242,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BluechipRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cards': {
+      id: '/cards'
+      path: '/cards'
+      fullPath: '/cards'
+      preLoaderRoute: typeof CardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/display': {
       id: '/display'
       path: '/display'
       fullPath: '/display'
       preLoaderRoute: typeof DisplayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/end-states': {
+      id: '/end-states'
+      path: '/end-states'
+      fullPath: '/end-states'
+      preLoaderRoute: typeof EndStatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forms': {
@@ -232,20 +305,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OverlaysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trading': {
+      id: '/trading'
+      path: '/trading'
+      fullPath: '/trading'
+      preLoaderRoute: typeof TradingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentBuilderRoute: AgentBuilderRoute,
   AgentsRoute: AgentsRoute,
   BluechipRoute: BluechipRoute,
+  CardsRoute: CardsRoute,
   DisplayRoute: DisplayRoute,
+  EndStatesRoute: EndStatesRoute,
   FormsRoute: FormsRoute,
   FoundationsRoute: FoundationsRoute,
   IllustrationsRoute: IllustrationsRoute,
   MotionRoute: MotionRoute,
   NavigationRoute: NavigationRoute,
   OverlaysRoute: OverlaysRoute,
+  TradingRoute: TradingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
