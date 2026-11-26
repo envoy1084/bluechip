@@ -1,5 +1,6 @@
 // Agents made the way a person makes one: the new agent flow, locked with the page's passkey.
-import { expect, type Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
+import type { Authenticator } from "../fixtures/authenticator.ts"
 
 export interface NewAgent {
   /** The template's name as the picker shows it ("Stock picker", "Weekly buyer", "Start from scratch"…). */
@@ -19,8 +20,8 @@ export const startAgent = async (page: Page, template = "Stock picker") => {
   await expect(page.getByText("Rules it follows")).toBeVisible()
 }
 
-/** Makes an agent and locks it with Face ID; resolves on its page, with its id. */
-export const createAgent = async (page: Page, agent: NewAgent = {}): Promise<{ readonly id: string }> => {
+/** Sets an agent's rules and opens its review, named `agent.name` when given. */
+const reviewAgent = async (page: Page, agent: NewAgent) => {
   await startAgent(page, agent.template)
   for (const stock of agent.stocks ?? ["NVDA NVIDIA"]) await page.getByRole("button", { name: stock }).click()
   if (agent.askAbove !== undefined) {
@@ -29,10 +30,56 @@ export const createAgent = async (page: Page, agent: NewAgent = {}): Promise<{ r
 
   await page.getByRole("button", { name: "Review" }).click()
   if (agent.name !== undefined) await page.getByRole("textbox", { name: "Name" }).fill(agent.name)
+}
+
+/** Makes an agent and locks it with Face ID; resolves on its page, with its id. */
+export const createAgent = async (page: Page, agent: NewAgent = {}): Promise<{ readonly id: string }> => {
+  await reviewAgent(page, agent)
   await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
   await expect(page.getByRole("heading", { name: / is live$/ })).toBeVisible()
 
   await page.getByRole("button", { name: /^Go to / }).click()
   await expect(page).toHaveURL(/\/agents\/agent_[0-9a-z]+$/)
-  return { id: new URL(page.url()).pathname.split("/").at(-1)! }
+  return { id: agentIdOf(page) }
 }
+
+/**
+ * Makes a draft: the review's Face ID is cancelled, which saves the agent unlocked. Face ID works again afterwards;
+ * resolves on the draft's page, with its id.
+ */
+export const createDraft = async (
+  page: Page,
+  authenticator: Authenticator,
+  agent: NewAgent & { readonly name: string }
+): Promise<{ readonly id: string }> => {
+  await reviewAgent(page, agent)
+  await authenticator.setVerified(false)
+  await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
+  await expect(page.getByText("Face ID was cancelled or the request couldn't be sent. Nothing changed.")).toBeVisible()
+  await authenticator.setVerified(true)
+
+  await page.goto("/agents")
+  await page.getByRole("link", { name: new RegExp(`^${agent.name} `) }).click()
+  await expect(page.getByText(`${agent.name} isn't locked yet`)).toBeVisible()
+  return { id: agentIdOf(page) }
+}
+
+const agentIdOf = (page: Page): string => new URL(page.url()).pathname.split("/").at(-1)!
+
+/** The sentences of the "It can" half of the rules card on the page (one card per screen). */
+export const canRules = (page: Page): Locator => page.locator("h4:text-is('It can') + ul").getByRole("listitem")
+
+/** The sentences of the "It can never" half of the rules card on the page. */
+export const neverRules = (page: Page): Locator => page.locator("h4:text-is('It can never') + ul").getByRole("listitem")
+
+/** The agent state pill in the page's main area ("Active", "Paused", "Not locked yet"…). */
+export const statePill = (page: Page): Locator => page.getByRole("main").locator("[data-slot='agent-status']")
+
+const DAY = 24 * 60 * 60 * 1000
+
+/** A day as the agent screens say it ("24 Feb"), `days` from now. */
+export const dayFromNow = (days: number): string =>
+  new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(Date.now() + days * DAY))
+
+/** A moment `days` from now. */
+export const daysFromNow = (days: number): Date => new Date(Date.now() + days * DAY)
