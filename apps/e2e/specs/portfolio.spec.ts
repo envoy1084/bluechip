@@ -94,7 +94,7 @@ test.describe("portfolio", () => {
     await expect(slices.nth(2)).toHaveAccessibleName("Cash 66.7%")
   })
 
-  test.fixme("a single share reads \"1 share\" (bug: the holding row says \"1 shares\")", async ({ page, user }) => {
+  test("a single share reads \"1 share\"", async ({ page, user }) => {
     await giveShares(user, { AMZN: 1 })
     await user.fund(page)
 

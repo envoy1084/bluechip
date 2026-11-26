@@ -23,6 +23,13 @@ describe("tradeProblem", () => {
     )
   })
 
+  it("a sell of one share held: singular", () => {
+    assert.strictEqual(
+      tradeProblem(new InsufficientShares({ symbol: "NVDA", available: 100_000_000n }), "sell"),
+      "You have 1 share to sell."
+    )
+  })
+
   it("no quote from the pool", () => {
     assert.strictEqual(
       tradeProblem(new QuoteUnavailable({ symbol: "NVDA", reason: "poolError" }), "buy"),

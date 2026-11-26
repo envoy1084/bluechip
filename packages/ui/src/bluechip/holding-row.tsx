@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
-import { formatMoney, formatShares } from "../lib/format.ts"
+import { formatMoney, formatShareCount } from "../lib/format.ts"
 import { NumberRoll } from "../motion/number-roll.tsx"
 import { AllocationBar, capState } from "./allocation-bar.tsx"
 import { PriceChange } from "./price-change.tsx"
@@ -48,7 +48,7 @@ export function HoldingRow(
           {state === "at" && <MiniBadge tone="warn">At max</MiniBadge>}
         </span>
         <span className="text-label-sm text-g-500 tabular-nums">
-          {formatShares(shares)} shares, {weight.toFixed(1)}%{cap === undefined ? " of your money" : ` of ${cap}% max`}
+          {formatShareCount(shares)}, {weight.toFixed(1)}%{cap === undefined ? " of your money" : ` of ${cap}% max`}
         </span>
         {cap !== undefined && <AllocationBar weight={weight} cap={cap} label={name} className="mt-1.5 max-w-[220px]" />}
       </span>

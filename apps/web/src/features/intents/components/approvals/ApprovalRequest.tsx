@@ -9,7 +9,7 @@ import { Button } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
+import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { priceDollars, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
 import { clockTime, expiresIn, nothingMoved } from "../../model/intentText.ts"
@@ -23,7 +23,7 @@ function Estimate({ intent, stock }: Readonly<{ intent: Intent; stock: Stock | u
 
   const { amount, side } = intent.leg
   const estimate = "usdc" in amount ?
-    `${formatShares(shareCount(sharesFor(Usdc.make(amount.usdc), price)))} shares` :
+    formatShareCount(shareCount(sharesFor(Usdc.make(amount.usdc), price))) :
     formatMoney(usdcDollars(valueOf(Shares.make(amount.shares), price)))
 
   return (

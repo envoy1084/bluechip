@@ -5,7 +5,7 @@ import { type Intent, IntentRequest } from "@bluechip/domain/intents/Intent"
 import type { TradeWarning } from "@bluechip/domain/trading/Trade"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
+import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { useState } from "react"
 import { priceDollars, shareCount } from "../../../../lib/amounts.ts"
@@ -84,7 +84,7 @@ export function ApprovalCard(
       <div className="grid gap-1">
         <b className="text-[15px] font-semibold">{describeLeg(intent.leg, nameOf)}</b>
         <span className="text-label-sm text-g-500">
-          About {formatShares(shareCount(quote.shares))} shares at {formatMoney(priceDollars(quote.price))} each
+          About {formatShareCount(shareCount(quote.shares))} at {formatMoney(priceDollars(quote.price))} each
         </span>
       </div>
       {intent.reason === "" ? null : <p className="text-[13.5px] text-g-700">{intent.reason}</p>}

@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/ale
 import { Button } from "@bluechip/ui/components/button"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatMoney, formatShares } from "@bluechip/ui/lib/format"
+import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
@@ -25,8 +25,8 @@ const quoteHint = (quote: QuoteState) => {
 
   const { side, shares, usdc } = quote.quote
   return side === "buy" ?
-    `About ${formatShares(shareCount(shares))} shares for ${formatMoney(usdcDollars(usdc))}.` :
-    `About ${formatMoney(usdcDollars(usdc))} for ${formatShares(shareCount(shares))} shares.`
+    `About ${formatShareCount(shareCount(shares))} for ${formatMoney(usdcDollars(usdc))}.` :
+    `About ${formatMoney(usdcDollars(usdc))} for ${formatShareCount(shareCount(shares))}.`
 }
 
 /** What to look at twice before signing: paused prices, or the stock market and Chainlink far apart. */
@@ -84,7 +84,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
 
   const available = side === "buy" ?
     `${formatMoney(usdcDollars(cash))} cash available` :
-    `${formatShares(shareCount(held))} shares${
+    `${formatShareCount(shareCount(held))}${
       price === null ? "" : `, worth ${formatMoney(usdcDollars(valueOf(Shares.make(held), price)))}`
     }`
   const hint = over ?

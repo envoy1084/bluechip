@@ -2,7 +2,7 @@ import type { ActivityItem as Activity } from "@bluechip/domain/activity/Activit
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { ActivityItem } from "@bluechip/ui/bluechip/activity-item"
 import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
-import { formatMoney, formatShares, formatTime } from "@bluechip/ui/lib/format"
+import { formatMoney, formatShareCount, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { priceDollars, shareCount, usdcDollars } from "../lib/amounts.ts"
 import { localTimeZone } from "../lib/localTime.ts"
@@ -27,7 +27,7 @@ export const describeActivity = (item: Activity, names: ReadonlyMap<StockSymbol,
   const name = names.get(symbol) ?? symbol
   const buying = side === "buy"
   const money = formatMoney(usdcDollars(usdc))
-  const detail = `${formatShares(shareCount(shares))} shares at ${formatMoney(priceDollars(price))}`
+  const detail = `${formatShareCount(shareCount(shares))} at ${formatMoney(priceDollars(price))}`
 
   return {
     kind: status === "failed" ? "blocked" as const : "trade" as const,

@@ -2,7 +2,7 @@ import type { Quote, Stock } from "@bluechip/domain/market/Market"
 import { FairPriceCheck, OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
-import { formatMoney, formatShares, formatTokenAmount } from "@bluechip/ui/lib/format"
+import { formatMoney, formatShareCount, formatTokenAmount } from "@bluechip/ui/lib/format"
 import { UsdcLogo } from "@bluechip/ui/logos/usdc"
 import { bpsPercent, priceDollars, shareCount } from "../../../lib/amounts.ts"
 
@@ -12,7 +12,7 @@ const usdc = (units: bigint) => (
     {formatTokenAmount(units, "USDC", { decimals: 6 })}
   </>
 )
-const shares = (units: bigint) => `${formatShares(shareCount(units))} shares`
+const shares = (units: bigint) => formatShareCount(shareCount(units))
 
 // The server's fair-price limits: 1% off Chainlink, 0.5% while prices are paused.
 const LIVE_LIMIT_BPS = 100

@@ -1,12 +1,12 @@
 import { InsufficientCash, InsufficientShares, PriceCheckFailed, QuoteUnavailable } from "@bluechip/domain/Errors"
-import { formatMoney } from "@bluechip/ui/lib/format"
+import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { bpsPercent, shareCount, usdcDollars } from "./amounts.ts"
 
 /** Why a trade didn't start, in words: nothing moved in any of these. */
 export const tradeProblem = (error: unknown, side: "buy" | "sell"): string => {
   const nothing = side === "buy" ? "Nothing was bought." : "Nothing was sold."
   if (error instanceof InsufficientCash) return `You have ${formatMoney(usdcDollars(error.available))} in cash.`
-  if (error instanceof InsufficientShares) return `You have ${shareCount(error.available)} shares to sell.`
+  if (error instanceof InsufficientShares) return `You have ${formatShareCount(shareCount(error.available))} to sell.`
   if (error instanceof QuoteUnavailable) return `We couldn't get a price from the pool. ${nothing}`
   if (error instanceof PriceCheckFailed) {
     return error.reason === "stale" ?

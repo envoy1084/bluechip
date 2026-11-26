@@ -5,6 +5,7 @@ import {
   formatMoney,
   formatPercent,
   formatRelative,
+  formatShareCount,
   formatShares,
   formatTime,
   formatTokenAmount
@@ -93,6 +94,19 @@ describe("formatShares", () => {
     { name: "thousands, grouped", value: 1234.5, expected: "1,234.5" }
   ])("$name", ({ expected, value }) => {
     assert.strictEqual(formatShares(value), expected)
+  })
+})
+
+describe("formatShareCount", () => {
+  it.each([
+    { name: "one share is singular", value: 1, expected: "1 share" },
+    { name: "a fraction is plural", value: 0.5, expected: "0.5 shares" },
+    { name: "just over one is plural", value: 1.5, expected: "1.5 shares" },
+    { name: "a ninth decimal over one rounds to one share", value: 1.000000001, expected: "1 share" },
+    { name: "zero is plural", value: 0, expected: "0 shares" },
+    { name: "a whole number past one", value: 12, expected: "12 shares" }
+  ])("$name", ({ expected, value }) => {
+    assert.strictEqual(formatShareCount(value), expected)
   })
 })
 

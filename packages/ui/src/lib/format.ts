@@ -63,6 +63,12 @@ export const formatShares = (value: number): string => {
   return value < 0 && text !== "0" ? MINUS + text : text
 }
 
+/** Shares with their noun, singular only for exactly one: "1 share", "0.5 shares", "12 shares". */
+export const formatShareCount = (value: number): string => {
+  const text = formatShares(value)
+  return `${text} ${text === "1" ? "share" : "shares"}`
+}
+
 export interface TokenAmountOptions {
   /** Base-unit decimals of a `bigint` amount (6 for USDC, 18 for most tokens). Ignored for numbers. */
   readonly decimals?: number
