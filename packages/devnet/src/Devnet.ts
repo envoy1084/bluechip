@@ -80,10 +80,24 @@ const startInstance = (instance: Instance.Instance) =>
   Effect.acquireRelease(
     Effect.promise(async () => {
       const pool = Pool.define({ instance, limit: 1 })
-      return { pool, url: (await pool.start(1)).url }
+      return { pool, started: await pool.start(1) }
     }),
     ({ pool }) => Effect.promise(() => pool.destroyAll())
   )
+
+// Restarts Alto with its clock `seconds` ahead of the real one: it checks an operation's validAfter against its own
+// `Date.now`, which a preload shifts. Node reads NODE_OPTIONS when Alto's process starts, so it is set only meanwhile.
+const restartAhead = async (alto: Pick<Instance.Instance, "restart">, seconds: number) => {
+  const shift = encodeURIComponent(`const now = Date.now; Date.now = () => now() + ${seconds * 1000};`)
+  const previous = process.env["NODE_OPTIONS"]
+  process.env["NODE_OPTIONS"] = [previous, `--import=data:text/javascript,${shift}`].filter(Boolean).join(" ")
+  try {
+    await alto.restart()
+  } finally {
+    if (previous === undefined) delete process.env["NODE_OPTIONS"]
+    else process.env["NODE_OPTIONS"] = previous
+  }
+}
 
 const make = Effect.fnUntraced(function*(rpcUrl: string, bundlerUrl: string) {
   const anvil = Controls.rpc(rpcUrl)
@@ -176,12 +190,21 @@ export class Devnet extends Context.Service<Devnet, {
    * @since 0.0.0
    */
   static readonly layerIsolated = (state: string) =>
-    Layer.effect(
-      Devnet,
+    Layer.effectContext(
       Effect.gen(function*() {
         const anvil = yield* startInstance(Instances.anvil(state))
-        const alto = yield* startInstance(Instances.alto(anvil.url))
-        return yield* make(anvil.url, alto.url)
+        const alto = yield* startInstance(Instances.alto(anvil.started.url))
+        const devnet = yield* make(anvil.started.url, alto.started.url)
+        const rpc = Controls.rpc(anvil.started.url)
+
+        const moveAhead = (seconds: number) =>
+          Effect.promise(async () => {
+            await rpc("anvil_setTime", [Math.floor(Date.now() / 1000) + seconds])
+            await rpc("anvil_mine", ["0x1"])
+            await restartAhead(alto.started, seconds)
+          })
+
+        return Context.make(Devnet, devnet).pipe(Context.add(DevnetClock, { moveAhead }))
       })
     )
 
@@ -197,3 +220,19 @@ export class Devnet extends Context.Service<Devnet, {
     })
   )
 }
+
+/**
+ * The clocks of a devnet of a file's own (`Devnet.layerIsolated`), which only it can move: on the worker's shared
+ * devnet a moved clock would stay moved for every file after.
+ *
+ * @stability unstable
+ * @category services
+ * @since 0.0.0
+ */
+export class DevnetClock extends Context.Service<DevnetClock, {
+  /**
+   * Moves the chain and the bundler `seconds` ahead of the real clock: the chain's next block is dated then, and Alto
+   * restarts with its clock as far ahead, so an operation valid only from then (a recovery 48 hours on) is taken.
+   */
+  readonly moveAhead: (seconds: number) => Effect.Effect<void>
+}>()("@bluechip/devnet/DevnetClock") {}
