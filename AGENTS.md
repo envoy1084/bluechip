@@ -249,6 +249,32 @@ To add a policy:
    `packages/chain/test/policies/Policies.test.ts` and its rules to `Catalog.test.ts`.
 5. **Web.** A dedicated editor only if the generic one built from its fields isn't enough.
 
+## Automations: to add a trigger, condition or action
+
+An automation is a trigger, conditions and an action, saved for you or an agent; its runs end as intents
+(`packages/domain/src/automations/`, `apps/server/src/modules/automations/`). Triggers, conditions and actions are
+catalogs like the policies'.
+
+To add a trigger, condition or action:
+
+1. **Domain.** A module in `packages/domain/src/automations/triggers/`, `conditions/` or `actions/` made with the
+   catalog's `make` (`Trigger.make`, `Condition.make`, `Action.make`, on top of `Entry.make`): type, copy (title,
+   summary, aliases and examples for the assistant), a config Schema, a `Field` hint per config field (units in
+   `Entry.ts`), defaults, `check` against the agent it runs for, and `describe`. A trigger also says its `watcher`,
+   `marketHours` and `asks`; a condition its pure `evaluate` over `Facts` (`null` for one that needs a model, as
+   `judgment`); an action its `plan` of legs (`null` when it trades nothing). Register it in `TRIGGERS`,
+   `CONDITIONS` or `ACTIONS` (`Automation.ts`); the stored unions and the API's catalog follow.
+2. **Runtime.** A trigger needs its watcher to produce it: schedule, price, portfolio or news in
+   `apps/server/src/modules/automations/watchers/`, keeping its memory in `WatchState`; a new kind of watcher is wired
+   in `Services.ts`. Conditions run in `AutomationRunner`, trades are planned by `Planner.ts` (`planLegs`); nothing
+   else changes for a new condition or action.
+3. **Tests.** The conformance tests (`packages/domain/test/unit/automations/Conformance.test.ts`) check every
+   registered entry; add the entry's own table in `test/unit/automations/{triggers,conditions}/` (or `Planner.test.ts`)
+   and, for a trigger, its watcher's test in `apps/server/test/integration/modules/automations/`.
+4. **Web.** Nothing, when its `Field` hints say how to edit it: the generic editor and the automation sentences are built
+   from the catalog. Add a dedicated editor only when a field's unit can't (as the `stopLossFloor` policy's price per
+   stock).
+
 ## Tests
 
 Tests live in each package's `test/` folder and use `@effect/vitest` (`it.effect`, `assert`), never
