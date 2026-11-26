@@ -418,7 +418,10 @@ Every test guards one intended behaviour: it fails on a regression of that behav
   and full input, every failure the caller can see, repeats (the same call twice), and every setting it reads.
 - **Isolated data.** Each test makes its own records (a new user, account or id) and reads back only those, so the
   suite passes shuffled, alone and in parallel. Arrange through the front door: the API's routes, the service's
-  methods, the devnet's controls; never by reaching into private state.
+  methods, the devnet's controls; never by reaching into private state. Test servers on every worker share the
+  database, so none runs a schedule or watcher over everyone's rows (`SCHEDULES_ENABLED=false`): a test runs the
+  sweep for its own user (`runDue(now, { userId })`, `check({ userId })`). A worker's chain is shared by the files
+  it runs in turn: arrange the prices and pools a test reads (`setPrice`, `movePool`) rather than assume them.
 - **No doubles of our own code.** Real implementations inside the process; at the edge, test layers and MSW (or the
   devnet for the chain). Assert state and results, not which internals were called.
 - **Prune** a test that guards nothing: one that asserts removed code stays gone, what the type checker or a

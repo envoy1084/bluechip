@@ -1,4 +1,6 @@
 import { DevChain } from "@bluechip/chain/DevChain"
+import * as Config from "effect/Config"
+import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Accounts } from "./modules/accounts/Accounts.ts"
 import { Passkeys } from "./modules/accounts/Passkeys.ts"
@@ -86,6 +88,34 @@ import { LiveEvents } from "./platform/live/LiveEvents.ts"
 import { Namera } from "./platform/namera/Namera.ts"
 
 /**
+ * The schedules and watchers that sweep everyone's rows: crons, the automation watchers and the ledger's repair at
+ * startup. Off when `SCHEDULES_ENABLED` is `false`: test servers share one database across workers, each on its own
+ * chain, so a sweep from one would act on another's users; tests run each sweep for their own user instead.
+ */
+const Schedules = Layer.unwrap(Effect.gen(function*() {
+  const enabled = yield* Config.Boolean("SCHEDULES_ENABLED").pipe(Config.withDefault(true))
+  if (!enabled) return Layer.empty
+
+  return Layer.mergeAll(
+    ExpireIntentsCron,
+    ExpireAgentsCron,
+    PortfolioSnapshotCron,
+    LedgerCron,
+    ReconcileCron,
+    DriftCron,
+    Ledger.repairOnStart,
+    RecallEmbedCron,
+    MemoryDecayCron,
+    PriceWatcher.watch,
+    ScheduleWatcher.watch,
+    PortfolioWatcher.watch,
+    NewsWatcher.watch,
+    ReminderCron,
+    DigestCron
+  )
+}))
+
+/**
  * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (`DevChain`
  * only answers on a local chain; the dev endpoints check the network first). Each line
  * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, the
@@ -95,25 +125,11 @@ import { Namera } from "./platform/namera/Namera.ts"
  */
 export const ServicesLive = Layer.mergeAll(
   DeskLive,
-  ExpireIntentsCron,
-  ExpireAgentsCron,
-  PortfolioSnapshotCron,
-  LedgerCron,
-  ReconcileCron,
-  DriftCron,
-  Ledger.repairOnStart,
-  RecallEmbedCron,
-  MemoryDecayCron,
+  Schedules,
   KnowledgeRefreshCron,
   Knowledge.refreshOnStart,
   FireAutomationLive,
-  PriceWatcher.watch,
-  ScheduleWatcher.watch,
-  PortfolioWatcher.watch,
-  NewsWatcher.watch,
   NotificationFanout,
-  ReminderCron,
-  DigestCron,
   DeliverNotificationLive,
   AnswerChatMessageLive,
   ChatHandlerLive,

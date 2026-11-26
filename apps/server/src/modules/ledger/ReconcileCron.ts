@@ -8,7 +8,7 @@ import { Reconciliation } from "./Reconciliation.ts"
 
 /**
  * Every account's balances against its ledger every 5 minutes; a run more than 5 minutes late is skipped. Off when
- * `RECONCILE_ENABLED` is `false` (tests check accounts one at a time, so the schedule never interleaves with them).
+ * `RECONCILE_ENABLED` (or `SCHEDULES_ENABLED`, as in tests) is `false`.
  */
 export const ReconcileCron = Layer.unwrap(Effect.gen(function*() {
   const enabled = yield* Config.Boolean("RECONCILE_ENABLED").pipe(Config.withDefault(true))
