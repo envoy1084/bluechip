@@ -47,7 +47,7 @@ export const devProcesses = (options: { readonly uikit: boolean }): Array<DevPro
  * mode bundling as soon as an operation arrives.
  *
  * Anvil mines a block every 2 s, like Base: an agent's operation states the latest block's time, and Namera bounds it
- * to that time's UTC day, so a chain idle since yesterday would send operations the bundler rejects as expired.
+ * to that time's UTC day, so a chain behind the real day sends operations the bundler rejects as expired.
  */
 export const localChainProcesses = (options: { readonly stateFile: string; readonly alto: string }) => ({
   anvil: {
@@ -192,9 +192,13 @@ const up = Effect.fn("dev.up")(
     // deploy whatever is missing, keeping the rest of its state.
     if (chain !== undefined) {
       yield* Effect.gen(function*() {
-        // Loading the kept state brings back its base fee; run at Base's, so agents' gas budgets behave as on Base.
+        // Loading the kept state brings back its base fee and its clock; run at Base's fee, so agents' gas budgets
+        // behave as on Base, and at today's time, which agents state in their operations.
         const anvil = rpc(`http://localhost:${CHAIN_PORTS.anvil}`)
         yield* Effect.tryPromise(async () => {
+          const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: string }
+          const now = Math.floor(Date.now() / 1000)
+          if (Number(latest.timestamp) < now) await anvil("anvil_setTime", [now])
           await anvil("anvil_setNextBlockBaseFeePerGas", [`0x${BASE_FEE_WEI.toString(16)}`])
           await anvil("anvil_mine", ["0x1"])
         })
