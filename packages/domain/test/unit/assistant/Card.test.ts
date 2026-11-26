@@ -1,7 +1,9 @@
 import { type Card, describeCard } from "@bluechip/domain/assistant/Card"
+import { describeAutomation } from "@bluechip/domain/automations/Automation"
 import { CardId } from "@bluechip/domain/Ids"
 import { Usdc } from "@bluechip/domain/market/Units"
 import { assert, describe, it } from "@effect/vitest"
+import { draft } from "../../fixtures/Automations.ts"
 import { AGENT_ID, nvidiaBuy } from "../../fixtures/Intents.ts"
 
 const CARD = CardId.make("card_01jd8v4t5m6n7p8q9r0s1t2v3w")
@@ -76,6 +78,21 @@ describe("describeCard", () => {
         agents: []
       },
       expected: "The card is applied."
+    },
+    {
+      name: "an automation waiting for the user, read back",
+      card: {
+        _tag: "Automation",
+        id: CARD,
+        action: "create",
+        automationId: null,
+        draft: draft({}),
+        description: describeAutomation(draft({}), () => "Apple"),
+        status: "pending",
+        automation: null
+      },
+      expected: "Shown as a card reading the automation back: \"Every Monday at 10:00 New York time, buy $50 of " +
+        "Apple.\" Nothing is saved until the user confirms it on the card."
     },
     {
       name: "research citing two pages",

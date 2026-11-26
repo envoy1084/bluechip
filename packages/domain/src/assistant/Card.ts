@@ -7,7 +7,8 @@
  */
 import * as Schema from "effect/Schema"
 import { Agent, AgentRequest } from "../agents/Agent.ts"
-import { AgentId, CardId } from "../Ids.ts"
+import { Automation, AutomationDescription, AutomationDraft } from "../automations/Automation.ts"
+import { AgentId, AutomationId, CardId } from "../Ids.ts"
 import { describeDecision } from "../intents/Describe.ts"
 import { Intent, IntentRequest } from "../intents/Intent.ts"
 import { AgentSpec } from "../policies/AgentSpec.ts"
@@ -65,6 +66,9 @@ export type Citation = typeof Citation.Type
  *   draft was removed outright).
  * - `AgentControl`: pausing or resuming an agent (or every agent), applied when you confirm.
  * - `SaveTemplate`: a set of policies to save as a template, saved when you confirm.
+ * - `Automation`: an automation drafted from your words (or a change to one, `automationId`), read back in sentences,
+ *   saved when you confirm (`automation`, once saved).
+ * - `AutomationControl`: pausing or resuming an automation, applied when you confirm.
  * - `Memory`: a memory saved or forgotten, or one the assistant inferred and keeps only if you confirm.
  * - `Research`: web pages the assistant read, untrusted, with citations.
  * - `Error`: why the assistant stopped early: the day's budget, too many steps in one turn, you cancelled, the
@@ -108,6 +112,24 @@ export const Card = Schema.TaggedUnion({
     status: CardStatus,
     /** The template, once saved. */
     template: Schema.NullOr(SavedTemplate)
+  },
+  Automation: {
+    id: CardId,
+    action: Schema.Literals(["create", "edit"]),
+    /** The automation an edit changes; `null` for a new one. */
+    automationId: Schema.NullOr(AutomationId),
+    draft: AutomationDraft,
+    description: AutomationDescription,
+    status: CardStatus,
+    automation: Schema.NullOr(Automation)
+  },
+  AutomationControl: {
+    id: CardId,
+    action: Schema.Literals(["pause", "resume"]),
+    automationId: AutomationId,
+    automationName: Schema.String,
+    status: CardStatus,
+    automation: Schema.NullOr(Automation)
   },
   Memory: {
     id: CardId,
@@ -195,7 +217,13 @@ export const describeCard = (card: Card): string => {
         `The draft agent ${card.agent.id} was removed.` :
         `Shown as a card to ${card.action} ${card.agent.name} (${card.agent.id}). ` +
         "It happens only when the user approves it with Face ID on the card."
+    case "Automation":
+      return card.status === "pending" ?
+        `Shown as a card reading the automation back: "${card.description.sentence}" Nothing is saved until the ` +
+        "user confirms it on the card." :
+        `The card is ${card.status}.`
     case "AgentControl":
+    case "AutomationControl":
     case "SaveTemplate":
       return card.status === "pending" ?
         "Shown as a card. Nothing changes until the user confirms it on the card." :

@@ -1,6 +1,7 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import { AgentRequest } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
+import { AutomationDraft } from "@bluechip/domain/automations/Automation"
 import { type Address, type AgentId, SavedTemplateId } from "@bluechip/domain/Ids"
 import { describeDecision } from "@bluechip/domain/intents/Describe"
 import { type Intent, IntentRequest, type Leg } from "@bluechip/domain/intents/Intent"
@@ -26,6 +27,7 @@ import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { Activity } from "../activity/Activity.ts"
 import { AgentRequests } from "../agents/AgentRequests.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Automations } from "../automations/Automations.ts"
 import { Intents } from "../intents/Intents.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
@@ -50,6 +52,7 @@ type Failure =
   | { readonly _tag: "NotFound"; readonly resource: string; readonly id: string }
   | { readonly _tag: "Conflict"; readonly reason: string }
   | { readonly _tag: "InvalidSpec"; readonly problems: ReadonlyArray<{ readonly message: string }> }
+  | { readonly _tag: "InvalidAutomation"; readonly problems: ReadonlyArray<{ readonly message: string }> }
   | { readonly _tag: "InsufficientCash"; readonly available: bigint }
   | { readonly _tag: "InsufficientShares"; readonly symbol: string }
   | { readonly _tag: "NotTradable"; readonly symbol: string }
@@ -73,6 +76,10 @@ const problemOf = (failure: Failure): ToolProblem => {
     case "InvalidSpec":
       return new ToolProblem({
         problem: `The policies have problems: ${failure.problems.map((p) => p.message).join(" ")}`
+      })
+    case "InvalidAutomation":
+      return new ToolProblem({
+        problem: `The automation has problems: ${failure.problems.map((p) => p.message).join(" ")}`
       })
     case "InsufficientCash":
       return new ToolProblem({ problem: `Not enough cash: ${formatDollars(failure.available)} available.` })
@@ -136,6 +143,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
   const memories = yield* Memories
   const cards = yield* Cards
   const live = yield* LiveEvents
+  const automations = yield* Automations
 
   const card = (input: Parameters<typeof cards.create>[2]) =>
     Effect.flatMap(Caller, (caller) => cards.create(caller, caller.conversationId, input))
@@ -391,6 +399,49 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     }, asProblem),
     listMemories: Effect.fn("AssistantTools.listMemories")(function*() {
       return yield* memories.list(yield* Caller)
-    })
+    }),
+
+    listAutomations: Effect.fn("AssistantTools.listAutomations")(function*({ agentId }) {
+      return yield* automations.list(yield* Caller, agentId ?? undefined)
+    }),
+    createAutomation: Effect.fn("AssistantTools.createAutomation")(function*({ automationId, draft }) {
+      const caller = yield* Caller
+      const automation = new AutomationDraft(draft)
+      if (automationId !== null) {
+        const { automation: saved } = yield* automations.detail(caller, automationId)
+        if (saved.agentId !== automation.agentId) return yield* problem("An automation's agent can't change.")
+      }
+      const check = yield* automations.check(caller, automation)
+      if (check.problems.length > 0) {
+        return yield* problem(
+          `The automation has problems: ${
+            check.problems.map((found) =>
+              `${found.part}${found.field === null ? "" : `.${found.field}`}: ${found.message}`
+            )
+              .join(" ")
+          }`
+        )
+      }
+      return yield* card({
+        _tag: "Automation",
+        action: automationId === null ? "create" : "edit",
+        automationId,
+        draft: automation,
+        description: check.description,
+        status: "pending",
+        automation: null
+      })
+    }, asProblem),
+    pauseAutomation: Effect.fn("AssistantTools.pauseAutomation")(function*({ automationId, resume }) {
+      const { automation } = yield* automations.detail(yield* Caller, automationId)
+      return yield* card({
+        _tag: "AutomationControl",
+        action: resume ? "resume" : "pause",
+        automationId,
+        automationName: automation.name,
+        status: "pending",
+        automation: null
+      })
+    }, asProblem)
   })
 }))

@@ -5,7 +5,7 @@
  *
  * @since 0.0.0
  */
-import { AgentId, IntentId, MemoryId, SavedTemplateId } from "../Ids.ts"
+import { AgentId, AutomationId, IntentId, MemoryId, SavedTemplateId } from "../Ids.ts"
 
 /**
  * @stability unstable
@@ -45,4 +45,14 @@ export const MemoryIdParam = MemoryId.annotate({
 export const SavedTemplateIdParam = SavedTemplateId.annotate({
   identifier: undefined,
   description: "A saved template's id (template_…), from listTemplates."
+})
+
+/**
+ * @stability unstable
+ * @category parameters
+ * @since 0.0.0
+ */
+export const AutomationIdParam = AutomationId.annotate({
+  identifier: undefined,
+  description: "An automation's id (automation_…), from listAutomations or a card."
 })

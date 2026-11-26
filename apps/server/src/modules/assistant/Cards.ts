@@ -1,6 +1,6 @@
 import { type Card, isPending } from "@bluechip/domain/assistant/Card"
 import type { Memory } from "@bluechip/domain/assistant/Memory"
-import { Conflict, type InvalidSpec, NotFound } from "@bluechip/domain/Errors"
+import { Conflict, type InvalidAutomation, type InvalidSpec, NotFound } from "@bluechip/domain/Errors"
 import { CardId, type ConversationId } from "@bluechip/domain/Ids"
 import { and, eq, sql } from "drizzle-orm"
 import * as Context from "effect/Context"
@@ -11,6 +11,7 @@ import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Automations } from "../automations/Automations.ts"
 import { SavedTemplates } from "../policies/SavedTemplates.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { Memories } from "./Memories.ts"
@@ -29,7 +30,10 @@ export class Cards extends Context.Service<Cards, {
   readonly create: (owner: Owner, conversationId: ConversationId | null, card: CardInput) => Effect.Effect<Card>
   readonly find: (owner: Owner, id: string) => Effect.Effect<Card, NotFound>
   /** Applies a pending card; `Conflict` when it is no longer pending. */
-  readonly confirm: (owner: Owner, id: string) => Effect.Effect<Card, NotFound | Conflict | InvalidSpec>
+  readonly confirm: (
+    owner: Owner,
+    id: string
+  ) => Effect.Effect<Card, NotFound | Conflict | InvalidSpec | InvalidAutomation>
   /**
    * Confirms a memory from the memory page, and applies the cards still asking about it, so a conversation doesn't
    * ask again.
@@ -45,6 +49,7 @@ export class Cards extends Context.Service<Cards, {
       const agents = yield* Agents
       const templates = yield* SavedTemplates
       const memories = yield* Memories
+      const automations = yield* Automations
 
       const byId = (owner: Owner, id: string) =>
         and(eq(assistantCards.id, id as `card_${string}`), eq(assistantCards.userId, owner.id as `user_${string}`))
@@ -100,6 +105,23 @@ export class Cards extends Context.Service<Cards, {
           case "SaveTemplate": {
             const template = yield* templates.save(owner, { name: card.name, basedOn: card.basedOn, spec: card.spec })
             return yield* save(owner, { ...card, status: "applied", template })
+          }
+          case "Automation": {
+            const automation = card.automationId === null ?
+              yield* automations.create(owner, {
+                // The card's id makes confirming it twice (a retry) save one automation.
+                requestId: card.id,
+                draft: card.draft,
+                createdBy: "assistant"
+              }) :
+              yield* automations.update(owner, card.automationId, { draft: card.draft })
+            return yield* save(owner, { ...card, status: "applied", automation })
+          }
+          case "AutomationControl": {
+            const automation = yield* automations.update(owner, card.automationId, {
+              status: card.action === "pause" ? "paused" : "active"
+            })
+            return yield* save(owner, { ...card, status: "applied", automation })
           }
           case "Memory": {
             const memory = yield* memories.confirm(owner, card.memory.id)

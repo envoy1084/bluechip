@@ -41,7 +41,10 @@ describe("the toolkit", () => {
         removeAgent: "sign",
         remember: "configure",
         forget: "configure",
-        listMemories: "read"
+        listMemories: "read",
+        listAutomations: "read",
+        createAutomation: "configure",
+        pauseAutomation: "configure"
       } satisfies Record<string, RiskLevel>
     )
   })

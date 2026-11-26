@@ -10,7 +10,7 @@ import { Card } from "../assistant/Card.ts"
 import { Conversation, ConversationThread } from "../assistant/Conversation.ts"
 import { Memory } from "../assistant/Memory.ts"
 import { Authentication } from "../Auth.ts"
-import { Conflict, InvalidSpec, NotFound } from "../Errors.ts"
+import { Conflict, InvalidAutomation, InvalidSpec, NotFound } from "../Errors.ts"
 import { AgentId, CardId, ConversationId, MemoryId, RunId } from "../Ids.ts"
 import { Page, PageQuery } from "../Page.ts"
 
@@ -52,9 +52,9 @@ export class AssistantApi extends HttpApiGroup.make("assistant").add(
   }),
   HttpApiEndpoint.post("confirmCard", "/assistant/cards/:id/confirm", {
     params: { id: CardId },
-    /** The card, applied. */
+    /** The card, applied. An automation that no longer fits its agent's policies is `InvalidAutomation`. */
     success: Card,
-    error: [NotFound, Conflict, InvalidSpec]
+    error: [NotFound, Conflict, InvalidSpec, InvalidAutomation]
   }),
   HttpApiEndpoint.post("dismissCard", "/assistant/cards/:id/dismiss", {
     params: { id: CardId },
