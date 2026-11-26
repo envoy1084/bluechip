@@ -21,6 +21,7 @@ import {
   liveReactivityKey,
   notificationsReactivityKey,
   portfolioReactivityKey,
+  securityReactivityKey,
   usageReactivityKey
 } from "./client.ts"
 
@@ -91,6 +92,7 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
             )
           }
           if (event._tag === "AutomationRan") return Reactivity.invalidate([automationsReactivityKey])
+          if (event._tag === "AccountChanged") return Reactivity.invalidate([securityReactivityKey])
           if (event._tag === "PortfolioChanged" || event._tag === "TransferUpdated") {
             return Reactivity.invalidate([portfolioReactivityKey])
           }

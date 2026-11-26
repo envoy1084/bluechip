@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as RecoverRouteImport } from './routes/recover'
 import { Route as SigninRouteImport } from './routes/signin'
 import { Route as AppApprovalsRouteImport } from './routes/_app/approvals'
 import { Route as AppHomeRouteImport } from './routes/_app/home'
@@ -32,7 +33,9 @@ import { Route as AppAutomationsAutomationIdRouteImport } from './routes/_app/au
 import { Route as AppAutomationsNewRouteImport } from './routes/_app/automations/new'
 import { Route as AppChatChar123ConversationIdChar125RouteImport } from './routes/_app/chat/{-$conversationId}'
 import { Route as AppPortfolioIndexRouteImport } from './routes/_app/portfolio/index'
+import { Route as AppSettingsAuditRouteImport } from './routes/_app/settings_.audit'
 import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings_.notifications'
+import { Route as AppSettingsSecurityRouteImport } from './routes/_app/settings_.security'
 import { Route as AppStocksIndexRouteImport } from './routes/_app/stocks/index'
 import { Route as AppStocksSymbolRouteImport } from './routes/_app/stocks/$symbol'
 import { Route as AppAgentsAgentIdEditRouteImport } from './routes/_app/agents/$agentId_.edit'
@@ -45,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecoverRoute = RecoverRouteImport.update({
+  id: '/recover',
+  path: '/recover',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SigninRoute = SigninRouteImport.update({
@@ -154,12 +162,22 @@ const AppPortfolioIndexRoute = AppPortfolioIndexRouteImport.update({
   path: '/portfolio/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsAuditRoute = AppSettingsAuditRouteImport.update({
+  id: '/settings_/audit',
+  path: '/settings/audit',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsNotificationsRoute =
   AppSettingsNotificationsRouteImport.update({
     id: '/settings_/notifications',
     path: '/settings/notifications',
     getParentRoute: () => AppRoute,
   } as any)
+const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
+  id: '/settings_/security',
+  path: '/settings/security',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStocksIndexRoute = AppStocksIndexRouteImport.update({
   id: '/stocks/',
   path: '/stocks/',
@@ -184,6 +202,7 @@ const AppAutomationsAutomationIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/recover': typeof RecoverRoute
   '/signin': typeof SigninRoute
   '/approvals': typeof AppApprovalsRoute
   '/home': typeof AppHomeRoute
@@ -201,7 +220,9 @@ export interface FileRoutesByFullPath {
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/automations/new': typeof AppAutomationsNewRoute
   '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
+  '/settings/audit': typeof AppSettingsAuditRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings/security': typeof AppSettingsSecurityRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity/': typeof AppActivityIndexRoute
   '/agents/': typeof AppAgentsIndexRoute
@@ -213,6 +234,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/recover': typeof RecoverRoute
   '/signin': typeof SigninRoute
   '/approvals': typeof AppApprovalsRoute
   '/home': typeof AppHomeRoute
@@ -230,7 +252,9 @@ export interface FileRoutesByTo {
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/automations/new': typeof AppAutomationsNewRoute
   '/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
+  '/settings/audit': typeof AppSettingsAuditRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/settings/security': typeof AppSettingsSecurityRoute
   '/stocks/$symbol': typeof AppStocksSymbolRoute
   '/activity': typeof AppActivityIndexRoute
   '/agents': typeof AppAgentsIndexRoute
@@ -244,6 +268,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/recover': typeof RecoverRoute
   '/signin': typeof SigninRoute
   '/_app/approvals': typeof AppApprovalsRoute
   '/_app/home': typeof AppHomeRoute
@@ -261,7 +286,9 @@ export interface FileRoutesById {
   '/_app/automations/$automationId': typeof AppAutomationsAutomationIdRoute
   '/_app/automations/new': typeof AppAutomationsNewRoute
   '/_app/chat/{-$conversationId}': typeof AppChatChar123ConversationIdChar125Route
+  '/_app/settings_/audit': typeof AppSettingsAuditRoute
   '/_app/settings_/notifications': typeof AppSettingsNotificationsRoute
+  '/_app/settings_/security': typeof AppSettingsSecurityRoute
   '/_app/stocks/$symbol': typeof AppStocksSymbolRoute
   '/_app/activity/': typeof AppActivityIndexRoute
   '/_app/agents/': typeof AppAgentsIndexRoute
@@ -275,6 +302,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/recover'
     | '/signin'
     | '/approvals'
     | '/home'
@@ -292,7 +320,9 @@ export interface FileRouteTypes {
     | '/automations/$automationId'
     | '/automations/new'
     | '/chat/{-$conversationId}'
+    | '/settings/audit'
     | '/settings/notifications'
+    | '/settings/security'
     | '/stocks/$symbol'
     | '/activity/'
     | '/agents/'
@@ -304,6 +334,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/recover'
     | '/signin'
     | '/approvals'
     | '/home'
@@ -321,7 +352,9 @@ export interface FileRouteTypes {
     | '/automations/$automationId'
     | '/automations/new'
     | '/chat/{-$conversationId}'
+    | '/settings/audit'
     | '/settings/notifications'
+    | '/settings/security'
     | '/stocks/$symbol'
     | '/activity'
     | '/agents'
@@ -334,6 +367,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/recover'
     | '/signin'
     | '/_app/approvals'
     | '/_app/home'
@@ -351,7 +385,9 @@ export interface FileRouteTypes {
     | '/_app/automations/$automationId'
     | '/_app/automations/new'
     | '/_app/chat/{-$conversationId}'
+    | '/_app/settings_/audit'
     | '/_app/settings_/notifications'
+    | '/_app/settings_/security'
     | '/_app/stocks/$symbol'
     | '/_app/activity/'
     | '/_app/agents/'
@@ -365,6 +401,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  RecoverRoute: typeof RecoverRoute
   SigninRoute: typeof SigninRoute
   DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
@@ -389,6 +426,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recover': {
+      id: '/recover'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof RecoverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signin': {
@@ -538,11 +582,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPortfolioIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings_/audit': {
+      id: '/_app/settings_/audit'
+      path: '/settings/audit'
+      fullPath: '/settings/audit'
+      preLoaderRoute: typeof AppSettingsAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings_/notifications': {
       id: '/_app/settings_/notifications'
       path: '/settings/notifications'
       fullPath: '/settings/notifications'
       preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings_/security': {
+      id: '/_app/settings_/security'
+      path: '/settings/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof AppSettingsSecurityRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/stocks/': {
@@ -586,7 +644,9 @@ interface AppRouteChildren {
   AppAutomationsAutomationIdRoute: typeof AppAutomationsAutomationIdRoute
   AppAutomationsNewRoute: typeof AppAutomationsNewRoute
   AppChatChar123ConversationIdChar125Route: typeof AppChatChar123ConversationIdChar125Route
+  AppSettingsAuditRoute: typeof AppSettingsAuditRoute
   AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
+  AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
   AppStocksSymbolRoute: typeof AppStocksSymbolRoute
   AppActivityIndexRoute: typeof AppActivityIndexRoute
   AppAgentsIndexRoute: typeof AppAgentsIndexRoute
@@ -608,7 +668,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppAutomationsNewRoute: AppAutomationsNewRoute,
   AppChatChar123ConversationIdChar125Route:
     AppChatChar123ConversationIdChar125Route,
+  AppSettingsAuditRoute: AppSettingsAuditRoute,
   AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
+  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
   AppStocksSymbolRoute: AppStocksSymbolRoute,
   AppActivityIndexRoute: AppActivityIndexRoute,
   AppAgentsIndexRoute: AppAgentsIndexRoute,
@@ -624,6 +686,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  RecoverRoute: RecoverRoute,
   SigninRoute: SigninRoute,
   DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,

@@ -44,3 +44,6 @@ export const notificationsReactivityKey = "notifications"
 
 /** Linked chats refetch when this key is invalidated (a chat linked or unlinked, from either side). */
 export const channelsReactivityKey = "channels"
+
+/** Passkeys, devices and the recovery refetch when this key is invalidated (live `AccountChanged` events). */
+export const securityReactivityKey = "security"

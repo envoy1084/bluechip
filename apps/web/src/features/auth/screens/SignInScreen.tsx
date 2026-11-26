@@ -38,6 +38,9 @@ export function SignInScreen() {
         <Button size="lg" variant="secondary" className="w-full" onClick={() => navigate({ to: "/welcome" })}>
           Create an account
         </Button>
+        <Button size="lg" variant="ghost" className="w-full" onClick={() => navigate({ to: "/recover" })}>
+          Lost your passkey? Recover your account
+        </Button>
       </div>
     </OnboardingFrame>
   )
