@@ -69,12 +69,16 @@ layer(TestAgents.layer, { excludeTestServices: true })("agent controls", (it) =>
           params: { id: removal.id },
           payload: { credential: user.authenticator.authenticate(removal.options) }
         })
-        yield* user.events.next("AgentChanged", (event) =>
-          event.agent.id === agent.id && event.agent.status === "removed")
+        // Each removal settles on its own, so they can land in either order.
+        const removing = [agent.id, second.agent.id]
+        const { agent: first } = yield* user.events.next(
+          "AgentChanged",
+          (event) => removing.includes(event.agent.id) && event.agent.status === "removed"
+        )
         yield* user.events.next(
           "AgentChanged",
           (event) =>
-            event.agent.id === second.agent.id && event.agent.status === "removed"
+            removing.includes(event.agent.id) && event.agent.id !== first.id && event.agent.status === "removed"
         )
         const all = yield* user.api.agents.list()
 
