@@ -8,7 +8,4 @@
   --skullet-speed: slow;
   --skullet-text-top: cap-height;
   --skullet-text-bottom: baseline;
-  @variant dark {
-    --skullet-highlight: rgb(255 255 255 / .05);
-  }
 }

@@ -1,10 +1,7 @@
-import { applyThemeChoice, readThemeChoice } from "@bluechip/ui/lib/theme"
 import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { routeTree } from "./routeTree.gen.ts"
-
-applyThemeChoice(readThemeChoice())
 
 const router = createRouter({ routeTree, scrollRestoration: true, defaultPreload: "intent" })
 

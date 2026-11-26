@@ -1,47 +1,40 @@
-/* The depth language: layered surfaces shared by buttons, cards and chips. Edges mix `ink`, so they turn into faint
-   light hairlines in the dark theme; drops stay dark. */
+/* The depth language: layered surfaces shared by buttons, cards and chips. */
 
 /* Primary action: Base Blue gradient, white top edge, darker bottom edge, blue glow. */
 @utility surface-primary {
   color: var(--color-white);
-  background-image: linear-gradient(180deg, #4470ff 0%, var(--color-blue-fill) 100%);
+  background-image: linear-gradient(180deg, #4470ff 0%, var(--color-blue) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .24), 0 0 0 1px #2350f0, 0 1px 2px rgba(20, 50, 160, .18), 0 4px 10px -4px rgba(42, 91, 255, .32);
 }
-/* Secondary: white with a grey edge and a soft drop; in the dark theme, a step lighter than the card under it. */
+/* Secondary: white with a grey edge and a soft drop. */
 @utility surface-secondary {
   color: var(--color-ink);
-  background-image: linear-gradient(180deg, var(--color-surface) 0%, var(--color-g-50) 100%);
-  box-shadow: var(--inset-shadow-hi), 0 0 0 1px color-mix(in srgb, var(--color-ink) 9%, transparent), 0 1px 2px rgba(10, 11, 13, .05);
-  @variant dark {
-    background-image: linear-gradient(180deg, var(--color-g-100) 0%, var(--color-g-50) 100%);
-  }
+  background-image: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: var(--inset-shadow-hi), 0 0 0 1px rgba(10, 11, 13, .09), 0 1px 2px rgba(10, 11, 13, .05);
 }
 /* Destructive, quiet: white with a red edge. */
 @utility surface-danger {
   color: var(--color-loss);
-  background-image: linear-gradient(180deg, var(--color-surface) 0%, #fff6f3 100%);
-  box-shadow: var(--inset-shadow-hi), 0 0 0 1px color-mix(in srgb, var(--color-loss) 20%, transparent), 0 1px 2px rgba(204, 53, 25, .08);
-  @variant dark {
-    background-image: linear-gradient(180deg, var(--color-g-100) 0%, var(--color-loss-wash) 100%);
-  }
+  background-image: linear-gradient(180deg, #ffffff 0%, #fff6f3 100%);
+  box-shadow: var(--inset-shadow-hi), 0 0 0 1px rgba(204, 53, 25, .2), 0 1px 2px rgba(204, 53, 25, .08);
 }
 /* Inputs and chips at rest. */
 @utility surface-field {
-  background-color: var(--color-surface);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-ink) 10%, transparent), 0 1px 1px rgba(10, 11, 13, .02);
+  background-color: var(--color-white);
+  box-shadow: 0 0 0 1px rgba(10, 11, 13, .1), 0 1px 1px rgba(10, 11, 13, .02);
 }
 /* Recessed area (meters, code, grouped rows). */
 @utility surface-well {
   background-color: var(--color-sunken);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-ink) 5%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(10, 11, 13, .05);
 }
 /* Focus ring for custom controls that cannot use outline. */
 @utility ring-focus {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-blue) 18%, transparent), 0 0 0 1px var(--color-blue);
+  box-shadow: 0 0 0 3px rgba(42, 91, 255, .18), 0 0 0 1px var(--color-blue);
 }
 /* Translucent bar (sticky headers, floating cards over art). */
 @utility surface-glass {
-  background-color: color-mix(in srgb, var(--color-canvas) 85%, transparent);
+  background-color: rgba(251, 251, 252, .85);
   backdrop-filter: saturate(1.6) blur(14px);
   -webkit-backdrop-filter: saturate(1.6) blur(14px);
 }

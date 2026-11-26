@@ -1,5 +1,4 @@
 import { Logo } from "@bluechip/ui/bluechip/logo"
-import { ThemePicker } from "@bluechip/ui/bluechip/theme-picker"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { SweepProvider } from "@bluechip/ui/motion/sweep"
 import { createRootRoute, Link, Outlet } from "@tanstack/react-router"
@@ -38,14 +37,13 @@ function KitLayout() {
               key={s.to}
               to={s.to}
               activeOptions={{ exact: true }}
-              className="flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-body-sm font-medium text-g-600 hover:bg-g-100 hover:text-ink data-[status=active]:bg-surface data-[status=active]:text-ink data-[status=active]:shadow-e1"
+              className="flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 text-body-sm font-medium text-g-600 hover:bg-g-100 hover:text-ink data-[status=active]:bg-white data-[status=active]:text-ink data-[status=active]:shadow-e1"
             >
               <Icon name={s.icon} size={16} />
               {s.label}
             </Link>
           ))}
         </nav>
-        <ThemePicker compact className="mt-auto self-start" />
       </aside>
       <main className="min-w-0">
         <SweepProvider>

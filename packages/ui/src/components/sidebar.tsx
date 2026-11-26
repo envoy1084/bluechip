@@ -320,7 +320,6 @@ export function SidebarMenuButton(
         "transition-colors duration-fast ease-brand",
         "hover:bg-blue/[.06] hover:text-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue",
         "data-active:bg-blue/10 data-active:text-blue data-active:hover:bg-blue/[.13] data-active:[&>svg]:text-blue",
-        "dark:hover:bg-blue/10 dark:data-active:bg-blue/20 dark:data-active:text-blue-hi dark:data-active:[&>svg]:text-blue-hi",
         "[&>svg]:size-[18px] [&>svg]:shrink-0 [&>svg]:text-g-400 [&>svg]:transition-colors",
         "[&>span:last-child]:min-w-0 [&>span]:flex-1 [&>span]:truncate [&>span]:transition-opacity [&>span]:duration-base",
         "group-data-[collapsible=icon]/sidebar-panel:px-[9px] group-data-[collapsible=icon]/sidebar-panel:[&>span]:opacity-0",

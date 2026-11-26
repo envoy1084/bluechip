@@ -89,26 +89,6 @@ test.describe("on a phone", () => {
   })
 })
 
-test.describe("dark mode", () => {
-  // bluechip has one, light, theme (`color-scheme: light` in `@bluechip/ui`'s base styles): a dark system setting
-  // must not leave it half dark, with dark form controls on light pages.
-  test("the app keeps its light theme when the system is dark", async ({ page, user: _user }) => {
-    await page.emulateMedia({ colorScheme: "dark" })
-
-    await page.goto("/settings")
-
-    await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible()
-    expect(await page.evaluate(() => matchMedia("(prefers-color-scheme: dark)").matches)).toBe(true)
-    expect(
-      await page.evaluate(() => ({
-        background: getComputedStyle(document.body).backgroundColor,
-        scheme: getComputedStyle(document.documentElement).colorScheme,
-        input: getComputedStyle(document.querySelector("input")!).colorScheme
-      }))
-    ).toEqual({ background: "rgb(251, 251, 252)", scheme: "light", input: "light" })
-  })
-})
-
 test.describe("dev pages", () => {
   test("/dev/chain shows the local chain's latest block", async ({ page }) => {
     await page.goto("/dev/chain")

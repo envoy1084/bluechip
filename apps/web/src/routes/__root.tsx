@@ -1,4 +1,3 @@
-import { themeScript } from "@bluechip/ui/lib/theme"
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { AtomProvider } from "../providers/AtomProvider.tsx"
@@ -32,10 +31,8 @@ function RootComponent() {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    // The theme script sets `data-theme` before hydration, so React must not flag the attribute it didn't render.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <HeadContent />
       </head>
       <body>
