@@ -25,6 +25,19 @@ export const agentUsageAtom = Atom.family((id: AgentId) =>
   })
 )
 
+/** The size of a page of an agent's journal. */
+export const journalPageSize = 20
+
+/** A page of an agent's journal, newest first: `"<agentId> <pageToken>"`, the token empty for the first page. */
+export const agentJournalAtom = Atom.family((key: string) => {
+  const [id, pageToken = ""] = key.split(" ") as [AgentId, string?]
+  return BluechipApiClient.query("agents", "journal", {
+    params: { id },
+    query: { pageSize: journalPageSize, ...(pageToken === "" ? {} : { pageToken }) },
+    reactivityKeys: [...reactivityKeys, intentsReactivityKey]
+  })
+})
+
 /** An agent's sessions, newest first: each set of policies locked for it, and how long it lasted. */
 export const agentSessionsAtom = Atom.family((id: AgentId) =>
   BluechipApiClient.query("agents", "sessions", { params: { id }, reactivityKeys })

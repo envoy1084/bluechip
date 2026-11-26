@@ -14,6 +14,7 @@ import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { agentAtom, agentUsageAtom } from "../atoms/agents.ts"
 import { AgentAlerts } from "../components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "../components/detail/AgentHeader.tsx"
+import { JournalSection } from "../components/detail/JournalSection.tsx"
 import { PoliciesSection } from "../components/detail/PoliciesSection.tsx"
 import { RemoveConfirm } from "../components/detail/RemoveConfirm.tsx"
 import { ResultsCard } from "../components/detail/ResultsCard.tsx"
@@ -129,6 +130,7 @@ function AgentContent({ agent, Trade, Activity, Automations, Ask }: Readonly<{ a
             <PoliciesSection agent={agent} nameOf={nameOf} />
             {agent.status === "draft" ? null : <Automations agent={agent} />}
             {agent.status === "draft" ? null : <Activity agent={agent} nameOf={nameOf} />}
+            {agent.status === "draft" ? null : <JournalSection agent={agent} />}
           </div>
           <div className="grid content-start gap-4">
             {state === "active" || state === "stopped" ? <Trade agent={agent} nameOf={nameOf} /> : null}

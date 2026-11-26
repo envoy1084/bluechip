@@ -8,6 +8,8 @@ import { Agent, AgentName, AgentRequest, AgentSession, AgentsRemoval, AgentUsage
 import { Authentication } from "../Auth.ts"
 import { Conflict, InvalidSpec, NotFound, SignatureRejected, Unavailable } from "../Errors.ts"
 import { AgentId, RequestId, SigningRequestId } from "../Ids.ts"
+import { JournalEntry } from "../journal/Journal.ts"
+import { Page, PageQuery } from "../Page.ts"
 import { AgentSpec } from "../policies/AgentSpec.ts"
 import { AuthenticationCredential } from "../WebAuthn.ts"
 
@@ -33,6 +35,13 @@ export class AgentsApi extends HttpApiGroup.make("agents").add(
     params: { id: AgentId },
     success: AgentUsage,
     error: [NotFound, Unavailable]
+  }),
+  HttpApiEndpoint.get("journal", "/agents/:id/journal", {
+    params: { id: AgentId },
+    query: PageQuery,
+    /** What the agent did and why, newest first. */
+    success: Page(JournalEntry),
+    error: NotFound
   }),
   HttpApiEndpoint.get("sessions", "/agents/:id/sessions", {
     params: { id: AgentId },

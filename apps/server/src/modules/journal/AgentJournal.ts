@@ -1,12 +1,13 @@
 import { importanceOf } from "@bluechip/domain/assistant/Recall"
 import { NotFound } from "@bluechip/domain/Errors"
-import type { AgentId, JournalEntryId, UserId } from "@bluechip/domain/Ids"
+import { type AgentId, JournalEntryId, type UserId } from "@bluechip/domain/Ids"
 import { JournalEntry, type JournalKind, type JournalRefs } from "@bluechip/domain/journal/Journal"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, lt } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { agents } from "../agents/tables.ts"
@@ -34,6 +35,11 @@ export class AgentJournal extends Context.Service<AgentJournal, {
   readonly read: (owner: Owner, agentId: AgentId, options?: {
     readonly limit?: number | undefined
   }) => Effect.Effect<ReadonlyArray<JournalEntry>, NotFound>
+  /** A page of the agent's entries, newest first (25 unless `pageSize` says otherwise). */
+  readonly page: (owner: Owner, agentId: AgentId, query: {
+    readonly pageSize?: number | undefined
+    readonly pageToken?: string | undefined
+  }) => Effect.Effect<{ readonly items: ReadonlyArray<JournalEntry>; readonly nextPageToken: string | null }, NotFound>
 }>()("@bluechip/server/AgentJournal") {
   static readonly layer = Layer.effect(
     AgentJournal,
@@ -65,17 +71,20 @@ export class AgentJournal extends Context.Service<AgentJournal, {
         }], { background: true })
       })
 
-      const read = Effect.fn("AgentJournal.read")(function*(owner: Owner, agentId: AgentId, options: {
-        readonly limit?: number | undefined
-      } = {}) {
+      const entries = Effect.fnUntraced(function*(owner: Owner, agentId: AgentId, options: {
+        readonly limit: number
+        readonly before?: string | undefined
+      }) {
         const [agent] = yield* db.select({ id: agents.id }).from(agents).where(and(
           eq(agents.id, agentId as `agent_${string}`),
           eq(agents.userId, owner.id as `user_${string}`)
         )).pipe(Effect.orDie)
         if (agent === undefined) return yield* new NotFound({ resource: "agent", id: agentId })
 
-        const rows = yield* db.select().from(agentJournal).where(eq(agentJournal.agentId, agent.id))
-          .orderBy(desc(agentJournal.id)).limit(options.limit ?? 20).pipe(Effect.orDie)
+        const rows = yield* db.select().from(agentJournal).where(and(
+          eq(agentJournal.agentId, agent.id),
+          options.before === undefined ? undefined : lt(agentJournal.id, options.before as `journal_${string}`)
+        )).orderBy(desc(agentJournal.id)).limit(options.limit).pipe(Effect.orDie)
         return rows.map((row) =>
           new JournalEntry({
             id: row.id as JournalEntryId,
@@ -88,7 +97,26 @@ export class AgentJournal extends Context.Service<AgentJournal, {
         )
       })
 
-      return AgentJournal.of({ write, read })
+      const read = Effect.fn("AgentJournal.read")(function*(owner: Owner, agentId: AgentId, options: {
+        readonly limit?: number | undefined
+      } = {}) {
+        return yield* entries(owner, agentId, { limit: options.limit ?? 20 })
+      })
+
+      const page = Effect.fn("AgentJournal.page")(function*(owner: Owner, agentId: AgentId, query: {
+        readonly pageSize?: number | undefined
+        readonly pageToken?: string | undefined
+      }) {
+        const size = query.pageSize ?? 25
+        const found = yield* entries(owner, agentId, {
+          limit: size + 1,
+          before: Schema.is(JournalEntryId)(query.pageToken) ? query.pageToken : undefined
+        })
+        const items = found.slice(0, size)
+        return { items, nextPageToken: found.length > size ? items.at(-1)!.id as string : null }
+      })
+
+      return AgentJournal.of({ write, read, page })
     })
   )
 }
