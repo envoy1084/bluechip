@@ -3,6 +3,7 @@ import {
   type ComponentProps,
   createContext,
   type CSSProperties,
+  type MouseEvent,
   type ReactNode,
   useCallback,
   useContext,
@@ -197,15 +198,24 @@ export interface SidebarMenuButtonProps extends useRender.ComponentProps<"button
   readonly tooltip?: ReactNode
 }
 
-/** A navigation row: icon, then label in a `<span>`. Renders a `<button>`; pass `render` for a link. */
-export function SidebarMenuButton({ isActive = false, tooltip, className, render, ...props }: SidebarMenuButtonProps) {
-  const { state, isMobile } = useSidebar()
+/**
+ * A navigation row: icon, then label in a `<span>`. Renders a `<button>`; pass `render` for a link. On phones,
+ * following it closes the navigation sheet, so the page it opens isn't left behind it.
+ */
+export function SidebarMenuButton(
+  { isActive = false, tooltip, className, render, onClick, ...props }: SidebarMenuButtonProps
+) {
+  const { state, isMobile, setOpenMobile } = useSidebar()
   const button = useRender({
     defaultTagName: "button",
     render,
     props: {
       ...(render ? {} : { type: "button" as const }),
       ...props,
+      onClick: (event: MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event)
+        if (isMobile) setOpenMobile(false)
+      },
       "aria-current": isActive ? "page" : undefined,
       "data-slot": "sidebar-menu-button",
       "data-active": isActive || undefined,

@@ -183,6 +183,20 @@ describe("Sidebar", () => {
         .toHaveAttribute("aria-expanded", "true")
     })
 
+    it("following a row closes the sheet", async () => {
+      await page.viewport(390, 800)
+      await render(<AppFrame />)
+      await userEvent.click(trigger())
+      await expect.element(page.getByRole("dialog", { name: "App navigation" })).toBeVisible()
+      const row = page.getByRole("button", { name: "Activity" }).element() as HTMLButtonElement
+
+      // Base UI's inert overlay takes a pointer click in the test iframe (and an outside press closes the sheet
+      // anyway), so the row gets the click itself.
+      row.click()
+
+      await expect.element(page.getByRole("dialog", { name: "App navigation" })).not.toBeInTheDocument()
+    })
+
     it("⌘B opens the sheet", async () => {
       await page.viewport(390, 800)
       await render(<AppFrame />)

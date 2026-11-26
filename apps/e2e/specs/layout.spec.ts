@@ -45,13 +45,19 @@ test.describe("on a phone", () => {
     await navigation.getByRole("link", { name: "Activity" }).click()
 
     await expect(page).toHaveURL(/\/activity$/)
-    await expect(page.getByRole("heading", { name: "Activity", level: 1 })).toBeAttached()
-    await navigation.getByRole("button", { name: "Close" }).click()
-    await expect(navigation).toBeHidden()
     await expect(page.getByRole("heading", { name: "Activity", level: 1 })).toBeVisible()
   })
 
-  test.fixme("the navigation sheet closes on the page it opens (bug: it stays open over the new page)", async ({ page, user: _user }) => {
+  test("the navigation sheet's Close button closes it", async ({ page, user: _user }) => {
+    await page.getByRole("button", { name: "Toggle sidebar" }).click()
+
+    const navigation = page.getByRole("dialog", { name: "App navigation" })
+    await navigation.getByRole("button", { name: "Close" }).click()
+
+    await expect(navigation).toBeHidden()
+  })
+
+  test("the navigation sheet closes on the page it opens", async ({ page, user: _user }) => {
     await page.getByRole("button", { name: "Toggle sidebar" }).click()
 
     const navigation = page.getByRole("dialog", { name: "App navigation" })
