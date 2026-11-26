@@ -6,6 +6,7 @@ import { contracts } from "./commands/contracts.ts"
 import { dev } from "./commands/dev.ts"
 import { devnet } from "./commands/devnet.ts"
 import { lint } from "./commands/lint.ts"
+import { vapid } from "./commands/vapid.ts"
 
 /** `node scripts/bin.ts <command>`: the repository's tooling, run from the repository root. */
 export const cli = Command.make("scripts").pipe(
@@ -16,6 +17,7 @@ export const cli = Command.make("scripts").pipe(
     contracts,
     dev,
     devnet,
-    lint
+    lint,
+    vapid
   ])
 )
