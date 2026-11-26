@@ -124,3 +124,75 @@ test.describe("template cards", () => {
     await expect(page.getByRole("radio", { name: /^Steady picks/ })).toBeHidden()
   })
 })
+
+test.describe("automation cards", () => {
+  // The draft as the model writes it: amounts as strings of USDC units, percentages in basis points.
+  const weeklyApple = {
+    name: "Weekly Apple",
+    agentId: null,
+    trigger: { type: "schedule", config: { days: ["monday"], time: "10:00", timeZone: "America/New_York" } },
+    conditions: [],
+    action: { type: "buy", config: { amount: "50000000", split: [{ symbol: "AAPL", weight: 10_000 }] } },
+    settings: {
+      cooldownMinutes: 60,
+      maxFires: null,
+      expiresAt: null,
+      quietHours: null,
+      marketHoursOnly: null,
+      actDirectly: false
+    }
+  }
+  const drafted = (to: string) => ({
+    to,
+    rounds: [
+      [{ call: "createAutomation", params: { draft: weeklyApple, automationId: null } }],
+      [{ text: "Save it on the card." }]
+    ]
+  })
+
+  test("an automation from words reads back in a sentence, and is on once saved", async ({ page, user: _user, replies }) => {
+    await ask(page, replies, drafted(unique("Every Monday buy $50 of Apple")))
+    const card = page.getByRole("region", { name: "New automation" })
+    await expect(card.getByText("Every Monday at 10:00 New York time, buy $50 of Apple.")).toBeVisible()
+    await expect(card.getByText("Nothing runs until you save it.", { exact: false })).toBeVisible()
+
+    await card.getByRole("button", { name: "Save automation" }).click()
+
+    await expect(card.getByRole("status").filter({ hasText: "Weekly Apple is on" })).toBeVisible()
+    await card.getByRole("link", { name: "See it" }).click()
+    await expect(page.getByRole("heading", { level: 1, name: "Weekly Apple" })).toBeVisible()
+  })
+
+  test("an automation left with Not now isn't saved", async ({ page, user: _user, replies }) => {
+    await ask(page, replies, drafted(unique("Maybe buy $50 of Apple every Monday")))
+    const card = page.getByRole("region", { name: "New automation" })
+
+    await card.getByRole("button", { name: "Not now" }).click()
+
+    await expect(card.getByText("You left it as it was. Nothing was saved.")).toBeVisible()
+    await page.goto("/automations")
+    await expect(page.getByRole("heading", { name: "No automations yet" })).toBeVisible()
+  })
+
+  test("pausing an automation from words is done on the card", async ({ page, user: _user, replies }) => {
+    await ask(page, replies, drafted(unique("Buy $50 of Apple each Monday")))
+    await page.getByRole("region", { name: "New automation" }).getByRole("button", { name: "Save automation" }).click()
+    await page.getByRole("link", { name: "See it" }).click()
+    const automationId = new URL(page.url()).pathname.split("/").at(-1)!
+    await page.goto("/chat")
+
+    await ask(page, replies, {
+      to: unique("Pause Weekly Apple"),
+      rounds: [
+        [{ call: "pauseAutomation", params: { automationId, resume: false } }],
+        [{ text: "Confirm on the card." }]
+      ]
+    })
+    const card = page.getByRole("region", { name: "Pause" })
+    await card.getByRole("button", { name: "Pause Weekly Apple" }).click()
+
+    await expect(card.getByRole("status").filter({ hasText: "Weekly Apple is paused" })).toBeVisible()
+    await page.goto(`/automations/${automationId}`)
+    await expect(page.getByRole("region", { name: "What it does" })).toContainText("Paused")
+  })
+})
