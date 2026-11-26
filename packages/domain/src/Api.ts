@@ -26,7 +26,7 @@ import { AccountRecoveryApi, RecoveringApi, RecoveryApi } from "./api/RecoveryAp
 import { SystemApi } from "./api/SystemApi.ts"
 import { TradesApi } from "./api/TradesApi.ts"
 import { TransfersApi } from "./api/TransfersApi.ts"
-import { ContractCheck, DefectReporting } from "./Contract.ts"
+import { ContractCheck, DefectReporting, MalformedIds } from "./Contract.ts"
 
 /**
  * The contract shared by the server (handlers) and the web app (typed client). Groups are added by the feature that
@@ -61,6 +61,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(ChannelsApi)
   .add(DevApi)
   .middleware(DefectReporting)
+  .middleware(MalformedIds)
   .middleware(ContractCheck)
   .prefix("/api")
   .annotateMerge(OpenApi.annotations({ title: "bluechip API", version: "0.0.0" }))

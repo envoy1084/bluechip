@@ -24,7 +24,7 @@ import { PushHandlers } from "./modules/push/http.ts"
 import { RecoveryApiHandlers } from "./modules/recovery/http.ts"
 import { SystemHandlers } from "./modules/system/http.ts"
 import { TradesHandlers } from "./modules/trading/http.ts"
-import { ContractCheckLive, DefectReportingLive } from "./platform/http/Contract.ts"
+import { ContractCheckLive, DefectReportingLive, MalformedIdsLive } from "./platform/http/Contract.ts"
 
 /** Every group's handlers with the contract middleware; tests serve these in memory. */
 export const ApiHandlers = Layer.mergeAll(
@@ -52,7 +52,13 @@ export const ApiHandlers = Layer.mergeAll(
 )
   .pipe(
     Layer.provideMerge(
-      Layer.mergeAll(ContractCheckLive, DefectReportingLive, AuthenticationLive, RecoveryAuthenticationLive)
+      Layer.mergeAll(
+        ContractCheckLive,
+        DefectReportingLive,
+        MalformedIdsLive,
+        AuthenticationLive,
+        RecoveryAuthenticationLive
+      )
     )
   )
 

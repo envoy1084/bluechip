@@ -7,6 +7,7 @@ import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as HttpClient from "effect/http/HttpClient"
 import * as HttpClientRequest from "effect/http/HttpClientRequest"
+import * as Schema from "effect/Schema"
 import { randomUUID } from "node:crypto"
 import { typeid } from "typeid-js"
 import { stopLoss, weeklyBuy } from "../../fixtures/Automations.ts"
@@ -199,19 +200,32 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         assert.deepStrictEqual(error, new NotFound({ resource: "automation", id: saved.id }))
       }))
 
-    it.effect("400: an id shaped like a TypeID that no UUID can be made of (version 0), like any malformed id", () =>
+    it.effect.each(
+      [
+        [
+          "an id shaped like a TypeID that no UUID can be made of (version 0)",
+          "automation_01jd8v0000000000000000000z",
+          {
+            resource: "automation",
+            id: "automation_01jd8v0000000000000000000z"
+          }
+        ],
+        ["a word that isn't an id", "nope", { resource: "id", id: "nope" }]
+      ] as const
+    )("404: %s, with the API's error body", ([, id, expected]) =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).signUp
         // Sent by hand: the typed client refuses to encode an id its schema refuses.
         const client = HttpClient.withCookiesRef(yield* HttpClient.HttpClient, user.cookies)
 
         const response = yield* client.execute(
-          HttpClientRequest.get("/api/automations/automation_01jd8v0000000000000000000z").pipe(
+          HttpClientRequest.get(`/api/automations/${id}`).pipe(
             HttpClientRequest.setHeader(contractVersionHeader, String(ContractVersion))
           )
         )
+        const body = yield* Effect.flatMap(response.json, Schema.decodeUnknownEffect(NotFound))
 
-        assert.strictEqual(response.status, 400)
+        assert.deepStrictEqual([response.status, body], [404, new NotFound(expected)])
       }))
   })
 

@@ -5,7 +5,7 @@
  * @since 0.0.0
  */
 import * as HttpApiMiddleware from "effect/http-api/HttpApiMiddleware"
-import { ClientOutdated, Internal } from "./Errors.ts"
+import { ClientOutdated, Internal, NotFound } from "./Errors.ts"
 
 /**
  * @stability unstable
@@ -46,4 +46,17 @@ export class ContractCheck
 export class DefectReporting extends HttpApiMiddleware.Service<DefectReporting>()(
   "@bluechip/domain/Contract/DefectReporting",
   { error: Internal }
+) {}
+
+/**
+ * Answers a path id that can't be one (`/api/agents/not-an-id`) as {@link NotFound}: no record has that id, so the
+ * answer is the one an unknown id gets, with the API's error body, rather than a bare 400.
+ *
+ * @stability unstable
+ * @category middleware
+ * @since 0.0.0
+ */
+export class MalformedIds extends HttpApiMiddleware.Service<MalformedIds>()(
+  "@bluechip/domain/Contract/MalformedIds",
+  { error: NotFound }
 ) {}
