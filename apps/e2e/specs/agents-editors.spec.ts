@@ -461,8 +461,8 @@ test.describe("rules step: target mix", () => {
     await expect(review(page)).toBeDisabled()
   })
 
-  test.fixme(
-    "Split evenly keeps each stock within the max in one stock (bug: it splits 90% into 45% each past the 30% cap)",
+  test(
+    "Split evenly keeps each stock within the max in one stock",
     async ({ page, user: _user }) => {
       await rebalancer(page)
       await page.getByRole("textbox", { name: "Apple target, percent" }).fill("10")

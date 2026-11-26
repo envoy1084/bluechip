@@ -49,15 +49,19 @@ export const setAllocationTarget = (
   )
 }
 
-/** Splits what's left after locked stocks and the cash reserve evenly across the unlocked stocks. */
+/**
+ * Splits what's left after locked stocks and the cash reserve evenly across the unlocked stocks, none past your max
+ * in one stock; what the max holds back stays cash.
+ */
 export const balanceAllocation = (
   targets: ReadonlyArray<AllocationTarget>,
-  reserve: number
+  reserve: number,
+  cap: number
 ): ReadonlyArray<AllocationTarget> => {
   const unlocked = targets.filter((t) => !t.locked)
   if (unlocked.length === 0) return targets
   const share = Math.max(0, 100 - reserve - sum(targets.filter((t) => t.locked)))
-  const each = Math.floor(share / unlocked.length)
+  const each = Math.min(cap, Math.floor(share / unlocked.length))
   return targets.map((t) => (t.locked ? t : { ...t, target: each }))
 }
 
@@ -77,7 +81,7 @@ const SEGMENT = (index: number) => `var(--color-series-${(index % 8) + 1})`
 
 /**
  * The target mix for a Rebalancer. Cash fills the rest, so targets always add up to 100%. Lock a stock to keep it
- * while others move; Split evenly shares what's left and keeps your cash reserve.
+ * while others move; Split evenly shares what's left within your max and keeps your cash reserve.
  */
 export function AllocationEditor(
   { defaultValue, onValueChange, cap = 30, reserve = 10, className }: AllocationEditorProps
@@ -211,7 +215,7 @@ export function AllocationEditor(
             variant="ghost"
             size="sm"
             disabled={!targets.some((t) => !t.locked)}
-            onClick={() => update(balanceAllocation(targets, reserve))}
+            onClick={() => update(balanceAllocation(targets, reserve, cap))}
           >
             <Icon name="scales" size={14} />Split evenly
           </Button>

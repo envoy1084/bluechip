@@ -123,7 +123,7 @@ describe("setAllocationTarget", () => {
 
 describe("balanceAllocation", () => {
   it("splits what the reserve leaves evenly, the remainder going to cash", () => {
-    expect(balanceAllocation(MIX, 10)).toStrictEqual([
+    expect(balanceAllocation(MIX, 10, 30)).toStrictEqual([
       { symbol: "NVDA", target: 22 },
       { symbol: "AAPL", target: 22 },
       { symbol: "MSFT", target: 22 },
@@ -133,7 +133,7 @@ describe("balanceAllocation", () => {
 
   it("keeps locked stocks and splits what's left", () => {
     const locked = MIX.map((t) => (t.symbol === "NVDA" ? { ...t, locked: true } : t))
-    expect(balanceAllocation(locked, 10)).toStrictEqual([
+    expect(balanceAllocation(locked, 10, 30)).toStrictEqual([
       { symbol: "NVDA", target: 30, locked: true },
       { symbol: "AAPL", target: 20 },
       { symbol: "MSFT", target: 20 },
@@ -143,7 +143,7 @@ describe("balanceAllocation", () => {
 
   it("gives nothing when locked stocks and the reserve fill 100", () => {
     const locked = MIX.map((t) => (t.symbol === "TSLA" ? t : { ...t, locked: true }))
-    expect(balanceAllocation(locked, 30)).toStrictEqual([
+    expect(balanceAllocation(locked, 30, 30)).toStrictEqual([
       { symbol: "NVDA", target: 30, locked: true },
       { symbol: "AAPL", target: 25, locked: true },
       { symbol: "MSFT", target: 20, locked: true },
@@ -151,9 +151,24 @@ describe("balanceAllocation", () => {
     ])
   })
 
+  it("keeps each stock at your max, the rest going to cash", () => {
+    expect(balanceAllocation(MIX.slice(0, 2), 10, 30)).toStrictEqual([
+      { symbol: "NVDA", target: 30 },
+      { symbol: "AAPL", target: 30 }
+    ])
+  })
+
+  it("an even split landing on your max keeps it", () => {
+    expect(balanceAllocation(MIX.slice(0, 3), 10, 30)).toStrictEqual([
+      { symbol: "NVDA", target: 30 },
+      { symbol: "AAPL", target: 30 },
+      { symbol: "MSFT", target: 30 }
+    ])
+  })
+
   it("changes nothing when every stock is locked", () => {
     const locked = MIX.map((t) => ({ ...t, locked: true }))
-    expect(balanceAllocation(locked, 10)).toBe(locked)
+    expect(balanceAllocation(locked, 10, 30)).toBe(locked)
   })
 })
 
