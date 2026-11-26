@@ -6,13 +6,14 @@ import * as Config from "effect/Config"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as FetchHttpClient from "effect/http/FetchHttpClient"
+import * as HttpClient from "effect/http/HttpClient"
 import * as Layer from "effect/Layer"
 import * as Predicate from "effect/Predicate"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 
 // A failure worth another try: overloaded, rate limited, or the network. Invalid requests fail at once. Also a
-// response @effect/ai-anthropic can't decode because Anthropic left `stop_details.fallback_credit_token` out of it
+// refusal @effect/ai-anthropic can't decode because Anthropic left `stop_details.fallback_credit_token` out of it
 // (seen once on Sonnet, to report upstream): the next try answers.
 const retryable = (error: unknown): boolean => {
   if (!Predicate.isTagged(error, "AiError")) return false
@@ -75,13 +76,15 @@ export class AssistantModels extends Context.Service<AssistantModels, {
   /**
    * Anthropic with `ANTHROPIC_API_KEY`: `ASSISTANT_MODEL` (default `claude-sonnet-5-5`) for conversations and memory
    * notes, `ASSISTANT_SMALL_MODEL` (default `claude-haiku-5-5`) for titles. Requests cache everything up to the newest
-   * message (tools, system prompt and history), so each round of a turn reads the rest from the cache.
+   * message (tools, system prompt and history), so each round of a turn reads the rest from the cache. Reaches
+   * Anthropic with the `HttpClient` it is given (tests answer in process).
    */
-  static readonly layer = Layer.unwrap(Effect.gen(function*() {
+  static readonly layerNoDeps = Layer.unwrap(Effect.gen(function*() {
     const conversation = yield* Config.String("ASSISTANT_MODEL").pipe(Config.withDefault("claude-sonnet-5-5"))
     const small = yield* Config.String("ASSISTANT_SMALL_MODEL").pipe(Config.withDefault("claude-haiku-5-5"))
+    const httpClient = yield* HttpClient.HttpClient
     const client = AnthropicClient.layerConfig({ apiKey: Config.Redacted("ANTHROPIC_API_KEY") }).pipe(
-      Layer.provide(FetchHttpClient.layer)
+      Layer.provide(Layer.succeed(HttpClient.HttpClient, httpClient))
     )
 
     // Only the tools marked `Tool.Strict` are strict: Anthropic allows 20 strict tools and 16 nullable or union
@@ -111,4 +114,6 @@ export class AssistantModels extends Context.Service<AssistantModels, {
       })
     )
   }))
+  /** `layerNoDeps` on the platform's `fetch`. */
+  static readonly layer = this.layerNoDeps.pipe(Layer.provide(FetchHttpClient.layer))
 }
