@@ -34,8 +34,8 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("each optional rul
       assert.strictEqual(decision._tag, "Passes")
     }))
 
-  it.effect.skip(
-    "stopLossFloor: a session carrying it alone locks, and a fair $20 buy passes (needs pnpm devnet:capture)",
+  it.effect(
+    "stopLossFloor: a session carrying it alone locks, and a fair $20 buy passes",
     () =>
       Effect.gen(function*() {
         const spec = changed(without(PICKER, "stockCap", "cashReserve", "slippageBudget"), {

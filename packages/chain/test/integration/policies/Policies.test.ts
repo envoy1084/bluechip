@@ -234,7 +234,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         config: { floors: [{ symbol: "NVDA", price: floor }, { symbol: "AAPL", price: floor }] }
       })
 
-    it.effect.skip("a sale of NVDA above its floor (needs pnpm devnet:capture)", () =>
+    it.effect("a sale of NVDA above its floor", () =>
       Effect.gen(function*() {
         const { address, agent } = yield* (yield* TestAgents).lock({ spec: guard(BigInt(1)) })
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(100_000_000))
@@ -252,7 +252,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         })
       }))
 
-    it.effect.skip("the same sale under a floor of $10,000 (needs pnpm devnet:capture)", () =>
+    it.effect("the same sale under a floor of $10,000", () =>
       Effect.gen(function*() {
         const { address, agent } = yield* (yield* TestAgents).lock({ spec: guard(BigInt(1_000_000_000_000)) })
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(100_000_000))
