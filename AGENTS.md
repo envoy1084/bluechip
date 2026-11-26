@@ -10,10 +10,12 @@ that match the task.
   - `packages/domain` (`@bluechip/domain`, private): shared ids, errors, live events and the HTTP API contract
     (`BluechipApi`, Effect `HttpApi`); the server implements it, the web app calls it. Depends only on `effect`.
   - `packages/chain` (`@bluechip/chain`, private): Base from Effect: `ChainClient` (viem), contract addresses (USDC,
-    EntryPoint, every Coinbase stock with a Chainlink feed), ABIs, and `DevChain` cheatcodes for the local fork.
+    EntryPoint, every Coinbase stock with a Chainlink feed), ABIs, the account's owners and recovery sessions
+    (`account/`), and `DevChain` cheatcodes for the local fork.
   - `packages/devnet` (`@bluechip/devnet`, private): a local Base for tests, Anvil and Alto per Vitest worker,
     started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), with
-    every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`).
+    every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`), software
+    passkeys (`Passkeys`), time ahead (`inFuture`) and sends straight to the EntryPoint (`handleOps`).
   - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
     bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
@@ -29,10 +31,12 @@ that match the task.
     server (`apps/server/src/platform/engine/`).
 - `contracts/`: bluechip's onchain policies in Solidity (Foundry, Soldeer dependencies): `AerodromeTradePolicy`
   (validation), `TradeGuard` (execution: measures what moved, values the portfolio, then runs the session's rule
-  contracts, `src/rules/*Rule.sol`), Namera v2 policies deployed by CREATE2 at the same address everywhere.
+  contracts, `src/rules/*Rule.sol`), `RecoveryDelayPolicy` (a recovery key's owner changes wait 48 hours), Namera v2
+  policies deployed by CREATE2 at the same address everywhere.
   `contracts build` writes their addresses and ABIs to `packages/chain/src/policies/Deployed.ts`. `test/vectors.json`
   is a frozen fixture of the rules' behaviour. A change to their bytecode moves their addresses: rebuild, then
-  `pnpm devnet:capture`, and update the gas snapshot (`node scripts/bin.ts contracts snapshot`).
+  `pnpm devnet:capture`, and update the gas snapshot (`node scripts/bin.ts contracts snapshot`). A new contract alone
+  needs no capture: `pnpm devnet:deploy` adds what's missing to the captured state, as the capture would.
 - `content/help/`: the help center's articles, one Markdown file each (`# Title`, then `## Section`s). The server's
   knowledge (`apps/server/src/modules/knowledge/`) chunks them by section for the assistant's `searchHelp`, refreshed
   at start and daily; write only what the app does today.
@@ -230,6 +234,17 @@ by the agent's key, or blocked with the refusing policy in words, or left waitin
 Your own trades and approvals are prepared for your passkey and sent by `Trades`. Never send money any other way;
 new sources (the assistant, automations, chat platforms, MCP) create intents through `Intents`.
 
+## Owners and recovery
+
+The account's owners are passkeys on Namera's `WebAuthnValidator` (Kernel's root validator) with a threshold of one:
+any of them signs, so signing requests accept any active owner and build the account at its stored address. Adding
+or removing an owner is one owner operation (`account/Owners.ts`); the last one can't be removed. A recovery passkey
+is a Namera session (`account/Recovery.ts`) that may only ask for owner changes and make them through
+`RecoveryDelayPolicy`, which returns the request's due time as `validAfter`: the 48-hour delay is enforced onchain.
+bluechip's guard key (sealed like agents' keys) may only cancel a request, so any signed-in device or Telegram can
+cancel without Face ID. A compromised server can cancel recoveries, never start or speed one. Alto checks
+`validAfter` against the wall clock, so chain tests make a due recovery with `Devnet.inFuture` and `handleOps`.
+
 ## Agents and policies
 
 An agent is a session key carrying onchain policies; nothing offchain limits it. Its definition is an `AgentSpec`
@@ -293,8 +308,9 @@ To add a notification kind:
 
 1. **Domain.** Add it to `NotificationKind` (`Notification.ts`) and `KINDS` (`Kinds.ts`): group, label, description,
    severity (`security` locks it on every channel), the channels it may use and its defaults. Write its draft in
-   `Drafts.ts`, a pure function of what happened with a `dedupeKey`, tested with a table in
-   `test/unit/notifications/Drafts.test.ts`.
+   `Drafts.ts` (account safety in `SecurityDrafts.ts`), a pure function of what happened with a `dedupeKey`, tested
+   with a table in `test/unit/notifications/`. A kind that offers an action where it lands (Pause all, Cancel
+   recovery) says so in `actionsOf` (`Actions.ts`): the bell and Telegram show its buttons.
 2. **Server.** Make it from a live event in `Fanout.ts`, from time in `Reminders.ts`, or with `Notifications.add`
    where it happens. Never call a notifier.
 3. **Web.** Nothing: the settings page and the bell are built from the catalog.
