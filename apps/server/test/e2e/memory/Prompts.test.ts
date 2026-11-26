@@ -103,7 +103,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           const assistant = yield* TestAssistant
           const recorded = yield* RecordedModel
           const created = yield* user.api.intents.create({
-            payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("NVDA", 50) }
+            payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("AAPL", 50) }
           })
           assert.instanceOf(created, Intent)
           yield* user.events.next(
@@ -114,7 +114,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           yield* recorded.record({
             to: asked,
             rounds: [[{ call: "getAgentJournal", params: { agentId: agent.id, limit: null } }], [{
-              text: "It bought Nvidia."
+              text: "It bought Apple."
             }]]
           })
 
@@ -132,7 +132,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
 
           assert.match(
             toolResults.join("\n"),
-            /^\S+Z: Buy \$50\.00 of NVIDIA: filled\.\n\S+Z: Buy \$50\.00 of NVIDIA, sent within its policies\. Why: You asked this agent to trade\.$/
+            /^\S+Z: Buy \$50\.00 of Apple: filled\.\n\S+Z: Buy \$50\.00 of Apple, sent within its policies\. Why: You asked this agent to trade\.$/
           )
         }))
     })

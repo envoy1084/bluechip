@@ -17,7 +17,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("AgentJournal", (it) => {
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked
         const created = yield* user.api.intents.create({
-          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("NVDA", 50) }
+          payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("AAPL", 50) }
         })
         assert.instanceOf(created, Intent)
         yield* user.events.next("IntentChanged", ({ intent }) => intent.id === created.id && intent.status === "filled")
@@ -25,8 +25,8 @@ layer(TestAgents.layer, { excludeTestServices: true })("AgentJournal", (it) => {
         const entries = yield* (yield* AgentJournal).read({ id: user.id, account: user.account }, agent.id)
 
         assert.deepStrictEqual(entries.map((entry) => [entry.kind, entry.entry, entry.refs]), [
-          ["intent", "Buy $50.00 of NVIDIA: filled.", { intentId: created.id }],
-          ["intent", "Buy $50.00 of NVIDIA, sent within its policies. Why: You asked this agent to trade.", {
+          ["intent", "Buy $50.00 of Apple: filled.", { intentId: created.id }],
+          ["intent", "Buy $50.00 of Apple, sent within its policies. Why: You asked this agent to trade.", {
             intentId: created.id
           }]
         ])
