@@ -67,6 +67,7 @@ import { Notifications } from "./modules/notifications/Notifications.ts"
 import { Notifiers } from "./modules/notifications/Notifiers.ts"
 import { ReminderCron } from "./modules/notifications/ReminderCron.ts"
 import { Reminders } from "./modules/notifications/Reminders.ts"
+import { Drift } from "./modules/performance/Drift.ts"
 import { DriftCron } from "./modules/performance/DriftCron.ts"
 import { Performance } from "./modules/performance/Performance.ts"
 import { SavedTemplates } from "./modules/policies/SavedTemplates.ts"
@@ -154,7 +155,7 @@ export const ServicesLive = Layer.mergeAll(
   ),
   Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),
-  Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer, Automations.layer, RecoveryKeys.layer)),
+  Layer.provideMerge(Layer.mergeAll(Intents.layer, Memories.layer, Automations.layer, RecoveryKeys.layer, Drift.layer)),
   Layer.provideMerge(Recoveries.layer),
   Layer.provideMerge(
     Layer.mergeAll(Trades.layer, Withdrawals.layer, Agents.layer, AgentRequests.layer, Passkeys.layer)
