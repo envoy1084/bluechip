@@ -140,4 +140,20 @@ layer(DevnetTest.layer)("Devnet", (it) => {
         assert.isTrue(result[0] <= fair && result[0] * BigInt(1000) >= fair * BigInt(995))
       }))
   })
+
+  describe("layerIsolated", () => {
+    it.effect("a clock moved a week ahead on a devnet of its own leaves the worker's chain where it was", () =>
+      Effect.gen(function*() {
+        const shared = yield* ChainClient
+        const before = (yield* shared.use("block", (client) => client.getBlock())).timestamp
+
+        const isolated = yield* Effect.gen(function*() {
+          yield* (yield* DevChain).setTime(new Date((Number(before) + 7 * 86_400) * 1000))
+          return (yield* (yield* ChainClient).use("block", (client) => client.getBlock())).timestamp
+        }).pipe(Effect.provide(DevnetTest.layerIsolated))
+        const after = (yield* shared.use("block", (client) => client.getBlock())).timestamp
+
+        assert.deepStrictEqual([isolated - before >= 7n * 86_400n, after - before < 60n], [true, true])
+      }))
+  })
 })

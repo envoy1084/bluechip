@@ -7,11 +7,12 @@
 import * as Layer from "effect/Layer"
 import { Server } from "prool/vitest"
 import { inject } from "vitest"
-import { contextKey, Devnet, type DevnetContext } from "./Devnet.ts"
+import { contextKey, Devnet, type DevnetContext, stateKey } from "./Devnet.ts"
 
 declare module "vitest" {
   interface ProvidedContext {
     readonly [contextKey]: DevnetContext
+    readonly [stateKey]: string
   }
 }
 
@@ -23,6 +24,20 @@ declare module "vitest" {
  * @since 0.0.0
  */
 export const layer = Layer.provideMerge(Devnet.layerChain, Devnet.layer(inject(contextKey)))
+
+/**
+ * A devnet of the file's own (`Devnet.layerIsolated`) with `ChainClient` and `DevChain`, for tests that move the
+ * chain's clock, which must never move on the worker's shared chain.
+ *
+ * @stability unstable
+ * @category layers
+ * @since 0.0.0
+ */
+export const layerIsolated = Layer.provideMerge(
+  // Fresh: the chain layer is memoized, and the shared one would talk to the worker's chain.
+  Layer.fresh(Devnet.layerChain),
+  Devnet.layerIsolated(inject(stateKey))
+)
 
 /**
  * This worker's Anvil and Alto URLs, for code that reads them from config (such as `BUNDLER_URL`).

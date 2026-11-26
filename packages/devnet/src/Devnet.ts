@@ -11,6 +11,7 @@ import { DevChain } from "@bluechip/chain/DevChain"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import { type Instance, Pool } from "prool"
 import { Server } from "prool/vitest"
 import { type Address, encodeFunctionData, type Hex, toHex } from "viem"
 import {
@@ -20,6 +21,7 @@ import {
   type UserOperation
 } from "viem/account-abstraction"
 import * as Controls from "./Controls.ts"
+import * as Instances from "./internal/instances.ts"
 
 /**
  * The URLs `globalSetup` provides to test workers, under `contextKey`.
@@ -42,6 +44,15 @@ export type DevnetContext = {
  */
 export const contextKey = "@bluechip/devnet/Devnet" as const
 
+/**
+ * The key the unpacked captured state's path is provided under, for `Devnet.layerIsolated`.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const stateKey = "@bluechip/devnet/Devnet/state" as const
+
 const stockOf = (symbol: string) => {
   const stock = stocks.find((candidate) => candidate.symbol === symbol)
   if (stock === undefined) throw new Error(`Devnet: no stock ${symbol}`)
@@ -62,6 +73,54 @@ export const handleOpsCall = (operations: ReadonlyArray<UserOperation<"0.7">>): 
     functionName: "handleOps",
     args: [operations.map((operation) => toPackedUserOperation(operation)), Controls.DEVNET_ADMIN]
   })
+})
+
+// Starts `instance` on a free port for the scope (prool's pool picks the port), and stops it when the scope closes.
+const startInstance = (instance: Instance.Instance) =>
+  Effect.acquireRelease(
+    Effect.promise(async () => {
+      const pool = Pool.define({ instance, limit: 1 })
+      return { pool, url: (await pool.start(1)).url }
+    }),
+    ({ pool }) => Effect.promise(() => pool.destroyAll())
+  )
+
+const make = Effect.fnUntraced(function*(rpcUrl: string, bundlerUrl: string) {
+  const anvil = Controls.rpc(rpcUrl)
+  const now = () => Math.floor(Date.now() / 1000)
+
+  const setPrice = (symbol: string, price: bigint, options: { readonly ageSeconds?: number } = {}) =>
+    Effect.promise(() => Controls.setFeed(anvil, stockOf(symbol).feed, price, now() - (options.ageSeconds ?? 0)))
+  const mintShares = (account: Address, symbol: string, shares: bigint) =>
+    Effect.promise(() => Controls.mintShares(anvil, stockOf(symbol).token, account, shares))
+  const movePool = (symbol: string, price: bigint) =>
+    Effect.promise(() => Controls.movePool(anvil, stockOf(symbol), price))
+
+  yield* Effect.promise(async () => {
+    // The captured state brings back the capture's clock: agents state the latest block's time and Namera
+    // bounds their operations to its UTC day, which the bundler checks against the real clock.
+    const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: string }
+    if (Number(latest.timestamp) < now()) await anvil("anvil_setTime", [now()])
+    await anvil("anvil_setNextBlockBaseFeePerGas", [toHex(Controls.BASE_FEE_WEI)])
+    await anvil("anvil_mine", ["0x1"])
+    for (const { feed } of stocks) await Controls.setFeedTime(anvil, feed, now())
+    // Alto starts on its first request; let it start now, against the ready chain.
+    await Controls.rpc(bundlerUrl)("eth_supportedEntryPoints")
+  })
+
+  const simulateAt = (seconds: number, calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>) =>
+    Effect.promise(async () => {
+      const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: Hex }
+      const [block] = await anvil("eth_simulateV1", [{
+        blockStateCalls: [{
+          blockOverrides: { time: toHex(Number(latest.timestamp) + seconds) },
+          calls: calls.map((call) => ({ from: Controls.DEVNET_ADMIN, gas: toHex(10_000_000), ...call }))
+        }]
+      }, "latest"]) as ReadonlyArray<{ readonly calls: ReadonlyArray<{ status: Hex; returnData: Hex }> }>
+      return block!.calls.map((call) => ({ success: call.status === "0x1", returnData: call.returnData }))
+    })
+
+  return { rpcUrl, bundlerUrl, setPrice, mintShares, movePool, simulateAt }
 })
 
 /**
@@ -94,54 +153,35 @@ export class Devnet extends Context.Service<Devnet, {
 }>()("@bluechip/devnet/Devnet") {
   /**
    * Connects to the current worker's devnet: sets Base's base fee (loading the captured state brings the fork's own),
-   * moves its clock to now (the captured state brings the capture's) and mines a block, and marks every price as just updated, since the captured state's prices are
-   * as old as the capture.
+   * moves its clock to now (the captured state brings the capture's) and mines a block, and marks every price as just
+   * updated, since the captured state's prices are as old as the capture.
    *
    * @since 0.0.0
    */
   static readonly layer = (context: DevnetContext) =>
     Layer.effect(
       Devnet,
-      Effect.gen(function*() {
+      Effect.suspend(() => {
         const servers = Server.get(context)
-        const rpcUrl = servers.anvil.url
-        const bundlerUrl = servers.alto.url
+        return make(servers.anvil.url, servers.alto.url)
+      })
+    )
 
-        const anvil = Controls.rpc(rpcUrl)
-        const now = () => Math.floor(Date.now() / 1000)
-
-        const setPrice = (symbol: string, price: bigint, options: { readonly ageSeconds?: number } = {}) =>
-          Effect.promise(() => Controls.setFeed(anvil, stockOf(symbol).feed, price, now() - (options.ageSeconds ?? 0)))
-        const mintShares = (account: Address, symbol: string, shares: bigint) =>
-          Effect.promise(() => Controls.mintShares(anvil, stockOf(symbol).token, account, shares))
-        const movePool = (symbol: string, price: bigint) =>
-          Effect.promise(() => Controls.movePool(anvil, stockOf(symbol), price))
-
-        yield* Effect.promise(async () => {
-          // The captured state brings back the capture's clock: agents state the latest block's time and Namera
-          // bounds their operations to its UTC day, which the bundler checks against the real clock.
-          const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: string }
-          if (Number(latest.timestamp) < now()) await anvil("anvil_setTime", [now()])
-          await anvil("anvil_setNextBlockBaseFeePerGas", [toHex(Controls.BASE_FEE_WEI)])
-          await anvil("anvil_mine", ["0x1"])
-          for (const { feed } of stocks) await Controls.setFeedTime(anvil, feed, now())
-          // Alto starts on its first request; let it start now, against the ready chain.
-          await Controls.rpc(bundlerUrl)("eth_supportedEntryPoints")
-        })
-
-        const simulateAt = (seconds: number, calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>) =>
-          Effect.promise(async () => {
-            const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: Hex }
-            const [block] = await anvil("eth_simulateV1", [{
-              blockStateCalls: [{
-                blockOverrides: { time: toHex(Number(latest.timestamp) + seconds) },
-                calls: calls.map((call) => ({ from: Controls.DEVNET_ADMIN, gas: toHex(10_000_000), ...call }))
-              }]
-            }, "latest"]) as ReadonlyArray<{ readonly calls: ReadonlyArray<{ status: Hex; returnData: Hex }> }>
-            return block!.calls.map((call) => ({ success: call.status === "0x1", returnData: call.returnData }))
-          })
-
-        return { rpcUrl, bundlerUrl, setPrice, mintShares, movePool, simulateAt }
+  /**
+   * A devnet of its own, for the scope: an Anvil started from the captured `state` (the unpacked file `globalSetup`
+   * provides) and an Alto on it, connected as `layer` connects to the worker's. For tests that move the chain's clock:
+   * on Base's hardfork Anvil never moves its clock back, so a clock moved on the worker's chain stays moved for every
+   * file after.
+   *
+   * @since 0.0.0
+   */
+  static readonly layerIsolated = (state: string) =>
+    Layer.effect(
+      Devnet,
+      Effect.gen(function*() {
+        const anvil = yield* startInstance(Instances.anvil(state))
+        const alto = yield* startInstance(Instances.alto(anvil.url))
+        return yield* make(anvil.url, alto.url)
       })
     )
 

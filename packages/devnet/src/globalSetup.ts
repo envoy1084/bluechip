@@ -1,6 +1,7 @@
 /**
  * The Vitest global setup that serves the devnet: one Anvil and one Alto per test worker, each Anvil started from
- * the captured state (`state/devnet.state.gz`), so a worker's chain is ready without installing anything.
+ * the captured state (`state/devnet.state.gz`), so a worker's chain is ready without installing anything. The unpacked
+ * state is provided too, for files that start a devnet of their own (`DevnetTest.layerIsolated`).
  *
  * @since 0.0.0
  */
@@ -8,10 +9,9 @@ import * as fs from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
 import { gunzipSync } from "node:zlib"
-import { Instance } from "prool"
 import { Server } from "prool/vitest"
-import { BASE_FEE_WEI, BUNDLER_KEYS } from "./Controls.ts"
-import { contextKey, type DevnetContext } from "./Devnet.ts"
+import { contextKey, type DevnetContext, stateKey } from "./Devnet.ts"
+import * as Instances from "./internal/instances.ts"
 
 /**
  * A Vitest global setup function: it starts the servers and returns the function that stops them.
@@ -41,31 +41,13 @@ export const globalSetup = (): GlobalSetup => {
 
   return Server.setup({
     instances: {
-      // Base's latest hardfork runs the B20 precompiles; chain id 8453 so signatures match Base's.
-      // Base's fees too (about 0.01 gwei), so gas budgets behave as they do on Base.
-      anvil: Instance.anvil({
-        hardfork: "base:Denim" as never,
-        chainId: 8453,
-        loadState: state,
-        blockBaseFeePerGas: BASE_FEE_WEI
-      }),
-      alto: (poolId: number) =>
-        Instance.alto({
-          // EntryPoint v0.7.
-          entrypoints: ["0x0000000071727De22E5E9d8BAf0edAc6f37da032"],
-          rpcUrl: `${anvilUrl}/${poolId}`,
-          executorPrivateKeys: [BUNDLER_KEYS.executor],
-          utilityPrivateKey: BUNDLER_KEYS.utility,
-          // Traces every operation's validation against ERC-7562, as the shared mempool does.
-          safeMode: true,
-          bundleMode: "auto",
-          maxBundleWait: 50,
-          pollingInterval: 50
-        })
+      anvil: Instances.anvil(state),
+      alto: (poolId: number) => Instances.alto(`${anvilUrl}/${poolId}`)
     },
     setup(context: DevnetContext, project: { provide: (key: string, value: unknown) => void }) {
       anvilUrl = context.anvil.url
       project.provide(contextKey, context)
+      project.provide(stateKey, state)
     }
   })
 }
