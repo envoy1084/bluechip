@@ -178,4 +178,21 @@ contract RulesTest is Test {
         vm.expectRevert(abi.encodeWithSelector(RebalanceRule.Overshoots.selector, NVDA));
         rules.check(buyNvda(input, 110e6, 1.1e8));
     }
+
+    function test_aRebalancerTradesOnPausedPricesWhenItMay() public view {
+        // The same Rebalancer on a weekend: NVDA's and AAPL's prices are 30 hours old, and it trades while paused.
+        GuardInput.Input memory input = base();
+        input.settings.mode = GuardInput.REBALANCE;
+        input.settings.maxTradeUsd = 200e6;
+        input.settings.maxInOneStockBps = 4000;
+        input.settings.cashTargetBps = 4000;
+        input.stocks[0].targetBps = 3000;
+        input.stocks[1].targetBps = 3000;
+        input.stocks[0].updatedAt = NOW - 30 hours;
+        input.stocks[1].updatedAt = NOW - 30 hours;
+
+        (bool traded,) = rules.check(buyNvda(input, 50e6, 0.5e8));
+
+        assertTrue(traded);
+    }
 }

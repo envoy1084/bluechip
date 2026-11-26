@@ -86,7 +86,7 @@ library Outcome {
             if (stock.afterward == stock.before) continue;
 
             if (age > input.prices.liveAge) {
-                if (!input.prices.tradeWhilePaused || input.mode == REBALANCE) revert PausedTradingOff(stock.token);
+                if (!input.prices.tradeWhilePaused) revert PausedTradingOff(stock.token);
                 valuation.paused = true;
             }
             stocksTraded += amountMoved(holding).valueOf(holding.price);
