@@ -33,6 +33,10 @@ const LABELS: Readonly<Record<string, readonly [running: string, done: string]>>
   listMemories: ["Reading your memories", "Read your memories"],
   searchMemory: ["Searching what it remembers", "Searched what it remembers"],
   searchHelp: ["Searching bluechip's help", "Searched bluechip's help"],
+  getPerformance: ["Reading how you're doing", "Read how you're doing"],
+  getStockPerformance: ["Reading the stock's results", "Read the stock's results"],
+  getAgentPerformance: ["Reading the agent's results", "Read the agent's results"],
+  getAutomationPerformance: ["Reading the automation's results", "Read the automation's results"],
   [RESEARCH_TOOL]: ["Searching the web", "Searched the web"]
 }
 

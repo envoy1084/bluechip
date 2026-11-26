@@ -6,9 +6,15 @@ import { GetAgent, GetAgentHistory, GetAgentJournal, ListAgents } from "@bluechi
 import { GetStockFacts, SearchHelp } from "@bluechip/domain/tools/KnowledgeTools"
 import { GetActivity, GetPortfolio, GetPrices, GetQuote, GetStock } from "@bluechip/domain/tools/MarketTools"
 import { ListMemories, SearchMemory } from "@bluechip/domain/tools/MemoryTools"
+import {
+  GetAgentPerformance,
+  GetAutomationPerformance,
+  GetPerformance,
+  GetStockPerformance
+} from "@bluechip/domain/tools/PerformanceTools"
 import { CheckAgentSpec, ListPolicies, ListTemplates } from "@bluechip/domain/tools/PolicyTools"
 import { ProposeRebalance } from "@bluechip/domain/tools/TradeTools"
-import { formatMoney } from "@bluechip/ui/lib/format"
+import { formatChange, formatMoney } from "@bluechip/ui/lib/format"
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { priceDollars, usdcDollars } from "../../../lib/amounts.ts"
@@ -78,6 +84,22 @@ const SUMMARIES: Readonly<Record<string, (result: unknown) => string | null>> = 
     (hits) => hits.length === 0 ? "Nothing found" : count(hits.length, "thing", "things")
   ),
   searchHelp: summarize(SearchHelp.successSchema, (passages) => passages[0]?.citation.title ?? "Nothing found"),
+  getPerformance: summarize(
+    GetPerformance.successSchema,
+    ({ realised, unrealised }) => `${formatChange(usdcDollars(realised + unrealised))} in all`
+  ),
+  getStockPerformance: summarize(
+    GetStockPerformance.successSchema,
+    ({ realised, unrealised }) => `${formatChange(usdcDollars(realised + unrealised))} in all`
+  ),
+  getAgentPerformance: summarize(
+    GetAgentPerformance.successSchema,
+    ({ realised, unrealised }) => `${formatChange(usdcDollars(realised + unrealised))} in all`
+  ),
+  getAutomationPerformance: summarize(
+    GetAutomationPerformance.successSchema,
+    ({ runs }) => count(runs, "run", "runs")
+  ),
   getStockFacts: summarize(GetStockFacts.successSchema, (facts) => facts.name),
   proposeRebalance: summarize(
     ProposeRebalance.successSchema,

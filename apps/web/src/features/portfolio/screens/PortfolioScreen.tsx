@@ -12,9 +12,12 @@ import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MoneySummary } from "../../../components/MoneySummary.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
+import { performanceAtom } from "../atoms/performance.ts"
 import { CashCard } from "../components/CashCard.tsx"
+import { ContributionsCard } from "../components/ContributionsCard.tsx"
 import { HoldingsCard } from "../components/HoldingsCard.tsx"
 import { MixCard } from "../components/MixCard.tsx"
+import { PerformanceCard } from "../components/PerformanceCard.tsx"
 import { ValueChart } from "../components/ValueChart.tsx"
 import { WithdrawalsCard } from "../components/WithdrawalsCard.tsx"
 
@@ -22,6 +25,7 @@ export function PortfolioScreen() {
   const portfolio = useAtomValue(portfolioAtom)
   const refresh = useAtomRefresh(portfolioAtom)
   const openCash = useAtomSet(cashDialogAtom)
+  const performance = useAtomValue(performanceAtom)
 
   const { names } = useStockLookup()
   const cash = AsyncResult.isSuccess(portfolio) ? portfolio.value.cash : BigInt(0)
@@ -88,8 +92,14 @@ export function PortfolioScreen() {
         <div className="grid gap-4">
           <MoneySummary addCash={false} />
           <ValueChart />
+          {AsyncResult.isSuccess(performance) && <PerformanceCard performance={performance.value} />}
           <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-            <HoldingsCard portfolio={portfolio.value} names={names} />
+            <div className="grid min-w-0 content-start gap-4">
+              <HoldingsCard portfolio={portfolio.value} names={names} />
+              {AsyncResult.isSuccess(performance) && (
+                <ContributionsCard performance={performance.value} names={names} />
+              )}
+            </div>
             <div className="grid min-w-0 content-start gap-4">
               <MixCard portfolio={portfolio.value} names={names} />
               <CashCard cash={portfolio.value.cash} />

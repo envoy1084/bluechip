@@ -271,6 +271,39 @@ describe("toolSummary", () => {
     { name: "a tool answering with a card: nothing", tool: "draftAgent", result: {}, expected: null },
     { name: "web research: nothing", tool: "AnthropicWebSearch", result: [], expected: null },
     { name: "an unknown tool: nothing", tool: "later", result: [], expected: null },
+    {
+      name: "how you're doing: profit realised and unrealised together",
+      tool: "getPerformance",
+      result: {
+        realised: "1500000",
+        unrealised: "-500000",
+        cost: "0",
+        value: "0",
+        costs: { fees: "0", slippage: "0", gasWei: "0" },
+        trades: 2,
+        flagged: 0,
+        series: [],
+        stocks: [],
+        agents: []
+      },
+      expected: "+$1.00 in all"
+    },
+    {
+      name: "an automation's results: its runs",
+      tool: "getAutomationPerformance",
+      result: {
+        automationId: "automation_01jd8v4t5m6n7p8q9r0s1t2v3w",
+        runs: 3,
+        outcomes: [{ outcome: "proposed", count: 3 }],
+        trades: 2,
+        bought: "100000000",
+        sold: "0",
+        realised: "0",
+        costs: { fees: "0", slippage: "0", gasWei: "0" },
+        lastRunAt: null
+      },
+      expected: "3 runs"
+    },
     { name: "a result that doesn't decode: nothing", tool: "getPortfolio", result: { value: 12 }, expected: null },
     { name: "no result: nothing", tool: "listAgents", result: null, expected: null }
   ])("$name", ({ expected, result, tool }) => {

@@ -28,6 +28,7 @@ import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { automationAtom, changedKeys, removeAutomationAtom, updateAutomationAtom } from "../atoms/automations.ts"
+import { ResultsSection } from "../components/detail/ResultsSection.tsx"
 import { RunCard } from "../components/detail/RunCard.tsx"
 import { AutomationNotFound, ScreenState } from "../components/ScreenState.tsx"
 import { StatusPill } from "../components/StatusPill.tsx"
@@ -202,6 +203,8 @@ function AutomationContent({ detail, Intent }: Readonly<{ detail: AutomationDeta
             </ul>
           )}
       </section>
+
+      <ResultsSection automationId={automation.id} />
 
       <section aria-labelledby="runs" className="grid gap-2.5">
         <h2 id="runs" className="px-0.5 text-label-sm font-semibold text-g-500">Runs</h2>

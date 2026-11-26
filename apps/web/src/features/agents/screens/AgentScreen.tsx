@@ -16,6 +16,7 @@ import { AgentAlerts } from "../components/detail/AgentAlerts.tsx"
 import { AgentHeader } from "../components/detail/AgentHeader.tsx"
 import { PoliciesSection } from "../components/detail/PoliciesSection.tsx"
 import { RemoveConfirm } from "../components/detail/RemoveConfirm.tsx"
+import { ResultsCard } from "../components/detail/ResultsCard.tsx"
 import { SessionHistory } from "../components/detail/SessionHistory.tsx"
 import { UsageCard } from "../components/detail/UsageCard.tsx"
 import { useRemoveAgent } from "../hooks/useRemoveAgent.ts"
@@ -131,6 +132,7 @@ function AgentContent({ agent, Trade, Activity, Automations, Ask }: Readonly<{ a
           </div>
           <div className="grid content-start gap-4">
             {state === "active" || state === "stopped" ? <Trade agent={agent} nameOf={nameOf} /> : null}
+            {agent.status === "draft" ? null : <ResultsCard agent={agent} />}
             {usage === undefined ? null : <UsageCard agent={agent} usage={usage} />}
             {agent.status === "draft" ? null : <SessionHistory agent={agent} nameOf={nameOf} />}
           </div>

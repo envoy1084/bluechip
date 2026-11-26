@@ -14,6 +14,7 @@ import { QuoteBox } from "../components/QuoteBox.tsx"
 import { StockHeader } from "../components/StockHeader.tsx"
 import { StockNotFound } from "../components/StockNotFound.tsx"
 import { YourHolding } from "../components/YourHolding.tsx"
+import { YourResults } from "../components/YourResults.tsx"
 
 /** A stock's page: its price, your holding of it, its history, and the box to buy or sell it. */
 export function StockScreen({ symbol }: Readonly<{ symbol: StockSymbol }>) {
@@ -66,6 +67,7 @@ function StockContent({ stock }: Readonly<{ stock: Stock }>) {
         <PricesPausedBanner />
         <StockHeader stock={stock} />
         <YourHolding stock={stock} />
+        <YourResults symbol={stock.symbol} />
         <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <PriceHistoryChart symbol={stock.symbol} />
           <QuoteBox stock={stock} />
