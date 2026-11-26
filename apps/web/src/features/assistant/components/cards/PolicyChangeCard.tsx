@@ -4,7 +4,7 @@ import type { RequestId } from "@bluechip/domain/Ids"
 import { policyOf } from "@bluechip/domain/policies/Catalog"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomSet } from "@effect/atom-react/Hooks"
@@ -110,14 +110,13 @@ export function PolicyChangeCard({ card }: Readonly<{ card: PolicyChange }>) {
       footer={waiting ?
         <PasskeyButton doneLabel="Sent" onAuthenticate={approve}>{action.button}</PasskeyButton> :
         (
-          <Button
+          <ButtonLink
             variant="secondary"
-            nativeButton={false}
             render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
           >
             Open {agent.name}
             <Icon name="arrow-right" size={16} />
-          </Button>
+          </ButtonLink>
         )}
     >
       <div className="flex items-center gap-3">

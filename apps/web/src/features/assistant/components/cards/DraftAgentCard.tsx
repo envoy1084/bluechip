@@ -3,7 +3,7 @@ import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
@@ -48,25 +48,23 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
       footer={draft ?
         (
           <>
-            <Button
+            <ButtonLink
               variant="ghost"
-              nativeButton={false}
               render={<Link to="/agents/new" search={{ draft: agent.id }} />}
             >
               Customize
-            </Button>
+            </ButtonLink>
             <PasskeyButton doneLabel="Sent" onAuthenticate={approve}>Lock with Face ID</PasskeyButton>
           </>
         ) :
         (
-          <Button
+          <ButtonLink
             variant="secondary"
-            nativeButton={false}
             render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
           >
             Open {agent.name}
             <Icon name="arrow-right" size={16} />
-          </Button>
+          </ButtonLink>
         )}
     >
       <div className="flex items-center gap-3">

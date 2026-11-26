@@ -2,7 +2,7 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { Stock, StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { checkSpec, compareSpecs, describeSpec } from "@bluechip/domain/policies/Catalog"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
@@ -49,13 +49,12 @@ export function EditRulesStep(
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-ink/7 pt-4 lg:col-span-2">
-        <Button
+        <ButtonLink
           variant="ghost"
-          nativeButton={false}
           render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
         >
           Cancel
-        </Button>
+        </ButtonLink>
         <div className="flex flex-wrap items-center gap-2">
           {!unchanged && (
             <Button

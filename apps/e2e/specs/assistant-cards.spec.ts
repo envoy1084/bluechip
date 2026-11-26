@@ -107,7 +107,7 @@ test.describe("template cards", () => {
     await card.getByRole("button", { name: "Save template" }).click()
 
     await expect(card.getByText("Saved. It's in your templates when you make an agent.")).toBeVisible()
-    await card.getByRole("button", { name: "Start an agent" }).click()
+    await card.getByRole("link", { name: "Start an agent" }).click()
     await expect(page).toHaveURL(/\/agents\/new$/)
     await expect(page.getByRole("radio", { name: /^Steady picks/ })).toBeVisible()
   })

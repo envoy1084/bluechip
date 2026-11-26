@@ -1,4 +1,4 @@
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import {
   Sheet,
   SheetBody,
@@ -49,14 +49,13 @@ export function ApprovalsBell() {
             <ApprovalsList />
           </SheetBody>
           <SheetFooter>
-            <Button
+            <ButtonLink
               variant="ghost"
-              nativeButton={false}
               render={<Link to="/approvals" />}
               onClick={() => setOpen(false)}
             >
               Open approvals
-            </Button>
+            </ButtonLink>
           </SheetFooter>
         </SheetContent>
       </Sheet>

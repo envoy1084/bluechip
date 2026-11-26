@@ -38,7 +38,7 @@ export const createAgent = async (page: Page, agent: NewAgent = {}): Promise<{ r
   await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
   await expect(page.getByRole("heading", { name: / is live$/ })).toBeVisible()
 
-  await page.getByRole("button", { name: /^Go to / }).click()
+  await page.getByRole("link", { name: /^Go to / }).click()
   await expect(page).toHaveURL(/\/agents\/agent_[0-9a-z]+$/)
   return { id: agentIdOf(page) }
 }

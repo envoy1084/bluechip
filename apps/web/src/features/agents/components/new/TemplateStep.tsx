@@ -2,7 +2,7 @@ import { configOf } from "@bluechip/domain/policies/Policy"
 import { type SavedTemplate, templateInfos } from "@bluechip/domain/policies/Templates"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { AGENT_TEMPLATES } from "@bluechip/ui/bluechip/template-picker"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { RadioCard, RadioGroup } from "@bluechip/ui/components/radio-group"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -150,7 +150,7 @@ export function TemplateStep(
         null}
 
       <StepFoot>
-        <Button variant="ghost" nativeButton={false} render={<Link to="/agents" />}>Cancel</Button>
+        <ButtonLink variant="ghost" render={<Link to="/agents" />}>Cancel</ButtonLink>
         <div className="flex flex-wrap items-center gap-2">
           {origin.kind === "saved" ?
             (

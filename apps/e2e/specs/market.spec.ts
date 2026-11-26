@@ -68,7 +68,7 @@ test.describe("stock page", () => {
     await expect(page.getByRole("heading", { name: "Stock not found", level: 1 })).toBeVisible()
     await expect(page.getByText("We don't have that stock")).toBeVisible()
     await expect(page.getByText("Check the symbol, or pick one from the list.")).toBeVisible()
-    await page.getByRole("button", { name: "See all stocks" }).click()
+    await page.getByRole("link", { name: "See all stocks" }).click()
     await expect(page.getByRole("heading", { name: "Stocks", level: 1 })).toBeVisible()
   })
 

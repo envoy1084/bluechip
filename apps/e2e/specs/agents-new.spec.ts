@@ -23,7 +23,7 @@ test.describe("new agent: template step", () => {
   test("Cancel goes back to the agents", async ({ page, user: _user }) => {
     await page.goto("/agents/new")
 
-    await page.getByRole("button", { name: "Cancel" }).click()
+    await page.getByRole("link", { name: "Cancel" }).click()
 
     await expect(page).toHaveURL(/\/agents$/)
     await expect(page.getByText("No agents yet")).toBeVisible()
@@ -103,7 +103,7 @@ test.describe("new agent: from each template to live", () => {
     await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
     await expect(page.getByRole("heading", { name: "Stock picker is live" })).toBeVisible()
 
-    await page.getByRole("button", { name: "See all agents" }).click()
+    await page.getByRole("link", { name: "See all agents" }).click()
 
     await expect(page).toHaveURL(/\/agents$/)
     await expect(page.getByRole("link", { name: /^Stock picker Stock picker Active/ })).toBeVisible()
@@ -116,7 +116,7 @@ test.describe("new agent: from each template to live", () => {
     await page.getByRole("textbox", { name: "Name" }).fill("Chip trader")
     await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
 
-    await page.getByRole("button", { name: "Go to Chip trader" }).click()
+    await page.getByRole("link", { name: "Go to Chip trader" }).click()
 
     await expect(page).toHaveURL(/\/agents\/agent_[0-9a-z]+$/)
     await expect(page.getByRole("heading", { name: "Chip trader", level: 2 })).toBeVisible()

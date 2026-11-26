@@ -52,7 +52,7 @@ test.describe("settings", () => {
   test("See memories opens an empty memory page for a new person", async ({ page, user: _user }) => {
     await page.goto("/settings")
 
-    await page.getByRole("button", { name: "See memories" }).click()
+    await page.getByRole("link", { name: "See memories" }).click()
 
     await expect(page).toHaveURL(/\/memory$/)
     await expect(page.getByRole("heading", { name: "Memory", level: 1 })).toBeVisible()

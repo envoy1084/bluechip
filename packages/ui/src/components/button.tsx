@@ -1,4 +1,5 @@
 import { Button as BaseButton } from "@base-ui/react/button"
+import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 import type { ComponentProps } from "react"
 import { cn } from "../lib/cn.ts"
@@ -76,4 +77,23 @@ export function Button(
         children}
     </BaseButton>
   )
+}
+
+export interface ButtonLinkProps extends useRender.ComponentProps<"a">, VariantProps<typeof buttonVariants> {}
+
+/**
+ * A link that looks like a button: pass the router's link as `render` (`render={<Link to="/stocks" />}`). It stays a
+ * link to assistive technology, unlike a `Button` rendered as one, which takes the role `button`.
+ */
+export function ButtonLink({ variant, size, className, render, ...props }: ButtonLinkProps) {
+  return useRender({
+    defaultTagName: "a",
+    render,
+    props: {
+      ...props,
+      "data-slot": "button",
+      "data-variant": variant ?? "primary",
+      className: cn(buttonVariants({ variant, size }), className)
+    }
+  })
 }

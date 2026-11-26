@@ -1,4 +1,4 @@
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { HAPTIC_EVENT } from "@bluechip/ui/lib/haptics"
 import { afterEach, beforeEach, describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
@@ -58,5 +58,17 @@ describe("Button", () => {
   it("disabled but not loading isn't busy", async () => {
     const screen = await render(<Button disabled>Approve</Button>)
     await expect.element(screen.getByRole("button", { name: "Approve" })).not.toHaveAttribute("aria-busy")
+  })
+})
+
+describe("ButtonLink", () => {
+  it("is a link to where it leads", async () => {
+    const screen = await render(<ButtonLink href="/stocks">See all stocks</ButtonLink>)
+    await expect.element(screen.getByRole("link", { name: "See all stocks" })).toHaveAttribute("href", "/stocks")
+  })
+
+  it("isn't a button", async () => {
+    const screen = await render(<ButtonLink href="/stocks">See all stocks</ButtonLink>)
+    await expect.element(screen.getByRole("button", { name: "See all stocks" })).not.toBeInTheDocument()
   })
 })

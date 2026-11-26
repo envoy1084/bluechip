@@ -88,7 +88,7 @@ test.describe("saved templates", () => {
 
     await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Apple daily")
     await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
-    await page.getByRole("button", { name: "Go to Apple daily" }).click()
+    await page.getByRole("link", { name: "Go to Apple daily" }).click()
 
     await expect(page.getByText(/^Apple daily template, created /)).toHaveText(
       `Apple daily template, created ${dayFromNow(0)}, locked until ${dayFromNow(90)}`

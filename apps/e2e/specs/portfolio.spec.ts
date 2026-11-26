@@ -11,7 +11,7 @@ test.describe("portfolio", () => {
     await expect(page.getByText("No stocks yet")).toBeVisible()
     await expect(page.getByText("Add cash, then buy a stock you like. Your chart starts with your first deposit."))
       .toBeVisible()
-    await page.getByRole("button", { name: "See stocks" }).click()
+    await page.getByRole("link", { name: "See stocks" }).click()
     await expect(page.getByRole("heading", { name: "Stocks", level: 1 })).toBeVisible()
   })
 

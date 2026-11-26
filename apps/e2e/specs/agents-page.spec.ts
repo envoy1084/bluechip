@@ -11,13 +11,13 @@ test.describe("agents list", () => {
     await expect(
       page.getByText("Start one from a template. You set its limits and lock them with Face ID before it can trade.")
     ).toBeVisible()
-    await expect(page.getByRole("main").getByRole("button", { name: "New agent" })).toHaveCount(2)
+    await expect(page.getByRole("main").getByRole("link", { name: "New agent" })).toHaveCount(2)
   })
 
   test("the empty state's New agent opens the template step", async ({ page, user: _user }) => {
     await page.goto("/agents")
 
-    await page.getByRole("main").getByRole("button", { name: "New agent" }).last().click()
+    await page.getByRole("main").getByRole("link", { name: "New agent" }).last().click()
 
     await expect(page.getByRole("heading", { name: "What should your agent do?" })).toBeVisible()
   })
@@ -25,7 +25,7 @@ test.describe("agents list", () => {
   test("the header's New agent opens the template step", async ({ page, user: _user }) => {
     await page.goto("/agents")
 
-    await page.getByRole("main").getByRole("button", { name: "New agent" }).first().click()
+    await page.getByRole("main").getByRole("link", { name: "New agent" }).first().click()
 
     await expect(page).toHaveURL(/\/agents\/new$/)
   })
@@ -94,7 +94,7 @@ test.describe("agent page", () => {
     await expect(page.getByText("Buys and sells a few stocks you pick.")).toBeVisible()
     await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible()
     await expect(page.getByRole("button", { name: "Remove", exact: true })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Ask about this agent" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Ask about this agent" })).toBeVisible()
   })
 
   test("an agent from scratch is called custom", async ({ page, funded: _funded }) => {
@@ -201,7 +201,7 @@ test.describe("agent page", () => {
     await expect(page.getByRole("heading", { name: "Agent not found", level: 1 })).toBeVisible()
     await expect(page.getByText("We can't find that agent")).toBeVisible()
     await expect(page.getByText("It may belong to another account, or the link is wrong.")).toBeVisible()
-    await page.getByRole("button", { name: "See your agents" }).click()
+    await page.getByRole("link", { name: "See your agents" }).click()
     await expect(page).toHaveURL(/\/agents$/)
   })
 

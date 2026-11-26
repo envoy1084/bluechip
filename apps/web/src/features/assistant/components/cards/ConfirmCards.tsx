@@ -1,6 +1,6 @@
 // The cards bluechip applies when you confirm them: pausing or resuming agents, saving a template, keeping a memory.
 import type { Card, CardStatus } from "@bluechip/domain/assistant/Card"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Link } from "@tanstack/react-router"
 import { useCardAnswer } from "../../hooks/useCardAnswer.ts"
 import { MEMORY_KIND } from "../../model/cardText.ts"
@@ -87,7 +87,7 @@ export function SaveTemplateCard(
       footer={card.status === "pending" ?
         <Answer answer={answer} confirmLabel="Save template" /> :
         card.status === "applied" ?
-        <Button variant="secondary" nativeButton={false} render={<Link to="/agents/new" />}>Start an agent</Button> :
+        <ButtonLink variant="secondary" render={<Link to="/agents/new" />}>Start an agent</ButtonLink> :
         undefined}
     >
       <div className="grid gap-0.5">
@@ -127,9 +127,9 @@ export function MemoryCard({ card, onCard }: Readonly<{ card: Extract<Card, { _t
       footer={asking ?
         <Answer answer={answer} confirmLabel="Remember" dismissLabel="Don't keep it" /> :
         (
-          <Button variant="ghost" nativeButton={false} render={<Link to="/memory" />}>
+          <ButtonLink variant="ghost" render={<Link to="/memory" />}>
             See what bluechip remembers
-          </Button>
+          </ButtonLink>
         )}
     >
       <p className={card.action === "forgotten" ? "text-[14px] text-g-500 line-through" : "text-[14px] text-ink"}>

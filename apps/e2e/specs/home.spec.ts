@@ -46,7 +46,7 @@ test.describe("home", () => {
     const latest = page.getByRole("region", { name: "Latest activity" })
     await expect(latest.getByText("Withdrew $12.00")).toBeVisible()
     await expect(latest.getByText("To 0x0000…dEaD on Base")).toBeVisible()
-    await latest.getByRole("button", { name: "See all" }).click()
+    await latest.getByRole("link", { name: "See all" }).click()
     await expect(page.getByRole("heading", { name: "Activity", level: 1 })).toBeVisible()
   })
 

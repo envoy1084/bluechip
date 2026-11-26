@@ -1,5 +1,5 @@
 import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Input } from "@bluechip/ui/components/input"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
@@ -125,9 +125,9 @@ export function SettingsScreen() {
       </Section>
       <Section title="Assistant" description="What the assistant knows about you is yours to see and delete.">
         <Row title="Memory" description="Preferences, rules, goals and facts it uses to answer you." icon="book">
-          <Button variant="secondary" size="sm" nativeButton={false} render={<Link to="/memory" />}>
+          <ButtonLink variant="secondary" size="sm" render={<Link to="/memory" />}>
             See memories
-          </Button>
+          </ButtonLink>
         </Row>
       </Section>
       <AgentsSection />

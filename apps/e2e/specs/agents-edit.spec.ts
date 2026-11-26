@@ -48,7 +48,7 @@ test.describe("edit rules: the rules step", () => {
   test("Cancel goes back to the agent", async ({ page, funded: _funded }) => {
     const { id } = await editAgent(page)
 
-    await page.getByRole("button", { name: "Cancel" }).click()
+    await page.getByRole("link", { name: "Cancel" }).click()
 
     await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
   })
@@ -197,7 +197,7 @@ test.describe("edit rules: when they can't change", () => {
     await expect(
       page.getByText("A draft has no rules in force. Lock it with Face ID first, then you can change them.")
     ).toBeVisible()
-    await page.getByRole("button", { name: "Back to Unlocked one" }).click()
+    await page.getByRole("link", { name: "Back to Unlocked one" }).click()
     await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
   })
 

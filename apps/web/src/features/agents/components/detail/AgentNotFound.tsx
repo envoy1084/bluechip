@@ -1,4 +1,4 @@
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Link } from "@tanstack/react-router"
 import { AppPage } from "../../../../components/layout/AppPage.tsx"
@@ -11,7 +11,7 @@ export function AgentNotFound() {
         <EmptyTitle>We can't find that agent</EmptyTitle>
         <EmptyDescription>It may belong to another account, or the link is wrong.</EmptyDescription>
         <EmptyContent>
-          <Button variant="secondary" nativeButton={false} render={<Link to="/agents" />}>See your agents</Button>
+          <ButtonLink variant="secondary" render={<Link to="/agents" />}>See your agents</ButtonLink>
         </EmptyContent>
       </Empty>
     </AppPage>

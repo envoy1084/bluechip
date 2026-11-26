@@ -2,7 +2,7 @@ import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import { lockAgentAtom } from "../../atoms/agents.ts"
@@ -21,7 +21,7 @@ function LockAgain({ agent, onSent }: Readonly<{ agent: Agent; onSent: (agent: A
     return (
       <>
         <p className="max-w-[40ch] text-body-sm text-g-600">This draft was removed, so there's nothing to lock.</p>
-        <Button variant="secondary" nativeButton={false} render={<Link to="/agents" />}>See your agents</Button>
+        <ButtonLink variant="secondary" render={<Link to="/agents" />}>See your agents</ButtonLink>
       </>
     )
   }

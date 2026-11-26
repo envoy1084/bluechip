@@ -1,5 +1,5 @@
 import type { Agent, AgentStatus } from "@bluechip/domain/agents/Agent"
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Link } from "@tanstack/react-router"
 
@@ -40,13 +40,12 @@ export function NotChangeable(
     <Empty>
       <EmptyTitle>{why.title}</EmptyTitle>
       <EmptyDescription>{why.say}</EmptyDescription>
-      <Button
+      <ButtonLink
         variant="secondary"
-        nativeButton={false}
         render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
       >
         Back to {agent.name}
-      </Button>
+      </ButtonLink>
     </Empty>
   )
 }

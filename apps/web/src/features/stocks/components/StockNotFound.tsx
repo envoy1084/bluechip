@@ -1,4 +1,4 @@
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyDescription, EmptyTitle } from "@bluechip/ui/components/empty"
 import { Link } from "@tanstack/react-router"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
@@ -11,7 +11,7 @@ export function StockNotFound() {
       <Empty>
         <EmptyTitle>We don't have that stock</EmptyTitle>
         <EmptyDescription>Check the symbol, or pick one from the list.</EmptyDescription>
-        <Button variant="secondary" nativeButton={false} render={<Link to="/stocks" />}>See all stocks</Button>
+        <ButtonLink variant="secondary" render={<Link to="/stocks" />}>See all stocks</ButtonLink>
       </Empty>
     </AppPage>
   )

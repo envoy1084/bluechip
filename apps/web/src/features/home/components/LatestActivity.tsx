@@ -1,4 +1,4 @@
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link, useNavigate } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
@@ -18,7 +18,7 @@ export function LatestActivity() {
     <section aria-labelledby="latest-activity" className="grid gap-2">
       <div className="flex items-center justify-between">
         <h2 id="latest-activity" className="text-body-sm font-semibold">Latest activity</h2>
-        <Button variant="ghost" size="sm" nativeButton={false} render={<Link to="/activity" />}>See all</Button>
+        <ButtonLink variant="ghost" size="sm" render={<Link to="/activity" />}>See all</ButtonLink>
       </div>
       <ul className="overflow-hidden rounded-lg bg-white shadow-e2">
         {activity.value.items.slice(0, 3).map((item) => (

@@ -1,5 +1,5 @@
 import type { AgentId, ConversationId } from "@bluechip/domain/Ids"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import {
   Sheet,
   SheetBody,
@@ -99,9 +99,9 @@ export function ConversationsButton({ current }: Readonly<{ current: Conversatio
           </SheetHeader>
           <SheetBody>{open ? <ConversationList current={current} onPick={() => setOpen(false)} /> : null}</SheetBody>
           <SheetFooter>
-            <Button nativeButton={false} render={<Link to="/home" search={{}} />} onClick={() => setOpen(false)}>
+            <ButtonLink render={<Link to="/home" search={{}} />} onClick={() => setOpen(false)}>
               <Icon name="plus" size={16} />New conversation
-            </Button>
+            </ButtonLink>
           </SheetFooter>
         </SheetContent>
       </Sheet>

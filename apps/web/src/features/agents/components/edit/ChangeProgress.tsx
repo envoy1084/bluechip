@@ -4,7 +4,7 @@ import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { compareSpecs } from "@bluechip/domain/policies/Catalog"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
@@ -15,9 +15,9 @@ import { LandingCard } from "../LandingCard.tsx"
 
 function BackToAgent({ agent }: Readonly<{ agent: Agent }>) {
   return (
-    <Button variant="ghost" nativeButton={false} render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}>
+    <ButtonLink variant="ghost" render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}>
       Back to {agent.name}
-    </Button>
+    </ButtonLink>
   )
 }
 

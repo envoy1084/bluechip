@@ -1,4 +1,4 @@
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -13,9 +13,9 @@ const PLACEHOLDER_CARDS = ["a", "b", "c"]
 
 function NewAgentButton() {
   return (
-    <Button size="sm" nativeButton={false} render={<Link to="/agents/new" />}>
+    <ButtonLink size="sm" render={<Link to="/agents/new" />}>
       <Icon name="plus" size={14} />New agent
-    </Button>
+    </ButtonLink>
   )
 }
 

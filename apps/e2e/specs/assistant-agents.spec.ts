@@ -37,14 +37,14 @@ test.describe("draft agent cards", () => {
     await card.getByRole("button", { name: "Lock with Face ID" }).click()
 
     await expect(card.getByText("Running").first()).toBeVisible()
-    await card.getByRole("button", { name: "Open Apple weekly" }).click()
+    await card.getByRole("link", { name: "Open Apple weekly" }).click()
     await expect(page).toHaveURL(/\/agents\/agent_[0-9a-z]+$/)
   })
 
   test("Customize opens the new agent flow at the draft's rules", async ({ page, funded: _funded, replies }) => {
     const card = await draftAppleWeekly(page, replies)
 
-    await card.getByRole("button", { name: "Customize" }).click()
+    await card.getByRole("link", { name: "Customize" }).click()
 
     await expect(page).toHaveURL(/\/agents\/new\?draft=agent_[0-9a-z]+$/)
     await expect(page.getByText("Rules it follows")).toBeVisible()
@@ -74,7 +74,7 @@ test.describe("policy change cards", () => {
     await card.getByRole("button", { name: "Approve with Face ID" }).click()
 
     await expect(card.getByText("Running")).toBeVisible()
-    await expect(card.getByRole("button", { name: "Open Chip picker" })).toBeVisible()
+    await expect(card.getByRole("link", { name: "Open Chip picker" })).toBeVisible()
   })
 
   test("a renewal is signed with Face ID from the card", async ({ page, funded: _funded, replies }) => {
@@ -89,7 +89,7 @@ test.describe("policy change cards", () => {
     await card.getByRole("button", { name: "Renew with Face ID" }).click()
 
     await expect(card.getByText("Running")).toBeVisible()
-    await expect(card.getByRole("button", { name: "Open Chip picker" })).toBeVisible()
+    await expect(card.getByRole("link", { name: "Open Chip picker" })).toBeVisible()
   })
 
   test("a removal is signed with Face ID from the card", async ({ page, funded: _funded, replies }) => {
@@ -108,7 +108,7 @@ test.describe("policy change cards", () => {
 
   test("a draft is removed right away, with nothing to sign", async ({ page, funded: _funded, replies }) => {
     const draft = await draftAppleWeekly(page, replies)
-    const href = await draft.getByRole("button", { name: "Customize" }).getAttribute("href")
+    const href = await draft.getByRole("link", { name: "Customize" }).getAttribute("href")
     const agentId = new URL(href!, page.url()).searchParams.get("draft")!
 
     await ask(page, replies, {
@@ -192,7 +192,7 @@ test.describe("ask about this agent", () => {
   test("an agent's page opens a conversation about it", async ({ page, funded: _funded, replies }) => {
     await createAgent(page, { name: "Chip picker" })
 
-    await page.getByRole("button", { name: "Ask about this agent" }).click()
+    await page.getByRole("link", { name: "Ask about this agent" }).click()
 
     await expect(page).toHaveURL(/\/home\?agent=agent_[0-9a-z]+$/)
     await expect(page.getByText("About Chip picker")).toBeVisible()

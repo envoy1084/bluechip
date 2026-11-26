@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from "@bluechip/ui/components/empty"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -78,7 +78,7 @@ export function PortfolioScreen() {
             <Button onClick={() => openCash("add")}>
               <Icon name="plus" size={16} />Add cash
             </Button>
-            <Button variant="ghost" nativeButton={false} render={<Link to="/stocks" />}>See stocks</Button>
+            <ButtonLink variant="ghost" render={<Link to="/stocks" />}>See stocks</ButtonLink>
           </EmptyContent>
         </Empty>
       )}

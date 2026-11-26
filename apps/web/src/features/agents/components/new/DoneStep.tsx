@@ -1,7 +1,7 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { describeSpec } from "@bluechip/domain/policies/Catalog"
 import { AgentStatus } from "@bluechip/ui/bluechip/agent-status"
-import { Button } from "@bluechip/ui/components/button"
+import { ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { ButterflyAssemble } from "@bluechip/ui/motion/butterfly-assemble"
 import { Link } from "@tanstack/react-router"
@@ -28,11 +28,11 @@ export function DoneStep({ agent }: Readonly<{ agent: Agent }>) {
         can pause it any time.
       </p>
       <div className="flex flex-wrap justify-center gap-2">
-        <Button nativeButton={false} render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}>
+        <ButtonLink render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}>
           Go to {agent.name}
           <Icon name="arrow-right" size={16} />
-        </Button>
-        <Button variant="secondary" nativeButton={false} render={<Link to="/agents" />}>See all agents</Button>
+        </ButtonLink>
+        <ButtonLink variant="secondary" render={<Link to="/agents" />}>See all agents</ButtonLink>
       </div>
     </div>
   )

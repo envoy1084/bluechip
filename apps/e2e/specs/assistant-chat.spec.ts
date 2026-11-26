@@ -157,7 +157,7 @@ test.describe("conversations", () => {
     await ask(page, replies, { to, rounds: [[{ text: "Hi!" }]] })
 
     await page.getByRole("button", { name: "Conversations" }).click()
-    await page.getByRole("dialog", { name: "Conversations" }).getByRole("button", { name: "New conversation" }).click()
+    await page.getByRole("dialog", { name: "Conversations" }).getByRole("link", { name: "New conversation" }).click()
 
     await expect(page).toHaveURL(/\/home$/)
     await expect(page.getByText(to, { exact: true })).toBeHidden()

@@ -31,7 +31,7 @@ test.describe("memory cards", () => {
     const card = page.getByRole("region", { name: "Memory, rule" })
     await expect(card.getByText("Remembered")).toBeVisible()
     await expect(card.getByText("You never want Tesla.")).toBeVisible()
-    await card.getByRole("button", { name: "See what bluechip remembers" }).click()
+    await card.getByRole("link", { name: "See what bluechip remembers" }).click()
     await expect(page).toHaveURL(/\/memory$/)
     await expect(page.getByText("You never want Tesla.")).toBeVisible()
     await expect(page.getByText(/^You said it, on /)).toBeVisible()

@@ -3,7 +3,7 @@ import { describeLeg } from "@bluechip/domain/intents/Describe"
 import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { ActivityItem, type ActivityKind } from "@bluechip/ui/bluechip/activity-item"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
@@ -38,9 +38,9 @@ function IntentRow(
     <CancelIntentButton intent={intent} /> :
     intent.status === "needsApproval" || intent.status === "awaitingSignature" ?
     (
-      <Button size="sm" nativeButton={false} render={<Link to="/approvals" />}>
+      <ButtonLink size="sm" render={<Link to="/approvals" />}>
         <Icon name="face-id" size={14} />Review and approve
-      </Button>
+      </ButtonLink>
     ) :
     undefined
 
