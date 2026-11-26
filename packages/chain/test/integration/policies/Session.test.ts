@@ -4,6 +4,7 @@ import {
   changeCalls,
   changedGrant,
   guardedTradeCallGas,
+  lockCalls,
   lockedGrant,
   renewCalls,
   revokeCalls
@@ -115,5 +116,27 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
 
       assert.isTrue(revoked.success)
       assert.isFalse(yield* chain.use("Grant.isEnabled", (client) => Grant.isEnabled(client, { grant })))
+    }))
+
+  it.effect("every agent of an account is revoked in one operation", () =>
+    Effect.gen(function*() {
+      const chain = yield* ChainClient
+      const { account, grant, send } = yield* (yield* TestAgents).lock()
+      const second = agentSession({
+        spec: PICKER,
+        signer: privateKeyToAccount(generatePrivateKey()).address,
+        validUntil: Session.expiresIn({ days: 90 })
+      })
+      yield* send(lockCalls(second))
+      const secondGrant = yield* lockedGrant(account, second)
+
+      const revoked = yield* send([...revokeCalls(grant), ...revokeCalls(secondGrant)])
+
+      const enabled = yield* chain.use(
+        "Grant.isEnabled",
+        (client) => Promise.all([Grant.isEnabled(client, { grant }), Grant.isEnabled(client, { grant: secondGrant })])
+      )
+      assert.isTrue(revoked.success)
+      assert.deepStrictEqual(enabled, [false, false])
     }))
 })
