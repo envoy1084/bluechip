@@ -1,39 +1,81 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { describeSpec } from "@bluechip/domain/policies/Catalog"
-import { AgentStatus } from "@bluechip/ui/bluechip/agent-status"
-import { ButtonLink } from "@bluechip/ui/components/button"
+import { Outcome } from "@bluechip/ui/bluechip/outcome"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { ButterflyAssemble } from "@bluechip/ui/motion/butterfly-assemble"
+import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { cashDialogAtom } from "../../../../atoms/cashDialog.ts"
+import { portfolioAtom } from "../../../../atoms/portfolio.ts"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
 import { dayLabel } from "../../model/fieldText.ts"
 
-/** Step five: the new agent, live, with what it does said once more and the way to it. */
+/**
+ * The new agent, live: its butterfly, how long its rules are locked, what it can do now (three lines at most), and
+ * where to go next. Without cash it has nothing to trade with, so adding cash comes first.
+ */
 export function DoneStep({ agent }: Readonly<{ agent: Agent }>) {
   const { nameOf } = useStockLookup()
+  const portfolio = useAtomValue(portfolioAtom)
+  const openCash = useAtomSet(cashDialogAtom)
 
-  const [trade] = describeSpec(agent.spec, nameOf).can
+  const can = describeSpec(agent.spec, nameOf).can.slice(0, 3)
   const until = agent.lockedUntil === null ? null : dayLabel(agent.lockedUntil)
+  const noCash = AsyncResult.isSuccess(portfolio) && portfolio.value.cash === BigInt(0)
+  const goTo = (
+    <ButtonLink
+      variant={noCash ? "secondary" : "primary"}
+      render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
+    >
+      Go to {agent.name}
+      <Icon name="arrow-right" size={16} />
+    </ButtonLink>
+  )
 
   return (
-    <div className="mx-auto grid w-full max-w-[480px] justify-items-center gap-2.5 rounded-lg bg-white px-[26px] pt-7 pb-[26px] text-center shadow-e2">
-      <ButterflyAssemble agentId={agent.id} label={`${agent.name}'s butterfly`} className="mb-1 h-[150px] w-[200px]" />
-      <AgentStatus state="active" />
-      <h3 className="text-2xl font-semibold tracking-[-0.03em]">{agent.name} is live</h3>
-      <p className="mb-1.5 max-w-[42ch] text-[14.5px] text-g-600">
-        {until === null ? "Its rules are locked with Face ID." : `Its rules are locked with Face ID until ${until}.`}
-        {" "}
-        It can{" "}
-        {trade === undefined ? "trade only inside them" : `${trade.charAt(0).toLowerCase()}${trade.slice(1)}`}, and you
-        can pause it any time.
-      </p>
-      <div className="flex flex-wrap justify-center gap-2">
-        <ButtonLink render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}>
-          Go to {agent.name}
-          <Icon name="arrow-right" size={16} />
-        </ButtonLink>
-        <ButtonLink variant="secondary" render={<Link to="/agents" />}>See all agents</ButtonLink>
-      </div>
+    <div className="mx-auto grid w-full max-w-[480px] rounded-lg bg-white px-6 pt-6 pb-7 shadow-e2">
+      <Outcome
+        tone="success"
+        size="page"
+        media={
+          <ButterflyAssemble agentId={agent.id} label={`${agent.name}'s butterfly`} className="h-[132px] w-[180px]" />
+        }
+        title={`${agent.name} is live`}
+        description={until === null ?
+          "Its rules are locked with Face ID. Pause it any time." :
+          `Locked with Face ID until ${until}. Pause it any time.`}
+        actions={
+          <>
+            {noCash ?
+              (
+                <Button onClick={() => openCash("add")}>
+                  <Icon name="plus" size={16} />Add cash
+                </Button>
+              ) :
+              null}
+            {goTo}
+            <ButtonLink variant="ghost" render={<Link to="/agents" />}>See all agents</ButtonLink>
+          </>
+        }
+      >
+        {can.length === 0 ?
+          null :
+          (
+            <ul aria-label="It can" className="grid gap-1.5 rounded-[12px] px-3.5 py-3 surface-well">
+              {can.map((line) => (
+                <li key={line} className="grid grid-cols-[18px_minmax(0,1fr)] gap-1.5 text-[13.5px] text-g-800">
+                  <Icon name="check" size={14} className="mt-[3px] text-gain" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        {noCash
+          ? <p className="text-center text-label-sm text-g-500">It needs cash in your account to trade.</p>
+          : null}
+      </Outcome>
     </div>
   )
 }

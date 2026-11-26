@@ -61,7 +61,7 @@ test.describe("saved templates", () => {
     await page.goto("/agents/new")
 
     const template = page.getByRole("radio", { name: "Apple at 400" })
-    await expect(template).toHaveAccessibleDescription("Your saved template: its rules start as you saved them.")
+    await expect(template).toHaveAccessibleDescription("Its rules start as you saved them.")
     await expect(template).toContainText("Buy and sell")
     await expect(page.getByRole("radiogroup", { name: "Agent templates" }).getByRole("radio")).toHaveCount(6)
   })

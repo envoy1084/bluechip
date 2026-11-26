@@ -1,13 +1,13 @@
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
-import { canRules, createAgent, createDraft, dayFromNow } from "../utils/agents.ts"
+import { canRules, createAgent, createDraft, dayFromNow, openFineTuning } from "../utils/agents.ts"
 
 /** A Stock picker of NVIDIA, live, at its rules step to change them. */
 const editAgent = async (page: Page, template = "Stock picker", stocks = ["NVDA NVIDIA"]) => {
   const agent = await createAgent(page, { template, stocks, name: "Edited one" })
   await page.getByRole("button", { name: "Edit rules" }).click()
   await expect(page).toHaveURL(/\/edit$/)
-  await expect(page.getByText("Rules it follows")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Its limits" })).toBeVisible()
   return agent
 }
 
@@ -94,6 +94,7 @@ test.describe("edit rules: review", () => {
   test("a rule added is new, a rule taken away is removed", async ({ page, funded: _funded }) => {
     await editAgent(page, "Stop-loss guard", ["AAPL Apple"])
     await page.getByRole("switch", { name: "Max in one stock" }).click()
+    await openFineTuning(page)
     await page.getByRole("switch", { name: "Weekly slippage" }).click()
 
     await page.getByRole("button", { name: "Review changes" }).click()
@@ -122,7 +123,7 @@ test.describe("edit rules: review", () => {
 
     await page.getByRole("button", { name: "Back to the rules" }).click()
 
-    await expect(page.getByText("Rules it follows")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Its limits" })).toBeVisible()
   })
 })
 

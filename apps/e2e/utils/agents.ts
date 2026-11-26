@@ -17,7 +17,19 @@ export const startAgent = async (page: Page, template = "Stock picker") => {
   await page.goto("/agents/new")
   await page.getByRole("radio", { name: new RegExp(`^${template}`) }).click()
   await page.getByRole("button", { name: "Continue" }).click()
-  await expect(page.getByText("Rules it follows")).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Its limits" })).toBeVisible()
+}
+
+/** Opens a rule's row on the rules step (folded to a line until opened) so its fields can be set. */
+export const openRule = async (page: Page, title: string) => {
+  const trigger = page.locator("[data-slot='policy-row']").getByRole("button", { name: new RegExp(`^${title}`) })
+  if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click()
+}
+
+/** Opens the rules step's Fine-tuning: fair price, weekly slippage and trades a day. */
+export const openFineTuning = async (page: Page) => {
+  const trigger = page.getByRole("button", { name: /^Fine-tuning/ })
+  if ((await trigger.getAttribute("aria-expanded")) !== "true") await trigger.click()
 }
 
 /** Sets an agent's rules and opens its review, named `agent.name` when given. */
@@ -25,6 +37,7 @@ const reviewAgent = async (page: Page, agent: NewAgent) => {
   await startAgent(page, agent.template)
   for (const stock of agent.stocks ?? ["NVDA NVIDIA"]) await page.getByRole("button", { name: stock }).click()
   if (agent.askAbove !== undefined) {
+    await openRule(page, "Trade size")
     await page.getByRole("textbox", { name: "Ask me above" }).fill(String(agent.askAbove))
   }
 

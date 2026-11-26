@@ -10,7 +10,9 @@ import { trade } from "@bluechip/domain/policies/Trade"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import { tradesPerDay } from "@bluechip/domain/policies/TradesPerDay"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import { OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
+import { WorstCaseCard } from "@bluechip/ui/bluechip/worst-case-card"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Input } from "@bluechip/ui/components/input"
@@ -42,22 +44,15 @@ function WorstCase({ spec, nameOf }: Readonly<{ spec: AgentSpec; nameOf: (symbol
   const stocks = configOf(spec.policies, trade)?.stocks ?? []
 
   return (
-    <div className="grid justify-items-start gap-1.5 rounded-lg bg-[linear-gradient(180deg,#fff,var(--color-blue-50))] p-[18px] shadow-[var(--shadow-e2),0_0_0_1px_var(--color-info-line)]">
-      <span className="mb-1 grid size-8 place-items-center rounded-[10px] bg-[linear-gradient(180deg,var(--color-blue-hi),var(--color-blue))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3)]">
-        <Icon name="shield" size={18} />
-      </span>
-      <b className="text-[15px] font-semibold">The worst case</b>
-      <p className="text-body-sm text-g-700">
-        On its worst day, this agent could make{" "}
-        <b className="text-ink">{count === 1 ? "one trade" : `${count} trades`}</b> of up to{" "}
-        <b className="text-ink">{formatDollars(maxPerTrade)}</b> each
-        {budget > BigInt(0) && (
-          <>
-            , spending at most <b className="text-ink">{formatDollars(budget)}</b> on buys
-          </>
-        )}, only in {listNames(stocks.map(nameOf))}. It can never move money out of your account.
-      </p>
-    </div>
+    <WorstCaseCard>
+      On its worst day, this agent could make <b>{count === 1 ? "one trade" : `${count} trades`}</b> of up to{" "}
+      <b>{formatDollars(maxPerTrade)}</b> each
+      {budget > BigInt(0) && (
+        <>
+          , spending at most <b>{formatDollars(budget)}</b> on buys
+        </>
+      )}, only in {listNames(stocks.map(nameOf))}. It can never move money out of your account.
+    </WorstCaseCard>
   )
 }
 
@@ -71,22 +66,14 @@ function Facts({ spec }: Readonly<{ spec: AgentSpec }>) {
   ] as const
 
   return (
-    <dl className="grid rounded-lg bg-white px-4 py-0.5 shadow-e2">
-      {facts.map(([term, detail]) => (
-        <div
-          key={term}
-          className="flex justify-between gap-3 border-b border-g-100 py-2.5 text-[13.5px] last:border-b-0"
-        >
-          <dt className="text-g-500">{term}</dt>
-          <dd className="text-right font-semibold">{detail}</dd>
-        </div>
-      ))}
-    </dl>
+    <OrderPreview>
+      {facts.map(([term, detail]) => <OrderPreviewRow key={term} label={term}>{detail}</OrderPreviewRow>)}
+    </OrderPreview>
   )
 }
 
 /**
- * Step three: the agent as bluechip reads it (`POST /sessions/check`), the worst it could do, its name, and Face ID
+ * Step three: its name, the agent as bluechip reads it (`POST /sessions/check`), the worst it could do, and Face ID
  * to lock it. Creating it saves a draft first, so a cancelled Face ID locks that same draft on the next try.
  */
 export function ReviewStep(
@@ -133,15 +120,31 @@ export function ReviewStep(
     <div className="grid items-start gap-[18px] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
       <div className="grid min-w-0 gap-3">
         <div className="overflow-hidden rounded-lg bg-white shadow-e2">
-          <div className="flex items-center gap-3 px-[18px] py-4">
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-[18px] py-4">
             <AgentAvatar agentId={draft?.id ?? name} size="lg" />
-            <div className="grid min-w-0 flex-1">
-              <h3 className="truncate text-[17px] font-semibold tracking-[-0.015em]">{name.trim() || "Your agent"}</h3>
-              <span className="text-label text-g-500">{originLabel(origin)}, lasts {SESSION_DAYS} days</span>
+            <div className="grid min-w-0 gap-1.5">
+              <label htmlFor={nameId} className="text-label-sm font-semibold text-g-500">Name</label>
+              <Input
+                id={nameId}
+                value={name}
+                maxLength={MAX_NAME_LENGTH}
+                autoComplete="off"
+                disabled={draft !== null}
+                aria-invalid={problem === undefined ? undefined : true}
+                aria-describedby={`${nameId}-note`}
+                onChange={(event) => onNameChange(event.currentTarget.value)}
+                className="text-[16px] font-semibold"
+              />
+              <p
+                id={`${nameId}-note`}
+                className={cn("text-label-sm text-g-500", problem !== undefined && "font-medium text-loss")}
+              >
+                {problem ??
+                  (draft === null ?
+                    `${originLabel(origin)}, runs for ${SESSION_DAYS} days once locked.` :
+                    "Saved with its draft. Edit the rules to change it.")}
+              </p>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-g-100 px-[9px] py-[3px] text-[11.5px] font-semibold text-g-600">
-              <Icon name="edit" size={12} />Draft
-            </span>
           </div>
 
           {targets === undefined ? null : (
@@ -202,27 +205,6 @@ export function ReviewStep(
             <AlertDescription>{editProblem}</AlertDescription>
           </Alert>
         )}
-
-        <div className="grid gap-1.5">
-          <label htmlFor={nameId} className="text-[13.5px] font-semibold">Name</label>
-          <Input
-            id={nameId}
-            value={name}
-            maxLength={MAX_NAME_LENGTH}
-            autoComplete="off"
-            disabled={draft !== null}
-            aria-invalid={problem === undefined ? undefined : true}
-            aria-describedby={`${nameId}-note`}
-            onChange={(event) => onNameChange(event.currentTarget.value)}
-          />
-          <p
-            id={`${nameId}-note`}
-            className={cn("text-label-sm text-g-500", problem !== undefined && "font-medium text-loss")}
-          >
-            {problem ??
-              (draft === null ? "What you'll call it." : "Saved with its draft. Edit the rules to change it.")}
-          </p>
-        </div>
 
         <PasskeyButton
           size="lg"

@@ -1,6 +1,6 @@
 // Asking an agent for a trade the way a person does: the agent page's "Trade with this agent" card.
 import { expect, type Page } from "@playwright/test"
-import { startAgent } from "./agents.ts"
+import { openRule, startAgent } from "./agents.ts"
 
 /** The agent page's "Trade with this agent" card. */
 export const tradeCard = (page: Page) => page.getByRole("region", { name: "Trade with this agent" })
@@ -30,6 +30,7 @@ export const createAgentWithBudget = async (
   await startAgent(page)
   await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
   await page.getByRole("textbox", { name: "Daily budget" }).fill(String(rules.dailyBudget))
+  await openRule(page, "Trade size")
   await page.getByRole("textbox", { name: "Ask me above" }).fill(String(rules.askAbove))
 
   await page.getByRole("button", { name: "Review" }).click()

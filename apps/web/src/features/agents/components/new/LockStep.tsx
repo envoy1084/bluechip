@@ -1,5 +1,6 @@
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import type { RequestId } from "@bluechip/domain/Ids"
+import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
 import { ButtonLink } from "@bluechip/ui/components/button"
@@ -8,7 +9,6 @@ import { Link } from "@tanstack/react-router"
 import { lockAgentAtom } from "../../atoms/agents.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
 import { useLanding } from "../../hooks/useLanding.ts"
-import { LandingCard } from "../LandingCard.tsx"
 import { DoneStep } from "./DoneStep.tsx"
 import { NewAgentShell } from "./NewAgentShell.tsx"
 
@@ -19,70 +19,71 @@ function LockAgain({ agent, onSent }: Readonly<{ agent: Agent; onSent: (agent: A
 
   if (agent.status !== "draft") {
     return (
-      <>
-        <p className="max-w-[40ch] text-body-sm text-g-600">This draft was removed, so there's nothing to lock.</p>
-        <ButtonLink variant="secondary" render={<Link to="/agents" />}>See your agents</ButtonLink>
-      </>
+      <Outcome
+        tone="failure"
+        size="page"
+        title={`${agent.name}'s rules weren't locked`}
+        description="This draft was removed, so there's nothing to lock."
+        actions={<ButtonLink variant="secondary" render={<Link to="/agents" />}>See your agents</ButtonLink>}
+      />
     )
   }
 
   return (
-    <>
-      <p className="max-w-[40ch] text-body-sm text-g-600">
-        Base didn't take the lock, so nothing changed. {agent.name} is saved as a draft until you lock it.
-      </p>
+    <Outcome
+      tone="failure"
+      size="page"
+      title={`${agent.name}'s rules weren't locked`}
+      description={`Base didn't take the lock, so nothing changed. ${agent.name} is saved as a draft until you lock it.`}
+      actions={
+        <PasskeyButton
+          size="lg"
+          doneLabel="Sent"
+          onAuthenticate={async () =>
+            onSent(
+              await sign(() =>
+                lock({ params: { id: agent.id }, payload: { requestId: crypto.randomUUID() as RequestId } })
+              )
+            )}
+          className="w-full max-w-[340px]"
+        >
+          Lock again with Face ID
+        </PasskeyButton>
+      }
+    >
       {signing.status === "failed" && (
-        <Alert variant="destructive" className="w-full text-left">
+        <Alert variant="destructive">
           <AlertDescription>{signing.message}</AlertDescription>
         </Alert>
       )}
-      <PasskeyButton
-        size="lg"
-        doneLabel="Sent"
-        onAuthenticate={async () =>
-          onSent(
-            await sign(() =>
-              lock({ params: { id: agent.id }, payload: { requestId: crypto.randomUUID() as RequestId } })
-            )
-          )}
-        className="w-full"
-      >
-        Lock again with Face ID
-      </PasskeyButton>
-    </>
+    </Outcome>
   )
 }
 
 /**
- * Steps four and five: the lock on its way to Base, followed through the live agent, then the agent at work. Mount it
- * once per send (a new `key`), so a retry follows its own lock.
+ * After Face ID: a couple of seconds while Base takes the lock, followed through the live agent, then the agent at
+ * work, or the lock that didn't land. Mount it once per send (a new `key`), so a retry follows its own lock.
  */
 export function LockStep({ sent, onSent }: Readonly<{ sent: Agent; onSent: (agent: Agent) => void }>) {
   const { agent, landing } = useLanding(sent, (candidate) => candidate.status === "active")
 
-  if (landing === "landed") {
-    return (
-      <NewAgentShell step="Done">
-        <DoneStep agent={agent} />
-      </NewAgentShell>
-    )
-  }
-
   return (
-    <NewAgentShell step="Face ID">
-      {landing === "sending" ?
+    <NewAgentShell step={null}>
+      {landing === "landed" ?
+        <DoneStep agent={agent} /> :
         (
-          <LandingCard landing="sending" title={`Locking ${agent.name}'s rules`}>
-            <p className="max-w-[40ch] text-body-sm text-g-600">
-              Face ID is the only way its rules can be set or loosened. Once locked, every trade is checked against them
-              on Base.
-            </p>
-          </LandingCard>
-        ) :
-        (
-          <LandingCard landing="failed" title={`${agent.name}'s rules weren't locked`}>
-            <LockAgain agent={agent} onSent={onSent} />
-          </LandingCard>
+          <div className="mx-auto w-full max-w-[460px] rounded-lg bg-white px-6 py-7 shadow-e2">
+            {landing === "sending" ?
+              (
+                <Outcome
+                  tone="pending"
+                  size="page"
+                  title={`Locking ${agent.name}'s rules`}
+                  description="Base takes a couple of seconds. Once locked, every trade it makes is checked against them."
+                />
+              ) :
+              <LockAgain agent={agent} onSent={onSent} />}
+          </div>
         )}
     </NewAgentShell>
   )

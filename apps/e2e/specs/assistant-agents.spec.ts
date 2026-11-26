@@ -47,7 +47,7 @@ test.describe("draft agent cards", () => {
     await card.getByRole("link", { name: "Customize" }).click()
 
     await expect(page).toHaveURL(/\/agents\/new\?draft=agent_[0-9a-z]+$/)
-    await expect(page.getByText("Rules it follows")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Its limits" })).toBeVisible()
   })
 })
 

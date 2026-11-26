@@ -40,11 +40,11 @@ function TemplateCard(
         <Illustration name={illustration} size={40} />
       </span>
       <span className="grid min-w-0 flex-1 justify-items-start gap-1">
-        <b className="text-body-sm font-semibold">{title}</b>
-        <span id={id} className="text-label text-g-500">{summary}</span>
-        <span className="mt-1 rounded-full bg-g-100 px-[9px] py-[3px] text-[11.5px] font-semibold text-g-600">
-          {tag}
+        <span className="flex flex-wrap items-baseline gap-x-2">
+          <b className="text-body-sm font-semibold">{title}</b>
+          <span className="text-caption font-medium text-g-500">{tag}</span>
         </span>
+        <span id={id} className="text-label text-g-500">{summary}</span>
       </span>
     </RadioCard>
   )
@@ -59,7 +59,7 @@ function SavedCards({ saved }: Readonly<{ saved: ReadonlyArray<SavedTemplate> }>
         key={template.id}
         value={template.id}
         title={template.name}
-        summary="Your saved template: its rules start as you saved them."
+        summary="Its rules start as you saved them."
         tag={direction === undefined ? "Saved" : DIRECTION_LABELS[direction]}
         illustration="key"
       />
@@ -108,7 +108,7 @@ export function TemplateStep(
       <div className="grid gap-1.5">
         <h2 className="text-2xl font-semibold tracking-[-0.03em]">What should your agent do?</h2>
         <p className="max-w-[60ch] text-[15px] text-g-600">
-          Pick a starting point. You'll choose its rules next, and nothing runs until you lock them with Face ID.
+          Pick a starting point. You set its rules next, and nothing runs until you lock them with Face ID.
         </p>
       </div>
 
@@ -133,7 +133,7 @@ export function TemplateStep(
         <TemplateCard
           value={SCRATCH}
           title="Start from scratch"
-          summary="Only the rules every agent has, at their standard settings. Add the rest yourself."
+          summary="Only the rules every agent has. Add the rest yourself."
           tag="Custom"
           illustration="seedling"
         />

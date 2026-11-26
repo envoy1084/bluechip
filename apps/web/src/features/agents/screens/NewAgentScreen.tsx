@@ -141,7 +141,7 @@ function NewAgentFlow(
 
   if (step === "template") {
     return (
-      <NewAgentShell step="Template">
+      <NewAgentShell step="Start">
         <TemplateStep origin={origin} onPick={pickOrigin} onContinue={() => setStep("rules")} />
       </NewAgentShell>
     )
