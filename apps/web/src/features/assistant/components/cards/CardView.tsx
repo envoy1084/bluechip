@@ -4,6 +4,7 @@ import { ChatNotice } from "@bluechip/ui/bluechip/chat-notice"
 import { ResearchCard } from "@bluechip/ui/bluechip/research-card"
 import type { IconName } from "@bluechip/ui/icons/icon"
 import { ApprovalCard } from "./ApprovalCard.tsx"
+import { AutomationCard, AutomationControlCard } from "./AutomationCards.tsx"
 import type { CardViews } from "./CardViews.ts"
 import { AgentControlCard, MemoryCard, SaveTemplateCard } from "./ConfirmCards.tsx"
 import { DraftAgentCard } from "./DraftAgentCard.tsx"
@@ -41,6 +42,10 @@ export function CardView(
       return <AgentControlCard card={card} onCard={onCard} />
     case "SaveTemplate":
       return <SaveTemplateCard card={card} onCard={onCard} />
+    case "Automation":
+      return <AutomationCard card={card} onCard={onCard} />
+    case "AutomationControl":
+      return <AutomationControlCard card={card} onCard={onCard} />
     case "Memory":
       return <MemoryCard card={card} onCard={onCard} />
     case "Research":

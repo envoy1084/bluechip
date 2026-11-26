@@ -1,14 +1,16 @@
 // How cards read: why a confirm or a Face ID didn't go, and what a memory is.
 import type { AgentStatus } from "@bluechip/domain/agents/Agent"
 import type { MemoryKind } from "@bluechip/domain/assistant/Memory"
-import { Conflict, InvalidSpec, Unavailable } from "@bluechip/domain/Errors"
+import { Conflict, InvalidAutomation, InvalidSpec, Unavailable } from "@bluechip/domain/Errors"
 import * as DateTime from "effect/DateTime"
 import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 
 /** Why confirming or dismissing a card didn't go, in words. */
 export const cardProblem = (error: unknown): string => {
   if (error instanceof Conflict) return "This was already answered, so there's nothing left to do."
-  if (error instanceof InvalidSpec) return error.problems.map((problem) => problem.message).join(" ")
+  if (error instanceof InvalidSpec || error instanceof InvalidAutomation) {
+    return error.problems.map((problem) => problem.message).join(" ")
+  }
   return "We couldn't reach bluechip just now. Nothing changed, so try again."
 }
 

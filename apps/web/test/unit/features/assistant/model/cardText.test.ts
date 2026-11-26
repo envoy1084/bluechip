@@ -1,5 +1,6 @@
 import type { AgentStatus } from "@bluechip/domain/agents/Agent"
-import { Conflict, InvalidSpec, QuoteUnavailable, Unavailable } from "@bluechip/domain/Errors"
+import { AutomationProblem } from "@bluechip/domain/automations/Automation"
+import { Conflict, InvalidAutomation, InvalidSpec, QuoteUnavailable, Unavailable } from "@bluechip/domain/Errors"
 import { PolicyProblem } from "@bluechip/domain/policies/AgentSpec"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
@@ -29,6 +30,15 @@ describe("cardProblem", () => {
       name: "invalid policies: each problem",
       error: INVALID,
       expected: "Pick at least one stock. Trades can't be bigger than the budget."
+    },
+    {
+      name: "an automation that can't run: each problem",
+      error: new InvalidAutomation({
+        problems: [
+          new AutomationProblem({ part: "action", index: null, field: null, message: "This agent only buys." })
+        ]
+      }),
+      expected: "This agent only buys."
     },
     {
       name: "anything else",
