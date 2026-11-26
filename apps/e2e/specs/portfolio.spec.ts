@@ -29,6 +29,15 @@ test.describe("portfolio", () => {
     await expect(page.getByRole("list", { name: "Your mix" }).getByRole("button")).toHaveAccessibleName("Cash 100.0%")
   })
 
+  test("your money sums it up first, with Add cash left to the page", async ({ page, funded: _ }) => {
+    await page.goto("/portfolio")
+
+    const money = page.getByRole("region", { name: "Your money" })
+    await expect(money).toContainText("$1,000.00")
+    await expect(money.getByRole("img")).toHaveAccessibleName("Cash 100%")
+    await expect(money.getByRole("button", { name: "Add cash" })).toHaveCount(0)
+  })
+
   // fixme: pins $100 prices and shares (backlog W8)
   test.fixme("holdings are listed biggest first, with cash last", async ({ page, user }) => {
     await giveShares(user, { TSLA: 3, AMZN: 2 })

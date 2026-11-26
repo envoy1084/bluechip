@@ -10,7 +10,7 @@ import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { MarketPill } from "../../../components/MarketPill.tsx"
-import { BalanceCard } from "../components/BalanceCard.tsx"
+import { MoneySummary } from "../../../components/MoneySummary.tsx"
 
 // The visitor's own day and time of day.
 const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
@@ -23,7 +23,7 @@ const greeting = () => {
 const SUGGESTIONS = ["What did my agents do today?", "How did I do this week?", "Create an agent that only rebalances"]
 
 /**
- * The day's greeting, the balance (or the way to add cash when there is none), the way to ask bluechip, and the
+ * The day's greeting, your money (or the way to add cash when there is none), the way to ask bluechip, and the
  * latest activity. `approvals` is the approvals bell, from the intents feature; `latest` the latest activity.
  */
 export function HomeScreen({ approvals, latest }: Readonly<{ approvals: ReactNode; latest: ReactNode }>) {
@@ -54,7 +54,7 @@ export function HomeScreen({ approvals, latest }: Readonly<{ approvals: ReactNod
         </h2>
       </div>
 
-      {AsyncResult.isSuccess(portfolio) && !empty && <BalanceCard portfolio={portfolio.value} />}
+      {empty ? null : <MoneySummary />}
 
       {empty && (
         <DepositCard

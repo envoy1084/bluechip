@@ -8,21 +8,21 @@ test.describe("home", () => {
       page.getByText(new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }))
     )
       .toBeVisible()
-    await expect(page.getByText("Total value")).toBeHidden()
+    await expect(page.getByRole("region", { name: "Your money" })).toBeHidden()
 
     await page.getByRole("main").getByRole("button", { name: "Add cash" }).click()
 
     await expect(page.getByRole("dialog", { name: "Add cash" })).toBeVisible()
   })
 
-  test("the balance card shows the total, the cash and no agents", async ({ page, funded: _funded }) => {
+  test("your money shows the total, all of it in cash, with Add cash", async ({ page, funded: _funded }) => {
     await page.reload()
 
-    await expect(page.getByText("Total value")).toBeVisible()
-    await expect(page.getByRole("main")).toContainText("$1,000.00")
-    await expect(page.getByText("Cash (USDC)")).toBeVisible()
-    await expect(page.getByText("None yet")).toBeVisible()
-    await expect(page.getByRole("main").getByRole("button", { name: "Add cash" })).toBeHidden()
+    const money = page.getByRole("region", { name: "Your money" })
+    await expect(money).toContainText("$1,000.00")
+    await expect(money.getByRole("img")).toHaveAccessibleName("Cash 100%")
+    await expect(money).toContainText("$1,000.00 in cash to invest")
+    await expect(money.getByRole("button", { name: "Add cash" })).toBeVisible()
   })
 
   // fixme: pins $100 prices; the stack now runs at the devnet's captured prices (backlog W8)
@@ -32,8 +32,7 @@ test.describe("home", () => {
 
     await page.reload()
 
-    await expect(page.getByText("Total value")).toBeVisible()
-    await expect(page.getByRole("main")).toContainText("$1,400.00")
+    await expect(page.getByRole("region", { name: "Your money" })).toContainText("$1,400.00")
     await expect(page.getByRole("main")).toContainText("+$8.00")
     await expect(page.getByRole("main")).toContainText("+0.57%")
   })

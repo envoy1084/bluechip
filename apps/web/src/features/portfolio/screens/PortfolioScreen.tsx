@@ -10,6 +10,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { MoneySummary } from "../../../components/MoneySummary.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { CashCard } from "../components/CashCard.tsx"
 import { HoldingsCard } from "../components/HoldingsCard.tsx"
@@ -85,6 +86,7 @@ export function PortfolioScreen() {
 
       {AsyncResult.isSuccess(portfolio) && portfolio.value.value > BigInt(0) && (
         <div className="grid gap-4">
+          <MoneySummary addCash={false} />
           <ValueChart />
           <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
             <HoldingsCard portfolio={portfolio.value} names={names} />
