@@ -32,11 +32,11 @@ import { Intents } from "../intents/Intents.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
 import { Stocks } from "../market/Stocks.ts"
+import { Memories } from "../memory/Memories.ts"
 import { SavedTemplates } from "../policies/SavedTemplates.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { valueHoldings } from "../portfolio/Valuation.ts"
 import { Cards } from "./Cards.ts"
-import { Memories } from "./Memories.ts"
 
 /**
  * The toolkit the assistant runs: bluechip's tools and Anthropic's web search (`research`), which Anthropic runs and

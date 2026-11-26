@@ -1,7 +1,7 @@
 // Memory notes recorded from the conversation model, replayed: what each kind of message leaves on the memory page.
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
-import { Memories } from "../../../src/modules/assistant/Memories.ts"
+import { Memories } from "../../../src/modules/memory/Memories.ts"
 import { NOTE_CASES } from "../../fixtures/assistant/MemoryNotes.ts"
 import { RecordedModel } from "../../utils/RecordedModel.ts"
 import { TestAssistant } from "../../utils/TestAssistant.ts"

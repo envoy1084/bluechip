@@ -12,9 +12,9 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Automations } from "../automations/Automations.ts"
+import { Memories } from "../memory/Memories.ts"
 import { SavedTemplates } from "../policies/SavedTemplates.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
-import { Memories } from "./Memories.ts"
 import { assistantCards } from "./tables.ts"
 
 /** A card before it is stored: everything but its id. */

@@ -6,11 +6,11 @@ import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
+import { AssistantModels } from "../assistant/AssistantModels.ts"
+import { Budgets } from "../assistant/Budgets.ts"
+import { tokenUsage } from "../assistant/Transcript.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
-import { AssistantModels } from "./AssistantModels.ts"
-import { Budgets } from "./Budgets.ts"
 import { Memories } from "./Memories.ts"
-import { tokenUsage } from "./Transcript.ts"
 
 /** What the model notes after a turn: the memories worth keeping, none when nothing lasts. */
 export const Notes = Schema.Struct({ memories: Schema.Array(MemoryCandidate) })

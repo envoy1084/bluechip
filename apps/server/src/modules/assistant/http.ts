@@ -3,11 +3,11 @@ import { CurrentUser } from "@bluechip/domain/Auth"
 import * as AgUiServer from "effect/ai/AgUiServer"
 import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
+import { Memories } from "../memory/Memories.ts"
 import { Assistant } from "./Assistant.ts"
 import { Budgets } from "./Budgets.ts"
 import { Cards } from "./Cards.ts"
 import { Conversations } from "./Conversations.ts"
-import { Memories } from "./Memories.ts"
 
 export const AssistantHandlers = HttpApiBuilder.group(
   BluechipApi,
