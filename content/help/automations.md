@@ -16,6 +16,13 @@ news about stocks or a topic you pick.
 Buy an amount of dollars split across stocks you pick, sell a dollar amount of a stock, rebalance to the agent's
 target mix, ask you first (propose the trades and wait for your approval), or just tell you.
 
+## Several trades at once
+
+When an action makes several trades (a rebalance, a buy split across stocks), the agent sends them together in one
+transaction: they land in the same block, all or none, and count as one of its trades for the day. Two trades of the
+same stock go in separate transactions, so each stays within the agent's largest trade. If its policies refuse the
+transaction as a whole, the agent tries each trade on its own, so one trade doesn't hold back the others.
+
 ## Settings and judgments
 
 An automation waits an hour between runs unless you change its cooldown, and can keep quiet hours. A news trigger can

@@ -6,6 +6,7 @@ import type { ConditionRecord, RunOutcome, TriggerData } from "@bluechip/domain/
 import { gate, type SkipReason } from "@bluechip/domain/automations/Settings"
 import type { UserId } from "@bluechip/domain/Ids"
 import { waves } from "@bluechip/domain/intents/Batch"
+import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { Price, Shares } from "@bluechip/domain/market/Units"
 import { complete } from "@bluechip/domain/policies/Catalog"
@@ -168,7 +169,7 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
 
         // Several legs are one plan (the run's), sent wave by wave: each wave in one operation, or one approval.
         const operations = waves(legs)
-        const proposed = []
+        const proposed: Array<Intent> = []
         for (const [wave, operation] of operations.entries()) {
           for (const leg of operation) {
             const index = proposed.length

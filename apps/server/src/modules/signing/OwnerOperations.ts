@@ -55,6 +55,16 @@ export const toReceipt = (receipt: UserOperationReceipt): Receipt => ({
   }
 })
 
+/**
+ * The receipt as the `index`th of `count` trades sent in its operation reads it: the gas shared between them, the
+ * first carrying what doesn't divide evenly.
+ */
+export const shareOf = (receipt: Receipt, index: number, count: number): Receipt => {
+  const each = receipt.gas.wei / BigInt(count)
+  const wei = index === 0 ? receipt.gas.wei - each * BigInt(count - 1) : each
+  return { ...receipt, gas: { ...receipt.gas, wei } }
+}
+
 // ERC-4337's AA21: the account couldn't pay the operation's prefund, so it has no ETH for gas and nothing sponsors it.
 // The bundler's code reaches us inside a chain of wrapped errors (Effect's, viem's, Namera's), so every cause is read.
 const paysNoPrefund = (cause: unknown): boolean => {

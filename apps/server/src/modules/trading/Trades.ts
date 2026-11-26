@@ -13,11 +13,13 @@ import {
   Unavailable
 } from "@bluechip/domain/Errors"
 import type { Address, SigningRequestId, UserId } from "@bluechip/domain/Ids"
-import { Quote, type StockSymbol } from "@bluechip/domain/market/Market"
-import { bpsBetween, type Shares, type Usdc } from "@bluechip/domain/market/Units"
+import { Leg } from "@bluechip/domain/intents/Intent"
+import { Quote } from "@bluechip/domain/market/Market"
+import { bpsBetween } from "@bluechip/domain/market/Units"
 import { MINIMUM_BUY, type Trade, TradeRequest, type TradeWarning, transition } from "@bluechip/domain/trading/Trade"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
-import { and, eq, inArray, isNotNull } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm"
+import * as Array from "effect/Array"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Duration from "effect/Duration"
@@ -31,11 +33,11 @@ import type { Hex } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { accounts } from "../accounts/tables.ts"
-import { IntentStore } from "../intents/IntentStore.ts"
+import { type IntentRow, IntentStore } from "../intents/IntentStore.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
-import { OwnerOperations, type OwnerPasskey } from "../signing/OwnerOperations.ts"
+import { OwnerOperations, type OwnerPasskey, shareOf } from "../signing/OwnerOperations.ts"
 import { type Owner, type SigningRequestRow, SigningRequests } from "../signing/SigningRequests.ts"
 import { trades } from "./tables.ts"
 import { toTrade, TradeLedger, type TradeRow } from "./TradeLedger.ts"
@@ -52,13 +54,6 @@ const RECENT_TRADE = Duration.minutes(30)
 // from the chain's latest block, since the swap checks it against `block.timestamp`, not the server's clock.
 const SWAP_DEADLINE_SECONDS = BigInt(180)
 
-export type TradeInput = {
-  readonly requestId: string
-  readonly symbol: StockSymbol
-  readonly side: "buy" | "sell"
-  readonly amount: { readonly usdc: Usdc } | { readonly shares: Shares }
-}
-
 /** The intent a trade carries out, and whether it is yours or an agent's trade you approved. */
 export type TradeLink = {
   readonly intentId: string
@@ -66,18 +61,25 @@ export type TradeLink = {
   readonly source: "owner" | "approval"
 }
 
+/** One trade of an owner operation: what to trade, and the intent it carries out. */
+export type OwnerLeg = {
+  readonly leg: Leg
+  readonly link: TradeLink
+}
+
 /**
- * Buying and selling with the account's passkey: `prepare` reads balances, quotes the pool, checks the price against
- * Chainlink and builds one user operation (approve, swap); `confirm` checks the passkey's signature and sends it; the
- * trade is then followed to its receipt, where its fill is read, in the background (and again after a restart).
+ * Buying and selling with the account's passkey: `prepare` reads balances, quotes the pools, checks each price
+ * against Chainlink and builds one user operation for every leg (approve, swap each; sells first, so their cash pays
+ * for the buys); `confirm` checks the passkey's signature and sends it; each trade is then followed to its receipt,
+ * where its fill is read, in the background (and again after a restart).
  */
 export class Trades extends Context.Service<Trades, {
   readonly prepare: (
     owner: Owner,
-    input: TradeInput,
-    link: TradeLink
+    requestId: string,
+    legs: ReadonlyArray<OwnerLeg>
   ) => Effect.Effect<
-    TradeRequest,
+    { readonly request: TradeRequest; readonly quotes: ReadonlyArray<Quote> },
     | InsufficientCash
     | InsufficientShares
     | NotTradable
@@ -88,8 +90,8 @@ export class Trades extends Context.Service<Trades, {
     | Unavailable
   >
   /**
-   * Sends a trade signed with your passkey. One prepared for an intent that has moved on while you signed (an
-   * approval that expired or was declined, or its agent paused) is refused with `Conflict`, never sent.
+   * Sends trades signed with your passkey, and returns the first. One prepared for an intent that has moved on while
+   * you signed (an approval that expired or was declined, or its agent paused) is refused with `Conflict`, never sent.
    */
   readonly confirm: (
     owner: Owner,
@@ -112,35 +114,50 @@ export class Trades extends Context.Service<Trades, {
       const signing = yield* SigningRequests
       const scope = yield* Effect.scope
 
-      const quoteCodec = Schema.fromJsonString(Schema.toCodecJson(Quote))
+      // Each leg of a request as its payload keeps it: the trade, its quote, and the intent it carries out.
+      const PreparedLegs = Schema.fromJsonString(Schema.toCodecJson(Schema.Array(Schema.Struct({
+        leg: Leg,
+        quote: Quote,
+        intentId: Schema.String,
+        agentId: Schema.NullOr(Schema.String),
+        source: Schema.Literals(["owner", "approval"])
+      }))))
+
+      const legsOf = (row: SigningRequestRow) => Schema.decodeSync(PreparedLegs)(row.payload["legs"]!)
 
       const toTradeRequest = Effect.fnUntraced(function*(row: SigningRequestRow) {
-        return new TradeRequest({
-          id: row.id as SigningRequestId,
-          options: yield* signing.webAuthnOptions(row),
-          quote: Schema.decodeSync(quoteCodec)(row.payload["quote"]!),
-          warnings: row.payload["warnings"] === "" ? [] : row.payload["warnings"]!.split(",") as Array<TradeWarning>,
-          deploysAccount: row.deploysAccount,
-          expiresAt: row.expiresAt
-        })
+        const quotes = legsOf(row).map((prepared) => prepared.quote)
+        return {
+          request: new TradeRequest({
+            id: row.id as SigningRequestId,
+            options: yield* signing.webAuthnOptions(row),
+            quote: quotes[0]!,
+            warnings: row.payload["warnings"] === "" ? [] : row.payload["warnings"]!.split(",") as Array<TradeWarning>,
+            deploysAccount: row.deploysAccount,
+            expiresAt: row.expiresAt
+          }),
+          quotes
+        }
       })
 
-      // Follows a sent trade to its receipt in the background: how it ended, and its intent with it.
+      // Follows sent trades (one operation) to its receipt in the background: how each ended, and its intent with it.
       const track = Effect.fnUntraced(
-        function*(row: TradeRow, owner: Owner, passkey: OwnerPasskey) {
-          const outcome = yield* operations.wait(passkey, row.userOpHash as Hex).pipe(Effect.result)
-          const settled = yield* ledger.settle(
-            row,
-            owner.account as Hex,
-            outcome._tag === "Success" ? outcome.success : undefined
-          )
-          if (settled === undefined || settled.intentId === null) return
+        function*(rows: ReadonlyArray<TradeRow>, owner: Owner, passkey: OwnerPasskey) {
+          const outcome = yield* operations.wait(passkey, rows[0]!.userOpHash as Hex).pipe(Effect.result)
+          for (const [index, row] of rows.entries()) {
+            const settled = yield* ledger.settle(
+              row,
+              owner.account as Hex,
+              outcome._tag === "Success" ? shareOf(outcome.success, index, rows.length) : undefined
+            )
+            if (settled === undefined || settled.intentId === null) continue
 
-          const intent = yield* intents.find(settled.intentId)
-          if (intent === undefined) return
-          yield* intents.advance(intent, { _tag: settled.status === "filled" ? "Filled" : "Failed" }).pipe(
-            Effect.ignore
-          )
+            const intent = yield* intents.find(settled.intentId)
+            if (intent === undefined) continue
+            yield* intents.advance(intent, { _tag: settled.status === "filled" ? "Filled" : "Failed" }).pipe(
+              Effect.ignore
+            )
+          }
         },
         Effect.forkIn(scope),
         Effect.asVoid
@@ -149,98 +166,123 @@ export class Trades extends Context.Service<Trades, {
       const pending = yield* db.select().from(trades)
         .innerJoin(accounts, eq(accounts.userId, trades.userId))
         .where(and(inArray(trades.status, ["sending", "confirming"]), isNotNull(trades.userOpHash)))
+        .orderBy(asc(trades.createdAt), asc(trades.id))
         .pipe(Effect.orDie)
-      for (const { accounts: account, trades: row } of pending) {
-        const owner = { id: row.userId as UserId, account: account.address as Address }
-        yield* track(row, owner, yield* owners.ownerPasskey(owner.id))
+      const operationsPending = Array.groupBy(pending, ({ trades: row }) => row.userOpHash!)
+      for (const operation of Object.values(operationsPending)) {
+        const account = operation[0]!.accounts
+        const owner = { id: account.userId as UserId, account: account.address as Address }
+        yield* track(operation.map((row) => row.trades), owner, yield* owners.ownerPasskey(owner.id))
       }
 
-      const prepare = Effect.fn("Trades.prepare")(function*(owner: Owner, input: TradeInput, link: TradeLink) {
-        const stock = stocks.find((candidate) => candidate.symbol === input.symbol)
-        if (stock?.pool == null) return yield* new NotTradable({ symbol: input.symbol })
-        const amountIn = "usdc" in input.amount ? input.amount.usdc : input.amount.shares
-        if ("usdc" in input.amount && input.amount.usdc < MINIMUM_BUY) {
-          return yield* new QuoteUnavailable({ symbol: input.symbol, reason: "belowMinimum" })
-        }
+      const prepare = Effect.fn("Trades.prepare")(
+        function*(owner: Owner, requestId: string, legs: ReadonlyArray<OwnerLeg>) {
+          // Sells first: their cash is there for the buys.
+          const ordered = [
+            ...legs.filter(({ leg }) => leg.side === "sell"),
+            ...legs.filter(({ leg }) => leg.side === "buy")
+          ]
+          for (const { leg } of ordered) {
+            const stock = stocks.find((candidate) => candidate.symbol === leg.symbol)
+            if (stock?.pool == null) return yield* new NotTradable({ symbol: leg.symbol })
+            if ("usdc" in leg.amount && leg.amount.usdc < MINIMUM_BUY) {
+              return yield* new QuoteUnavailable({ symbol: leg.symbol, reason: "belowMinimum" })
+            }
+          }
 
-        const existing = yield* signing.findPrepared(
-          owner,
-          input.requestId,
-          (payload) =>
-            payload["symbol"] === input.symbol && payload["side"] === input.side &&
-            payload["amountIn"] === amountIn.toString() && payload["intentId"] === link.intentId
-        )
-        if (Option.isSome(existing)) return yield* toTradeRequest(existing.value)
-
-        yield* balances.invalidate(owner.account as Hex)
-        const holdings = yield* balances.of(owner.account as Hex).pipe(
-          Effect.catchTag(
-            "ChainError",
-            () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 }))
-          )
-        )
-        const held = holdings.get(input.side === "buy" ? "USDC" : input.symbol) ?? BigInt(0)
-        if (amountIn > held) {
-          return yield* input.side === "buy"
-            ? new InsufficientCash({ available: held })
-            : new InsufficientShares({ symbol: input.symbol, available: held })
-        }
-
-        const quote = yield* quoter.quote(
-          "usdc" in input.amount
-            ? { symbol: input.symbol, side: "buy", usdc: input.amount.usdc }
-            : { symbol: input.symbol, side: "sell", shares: input.amount.shares }
-        )
-        const limitBps = quote.reference.status === "paused" ? PAUSED_LIMIT_BPS : LIVE_LIMIT_BPS
-        if (quote.reference.status === "stale" || quote.gapBps > limitBps) {
-          return yield* new PriceCheckFailed({
-            symbol: input.symbol,
-            reason: quote.reference.status === "stale" ? "stale" : "gap",
-            gapBps: quote.gapBps,
-            limitBps
+          const amountOf = (leg: Leg) => "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares
+          const existing = yield* signing.findPrepared(owner, requestId, (payload) => {
+            const prepared = Schema.decodeUnknownOption(PreparedLegs)(payload["legs"])
+            return Option.isSome(prepared) && prepared.value.length === ordered.length &&
+              prepared.value.every(({ intentId, leg }, index) => {
+                const asked = ordered[index]!
+                return intentId === asked.link.intentId && leg.symbol === asked.leg.symbol &&
+                  leg.side === asked.leg.side && amountOf(leg) === amountOf(asked.leg)
+              })
           })
-        }
+          if (Option.isSome(existing)) return yield* toTradeRequest(existing.value)
 
-        const now = yield* DateTime.now
-        const warnings: Array<TradeWarning> = []
-        if (quote.reference.status === "paused") warnings.push("pricesPaused")
-        const price = (yield* market.prices).get(input.symbol)
-        const recent = price !== undefined && Duration.isLessThan(DateTime.distance(price.tradedAt, now), RECENT_TRADE)
-        if (recent && Math.abs(bpsBetween(price.price, quote.reference.price)) > APART_BPS) {
-          warnings.push("marketApart")
-        }
+          const unavailable = () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 }))
+          yield* balances.invalidate(owner.account as Hex)
+          const holdings = yield* balances.of(owner.account as Hex).pipe(Effect.catchTag("ChainError", unavailable))
 
-        const block = yield* chain.use("block", (client) => client.getBlock()).pipe(
-          Effect.catchTag(
-            "ChainError",
-            () => Effect.fail(new Unavailable({ dependency: "chain", retryAfterSeconds: 5 }))
+          // Each sale within the shares held; the buys within the cash held and, once quoted, what the sales pay.
+          for (const { leg } of ordered) {
+            if (!("shares" in leg.amount)) continue
+            const held = holdings.get(leg.symbol) ?? BigInt(0)
+            if (leg.amount.shares > held) return yield* new InsufficientShares({ symbol: leg.symbol, available: held })
+          }
+          const cash = holdings.get("USDC") ?? BigInt(0)
+          const buying = ordered.reduce((sum, { leg }) => "usdc" in leg.amount ? sum + leg.amount.usdc : sum, BigInt(0))
+          const selling = ordered.some(({ leg }) => leg.side === "sell")
+          if (!selling && buying > cash) return yield* new InsufficientCash({ available: cash })
+
+          const quotes = yield* Effect.forEach(ordered, ({ leg }) =>
+            quoter.quote(
+              "usdc" in leg.amount
+                ? { symbol: leg.symbol, side: "buy", usdc: leg.amount.usdc }
+                : { symbol: leg.symbol, side: "sell", shares: leg.amount.shares }
+            ))
+          const fromSales = quotes.reduce(
+            (sum, quote) => quote.side === "sell" ? sum + quote.minimumOut : sum,
+            BigInt(0)
           )
-        )
-        const row = yield* signing.create(owner, {
-          requestId: input.requestId,
-          kind: "trade",
-          payload: {
-            symbol: input.symbol,
-            side: input.side,
-            amountIn: amountIn.toString(),
-            quote: Schema.encodeSync(quoteCodec)(quote),
-            warnings: warnings.join(","),
-            intentId: link.intentId,
-            agentId: link.agentId ?? "",
-            source: link.source
-          },
-          calls: swapCalls({
-            stock,
-            side: input.side,
-            amountIn,
-            minimumOut: quote.minimumOut,
-            recipient: owner.account as Hex,
-            deadline: block.timestamp + SWAP_DEADLINE_SECONDS
-          }),
-          minCallGas: swapCallGas
-        })
-        return yield* toTradeRequest(row)
-      })
+          if (buying > cash + fromSales) return yield* new InsufficientCash({ available: cash })
+
+          const now = yield* DateTime.now
+          const marketPrices = yield* market.prices
+          const warnings = new Set<TradeWarning>()
+          for (const quote of quotes) {
+            const limitBps = quote.reference.status === "paused" ? PAUSED_LIMIT_BPS : LIVE_LIMIT_BPS
+            if (quote.reference.status === "stale" || quote.gapBps > limitBps) {
+              return yield* new PriceCheckFailed({
+                symbol: quote.symbol,
+                reason: quote.reference.status === "stale" ? "stale" : "gap",
+                gapBps: quote.gapBps,
+                limitBps
+              })
+            }
+
+            if (quote.reference.status === "paused") warnings.add("pricesPaused")
+            const price = marketPrices.get(quote.symbol)
+            const recent = price !== undefined &&
+              Duration.isLessThan(DateTime.distance(price.tradedAt, now), RECENT_TRADE)
+            if (recent && Math.abs(bpsBetween(price.price, quote.reference.price)) > APART_BPS) {
+              warnings.add("marketApart")
+            }
+          }
+
+          const block = yield* chain.use("block", (client) => client.getBlock()).pipe(
+            Effect.catchTag("ChainError", unavailable)
+          )
+          const row = yield* signing.create(owner, {
+            requestId,
+            kind: "trade",
+            payload: {
+              legs: Schema.encodeSync(PreparedLegs)(ordered.map(({ leg, link }, index) => ({
+                leg,
+                quote: quotes[index]!,
+                intentId: link.intentId,
+                agentId: link.agentId,
+                source: link.source
+              }))),
+              warnings: [...warnings].join(",")
+            },
+            calls: ordered.flatMap(({ leg }, index) =>
+              swapCalls({
+                stock: stocks.find((candidate) => candidate.symbol === leg.symbol)!,
+                side: leg.side,
+                amountIn: "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares,
+                minimumOut: quotes[index]!.minimumOut,
+                recipient: owner.account as Hex,
+                deadline: block.timestamp + SWAP_DEADLINE_SECONDS
+              })
+            ),
+            minCallGas: swapCallGas * BigInt(ordered.length)
+          })
+          return yield* toTradeRequest(row)
+        }
+      )
 
       const confirm = Effect.fn("Trades.confirm")(function*(
         owner: Owner,
@@ -248,48 +290,67 @@ export class Trades extends Context.Service<Trades, {
         credential: typeof AuthenticationCredential.Type
       ) {
         const { passkey, request } = yield* signing.claim(owner, id, "trade", credential)
-        const payload = request.payload
-        const quote = Schema.decodeSync(quoteCodec)(payload["quote"]!)
-        const waiting = yield* intents.find(payload["intentId"]!)
-        if (waiting !== undefined && waiting.status !== "awaitingSignature") {
-          return yield* new Conflict({ reason: "intentClosed" })
+        const prepared = legsOf(request)
+
+        // Every leg's intent still waiting for this signature, or none is sent.
+        const waiting: Array<IntentRow | undefined> = []
+        for (const item of prepared) {
+          const intent = yield* intents.find(item.intentId)
+          if (intent !== undefined && intent.status !== "awaitingSignature") {
+            return yield* new Conflict({ reason: "intentClosed" })
+          }
+          waiting.push(intent)
         }
         // Claimed for sending first: a decline or an expiry landing during the send then loses with a conflict, and
         // never the reverse (a trade sent for an intent that says declined).
-        const sending = waiting === undefined ? undefined : yield* intents.advance(waiting, { _tag: "Signed" })
+        const sending: Array<IntentRow | undefined> = []
+        for (const intent of waiting) {
+          sending.push(intent === undefined ? undefined : yield* intents.advance(intent, { _tag: "Signed" }))
+        }
         const userOpHash = yield* operations.send(passkey, request.userOperation, credential).pipe(
           Effect.tapError(() =>
-            sending === undefined ? Effect.void : intents.advance(sending, { _tag: "Failed" }).pipe(Effect.ignore)
+            Effect.forEach(
+              sending,
+              (intent) =>
+                intent === undefined ? Effect.void : intents.advance(intent, { _tag: "Failed" }).pipe(Effect.ignore)
+            )
           )
         )
 
-        const row = yield* ledger.record({
-          id: typeid("trade").toString() as `trade_${string}`,
-          userId: owner.id as `user_${string}`,
-          intentId: payload["intentId"] as `intent_${string}`,
-          agentId: payload["agentId"] === "" ? null : payload["agentId"] as `agent_${string}`,
-          source: payload["source"] as "owner" | "approval",
-          symbol: quote.symbol,
-          side: quote.side,
-          status: Result.getOrThrow(transition("sending", { _tag: "Accepted" })),
-          usdc: quote.usdc,
-          shares: quote.shares,
-          price: quote.price,
-          reference: quote.reference.price,
-          referenceStatus: quote.reference.status,
-          gapBps: quote.gapBps,
-          userOpHash,
-          createdAt: yield* DateTime.now
-        })
-        if (sending !== undefined) {
+        const now = yield* DateTime.now
+        const rows: Array<TradeRow> = []
+        for (const [index, item] of prepared.entries()) {
+          const { quote } = item
+          const row = yield* ledger.record({
+            id: typeid("trade").toString() as `trade_${string}`,
+            userId: owner.id as `user_${string}`,
+            intentId: item.intentId as `intent_${string}`,
+            agentId: item.agentId as `agent_${string}` | null,
+            source: item.source,
+            symbol: quote.symbol,
+            side: quote.side,
+            status: Result.getOrThrow(transition("sending", { _tag: "Accepted" })),
+            usdc: quote.usdc,
+            shares: quote.shares,
+            price: quote.price,
+            reference: quote.reference.price,
+            referenceStatus: quote.reference.status,
+            gapBps: quote.gapBps,
+            userOpHash,
+            createdAt: now
+          })
+          rows.push(row)
+
+          const intent = sending[index]
+          if (intent === undefined) continue
           // Sent: the trade is followed whatever the intent says now.
-          yield* intents.advance(sending, { _tag: "Accepted" }, { userOpHash, tradeId: row.id }).pipe(
-            Effect.catchTag("Conflict", () => Effect.logWarning(`Intent ${sending.id} moved on while it was sent`))
+          yield* intents.advance(intent, { _tag: "Accepted" }, { userOpHash, tradeId: row.id }).pipe(
+            Effect.catchTag("Conflict", () => Effect.logWarning(`Intent ${intent.id} moved on while it was sent`))
           )
         }
 
-        yield* track(row, owner, passkey)
-        return toTrade(row)
+        yield* track(rows, owner, passkey)
+        return toTrade(rows[0]!)
       })
 
       return Trades.of({ prepare, confirm })

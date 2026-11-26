@@ -3,12 +3,14 @@ import { DevChain } from "@bluechip/chain/DevChain"
 import { BASE_FEE_WEI } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
 import { Conflict } from "@bluechip/domain/Errors"
-import { RequestId } from "@bluechip/domain/Ids"
+import { IntentId, RequestId } from "@bluechip/domain/Ids"
 import { Intent, IntentRequest } from "@bluechip/domain/intents/Intent"
 import { Usdc } from "@bluechip/domain/market/Units"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
+import { AccountDesk } from "../../../src/modules/intents/Desk.ts"
+import { IntentStore } from "../../../src/modules/intents/IntentStore.ts"
 import { buy } from "../../fixtures/Legs.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 
@@ -289,6 +291,81 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
           audit.items.filter((event) => event.subjectId === created.id).map((event) => event.action),
           ["intent.needsApproval", "intent.deciding"]
         )
+      }))
+  })
+
+  describe("POST /api/intents/:id/approve, a plan's trades", () => {
+    it.effect("one of a plan's two trades asking you: one signature sends both, in one operation", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const intents = yield* IntentStore
+        const desk = (yield* AccountDesk.client)(me.id)
+        // An automation that asks you first, planning a buy of NVIDIA and one of Apple.
+        const batch = { id: randomUUID(), wave: 0 }
+        const asked: Array<IntentId> = []
+        for (const leg of [buy("NVDA", 50), buy("AAPL", 40)]) {
+          const { row } = yield* intents.insert({ id: me.id, account: user.account }, {
+            requestId: randomUUID(),
+            agentId: agent.id,
+            leg,
+            source: "automation",
+            ask: true,
+            batch
+          })
+          yield* desk.Step({ intentId: row.id })
+          asked.push(IntentId.make(row.id))
+        }
+
+        const request = yield* user.api.intents.approve({
+          params: { id: asked[0]! },
+          payload: { requestId: RequestId.make(randomUUID()) }
+        })
+        yield* user.api.intents.confirm({
+          params: { id: request.id },
+          payload: { credential: user.authenticator.authenticate(request.options) }
+        })
+        yield* user.events.next("IntentChanged", ({ intent }) => intent.id === asked[0] && intent.status === "filled")
+        yield* user.events.next("IntentChanged", ({ intent }) => intent.id === asked[1] && intent.status === "filled")
+        const trades = yield* Effect.forEach(asked, (id) =>
+          user.api.intents.intent({ params: { id } }).pipe(
+            Effect.flatMap((intent) => user.api.trades.trade({ params: { id: intent.tradeId! } }))
+          ))
+
+        assert.deepStrictEqual(
+          [
+            request.together.map(({ intent, quote }) => [intent.id, intent.status, quote.symbol]),
+            trades.map((trade) => [trade.symbol, trade.status]),
+            trades[0]!.txHash === trades[1]!.txHash
+          ],
+          [
+            [[asked[1], "awaitingSignature", "AAPL"]],
+            [["NVDA", "filled"], ["AAPL", "filled"]],
+            true
+          ]
+        )
+      }))
+
+    it.effect("a trade on its own: nothing goes with it", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const intents = yield* IntentStore
+        const { row } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("NVDA", 50),
+          source: "automation",
+          ask: true
+        })
+        yield* (yield* AccountDesk.client)(me.id).Step({ intentId: row.id })
+
+        const request = yield* user.api.intents.approve({
+          params: { id: IntentId.make(row.id) },
+          payload: { requestId: RequestId.make(randomUUID()) }
+        })
+
+        assert.deepStrictEqual(request.together, [])
       }))
   })
 })

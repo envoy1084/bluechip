@@ -10,6 +10,7 @@ import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../../atoms/agents.ts"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
 import { approvalsAtom } from "../../atoms/intents.ts"
+import { type ApprovalGroup, approvalGroups } from "../../model/approvalGroups.ts"
 import { ApprovalRequest } from "./ApprovalRequest.tsx"
 
 // "Expires in 14 min" stays right while the list is open.
@@ -32,7 +33,7 @@ export function ApprovalsList() {
   const agents = useAtomValue(agentsAtom)
   const { nameOf, stockOf } = useStockLookup()
   const now = useMinuteClock()
-  const [handled, setHandled] = useState<ReadonlyArray<Intent>>([])
+  const [handled, setHandled] = useState<ReadonlyArray<ApprovalGroup>>([])
 
   if (AsyncResult.isInitial(approvals)) {
     return (
@@ -52,9 +53,13 @@ export function ApprovalsList() {
     )
   }
 
+  // A card you approved or declined stays as it was: the trades that went with it don't lead cards of their own.
   const waiting = approvals.value
-  const shown = [...waiting, ...handled.filter((intent) => !waiting.some((open) => open.id === intent.id))]
-    .sort((a, b) => b.id.localeCompare(a.id))
+  const kept = new Set(handled.flatMap((group) => [group.intent.id, ...group.together.map((intent) => intent.id)]))
+  const shown = [
+    ...approvalGroups(waiting.filter((intent) => !kept.has(intent.id))),
+    ...handled
+  ].sort((a, b) => b.intent.id.localeCompare(a.intent.id))
   const agentName = (intent: Intent) =>
     (AsyncResult.isSuccess(agents) ? agents.value.find((agent) => agent.id === intent.agentId)?.name : undefined) ??
       "Your agent"
@@ -71,17 +76,18 @@ export function ApprovalsList() {
 
   return (
     <ul className="grid gap-3">
-      {shown.map((intent) => (
-        <li key={intent.id}>
+      {shown.map((group) => (
+        <li key={group.intent.id}>
           <ApprovalRequest
-            intent={intent}
-            agentName={agentName(intent)}
+            intent={group.intent}
+            together={group.together}
+            agentName={agentName(group.intent)}
             now={now}
             stockOf={stockOf}
             nameOf={nameOf}
             onHandled={() =>
-              setHandled((kept) => kept.some((done) => done.id === intent.id) ? kept : [...kept, intent])}
-            onDone={() => setHandled((kept) => kept.filter((done) => done.id !== intent.id))}
+              setHandled((kept) => kept.some((done) => done.intent.id === group.intent.id) ? kept : [...kept, group])}
+            onDone={() => setHandled((kept) => kept.filter((done) => done.intent.id !== group.intent.id))}
           />
         </li>
       ))}

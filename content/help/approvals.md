@@ -8,7 +8,9 @@ trade, the quote and why the agent wants it. An automation set to ask you first 
 ## Approving and declining
 
 Approving signs the trade with your passkey (Face ID or your fingerprint), and it is sent from your account and
-credited to the agent. Declining ends it, and nothing is sent.
+credited to the agent. Declining ends it, and nothing is sent. When an automation asks you about several trades at
+once, one approval lists them all: a single Face ID sends them together in one transaction, and declining declines
+them all.
 
 ## Approvals expire
 

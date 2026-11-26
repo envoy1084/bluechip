@@ -65,13 +65,35 @@ function Approved(
   )
 }
 
+/** The other trades of the plan one Face ID sends with it, in one operation. */
+function Together(
+  { together, nameOf }: Readonly<{ together: ReadonlyArray<Intent>; nameOf: (symbol: StockSymbol) => string }>
+) {
+  if (together.length === 0) return null
+  return (
+    <div className="grid gap-1.5 border-b border-ink/5 px-[18px] py-3">
+      <span className="text-caption text-g-500">Sent with it, in one Face ID</span>
+      <ul className="grid gap-1">
+        {together.map((intent) => (
+          <li key={intent.id} className="flex items-center gap-2 text-[13.5px] font-medium">
+            <Icon name="plus" size={13} className="text-g-400" />
+            {describeLeg(intent.leg, nameOf)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /**
- * An agent's trade waiting for you: what it wants to do, why it needs you, when the request runs out, and Approve with
- * Face ID or Decline. Once approved, the card turns into the trade's end: what it bought or sold, or that nothing moved.
+ * An agent's trade waiting for you: what it wants to do, why it needs you, when the request runs out, the trades of
+ * its plan that go with it, and Approve with Face ID or Decline (for all of them). Once approved, the card turns into
+ * the trade's end: what it bought or sold, or that nothing moved.
  */
 export function ApprovalRequest(
-  { intent: asked, agentName, now, stockOf, nameOf, onHandled, onDone }: Readonly<{
+  { intent: asked, together, agentName, now, stockOf, nameOf, onHandled, onDone }: Readonly<{
     intent: Intent
+    together: ReadonlyArray<Intent>
     agentName: string
     now: Date
     stockOf: (symbol: StockSymbol) => Stock | undefined
@@ -81,7 +103,7 @@ export function ApprovalRequest(
     onDone: () => void
   }>
 ) {
-  const { approve, decline, flow, intent } = useApproveIntent(asked)
+  const { approve, decline, flow, intent } = useApproveIntent(asked, together)
   const trade = describeLeg(intent.leg, nameOf)
   const busy = flow.status === "preparing" || flow.status === "signing" || flow.status === "declining"
 
@@ -127,6 +149,7 @@ export function ApprovalRequest(
       {flow.status === "declined" ? null : (
         <>
           <Estimate intent={intent} stock={stockOf(intent.leg.symbol)} />
+          <Together together={together} nameOf={nameOf} />
           {flow.status === "failed" ?
             (
               <div className="px-[18px] pt-3">
@@ -161,7 +184,13 @@ export function ApprovalRequest(
               {flow.status === "preparing" || flow.status === "signing" ?
                 <Spinner size={14} /> :
                 <Icon name="face-id" size={14} />}
-              <TextMorph>{flow.status === "signing" ? "Waiting for Face ID…" : "Approve with Face ID"}</TextMorph>
+              <TextMorph>
+                {flow.status === "signing" ?
+                  "Waiting for Face ID…" :
+                  together.length === 0 ?
+                  "Approve with Face ID" :
+                  `Approve ${together.length + 1} trades with Face ID`}
+              </TextMorph>
             </Button>
           </div>
         </>

@@ -30,7 +30,7 @@ test.describe("approvals", () => {
     await expect(page.getByText("1 trade waiting for you")).toBeVisible()
     await expect(
       request(page).getByText(
-        /^Over the agent's largest trade \(\$100\): it needs your Face ID\. Asked at \d{2}:\d{2}\.$/
+        /^Over its \$100 limit, so it needs your approval\. Asked at \d{2}:\d{2}\.$/
       )
     ).toBeVisible()
     await expect(request(page).getByText("Expires in 6 h")).toBeVisible()

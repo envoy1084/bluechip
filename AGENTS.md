@@ -233,6 +233,10 @@ asked, who signs (the agent's key or your passkey), the trade, why, what was dec
 intent runs as an `ExecuteIntent` workflow whose steps go through the account's `AccountDesk` (one at a time per
 account): over the agent's largest trade it waits for your approval; otherwise it is simulated as the agent, then sent
 by the agent's key, or blocked with the refusing policy in words, or left waiting (prices, gas, the day's last minute).
+A plan of several trades (an automation's run) is one batch (`batch_id`) in waves (`waves` in
+`packages/domain/src/intents/Batch.ts`, one leg per stock, since `TradeGuard` judges each stock's net move): the desk
+sends a wave's legs in one operation, after the plan's earlier waves, and decides them one by one when the batch as a
+whole doesn't pass; approving one of a batch prepares its other waiting legs for the same signature.
 Your own trades and approvals are prepared for your passkey and sent by `Trades`. Never send money any other way;
 new sources (the assistant, automations, chat platforms, MCP) create intents through `Intents`.
 

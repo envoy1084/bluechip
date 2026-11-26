@@ -16,10 +16,11 @@ export type ApprovalFlow =
   | { readonly status: "failed"; readonly message: string }
 
 /**
- * Approving an agent's trade with Face ID (the server prepares it, the passkey signs it, the server sends it) or
- * declining it. Once approved, `intent` follows the live `IntentChanged` events until it fills or fails.
+ * Approving an agent's trade with Face ID (the server prepares it with the trades of its plan that go `together`, the
+ * passkey signs them, the server sends them) or declining them. Once approved, `intent` follows the live
+ * `IntentChanged` events until it fills or fails.
  */
-export function useApproveIntent(intent: Intent) {
+export function useApproveIntent(intent: Intent, together: ReadonlyArray<Intent> = []) {
   const approveIntent = useAtomSet(approveIntentAtom, { mode: "promise" })
   const confirm = useAtomSet(confirmIntentAtom, { mode: "promise" })
   const declineIntent = useAtomSet(declineIntentAtom, { mode: "promise" })
@@ -43,7 +44,9 @@ export function useApproveIntent(intent: Intent) {
   const decline = async () => {
     setFlow({ status: "declining" })
     try {
-      setFlow({ status: "declined", intent: await declineIntent({ params: { id: intent.id } }) })
+      const declined = await declineIntent({ params: { id: intent.id } })
+      for (const other of together) await declineIntent({ params: { id: other.id } })
+      setFlow({ status: "declined", intent: declined })
     } catch (error) {
       setFlow({ status: "failed", message: intentProblem(error, intent.leg.side) })
     }

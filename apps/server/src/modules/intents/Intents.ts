@@ -81,25 +81,49 @@ export class Intents extends Context.Service<Intents, {
         return { agent: agent!, session: session! }
       })
 
-      // Prepares an intent for your passkey: your own trade, or an agent's you approve.
+      // Prepares an intent for your passkey (your own trade, or an agent's you approve) with the other trades of its
+      // plan waiting for you, one per stock: one signature sends them all.
       const prepareForOwner = Effect.fnUntraced(function*(
         owner: Owner,
         row: IntentRow,
         requestId: string,
-        link: TradeLink
+        source: TradeLink["source"]
       ) {
-        const request = yield* trades.prepare(owner, { requestId, ...row.leg }, link)
-        const prepared = row.status === "awaitingSignature" ? row : yield* store.advance(row, { _tag: "Prepared" }, {
-          signingRequestId: request.id as `signing_${string}`,
-          executor: "owner",
-          expiresAt: request.expiresAt
-        })
+        const waiting = row.batchId === null ?
+          [] :
+          (yield* store.batch(row.userId, row.batchId)).filter((other) =>
+            other.id !== row.id && other.agentId === row.agentId &&
+            (other.status === "needsApproval" || other.status === "awaitingSignature")
+          )
+        const rows = [row]
+        for (const other of waiting) {
+          if (!rows.some((taken) => taken.leg.symbol === other.leg.symbol)) rows.push(other)
+        }
+
+        const { quotes, request } = yield* trades.prepare(
+          owner,
+          requestId,
+          rows.map((leg) => ({ leg: leg.leg, link: { intentId: leg.id, agentId: leg.agentId, source } }))
+        )
+        const prepared: Array<IntentRow> = []
+        for (const leg of rows) {
+          prepared.push(
+            leg.status === "awaitingSignature" ? leg : yield* store.advance(leg, { _tag: "Prepared" }, {
+              signingRequestId: request.id as `signing_${string}`,
+              executor: "owner",
+              expiresAt: request.expiresAt
+            })
+          )
+        }
+        // The request lists its legs sells first: each intent's own quote.
+        const quoteOf = (leg: IntentRow) => quotes.find((quote) => quote.symbol === leg.leg.symbol)!
         return new IntentRequest({
           id: request.id,
           options: request.options,
-          intent: toIntent(prepared),
-          quote: request.quote,
+          intent: toIntent(prepared[0]!),
+          quote: quoteOf(prepared[0]!),
           warnings: request.warnings,
+          together: prepared.slice(1).map((leg) => ({ intent: toIntent(leg), quote: quoteOf(leg) })),
           deploysAccount: request.deploysAccount,
           expiresAt: request.expiresAt
         })
@@ -126,11 +150,9 @@ export class Intents extends Context.Service<Intents, {
         if (input.agentId === null) {
           // A trade that can't be prepared (no cash, no quote, an unfair price) leaves no intent behind.
           const { row } = yield* store.insert(owner, input)
-          return yield* prepareForOwner(owner, row, input.requestId, {
-            intentId: row.id,
-            agentId: null,
-            source: "owner"
-          }).pipe(Effect.tapError(() => row.status === "proposed" ? store.remove(row.id) : Effect.void))
+          return yield* prepareForOwner(owner, row, input.requestId, "owner").pipe(
+            Effect.tapError(() => row.status === "proposed" ? store.remove(row.id) : Effect.void)
+          )
         }
 
         yield* tradingAgent(owner, input.agentId)
@@ -165,11 +187,7 @@ export class Intents extends Context.Service<Intents, {
         }
         // Your own trade an automation proposed has no agent to check.
         if (row.agentId !== null) yield* tradingAgent(owner, row.agentId as AgentId)
-        return yield* prepareForOwner(owner, row, requestId, {
-          intentId: row.id,
-          agentId: row.agentId,
-          source: "approval"
-        })
+        return yield* prepareForOwner(owner, row, requestId, "approval")
       })
 
       const confirm = Effect.fn("Intents.confirm")(function*(

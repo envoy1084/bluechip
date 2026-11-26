@@ -268,7 +268,8 @@ export class Intent extends Schema.Class<Intent>("@bluechip/domain/intents/Inten
 
 /**
  * An intent prepared for your passkey: your own trade, or an agent's trade you approved. The WebAuthn request (its
- * challenge is the user operation's hash), the quote, and anything to look at twice.
+ * challenge is the user operation's hash), the quote, anything to look at twice, and the other trades of its plan
+ * waiting for you that the same signature sends with it, in one operation (`together`).
  *
  * @stability unstable
  * @category models
@@ -280,6 +281,7 @@ export class IntentRequest extends Schema.Class<IntentRequest>("@bluechip/domain
   intent: Intent,
   quote: Quote,
   warnings: Schema.Array(TradeWarning),
+  together: Schema.Array(Schema.Struct({ intent: Intent, quote: Quote })),
   /** Whether this also deploys the account (its first transaction). */
   deploysAccount: Schema.Boolean,
   expiresAt: Schema.DateTimeUtc

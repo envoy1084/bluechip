@@ -21,6 +21,7 @@ import type { Hex } from "viem"
 import { Accounts } from "../accounts/Accounts.ts"
 import type { SessionRow } from "../agents/AgentSessions.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
+import { shareOf } from "../signing/OwnerOperations.ts"
 import type { TradeRow } from "../trading/TradeLedger.ts"
 import { TradeLedger } from "../trading/TradeLedger.ts"
 import { Trades } from "../trading/Trades.ts"
@@ -97,20 +98,16 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
   // and ends their intents.
   const finish = Effect.fnUntraced(function*(operation: ReadonlyArray<IntentRow>, account: Hex, session: SessionRow) {
     const receipt = yield* executor.wait(operation[0]!.agentId!, session, operation[0]!.userOpHash as Hex)
-    const share = receipt === undefined ? BigInt(0) : receipt.gas.wei / BigInt(operation.length)
 
     for (const [index, sent] of operation.entries()) {
       if (isEnded(sent.status)) continue
       let row = sent
       // Stopped between sending and saving that the bundler took it: a receipt says it did.
       if (row.status === "sending" && receipt !== undefined) row = yield* intents.advance(row, { _tag: "Accepted" })
-      // The first leg carries what doesn't divide evenly.
-      const gas = receipt === undefined ? undefined : {
-        ...receipt,
-        gas: { ...receipt.gas, wei: index === 0 ? receipt.gas.wei - share * BigInt(operation.length - 1) : share }
-      }
       const trade = yield* ledger.row(row.tradeId!)
-      const settled = trade === undefined ? undefined : yield* ledger.settle(trade, account, gas)
+      const settled = trade === undefined ?
+        undefined :
+        yield* ledger.settle(trade, account, receipt && shareOf(receipt, index, operation.length))
       const status = settled?.status ?? (receipt?.success === true ? "filled" : "failed")
       yield* intents.advance(row, { _tag: status === "filled" ? "Filled" : "Failed" })
     }

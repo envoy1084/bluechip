@@ -19,15 +19,25 @@ import { askedAt, shownDecision, STATUS } from "../../model/intentText.ts"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { CancelIntentButton } from "./CancelIntentButton.tsx"
 
+const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
+
 const kindOf = (intent: Intent): ActivityKind => {
   if (intent.status === "blocked" || intent.status === "failed") return "blocked"
   if (intent.status === "needsApproval" || intent.status === "awaitingSignature") return "approval"
   return "trade"
 }
 
-/** One trade the agent was asked for: the trade in words, where it stands, and what its policies decided. */
+/**
+ * One trade the agent was asked for: the trade in words, where it stands, what its policies decided, and the trades
+ * planned with it (`plannedWith`, those on the same page).
+ */
 function IntentRow(
-  { intent: listed, now, nameOf }: Readonly<{ intent: Intent; now: Date; nameOf: (symbol: StockSymbol) => string }>
+  { intent: listed, plannedWith, now, nameOf }: Readonly<{
+    intent: Intent
+    plannedWith: ReadonlyArray<Intent>
+    now: Date
+    nameOf: (symbol: StockSymbol) => string
+  }>
 ) {
   const intent = useLatestIntent(listed)
   const status = STATUS[intent.status]
@@ -63,6 +73,13 @@ function IntentRow(
         </span>
         {decision === null ? null : <DecisionLine decision={decision} />}
         {stopped ? <span className="text-label-sm text-g-600">{nothingMoved(intent.leg.side)}</span> : null}
+        {plannedWith.length === 0 ?
+          null :
+          (
+            <span className="text-label-sm text-g-500">
+              Planned with {plannedWith.map((other) => lowerFirst(describeLeg(other.leg, nameOf))).join(", ")}
+            </span>
+          )}
       </span>
     </ActivityItem>
   )
@@ -111,7 +128,17 @@ function IntentPage(
   return (
     <>
       <ul>
-        {items.map((intent) => <IntentRow key={intent.id} intent={intent} now={now} nameOf={nameOf} />)}
+        {items.map((intent) => (
+          <IntentRow
+            key={intent.id}
+            intent={intent}
+            plannedWith={intent.batch === null ?
+              [] :
+              items.filter((other) => other.id !== intent.id && other.batch?.id === intent.batch!.id)}
+            now={now}
+            nameOf={nameOf}
+          />
+        ))}
       </ul>
       {last && nextPageToken !== null ?
         (
