@@ -133,4 +133,29 @@ describe("PortfolioChart", () => {
     await expect.element(screen.getByRole("img", { name: "Portfolio value" })).not.toBeInTheDocument()
     await expect.element(screen.getByText("Past month")).not.toBeInTheDocument()
   })
+
+  describe("profit", () => {
+    const PROFIT: PortfolioRange = {
+      id: "All",
+      description: "Since your first trade",
+      points: [{ value: 0, label: "Mon 23 Nov" }, { value: -12.5, label: "Tue 24 Nov" }]
+    }
+
+    it("heads with the signed amount and no percent", async () => {
+      const screen = await render(<PortfolioChart ranges={[PROFIT]} title="Profit and loss" measure="profit" />)
+      await expect.element(screen.getByText("Since your first trade")).toBeVisible()
+      await expect.element(screen.getByRole("img", { name: "Profit and loss" })).toBeVisible()
+      expect(changeOf(screen.container)).toBeUndefined()
+    })
+
+    it("invites a first trade when there is nothing to plot", async () => {
+      const screen = await render(
+        <PortfolioChart
+          ranges={[{ id: "All", description: "", points: [{ value: 0, label: "Today" }] }]}
+          measure="profit"
+        />
+      )
+      await expect.element(screen.getByText("Your results start with your first trade")).toBeVisible()
+    })
+  })
 })

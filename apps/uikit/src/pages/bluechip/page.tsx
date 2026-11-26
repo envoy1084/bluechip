@@ -193,13 +193,35 @@ export function KitBluechip() {
           notes={[
             "Ranges are tabs: 1D, 1W, 1M, All",
             "Crosshair snaps to the nearest point",
-            "Keyboard: focus the chart, ← → Home End"
+            "Keyboard: focus the chart, ← → Home End",
+            "measure=\"profit\": signed amounts and no percent, for profit and loss"
           ]}
           states={[
             ["Loading", <PortfolioChart key="l" ranges={[]} loading className="shadow-none" />, true],
             [
               "Empty · new account",
               <PortfolioChart key="e" ranges={[{ id: "All", description: "", points: [] }]} className="shadow-none" />,
+              true
+            ],
+            [
+              "Profit and loss",
+              <PortfolioChart
+                key="p"
+                title="Profit and loss"
+                measure="profit"
+                ranges={[{
+                  id: "All",
+                  description: "Since your first trade",
+                  points: [
+                    { value: 0, label: "Mon 16 Nov" },
+                    { value: -12.4, label: "Tue 17 Nov" },
+                    { value: 8.15, label: "Wed 18 Nov" },
+                    { value: 31.62, label: "Thu 19 Nov" },
+                    { value: 24.9, label: "Fri 20 Nov" }
+                  ]
+                }]}
+                className="shadow-none"
+              />,
               true
             ]
           ]}

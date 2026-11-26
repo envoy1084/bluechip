@@ -8,7 +8,7 @@ import { Skeleton } from "../components/skeleton.tsx"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "../components/tabs.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
-import { formatMoney } from "../lib/format.ts"
+import { formatChange, formatMoney } from "../lib/format.ts"
 import { NumberRoll } from "../motion/number-roll.tsx"
 import { useReducedMotion } from "../motion/use-reduced-motion.ts"
 import { PriceChange } from "./price-change.tsx"
@@ -35,6 +35,11 @@ export interface PortfolioChartProps {
   readonly titleAddon?: ReactNode
   /** Shows a skeleton instead of the chart. */
   readonly loading?: boolean
+  /**
+   * What the points are: a value (`value`, the default: the headline's change since the range's start, in dollars and
+   * percent) or a profit or loss (`profit`: signed amounts, no percent).
+   */
+  readonly measure?: "value" | "profit"
   readonly className?: string
 }
 
@@ -46,7 +51,7 @@ const BLUE = "#2a5bff"
 const INK = "#0a0b0d"
 
 /** The chart for one range: area and line in brand blue, the start dashed, the latest point marked. */
-const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean) => {
+const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean, format: (value: number) => string) => {
   const values = rows.map((row) => row.value)
   const pad = (Math.max(...values) - Math.min(...values)) * 0.12 || 1
   const low = Math.min(...values) - pad
@@ -105,33 +110,37 @@ const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean) => {
       offset: 14,
       sticky: false,
       // What screen readers hear; the visible bubble is `TooltipBody`.
-      format: (point) => `${formatMoney(point.datum.value)}, ${point.datum.label}`
+      format: (point) => `${format(point.datum.value)}, ${point.datum.label}`
     },
     svgAnimation: animate
   })
 }
 
 /** The dark bubble under the crosshair: the value and when. */
-function TooltipBody({ point }: { readonly point: PlotPoint | undefined }): ReactNode {
+function TooltipBody(
+  { format, point }: { readonly point: PlotPoint | undefined; readonly format: (value: number) => string }
+): ReactNode {
   if (point === undefined) return null
   return (
     <div
       data-slot="portfolio-chart-tooltip"
       className="grid rounded-[9px] bg-ink px-2.5 py-1.5 whitespace-nowrap text-white shadow-e3"
     >
-      <b className="text-label font-semibold tabular-nums">{formatMoney(point.value)}</b>
+      <b className="text-label font-semibold tabular-nums">{format(point.value)}</b>
       <span className="text-[11.5px] text-white/70">{point.label}</span>
     </div>
   )
 }
 
 /**
- * Your total value over time in brand blue, with the starting value dashed for reference. Ranges are tabs. Hover, or
+ * Your total value (or profit) over time in brand blue, with the starting value dashed for reference. Ranges are tabs. Hover, or
  * focus the chart and use ← →, to read any point; the headline follows.
  */
 export function PortfolioChart(
-  { ranges, defaultRange, title = "Total value", titleAddon, loading = false, className }: PortfolioChartProps
+  { ranges, defaultRange, title = "Total value", titleAddon, loading = false, measure = "value", className }:
+    PortfolioChartProps
 ) {
+  const format = measure === "profit" ? formatChange : formatMoney
   const [rangeId, setRangeId] = useState(defaultRange ?? ranges.at(-1)?.id ?? "")
   const [index, setIndex] = useState<number | null>(null)
   const reduced = useReducedMotion()
@@ -141,7 +150,10 @@ export function PortfolioChart(
     () => (range?.points ?? []).map((point, i): PlotPoint => ({ ...point, index: i })),
     [range]
   )
-  const definition = useMemo(() => (rows.length < 2 ? undefined : definitionFor(rows, !reduced)), [rows, reduced])
+  const definition = useMemo(
+    () => (rows.length < 2 ? undefined : definitionFor(rows, !reduced, format)),
+    [rows, reduced, format]
+  )
 
   const current = index === null ? rows.at(-1) : rows[index]
   const base = rows[0]?.value ?? 0
@@ -170,16 +182,18 @@ export function PortfolioChart(
               (
                 <NumberRoll
                   value={current?.value ?? 0}
-                  format={(v) => formatMoney(v)}
+                  format={format}
                   className="text-[32px] leading-[1.1] font-semibold tracking-[-0.035em]"
                 />
               )}
             {!loading && current && (
               <span className="flex flex-wrap items-center gap-2">
-                <PriceChange
-                  value={base === 0 ? 0 : ((current.value - base) / base) * 100}
-                  amount={current.value - base}
-                />
+                {measure === "value" && (
+                  <PriceChange
+                    value={base === 0 ? 0 : ((current.value - base) / base) * 100}
+                    amount={current.value - base}
+                  />
+                )}
                 <span className="text-label-sm text-g-500">{index === null ? range?.description : current.label}</span>
               </span>
             )}
@@ -200,7 +214,14 @@ export function PortfolioChart(
             (
               <div className="grid justify-items-start gap-1 py-10">
                 <Icon name="chart-line" size={18} className="mb-1 text-g-400" />
-                {rows.length === 1 && rows[0]!.value > 0 ?
+                {measure === "profit" ?
+                  (
+                    <>
+                      <b className="text-[13.5px] font-semibold">Your results start with your first trade</b>
+                      <span className="text-label-sm text-g-500">Each day's profit and loss lands here.</span>
+                    </>
+                  ) :
+                  rows.length === 1 && rows[0]!.value > 0 ?
                   (
                     <>
                       <b className="text-[13.5px] font-semibold">Your chart starts building today</b>
@@ -224,7 +245,9 @@ export function PortfolioChart(
                 height={210}
                 className="cursor-crosshair touch-pan-y text-caption-sm text-g-500"
                 onFocusChange={(point) => setIndex(point === null ? null : (point.datum as PlotPoint).index)}
-                renderTooltipBody={({ points }) => <TooltipBody point={points[0]?.datum as PlotPoint | undefined} />}
+                renderTooltipBody={({ points }) => (
+                  <TooltipBody format={format} point={points[0]?.datum as PlotPoint | undefined} />
+                )}
               />
             )}
         </TabsPanel>
