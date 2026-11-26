@@ -1,5 +1,10 @@
 @layer base {
-  :root { color-scheme: light; }
+  :root {
+    color-scheme: light;
+    @variant dark {
+      color-scheme: dark;
+    }
+  }
   html { -webkit-text-size-adjust: 100%; }
   body {
     background: var(--color-canvas);

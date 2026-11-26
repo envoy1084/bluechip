@@ -1,0 +1,56 @@
+/* The dark theme. The brand kit draws only the light theme, so these are derived from it: the same steps between
+   neutrals, inverted, around a card colour (`surface`) a little lighter than the page (`canvas`), and recessed areas
+   (`sunken`) a little darker. Text tokens hold AA (4.5:1) on `surface`, `canvas`, `g-50` and their own washes.
+   Fills under white text (`*-fill`, `blue-hi`, `white`) and `scrim` are the same in both themes. */
+@layer theme {
+  :root {
+    @variant dark {
+      --color-blue: #6b8cff;
+      --color-blue-deep: #a9bbff;
+      --color-blue-50: #151c33;
+      --color-blue-100: #1b2547;
+      --color-blue-200: #29386b;
+      --color-cerulean: #5d9dff;
+      --color-yellow-soft: #3a3215;
+
+      --color-surface: #16181c;
+      --color-canvas: #0d0e11;
+      --color-sunken: #101114;
+      --color-g-50: #1b1d22;
+      --color-g-100: #23262c;
+      --color-g-200: #30343b;
+      --color-g-300: #4b505a;
+      --color-g-400: #737a86;
+      --color-g-500: #959ba6;
+      --color-g-600: #a9aeb8;
+      --color-g-700: #c4c8cf;
+      --color-g-800: #dcdfe4;
+      --color-ink: #f3f4f6;
+
+      --color-gain: #3fbf73;
+      --color-gain-wash: #0f241a;
+      --color-gain-line: #1d4a32;
+      --color-loss: #ff6b4f;
+      --color-loss-wash: #2d1511;
+      --color-loss-line: #5a2a20;
+      --color-warn: #e0a92e;
+      --color-warn-wash: #2a2210;
+      --color-warn-line: #54431c;
+      --color-info: #6b8cff;
+      --color-info-wash: #141a2e;
+      --color-info-line: #26335e;
+
+      --color-series-1: #4c76ff;
+      --color-series-8: #8a909c;
+      --color-series-cash: #4b505a;
+
+      /* Black drops barely show on a dark page, so the edge carries the depth: a faint white hairline. */
+      --depth-hair: 0 0 0 1px rgba(255, 255, 255, .07);
+      --depth-e1: 0 0 0 1px rgba(255, 255, 255, .06), 0 1px 1px rgba(0, 0, 0, .3);
+      --depth-e2: 0 0 0 1px rgba(255, 255, 255, .07), 0 1px 2px rgba(0, 0, 0, .3), 0 4px 12px -6px rgba(0, 0, 0, .4);
+      --depth-e3: 0 0 0 1px rgba(255, 255, 255, .08), 0 2px 4px rgba(0, 0, 0, .3), 0 12px 24px -10px rgba(0, 0, 0, .5);
+      --depth-e4: 0 0 0 1px rgba(255, 255, 255, .09), 0 4px 8px rgba(0, 0, 0, .35), 0 24px 48px -20px rgba(0, 0, 0, .6);
+      --depth-hi: inset 0 1px 0 rgba(255, 255, 255, .05);
+    }
+  }
+}
