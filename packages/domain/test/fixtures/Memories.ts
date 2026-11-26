@@ -19,28 +19,28 @@ const base = {
 
 export const TESLA = new Memory({
   ...base,
-  id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v30"),
+  id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v30"),
   kind: "constraint",
   text: "You never want Tesla."
 })
 
 export const LISBON = new Memory({
   ...base,
-  id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v31"),
+  id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v31"),
   kind: "fact",
   text: "You live in Lisbon."
 })
 
 export const CHIPS = new Memory({
   ...base,
-  id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v32"),
+  id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v32"),
   kind: "preference",
   text: "You like chip makers."
 })
 
 export const GUESS = new Memory({
   ...base,
-  id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v33"),
+  id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v33"),
   kind: "fact",
   source: "inferred",
   confidence: 0.6,

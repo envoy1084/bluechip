@@ -4,7 +4,7 @@ import { Message, type MessagePart } from "@bluechip/domain/assistant/Conversati
 import { CardId, MessageId } from "@bluechip/domain/Ids"
 import * as DateTime from "effect/DateTime"
 
-export const CARD_ID = CardId.make("card_01jd8v4t5m6n7p8q9r0s1t2v3w")
+export const CARD_ID = CardId.make("card_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
 /** The assistant's card saying the day's budget ran out, with `message`. */
 export const budgetCard = (message: string): Card => ({ _tag: "Error", id: CARD_ID, reason: "budget", message })
@@ -16,7 +16,7 @@ export const message = (
   parts: ReadonlyArray<MessagePart>
 ): Message =>
   new Message({
-    id: MessageId.make(`message_01jd8v4t5m6n7p8q9r0s1t2v${suffix}`),
+    id: MessageId.make(`message_01jd8v4t5m6n7a8q9r0s1t2v${suffix}`),
     role,
     parts,
     model: role === "user" ? null : "claude-sonnet-5-5",

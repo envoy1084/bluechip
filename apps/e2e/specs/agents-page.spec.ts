@@ -199,7 +199,7 @@ test.describe("agent page", () => {
   })
 
   test("an agent id that no agent has is not found", async ({ page, user: _user }) => {
-    await page.goto("/agents/agent_00000000000000000000000000")
+    await page.goto("/agents/agent_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
     await expect(page.getByRole("heading", { name: "Agent not found", level: 1 })).toBeVisible()
     await expect(page.getByText("We can't find that agent")).toBeVisible()

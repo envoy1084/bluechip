@@ -203,7 +203,7 @@ test.describe("edit rules: when they can't change", () => {
   })
 
   test("an agent id that no agent has is not found", async ({ page, user: _user }) => {
-    await page.goto("/agents/agent_00000000000000000000000000/edit")
+    await page.goto("/agents/agent_01jd8v4t5m6n7a8q9r0s1t2v3w/edit")
 
     await expect(page.getByText("We don't have that agent")).toBeVisible()
     await expect(page.getByText("Check the link, or pick one from your agents.")).toBeVisible()

@@ -4,7 +4,7 @@ import { AgentId } from "@bluechip/domain/Ids"
 import { draftSpec, Preset, TemplateId } from "@bluechip/domain/policies/Templates"
 import { assert, describe, it } from "@effect/vitest"
 
-const AGENT = AgentId.make("agent_01jd8v4t5m6n7p8q9r0s1t2v3w")
+const AGENT = AgentId.make("agent_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
 const specOf = (template: TemplateId, preset: Preset = "balanced") =>
   draftSpec({

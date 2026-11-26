@@ -4,8 +4,8 @@ import { AgentId, SavedTemplateId } from "@bluechip/domain/Ids"
 import { draftSpec, SavedTemplate } from "@bluechip/domain/policies/Templates"
 import * as DateTime from "effect/DateTime"
 
-export const AGENT_ID = AgentId.make("agent_01jd8v4t5m6n7p8q9r0s1t2v3w")
-export const TEMPLATE_ID = SavedTemplateId.make("template_01jd8v4t5m6n7p8q9r0s1t2v3w")
+export const AGENT_ID = AgentId.make("agent_01jd8v4t5m6n7a8q9r0s1t2v3w")
+export const TEMPLATE_ID = SavedTemplateId.make("template_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
 // $250 a day, $100 a trade, 30% in one stock, 10% cash, over Nvidia and Apple.
 export const PICKER = draftSpec({ template: "stockPicker", preset: "balanced", stocks: ["NVDA", "AAPL"], targets: [] })

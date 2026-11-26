@@ -244,9 +244,9 @@ const normalize = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]+/g
  * ```ts import.meta.vitest
  * import { planMemoryWrite } from "@bluechip/domain/assistant/Memory"
  *
- * const existing = [{ id: "memory_01jd8v4t5m6n7p8q9r0s1t2v3w", kind: "preference", text: "You avoid Tesla.", confirmedAt: null }] as never
+ * const existing = [{ id: "memory_01jd8v4t5m6n7a8q9r0s1t2v3w", kind: "preference", text: "You avoid Tesla.", confirmedAt: null }] as never
  * planMemoryWrite(existing, { kind: "preference", text: "You avoid tesla", source: "said", confidence: 0.9, replaces: null })
- * // => { _tag: "Refresh", memoryId: "memory_01jd8v4t5m6n7p8q9r0s1t2v3w", confirm: true }
+ * // => { _tag: "Refresh", memoryId: "memory_01jd8v4t5m6n7a8q9r0s1t2v3w", confirm: true }
  * ```
  *
  * @stability unstable

@@ -6,14 +6,14 @@ import { assert, describe, it } from "@effect/vitest"
 import { draft } from "../../fixtures/Automations.ts"
 import { AGENT_ID, nvidiaBuy } from "../../fixtures/Intents.ts"
 
-const CARD = CardId.make("card_01jd8v4t5m6n7p8q9r0s1t2v3w")
+const CARD = CardId.make("card_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
 describe("describeCard", () => {
   it.each<{ name: string; card: Card; expected: string }>([
     {
       name: "a trade still being decided",
       card: { _tag: "Trade", id: CARD, intent: nvidiaBuy("proposed") },
-      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7p8q9r0s1t2v3w (buy NVDA). " +
+      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7a8q9r0s1t2v3w (buy NVDA). " +
         "Its policies are deciding it now; the card shows the outcome."
     },
     {
@@ -23,7 +23,7 @@ describe("describeCard", () => {
         id: CARD,
         intent: nvidiaBuy("needsApproval", { _tag: "OverLargestTrade", maxPerTrade: Usdc.make(100_000_000n) })
       },
-      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7p8q9r0s1t2v3w (buy NVDA). " +
+      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7a8q9r0s1t2v3w (buy NVDA). " +
         "It waits for the user's approval with Face ID on the card."
     },
     {
@@ -39,19 +39,19 @@ describe("describeCard", () => {
           message: "Would put too much of your money in NVDA."
         })
       },
-      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7p8q9r0s1t2v3w (buy NVDA). " +
+      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7a8q9r0s1t2v3w (buy NVDA). " +
         "Blocked by Max in one stock: Would put too much of your money in NVDA."
     },
     {
       name: "a trade the agent is sending",
       card: { _tag: "Trade", id: CARD, intent: nvidiaBuy("sending") },
       expected:
-        "Shown as a trade card for intent intent_01jd8v4t5m6n7p8q9r0s1t2v3w (buy NVDA). The agent is sending it."
+        "Shown as a trade card for intent intent_01jd8v4t5m6n7a8q9r0s1t2v3w (buy NVDA). The agent is sending it."
     },
     {
       name: "a filled trade",
       card: { _tag: "Trade", id: CARD, intent: nvidiaBuy("filled") },
-      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7p8q9r0s1t2v3w (buy NVDA). It is filled."
+      expected: "Shown as a trade card for intent intent_01jd8v4t5m6n7a8q9r0s1t2v3w (buy NVDA). It is filled."
     },
     {
       name: "a pause waiting for the user",

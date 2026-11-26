@@ -128,7 +128,7 @@ test.describe("automation page", () => {
   })
 
   test("an id no automation has shows the not-found screen", async ({ page, user: _user }) => {
-    await page.goto("/automations/automation_01jd8v4t5m6n7p8q9r0s1t2v3w")
+    await page.goto("/automations/automation_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
     await expect(page.getByRole("heading", { name: "We can't find that automation" })).toBeVisible()
   })

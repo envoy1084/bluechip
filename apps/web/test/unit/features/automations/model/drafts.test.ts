@@ -205,7 +205,7 @@ describe("toDraft", () => {
 
 describe("newDraft", () => {
   it("every Monday at 10:00, buying $50 of the stock given, for the agent given", () => {
-    const agentId = "agent_01jd8v4t5m6n7p8q9r0s1t2v3w" as AgentId
+    const agentId = "agent_01jd8v4t5m6n7a8q9r0s1t2v3w" as AgentId
 
     const draft: unknown = newDraft(agentId, "MSFT", DEFAULT_SETTINGS)
 

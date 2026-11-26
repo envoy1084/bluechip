@@ -11,12 +11,20 @@ import * as Schema from "effect/Schema"
 /**
  * A TypeID string with the given prefix. Brand it per entity, so ids of different entities never mix.
  *
+ * The suffix must encode an RFC 9562 UUID, as every id bluechip makes does: its 11th character carries the version
+ * (1 to 8) and its 14th the variant (`10`). Any other suffix can't be turned into a UUID, so it is refused here, as
+ * malformed, rather than failing deeper down.
+ *
  * @stability unstable
  * @category constructors
  * @since 0.0.0
  */
 export const typeId = (prefix: string) =>
-  Schema.String.check(Schema.isPattern(new RegExp(`^${prefix}_[0-7][0-9a-hjkmnp-tv-z]{25}$`)))
+  Schema.String.check(
+    Schema.isPattern(
+      new RegExp(`^${prefix}_[0-7][0-9a-hjkmnp-tv-z]{9}[2-9a-h][0-9a-hjkmnp-tv-z]{2}[89abrstv][0-9a-hjkmnp-tv-z]{12}$`)
+    )
+  )
 
 /**
  * @stability unstable

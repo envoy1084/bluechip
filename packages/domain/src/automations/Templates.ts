@@ -28,7 +28,7 @@ const WEEKDAYS: ReadonlyArray<Weekday> = ["monday", "tuesday", "wednesday", "thu
  * import { draftSpec } from "@bluechip/domain/policies/Templates"
  *
  * const spec = draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA"], targets: [] })
- * defaultAutomations("weeklyBuyer", spec, "agent_01jd8v4t5m6n7p8q9r0s1t2v3w" as never).map((draft) => draft.name)
+ * defaultAutomations("weeklyBuyer", spec, "agent_01jd8v4t5m6n7a8q9r0s1t2v3w" as never).map((draft) => draft.name)
  * // => ["Weekly buy of NVDA"]
  * ```
  *

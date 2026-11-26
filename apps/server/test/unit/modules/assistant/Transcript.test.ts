@@ -73,14 +73,14 @@ describe("promptOf", () => {
   it("gives tool results after the call that asked for them, and leaves the user's cards out", () => {
     const prompt = promptOf([
       new Message({
-        id: MessageId.make("message_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
         role: "user",
         parts: [{ type: "text", text: "Pause my picker" }],
         model: null,
         createdAt: AT
       }),
       new Message({
-        id: MessageId.make("message_01jd8v4t5m6n7p8q9r0s1t2v3x"),
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3x"),
         role: "assistant",
         parts: [
           { type: "toolCall", id: "c1", name: "pauseAll", params: {}, providerExecuted: false },
@@ -98,7 +98,7 @@ describe("promptOf", () => {
             toolCallId: "c1",
             card: {
               _tag: "AgentControl",
-              id: CardId.make("card_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+              id: CardId.make("card_01jd8v4t5m6n7a8q9r0s1t2v3w"),
               action: "pauseAll",
               agentId: null,
               agentName: null,
@@ -131,7 +131,7 @@ describe("promptOf", () => {
   it("keeps a search Anthropic ran inside the assistant's message", () => {
     const prompt = promptOf([
       new Message({
-        id: MessageId.make("message_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
         role: "assistant",
         parts: [
           {

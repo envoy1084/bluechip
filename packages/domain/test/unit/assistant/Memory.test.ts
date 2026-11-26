@@ -3,8 +3,8 @@ import { MemoryId } from "@bluechip/domain/Ids"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 
-const AVOID_TESLA = MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v3w")
-const LIKES_CHIPS = MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v3x")
+const AVOID_TESLA = MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v3w")
+const LIKES_CHIPS = MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v3x")
 const CONFIRMED = DateTime.makeUnsafe("2026-11-20T10:00:00Z")
 
 const existing = [
@@ -98,7 +98,7 @@ describe("planMemoryWrite", () => {
         text: "You like Tesla now.",
         source: "said",
         confidence: 1,
-        replaces: "memory_01jd8v4t5m6n7p8q9r0s1t2v3z"
+        replaces: "memory_01jd8v4t5m6n7a8q9r0s1t2v3z"
       },
       expected: { _tag: "Add", confirmed: true }
     }

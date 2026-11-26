@@ -17,7 +17,7 @@ describe("systemPrompt", () => {
       focus: null,
       memories: [
         new Memory({
-          id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+          id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v3w"),
           agentId: null,
           kind: "preference",
           text: "You avoid Tesla.",
@@ -33,7 +33,7 @@ describe("systemPrompt", () => {
       ]
     })
 
-    assert.match(prompt, /- memory_01jd8v4t5m6n7p8q9r0s1t2v3w \(preference\): You avoid Tesla\./)
+    assert.match(prompt, /- memory_01jd8v4t5m6n7a8q9r0s1t2v3w \(preference\): You avoid Tesla\./)
   })
 
   it("a memory waiting for the user's confirmation is left out", () => {
@@ -43,7 +43,7 @@ describe("systemPrompt", () => {
       focus: null,
       memories: [
         new Memory({
-          id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+          id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v3w"),
           agentId: null,
           kind: "fact",
           text: "You live in Berlin.",
@@ -76,7 +76,7 @@ describe("systemPrompt", () => {
 
   it("a conversation about an agent makes it the trader, the user's account only when asked or when it's blocked", () => {
     const agent = new Agent({
-      id: AgentId.make("agent_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+      id: AgentId.make("agent_01jd8v4t5m6n7a8q9r0s1t2v3w"),
       name: AgentName.make("Tech picker"),
       template: "stockPicker",
       status: "active",
@@ -91,8 +91,8 @@ describe("systemPrompt", () => {
 
     assert.include(
       prompt,
-      "## This conversation's agent\nThis conversation is about agent_01jd8v4t5m6n7p8q9r0s1t2v3w \"Tech picker\", and " +
-        "it trades for the user here. Propose every trade with agentId agent_01jd8v4t5m6n7p8q9r0s1t2v3w first, even " +
+      "## This conversation's agent\nThis conversation is about agent_01jd8v4t5m6n7a8q9r0s1t2v3w \"Tech picker\", and " +
+        "it trades for the user here. Propose every trade with agentId agent_01jd8v4t5m6n7a8q9r0s1t2v3w first, even " +
         "when the user doesn't name it (\"sell $100 of Nvidia\" goes through Tech picker): within its policies it " +
         "sends the trade itself, with nothing to confirm, and over its largest trade its card asks for Face ID. If the " +
         "result is blocked (a policy, a stock it doesn't trade), propose the same trade again with agentId null, from " +
@@ -117,7 +117,7 @@ describe("systemPrompt", () => {
       recalled: [
         new RecallHit({
           kind: "message",
-          sourceId: "message_01jd8v4t5m6n7p8q9r0s1t2v3w",
+          sourceId: "message_01jd8v4t5m6n7a8q9r0s1t2v3w",
           agentId: null,
           text: "You said: I might sell Microsoft in March",
           at: AT,

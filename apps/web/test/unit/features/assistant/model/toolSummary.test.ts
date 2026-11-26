@@ -45,7 +45,7 @@ const trade = (id: string) => ({
 const WITHDRAWAL = {
   _tag: "Withdrawal",
   transfer: {
-    id: "transfer_01jd8v4t5m6n7p8q9r0s1t2v3w",
+    id: "transfer_01jd8v4t5m6n7a8q9r0s1t2v3w",
     kind: "withdrawal",
     asset: "USDC",
     amount: "25000000",
@@ -61,7 +61,7 @@ const agentJson = Schema.encodeSync(Schema.toCodecJson(Agent))(agent("active"))
 const intentJson = Schema.encodeSync(Schema.toCodecJson(Intent))(nvidiaBuy("2026-11-26T10:00:00Z"))
 const problem = { policy: "trade", field: "stocks", message: "Pick at least one stock." }
 const memory = {
-  id: "memory_01jd8v4t5m6n7p8q9r0s1t2v3w",
+  id: "memory_01jd8v4t5m6n7a8q9r0s1t2v3w",
   agentId: null,
   kind: "preference",
   text: "You like Nvidia.",
@@ -122,13 +122,13 @@ describe("toolSummary", () => {
     {
       name: "one trade",
       tool: "getActivity",
-      result: [trade("trade_01jd8v4t5m6n7p8q9r0s1t2v3w")],
+      result: [trade("trade_01jd8v4t5m6n7a8q9r0s1t2v3w")],
       expected: "1 trade"
     },
     {
       name: "several trades",
       tool: "getActivity",
-      result: [trade("trade_01jd8v4t5m6n7p8q9r0s1t2v3w"), trade("trade_01jd8v4t5m6n7p8q9r0s1t2v3x")],
+      result: [trade("trade_01jd8v4t5m6n7a8q9r0s1t2v3w"), trade("trade_01jd8v4t5m6n7a8q9r0s1t2v3x")],
       expected: "2 trades"
     },
     { name: "one withdrawal", tool: "getActivity", result: [WITHDRAWAL], expected: "1 withdrawal" },
@@ -136,10 +136,10 @@ describe("toolSummary", () => {
       name: "trades and withdrawals",
       tool: "getActivity",
       result: [
-        trade("trade_01jd8v4t5m6n7p8q9r0s1t2v3w"),
-        trade("trade_01jd8v4t5m6n7p8q9r0s1t2v3x"),
+        trade("trade_01jd8v4t5m6n7a8q9r0s1t2v3w"),
+        trade("trade_01jd8v4t5m6n7a8q9r0s1t2v3x"),
         WITHDRAWAL,
-        { ...WITHDRAWAL, transfer: { ...WITHDRAWAL.transfer, id: "transfer_01jd8v4t5m6n7p8q9r0s1t2v3x" } }
+        { ...WITHDRAWAL, transfer: { ...WITHDRAWAL.transfer, id: "transfer_01jd8v4t5m6n7a8q9r0s1t2v3x" } }
       ],
       expected: "2 trades and 2 withdrawals"
     },
@@ -228,8 +228,8 @@ describe("toolSummary", () => {
       name: "a journal: how many entries",
       tool: "getAgentJournal",
       result: [{
-        id: "journal_01jd8v4t5m6n7p8q9r0s1t2v3w",
-        agentId: "agent_01jd8v4t5m6n7p8q9r0s1t2v3w",
+        id: "journal_01jd8v4t5m6n7a8q9r0s1t2v3w",
+        agentId: "agent_01jd8v4t5m6n7a8q9r0s1t2v3w",
         at: memory.createdAt,
         kind: "intent",
         entry: "Buy $50.00 of NVIDIA: filled.",
@@ -243,7 +243,7 @@ describe("toolSummary", () => {
       tool: "searchHelp",
       result: [{
         citation: {
-          documentId: "document_01jd8v4t5m6n7p8q9r0s1t2v3w",
+          documentId: "document_01jd8v4t5m6n7a8q9r0s1t2v3w",
           kind: "help",
           title: "Gas",
           section: "Who pays gas",
@@ -292,7 +292,7 @@ describe("toolSummary", () => {
       name: "an automation's results: its runs",
       tool: "getAutomationPerformance",
       result: {
-        automationId: "automation_01jd8v4t5m6n7p8q9r0s1t2v3w",
+        automationId: "automation_01jd8v4t5m6n7a8q9r0s1t2v3w",
         runs: 3,
         outcomes: [{ outcome: "proposed", count: 3 }],
         trades: 2,

@@ -4,7 +4,7 @@ import { MemoryId } from "@bluechip/domain/Ids"
 import * as DateTime from "effect/DateTime"
 
 export const MEMORY = new Memory({
-  id: MemoryId.make("memory_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+  id: MemoryId.make("memory_01jd8v4t5m6n7a8q9r0s1t2v3w"),
   agentId: null,
   kind: "constraint",
   text: "You never want Tesla.",

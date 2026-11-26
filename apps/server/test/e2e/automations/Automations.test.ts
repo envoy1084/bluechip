@@ -1,9 +1,12 @@
 import { AutomationProblem } from "@bluechip/domain/automations/Automation"
+import { ContractVersion, contractVersionHeader } from "@bluechip/domain/Contract"
 import { InvalidAutomation, NotFound } from "@bluechip/domain/Errors"
 import { AutomationId, RequestId } from "@bluechip/domain/Ids"
 import { draftSpec } from "@bluechip/domain/policies/Templates"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import * as HttpClient from "effect/http/HttpClient"
+import * as HttpClientRequest from "effect/http/HttpClientRequest"
 import { randomUUID } from "node:crypto"
 import { typeid } from "typeid-js"
 import { stopLoss, weeklyBuy } from "../../fixtures/Automations.ts"
@@ -194,6 +197,21 @@ layer(TestAgents.layer, { excludeTestServices: true })("automations", (it) => {
         const error = yield* Effect.flip(api.automations.automation({ params: { id: saved.id } }))
 
         assert.deepStrictEqual(error, new NotFound({ resource: "automation", id: saved.id }))
+      }))
+
+    it.effect("400: an id shaped like a TypeID that no UUID can be made of (version 0), like any malformed id", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        // Sent by hand: the typed client refuses to encode an id its schema refuses.
+        const client = HttpClient.withCookiesRef(yield* HttpClient.HttpClient, user.cookies)
+
+        const response = yield* client.execute(
+          HttpClientRequest.get("/api/automations/automation_01jd8v0000000000000000000z").pipe(
+            HttpClientRequest.setHeader(contractVersionHeader, String(ContractVersion))
+          )
+        )
+
+        assert.strictEqual(response.status, 400)
       }))
   })
 

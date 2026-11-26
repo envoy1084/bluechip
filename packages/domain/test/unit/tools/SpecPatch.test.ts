@@ -11,7 +11,7 @@ import { applyPatch, draftAgentSpec } from "@bluechip/domain/tools/SpecPatch"
 import { assert, describe, it } from "@effect/vitest"
 import { PICKER, REBALANCER } from "../../fixtures/Specs.ts"
 
-const SAVED = SavedTemplateId.make("template_01jd8v4t5m6n7p8q9r0s1t2v3w")
+const SAVED = SavedTemplateId.make("template_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
 describe("applyPatch", () => {
   it("no changes keep the spec, with no problems", () => {

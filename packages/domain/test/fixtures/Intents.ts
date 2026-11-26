@@ -4,8 +4,8 @@ import { type Decision, Intent, type IntentStatus } from "@bluechip/domain/inten
 import { Usdc } from "@bluechip/domain/market/Units"
 import * as DateTime from "effect/DateTime"
 
-export const INTENT_ID = IntentId.make("intent_01jd8v4t5m6n7p8q9r0s1t2v3w")
-export const AGENT_ID = AgentId.make("agent_01jd8v4t5m6n7p8q9r0s1t2v3w")
+export const INTENT_ID = IntentId.make("intent_01jd8v4t5m6n7a8q9r0s1t2v3w")
+export const AGENT_ID = AgentId.make("agent_01jd8v4t5m6n7a8q9r0s1t2v3w")
 
 /** A $50 Nvidia buy through {@link AGENT_ID}, from the assistant, at `status`. */
 export const nvidiaBuy = (status: IntentStatus, decision: Decision | null = null): Intent =>

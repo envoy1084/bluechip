@@ -42,7 +42,7 @@ describe("holdingFacts", () => {
       dayChangePercent: 2.04,
       weight: 37.5,
       cap: 30,
-      agents: [{ id: "agent_01jd8v4t5m6n7p8q9r0s1t2v3w", name: "Nvidia picker" }]
+      agents: [{ id: "agent_01jd8v4t5m6n7a8q9r0s1t2v3w", name: "Nvidia picker" }]
     })
   })
 
