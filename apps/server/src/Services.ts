@@ -35,6 +35,8 @@ import { ExpireIntentsCron } from "./modules/intents/ExpireCron.ts"
 import { Intents } from "./modules/intents/Intents.ts"
 import { IntentStore } from "./modules/intents/IntentStore.ts"
 import { AgentJournal } from "./modules/journal/AgentJournal.ts"
+import { Knowledge } from "./modules/knowledge/Knowledge.ts"
+import { KnowledgeRefreshCron } from "./modules/knowledge/RefreshCron.ts"
 import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
@@ -71,6 +73,8 @@ export const ServicesLive = Layer.mergeAll(
   PortfolioSnapshotCron,
   RecallEmbedCron,
   MemoryDecayCron,
+  KnowledgeRefreshCron,
+  Knowledge.refreshOnStart,
   Assistant.layer,
   FireAutomationLive,
   PriceWatcher.watch,
@@ -120,7 +124,8 @@ export const ServicesLive = Layer.mergeAll(
       Transfers.layer,
       Activity.layer,
       AutomationRuns.layer,
-      Recall.layer
+      Recall.layer,
+      Knowledge.layer
     )
   ),
   Layer.provideMerge(AgentJournal.layer),

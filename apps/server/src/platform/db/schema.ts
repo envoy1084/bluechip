@@ -8,6 +8,7 @@ export { automationRuns, automations, automationState, judgments, newsItems } fr
 export { transfers } from "../../modules/funding/tables.ts"
 export { intents } from "../../modules/intents/tables.ts"
 export { agentJournal } from "../../modules/journal/tables.ts"
+export { chunks, documents } from "../../modules/knowledge/tables.ts"
 export { conversationSummaries, memories, memoryUses, recallEntries } from "../../modules/memory/tables.ts"
 export { agentTemplates } from "../../modules/policies/tables.ts"
 export { portfolioSnapshots } from "../../modules/portfolio/tables.ts"

@@ -30,6 +30,7 @@ import { Agents } from "../agents/Agents.ts"
 import { Automations } from "../automations/Automations.ts"
 import { Intents } from "../intents/Intents.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
+import { Knowledge } from "../knowledge/Knowledge.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
 import { Stocks } from "../market/Stocks.ts"
@@ -145,6 +146,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
   const memories = yield* Memories
   const recall = yield* Recall
   const journal = yield* AgentJournal
+  const knowledge = yield* Knowledge
   const cards = yield* Cards
   const live = yield* LiveEvents
   const automations = yield* Automations
@@ -214,6 +216,14 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
       const stock = (yield* stockList.list).find((candidate) => candidate.symbol === symbol)
       if (stock === undefined) return yield* problem(`bluechip doesn't list ${symbol}.`)
       return stock
+    }),
+    getStockFacts: Effect.fn("AssistantTools.getStockFacts")(function*({ symbol }) {
+      const facts = knowledge.stockFacts(symbol)
+      if (facts === undefined) return yield* problem(`bluechip doesn't list ${symbol}.`)
+      return facts
+    }),
+    searchHelp: Effect.fn("AssistantTools.searchHelp")(function*({ query }) {
+      return yield* knowledge.search(query)
     }),
     getQuote: Effect.fn("AssistantTools.getQuote")(function*(params) {
       const leg = yield* legOf(params)

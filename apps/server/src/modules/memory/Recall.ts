@@ -6,6 +6,7 @@ import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Database } from "../../platform/db/Database.ts"
+import { fullTextQuery } from "../../platform/db/FullText.ts"
 import { Embeddings } from "../../platform/embeddings/Embeddings.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { memories, recallEntries } from "./tables.ts"
@@ -89,13 +90,12 @@ export class Recall extends Context.Service<Recall, {
         )
 
       const byWords = Effect.fnUntraced(function*(owner: Owner, query: RecallQuery) {
-        const words = [...new Set(query.text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])].slice(0, 32)
-        if (words.length === 0) return [] as ReadonlyArray<Candidate>
-        const matches = sql`to_tsquery('english', ${words.join(" | ")})`
+        const words = fullTextQuery(recallEntries.textSearch, query.text)
+        if (words === undefined) return [] as ReadonlyArray<Candidate>
         return yield* db.select(columns).from(recallEntries)
           .leftJoin(memories, eq(memories.id, recallEntries.memoryId))
-          .where(and(scope(owner, query), sql`${recallEntries.textSearch} @@ ${matches}`))
-          .orderBy(desc(sql`ts_rank_cd(${recallEntries.textSearch}, ${matches})`), desc(recallEntries.at))
+          .where(and(scope(owner, query), words.matches))
+          .orderBy(desc(words.rank), desc(recallEntries.at))
           .limit(CANDIDATES).pipe(Effect.orDie) as Effect.Effect<ReadonlyArray<Candidate>>
       })
 

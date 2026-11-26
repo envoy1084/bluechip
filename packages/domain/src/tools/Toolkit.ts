@@ -22,6 +22,7 @@ import {
   ResumeAgent
 } from "./AgentTools.ts"
 import { CreateAutomation, ListAutomations, PauseAutomation } from "./AutomationTools.ts"
+import { GetStockFacts, SearchHelp } from "./KnowledgeTools.ts"
 import { GetActivity, GetPortfolio, GetPrices, GetQuote, GetStock } from "./MarketTools.ts"
 import { Forget, ListMemories, Remember, SearchMemory } from "./MemoryTools.ts"
 import { CheckAgentSpec, ListPolicies, ListTemplates, SaveTemplate } from "./PolicyTools.ts"
@@ -37,6 +38,7 @@ export const BluechipToolkit = Toolkit.make(
   GetPrices,
   GetQuote,
   GetStock,
+  GetStockFacts,
   GetActivity,
   ListAgents,
   GetAgent,
@@ -61,6 +63,7 @@ export const BluechipToolkit = Toolkit.make(
   Forget,
   ListMemories,
   SearchMemory,
+  SearchHelp,
   ListAutomations,
   CreateAutomation,
   PauseAutomation

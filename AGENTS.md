@@ -33,6 +33,9 @@ that match the task.
   `contracts build` writes their addresses and ABIs to `packages/chain/src/policies/Deployed.ts`. `test/vectors.json`
   is a frozen fixture of the rules' behaviour. A change to their bytecode moves their addresses: rebuild, then
   `pnpm devnet:capture`, and update the gas snapshot (`node scripts/bin.ts contracts snapshot`).
+- `content/help/`: the help center's articles, one Markdown file each (`# Title`, then `## Section`s). The server's
+  knowledge (`apps/server/src/modules/knowledge/`) chunks them by section for the assistant's `searchHelp`, refreshed
+  at start and daily; write only what the app does today.
 - `scripts/`: the repository's tooling, one Effect CLI (`node scripts/bin.ts <command>`).
 - `scratchpad/`: ad hoc probes: `scratchpad/<name>.ts`, run with `node`, deleted afterwards (git
   ignores everything there but its skeleton).
