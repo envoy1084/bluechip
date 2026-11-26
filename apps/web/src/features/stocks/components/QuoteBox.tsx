@@ -1,5 +1,6 @@
 import type { Stock } from "@bluechip/domain/market/Market"
 import { Shares, sharesFor, Usdc, valueOf } from "@bluechip/domain/market/Units"
+import { MINIMUM_BUY } from "@bluechip/domain/trading/Trade"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
 import { Button } from "@bluechip/ui/components/button"
 import { Tabs, TabsList, TabsTab } from "@bluechip/ui/components/tabs"
@@ -11,23 +12,13 @@ import { useState } from "react"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
 import { parseShares, parseUsdc, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 import { useMarketStatus } from "../hooks/useMarketStatus.ts"
-import { type QuoteSide, type QuoteState, useQuote } from "../hooks/useQuote.ts"
+import { type QuoteSide, useQuote } from "../hooks/useQuote.ts"
 import { useTrade } from "../hooks/useTrade.ts"
+import { amountHint } from "../model/amountHint.ts"
 import { AmountInput, type AmountUnit } from "./AmountInput.tsx"
 import { QuoteSummary, QuoteSummarySkeleton } from "./QuoteSummary.tsx"
 import { referenceGap } from "./ReferenceGap.tsx"
 import { TradeProgress } from "./TradeProgress.tsx"
-
-/** What the quote gets back, in a sentence under the field: shares for a buy, USDC for a sell. */
-const quoteHint = (quote: QuoteState) => {
-  if (quote.status === "loading") return "Getting a price…"
-  if (quote.status !== "ready") return null
-
-  const { side, shares, usdc } = quote.quote
-  return side === "buy" ?
-    `About ${formatShareCount(shareCount(shares))} for ${formatMoney(usdcDollars(usdc))}.` :
-    `About ${formatMoney(usdcDollars(usdc))} for ${formatShareCount(shareCount(shares))}.`
-}
 
 /** What to look at twice before signing: paused prices, or the stock market and Chainlink far apart. */
 function TradeWarnings({ stock }: Readonly<{ stock: Stock }>) {
@@ -77,24 +68,34 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
     (unit === "usd" ? typed : valueOf(Shares.make(typed), price)) :
     (unit === "shares" ? typed : sharesFor(Usdc.make(typed), price))
   const over = amount !== null && amount > (side === "buy" ? cash : held)
+  const belowMinimum = side === "buy" && amount !== null && amount > BigInt(0) && amount < MINIMUM_BUY
 
-  const quote = useQuote(stock.symbol, side, stock.tradable && !over ? amount as Usdc | Shares | null : null)
+  const quote = useQuote(
+    stock.symbol,
+    side,
+    stock.tradable && !over && !belowMinimum ? amount as Usdc | Shares | null : null
+  )
   const busy = flow.status === "preparing" || flow.status === "signing"
-  const ready = quote.status === "ready" && amount !== null && !over
+  const ready = quote.status === "ready" && amount !== null && !over && !belowMinimum
 
   const available = side === "buy" ?
     `${formatMoney(usdcDollars(cash))} cash available` :
     `${formatShareCount(shareCount(held))}${
       price === null ? "" : `, worth ${formatMoney(usdcDollars(valueOf(Shares.make(held), price)))}`
     }`
-  const hint = over ?
-    side === "buy" ? "That's more than your cash." : "That's more than you have." :
-    quoteHint(quote) ??
-      (side === "buy"
-        ? "Enter an amount. The smallest trade is $1."
-        : held === BigInt(0)
-        ? `You don't own any ${stock.symbol} yet.`
-        : "Enter how much to sell.")
+  const hint = amountHint(
+    over ?
+      { _tag: "OverAvailable", side } :
+      belowMinimum ?
+      { _tag: "BelowMinimum" } :
+      quote.status === "loading" ?
+      { _tag: "Quoting" } :
+      quote.status === "ready" ?
+      { _tag: "Quoted", quote: quote.quote } :
+      quote.status === "failed" ?
+      { _tag: "QuoteFailed" } :
+      { _tag: "Empty", side, symbol: stock.symbol, held }
+  )
 
   // Max: all the cash for a buy, every share for a sell, in the unit shown.
   const max = () => {
@@ -181,7 +182,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
             symbol={stock.symbol}
             text={text}
             hint={hint}
-            invalid={over}
+            invalid={over || belowMinimum}
             quickAmounts={side === "buy" ? [50, 100, 150] : []}
             onMax={(side === "buy" ? cash : held) === BigInt(0) ? undefined : max}
             onTextChange={setText}

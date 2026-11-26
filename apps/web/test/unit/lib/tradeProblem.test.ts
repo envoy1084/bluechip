@@ -37,6 +37,13 @@ describe("tradeProblem", () => {
     )
   })
 
+  it("a buy under $1: the smallest trade", () => {
+    assert.strictEqual(
+      tradeProblem(new QuoteUnavailable({ symbol: "NVDA", reason: "belowMinimum" }), "buy"),
+      "The smallest trade is $1. Nothing was bought."
+    )
+  })
+
   it("a price too far from Chainlink's", () => {
     assert.strictEqual(
       tradeProblem(new PriceCheckFailed({ symbol: "NVDA", reason: "gap", gapBps: 150, limitBps: 100 }), "sell"),

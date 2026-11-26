@@ -22,6 +22,7 @@ const DEBOUNCE_MS = 400
 const QUOTE_UNAVAILABLE: Readonly<Record<QuoteUnavailable["reason"], string>> = {
   tooLarge: "That's more than the pool can fill right now. Try a smaller amount.",
   tooSmall: "That amount is too small to trade. Try a little more.",
+  belowMinimum: "The smallest trade is $1.",
   noPrice: "We can't read this stock's price right now. Try again in a moment.",
   poolError: "The trading pool didn't answer. Try again in a moment."
 }

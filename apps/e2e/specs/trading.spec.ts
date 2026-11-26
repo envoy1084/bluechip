@@ -37,7 +37,7 @@ test.describe("buying on a stock's page", () => {
     await expect(box.getByRole("button", { name: "Buy with Face ID" })).toBeDisabled()
   })
 
-  test.fixme("a buy under $1 can't be sent (bug: $0.50 is quoted and Buy with Face ID turns on)", async ({ page, funded: _funded }) => {
+  test("a buy under $1 can't be sent", async ({ page, funded: _funded }) => {
     await page.goto("/stocks/MSTR")
     const box = tradeBox(page, "Strategy")
 

@@ -21,7 +21,7 @@ export function AmountInput(
     unit: AmountUnit
     symbol: string
     text: string
-    hint: string
+    hint: string | null
     invalid: boolean
     quickAmounts: ReadonlyArray<number>
     onMax?: (() => void) | undefined
