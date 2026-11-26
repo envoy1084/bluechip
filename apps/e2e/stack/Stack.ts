@@ -147,20 +147,22 @@ export const startStack = async (): Promise<Stack> => {
       "--load-state",
       state,
       "--block-base-fee-per-gas",
-      String(BASE_FEE_WEI)
+      String(BASE_FEE_WEI),
+      // A block every 2 s, like Base, so the chain's clock keeps the real one: an agent's operation is bounded to its
+      // latest block's UTC day, and Alto checks that against the real clock.
+      "--block-time",
+      "2"
     ]))
     await waitFor("anvil", answersRpc(urls.anvil, "eth_chainId"))
 
-    // Loading the state brings back the capture's clock and base fee: run at Base's fee, at a time prices are live
-    // (`marketTime.ts`: now, or the next market open on a weekend or holiday).
+    // Loading the state brings back the capture's clock and base fee: run now, at Base's fee. The chain keeps the real
+    // clock (Alto checks operations against it), so on weekends and holidays prices read as paused, as on Base.
     const anvil = rpc(urls.anvil)
-    const chainTime = new Date(
-      execFileSync("node", ["apps/server/test/stack/marketTime.ts"], { cwd: root, encoding: "utf8" })
-    )
-    await anvil("anvil_setTime", [Math.floor(chainTime.getTime() / 1000)])
+    const now = Math.floor(Date.now() / 1000)
+    await anvil("anvil_setTime", [now])
     await anvil("anvil_setNextBlockBaseFeePerGas", [`0x${BASE_FEE_WEI.toString(16)}`])
     await anvil("anvil_mine", ["0x1"])
-    await alignPrices(anvil, Math.floor(chainTime.getTime() / 1000))
+    await alignPrices(anvil, now)
 
     children.push(start("alto", path.join(root, "packages/devnet/node_modules/.bin/alto"), [
       "--rpc-url",

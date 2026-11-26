@@ -26,6 +26,8 @@ export const signUp = async (page: Page): Promise<User> => {
   await expect(page.getByRole("heading", { name: "Your account is ready" })).toBeVisible()
   await page.getByRole("button", { name: "Continue" }).click()
   await expect(page.getByRole("heading", { name: "Where do you live?" })).toBeVisible()
+  // The answer is read from the account first; Continue saves it only once the form shows it.
+  await expect(page.getByText("You can use bluechip.")).toBeVisible()
   await page.getByRole("button", { name: "Continue" }).click()
   await expect(page.getByRole("heading", { name: "Add cash", level: 1 })).toBeVisible()
   await page.getByRole("button", { name: "Skip for now" }).click()
