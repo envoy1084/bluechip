@@ -52,7 +52,9 @@ export const LiveEvent = Schema.TaggedUnion({
   /** One of the user's automations ended a run (only sent to its owner). */
   AutomationRan: { run: AutomationRun, automationName: Schema.String },
   /** A new notification in the user's center (only sent to its owner). */
-  NotificationAdded: { notification: Notification }
+  NotificationAdded: { notification: Notification },
+  /** The user's passkeys, devices or recovery changed: refetch them (only sent to its owner). */
+  AccountChanged: {}
 }).annotate({ identifier: "@bluechip/domain/Events/LiveEvent" })
 
 /**

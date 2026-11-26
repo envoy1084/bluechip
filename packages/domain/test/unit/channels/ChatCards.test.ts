@@ -168,7 +168,7 @@ describe("chatNotification", () => {
         },
         expected: {
           markdown: "**Tech picker bought $50.00 of NVIDIA**\nIt filled.",
-          actions: [{ _tag: "Open", label: "Open in bluechip", path: "/activity" }]
+          actions: [{ _tag: "Open", label: "Open in bluechip", path: "/activity" }, { _tag: "PauseAll" }]
         }
       },
       {
@@ -176,7 +176,26 @@ describe("chatNotification", () => {
         notification: { kind: "approvalExpiring", title: "Expiring", body: "Soon.", link: "/home?sheet=approvals" },
         expected: {
           markdown: "**Expiring**\nSoon.",
-          actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }]
+          actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }, { _tag: "PauseAll" }]
+        }
+      },
+      {
+        name: "a recovery asked for: Cancel recovery under the link",
+        notification: { kind: "recoveryRequested", title: "Recovery", body: "Asked.", link: "/settings/security" },
+        expected: {
+          markdown: "**Recovery**\nAsked.",
+          actions: [
+            { _tag: "Open", label: "Open in bluechip", path: "/settings/security" },
+            { _tag: "CancelRecovery" }
+          ]
+        }
+      },
+      {
+        name: "a new passkey: only the link",
+        notification: { kind: "passkeyAdded", title: "Added", body: "Yours.", link: "/settings/security" },
+        expected: {
+          markdown: "**Added**\nYours.",
+          actions: [{ _tag: "Open", label: "Open in bluechip", path: "/settings/security" }]
         }
       },
       {

@@ -83,7 +83,14 @@ export class Conflict extends Schema.TaggedError<Conflict>("@bluechip/domain/Err
       "intentClosed",
       "cardClosed",
       "runActive",
-      "automationEnded"
+      "automationEnded",
+      "lastPasskey",
+      "passkeyBusy",
+      "recoveryKeyExists",
+      "noRecoveryKey",
+      "recoveryPending",
+      "noRecoveryRequest",
+      "recoveryNotDue"
     ])
   },
   { httpApiStatus: 409 }

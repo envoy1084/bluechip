@@ -4,7 +4,6 @@
 import * as HttpApiEndpoint from "effect/http-api/HttpApiEndpoint"
 import * as HttpApiGroup from "effect/http-api/HttpApiGroup"
 import * as Schema from "effect/Schema"
-import { AuditEvent } from "../audit/Audit.ts"
 import { Authentication } from "../Auth.ts"
 import {
   Conflict,
@@ -99,9 +98,5 @@ export class IntentsApi extends HttpApiGroup.make("intents").add(
     params: { id: IntentId },
     success: Intent,
     error: [NotFound, Conflict]
-  }),
-  HttpApiEndpoint.get("audit", "/audit", {
-    query: PageQuery,
-    success: Page(AuditEvent)
   })
 ).middleware(Authentication) {}

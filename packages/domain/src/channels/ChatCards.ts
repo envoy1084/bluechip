@@ -9,12 +9,14 @@
 import type { Card } from "../assistant/Card.ts"
 import { describeDecision, describeLeg } from "../intents/Describe.ts"
 import type { StockSymbol } from "../market/Market.ts"
+import { actionsOf } from "../notifications/Actions.ts"
 import { APPROVALS_LINK } from "../notifications/Drafts.ts"
 import type { Notification } from "../notifications/Notification.ts"
 
 /**
- * What a chat message offers under its text: Confirm and Cancel for a card that waits for you, or a link to a page
- * of the app (a path, made absolute by the server).
+ * What a chat message offers under its text: Confirm and Cancel for a card that waits for you, a link to a page
+ * of the app (a path, made absolute by the server), or a notification's own action (pause every agent, cancel a
+ * recovery).
  *
  * @stability unstable
  * @category models
@@ -23,6 +25,8 @@ import type { Notification } from "../notifications/Notification.ts"
 export type ChatAction =
   | { readonly _tag: "Answer"; readonly cardId: string }
   | { readonly _tag: "Open"; readonly label: string; readonly path: string }
+  | { readonly _tag: "PauseAll" }
+  | { readonly _tag: "CancelRecovery" }
 
 /**
  * One chat message: its Markdown and what it offers.
@@ -170,7 +174,7 @@ const controlResult = (card: Extract<Card, { readonly _tag: "AgentControl" }>): 
  * import { chatNotification } from "@bluechip/domain/channels/ChatCards"
  *
  * chatNotification({ kind: "approvalNeeded", title: "Tech picker needs your OK", body: "Buy $150.00 of NVIDIA.", link: "/home?sheet=approvals" } as never)
- * // => { markdown: "**Tech picker needs your OK**\nBuy $150.00 of NVIDIA.", actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }] }
+ * // => { markdown: "**Tech picker needs your OK**\nBuy $150.00 of NVIDIA.", actions: [{ _tag: "Open", label: "Approve in bluechip", path: "/home?sheet=approvals" }, { _tag: "PauseAll" }] }
  * ```
  *
  * @stability unstable
@@ -181,9 +185,12 @@ export const chatNotification = (
   notification: Pick<Notification, "kind" | "title" | "body" | "link">
 ): ChatReply => {
   const markdown = `**${notification.title}**\n${notification.body}`
-  if (notification.link === null) return reply(markdown)
+  const own = actionsOf(notification.kind).map((action): ChatAction =>
+    action === "pauseAll" ? { _tag: "PauseAll" } : { _tag: "CancelRecovery" }
+  )
+  if (notification.link === null) return reply(markdown, ...own)
   const label = notification.kind === "approvalNeeded" || notification.kind === "approvalExpiring" ?
     "Approve in bluechip" :
     "Open in bluechip"
-  return reply(markdown, open(label, notification.link))
+  return reply(markdown, open(label, notification.link), ...own)
 }

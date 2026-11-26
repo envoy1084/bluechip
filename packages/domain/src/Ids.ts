@@ -72,6 +72,63 @@ export const PasskeyId = typeId("passkey").pipe(
 export type PasskeyId = typeof PasskeyId.Type
 
 /**
+ * A signed-in session: one browser on one device.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const SessionId = typeId("session").pipe(
+  Schema.brand("SessionId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/SessionId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type SessionId = typeof SessionId.Type
+
+/**
+ * A recovery passkey set up on the account, with its onchain sessions.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const RecoveryKeyId = typeId("recoverykey").pipe(
+  Schema.brand("RecoveryKeyId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/RecoveryKeyId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type RecoveryKeyId = typeof RecoveryKeyId.Type
+
+/**
+ * A request to recover the account with its recovery passkey.
+ *
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export const RecoveryRequestId = typeId("recovery").pipe(
+  Schema.brand("RecoveryRequestId"),
+  Schema.annotate({ identifier: "@bluechip/domain/Ids/RecoveryRequestId" })
+)
+
+/**
+ * @stability unstable
+ * @category ids
+ * @since 0.0.0
+ */
+export type RecoveryRequestId = typeof RecoveryRequestId.Type
+
+/**
  * An EVM address, checksummed or not (`0x` and 40 hex digits).
  *
  * @stability unstable

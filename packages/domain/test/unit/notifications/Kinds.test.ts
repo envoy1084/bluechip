@@ -72,6 +72,12 @@ describe("KINDS", () => {
       KINDS.filter((info) => info.severity === "security").map((info) => [info.kind, info.locked, info.defaults]),
       [
         ["passkeyAdded", true, { channels: ["inApp", "push", "telegram"], digest: false }],
+        ["passkeyRemoved", true, { channels: ["inApp", "push", "telegram"], digest: false }],
+        ["newDevice", true, { channels: ["inApp", "push", "telegram"], digest: false }],
+        ["recoveryKeyChanged", true, { channels: ["inApp", "push", "telegram"], digest: false }],
+        ["recoveryRequested", true, { channels: ["inApp", "push", "telegram"], digest: false }],
+        ["recoveryCancelled", true, { channels: ["inApp", "push", "telegram"], digest: false }],
+        ["recoveryCompleted", true, { channels: ["inApp", "push", "telegram"], digest: false }],
         ["chatLinked", true, { channels: ["inApp", "push", "telegram"], digest: false }],
         ["chatUnlinked", true, { channels: ["inApp", "push", "telegram"], digest: false }]
       ]

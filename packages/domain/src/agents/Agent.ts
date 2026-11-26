@@ -248,6 +248,21 @@ export class AgentRequest extends Schema.Class<AgentRequest>("@bluechip/domain/a
 }) {}
 
 /**
+ * Removing every agent at once, prepared for the user's passkey: one owner operation that revokes every agent's
+ * session onchain, and the agents it removes.
+ *
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export class AgentsRemoval extends Schema.Class<AgentsRemoval>("@bluechip/domain/agents/Agent/AgentsRemoval")({
+  id: SigningRequestId,
+  options: CeremonyOptions,
+  agents: Schema.Array(Agent),
+  expiresAt: Schema.DateTimeUtc
+}) {}
+
+/**
  * What one policy has counted onchain: dollars put into buys today, dollars lost to prices this week, trades today, or
  * gas today, against its limit when the limit is in the same unit.
  *

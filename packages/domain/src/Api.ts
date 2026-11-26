@@ -9,6 +9,7 @@ import { AccountApi } from "./api/AccountApi.ts"
 import { ActivityApi } from "./api/ActivityApi.ts"
 import { AgentsApi } from "./api/AgentsApi.ts"
 import { AssistantApi } from "./api/AssistantApi.ts"
+import { AuditApi } from "./api/AuditApi.ts"
 import { AuthApi } from "./api/AuthApi.ts"
 import { AutomationsApi } from "./api/AutomationsApi.ts"
 import { ChannelsApi } from "./api/ChannelsApi.ts"
@@ -20,6 +21,7 @@ import { NotificationsApi } from "./api/NotificationsApi.ts"
 import { PoliciesApi } from "./api/PoliciesApi.ts"
 import { PortfolioApi } from "./api/PortfolioApi.ts"
 import { PushApi } from "./api/PushApi.ts"
+import { AccountRecoveryApi, RecoveringApi, RecoveryApi } from "./api/RecoveryApi.ts"
 import { SystemApi } from "./api/SystemApi.ts"
 import { TradesApi } from "./api/TradesApi.ts"
 import { TransfersApi } from "./api/TransfersApi.ts"
@@ -38,6 +40,9 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(EventsApi)
   .add(AuthApi)
   .add(AccountApi)
+  .add(AccountRecoveryApi)
+  .add(RecoveryApi)
+  .add(RecoveringApi)
   .add(MarketApi)
   .add(PortfolioApi)
   .add(TransfersApi)
@@ -47,6 +52,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(IntentsApi)
   .add(AutomationsApi)
   .add(ActivityApi)
+  .add(AuditApi)
   .add(AssistantApi)
   .add(NotificationsApi)
   .add(PushApi)

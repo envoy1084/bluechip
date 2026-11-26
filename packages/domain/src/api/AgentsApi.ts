@@ -4,7 +4,7 @@
 import * as HttpApiEndpoint from "effect/http-api/HttpApiEndpoint"
 import * as HttpApiGroup from "effect/http-api/HttpApiGroup"
 import * as Schema from "effect/Schema"
-import { Agent, AgentName, AgentRequest, AgentSession, AgentUsage } from "../agents/Agent.ts"
+import { Agent, AgentName, AgentRequest, AgentSession, AgentsRemoval, AgentUsage } from "../agents/Agent.ts"
 import { Authentication } from "../Auth.ts"
 import { Conflict, InvalidSpec, NotFound, SignatureRejected, Unavailable } from "../Errors.ts"
 import { AgentId, RequestId, SigningRequestId } from "../Ids.ts"
@@ -97,5 +97,16 @@ export class AgentsApi extends HttpApiGroup.make("agents").add(
   }),
   HttpApiEndpoint.post("resumeAll", "/agents/resume-all", {
     success: Schema.Array(Agent)
+  }),
+  HttpApiEndpoint.post("removeAll", "/agents/remove-all", {
+    payload: Schema.Struct({ requestId: RequestId }),
+    success: AgentsRemoval,
+    error: [NotFound, Conflict, Unavailable]
+  }),
+  HttpApiEndpoint.post("confirmRemoveAll", "/agents/remove-all/:id/confirm", {
+    params: { id: SigningRequestId },
+    payload: Schema.Struct({ credential: AuthenticationCredential }),
+    success: Schema.Array(Agent),
+    error: [NotFound, Conflict, SignatureRejected, Unavailable]
   })
 ).middleware(Authentication) {}

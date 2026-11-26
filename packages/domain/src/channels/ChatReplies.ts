@@ -79,6 +79,7 @@ export const HELP = [
   "/agents: your agents and how they stand",
   "/pause: pause one agent",
   "/pause_all: pause every agent at once",
+  "/cancel_recovery: cancel a recovery of your account you didn't ask for",
   "/unlink: unlink this chat",
   "",
   "An agent trades only inside its policies. Anything beyond them, and anything you sign, finishes in the app with " +

@@ -170,6 +170,54 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     defaults: EVERYWHERE
   }),
   kind({
+    kind: "passkeyRemoved",
+    group: "security",
+    label: "A passkey was removed",
+    description: "Always on, on every channel.",
+    severity: "security",
+    defaults: EVERYWHERE
+  }),
+  kind({
+    kind: "newDevice",
+    group: "security",
+    label: "A new device signed in",
+    description: "Always on, on every channel.",
+    severity: "security",
+    defaults: EVERYWHERE
+  }),
+  kind({
+    kind: "recoveryKeyChanged",
+    group: "security",
+    label: "Your recovery key changed",
+    description: "Always on, on every channel.",
+    severity: "security",
+    defaults: EVERYWHERE
+  }),
+  kind({
+    kind: "recoveryRequested",
+    group: "security",
+    label: "Someone asked to recover your account",
+    description: "Always on, on every channel.",
+    severity: "security",
+    defaults: EVERYWHERE
+  }),
+  kind({
+    kind: "recoveryCancelled",
+    group: "security",
+    label: "A recovery was cancelled",
+    description: "Always on, on every channel.",
+    severity: "security",
+    defaults: EVERYWHERE
+  }),
+  kind({
+    kind: "recoveryCompleted",
+    group: "security",
+    label: "Your account was recovered",
+    description: "Always on, on every channel.",
+    severity: "security",
+    defaults: EVERYWHERE
+  }),
+  kind({
     kind: "chatLinked",
     group: "security",
     label: "A chat was linked",
