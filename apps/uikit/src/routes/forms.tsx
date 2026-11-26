@@ -11,6 +11,7 @@ import {
 } from "../pages/forms/inputs.tsx"
 import { Group } from "../pages/forms/layout.tsx"
 import { ComboboxSection, SelectSection } from "../pages/forms/pickers.tsx"
+import { DatePickerSection, TimePickerSection } from "../pages/forms/time-and-date.tsx"
 
 export const Route = createFileRoute("/forms")({ component: KitForms })
 
@@ -45,6 +46,8 @@ function KitForms() {
         <SliderSection />
         <SelectSection />
         <ComboboxSection />
+        <TimePickerSection />
+        <DatePickerSection />
       </Group>
     </div>
   )

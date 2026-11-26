@@ -12,18 +12,25 @@ export interface UsageRingProps extends Omit<ComponentProps<"figure">, "children
   readonly format?: Intl.NumberFormatOptions | ((value: number) => string)
   /** One line under it: what's left, when it resets. */
   readonly detail?: ReactNode
+  /** `sm` for a card in the conversation: a 64 px ring, the amount without its limit. */
+  readonly size?: "md" | "sm"
 }
 
-const SIZE = 132
-const STROKE = 11
-const RADIUS = (SIZE - STROKE) / 2
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+const RINGS = {
+  md: { size: 132, stroke: 11, amount: "text-[22px]" },
+  sm: { size: 64, stroke: 7, amount: "text-[14px]" }
+} as const
 
 /**
  * One limit as a ring that fills as it's used, with the amount rolling in its middle: blue while there's room, amber
  * from 80%, red when it's used up. The ring's fill animates with each change, and stays put under reduced motion.
  */
-export function UsageRing({ label, used, limit, format, detail, className, ...props }: UsageRingProps) {
+export function UsageRing(
+  { label, used, limit, format, detail, size = "md", className, ...props }: UsageRingProps
+) {
+  const ring = RINGS[size]
+  const radius = (ring.size - ring.stroke) / 2
+  const circumference = 2 * Math.PI * radius
   const share = limit === null || limit === 0 ? 0 : Math.min(1, used / limit)
   const tone = share >= 1 ? "text-loss" : share >= 0.8 ? "text-warn" : "text-blue"
   const text = (value: number) =>
@@ -35,26 +42,33 @@ export function UsageRing({ label, used, limit, format, detail, className, ...pr
       className={cn("grid justify-items-center gap-2.5 text-center", className)}
       {...props}
     >
-      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+      <div className="relative" style={{ width: ring.size, height: ring.size }}>
         <svg
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          width={SIZE}
-          height={SIZE}
+          viewBox={`0 0 ${ring.size} ${ring.size}`}
+          width={ring.size}
+          height={ring.size}
           role="img"
           aria-label={limit === null ? `${label}: ${text(used)}` : `${label}: ${text(used)} of ${text(limit)}`}
           className="-rotate-90"
         >
-          <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" strokeWidth={STROKE} className="stroke-g-100" />
           <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={RADIUS}
+            cx={ring.size / 2}
+            cy={ring.size / 2}
+            r={radius}
             fill="none"
-            strokeWidth={STROKE}
+            strokeWidth={ring.stroke}
+            className="stroke-g-100"
+          />
+          <circle
+            cx={ring.size / 2}
+            cy={ring.size / 2}
+            r={radius}
+            fill="none"
+            strokeWidth={ring.stroke}
             strokeLinecap="round"
             stroke="currentColor"
-            strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={CIRCUMFERENCE * (1 - share)}
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference * (1 - share)}
             className={cn(
               tone,
               "transition-[stroke-dashoffset] duration-700 ease-brand motion-reduce:transition-none",
@@ -66,13 +80,15 @@ export function UsageRing({ label, used, limit, format, detail, className, ...pr
           <NumberRoll
             value={used}
             {...(format === undefined ? {} : { format })}
-            className="text-[22px] leading-none font-semibold tracking-[-0.03em]"
+            className={cn(ring.amount, "leading-none font-semibold tracking-[-0.03em]")}
           />
-          {limit === null ? null : <span className="text-caption text-g-500 tabular-nums">of {text(limit)}</span>}
+          {limit === null || size === "sm" ?
+            null :
+            <span className="text-caption text-g-500 tabular-nums">of {text(limit)}</span>}
         </div>
       </div>
       <figcaption className="grid gap-0.5">
-        <b className="text-[13.5px] font-semibold">{label}</b>
+        <b className={cn(size === "sm" ? "text-label-sm" : "text-[13.5px]", "font-semibold")}>{label}</b>
         {detail === undefined ? null : <span className="text-label-sm text-g-500">{detail}</span>}
       </figcaption>
     </figure>

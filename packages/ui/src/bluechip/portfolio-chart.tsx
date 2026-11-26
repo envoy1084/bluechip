@@ -3,15 +3,16 @@ import { decorative } from "@tanstack/charts/mark/decorative"
 import { Chart } from "@tanstack/charts/react/tooltip"
 import { scaleLinear } from "@tanstack/charts/scales/linear"
 import { tooltip } from "@tanstack/charts/tooltip"
-import { type ReactNode, useMemo, useState } from "react"
+import { type CSSProperties, type ReactNode, useMemo, useState } from "react"
 import { Skeleton } from "../components/skeleton.tsx"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "../components/tabs.tsx"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { formatChange, formatMoney } from "../lib/format.ts"
+import { signedColor, signedPaint } from "../lib/zero-split.ts"
 import { NumberRoll } from "../motion/number-roll.tsx"
 import { useReducedMotion } from "../motion/use-reduced-motion.ts"
-import { PriceChange } from "./price-change.tsx"
+import { PriceChange, priceDirection } from "./price-change.tsx"
 
 export interface PortfolioPoint {
   readonly value: number
@@ -40,6 +41,8 @@ export interface PortfolioChartProps {
    * percent) or a profit or loss (`profit`: signed amounts, no percent).
    */
   readonly measure?: "value" | "profit"
+  /** The plot's height in pixels. Defaults to 210. */
+  readonly height?: number
   readonly className?: string
 }
 
@@ -49,15 +52,32 @@ interface PlotPoint extends PortfolioPoint {
 
 const BLUE = "#2a5bff"
 const INK = "#0a0b0d"
+const LOSS = "#cc3519"
+const PROFIT_COLORS = { above: BLUE, below: LOSS }
 
-/** The chart for one range: area and line in brand blue, the start dashed, the latest point marked. */
-const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean, format: (value: number) => string) => {
+/**
+ * The chart for one range: area and line in brand blue, the latest point marked. A value dashes its start for
+ * reference; a profit dashes zero, fills to it, and turns loss red below it.
+ */
+const definitionFor = (
+  rows: ReadonlyArray<PlotPoint>,
+  measure: "value" | "profit",
+  animate: boolean,
+  format: (value: number) => string
+) => {
+  const profit = measure === "profit"
   const values = rows.map((row) => row.value)
-  const pad = (Math.max(...values) - Math.min(...values)) * 0.12 || 1
-  const low = Math.min(...values) - pad
-  const high = Math.max(...values) + pad
-  const base = rows[0]?.value ?? 0
+  const lowest = Math.min(...values, ...(profit ? [0] : []))
+  const highest = Math.max(...values, ...(profit ? [0] : []))
+  const pad = (highest - lowest) * 0.12 || 1
+  const low = lowest - pad
+  const high = highest + pad
+  const reference = profit ? 0 : rows[0]?.value ?? 0
   const last = rows.slice(-1)
+  const lastColor = profit ? signedColor(last[0]?.value ?? 0, PROFIT_COLORS) : BLUE
+  const paint = profit ?
+    signedPaint("portfolio-profit", values, PROFIT_COLORS) :
+    { line: BLUE, area: "url(#portfolio-fill)", gradients: [] }
 
   // First, a third, two thirds and last, as indexes; their labels are the points' own.
   const ticks = [...new Set([0, 1 / 3, 2 / 3, 1].map((share) => Math.round(share * (rows.length - 1))))]
@@ -65,15 +85,35 @@ const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean, format:
   return defineChart({
     marks: [
       decorative(
-        areaY(rows, { id: "area", x: "index", y1: low, y2: "value", fill: "url(#portfolio-fill)", fillOpacity: 1 })
+        areaY(rows, {
+          id: "area",
+          x: "index",
+          y1: profit ? 0 : low,
+          y2: "value",
+          fill: paint.area,
+          fillOpacity: 1
+        })
       ),
       decorative(
-        ruleY([base], { id: "start", y: (value) => value, stroke: INK, strokeOpacity: 0.28, strokeDasharray: "2 4" })
+        ruleY([reference], {
+          id: "start",
+          y: (value) => value,
+          stroke: INK,
+          strokeOpacity: profit ? 0.4 : 0.28,
+          strokeDasharray: "2 4"
+        })
       ),
-      lineY(rows, { id: "value", x: "index", y: "value", stroke: BLUE, strokeWidth: 2, key: "index" }),
-      decorative(dot(last, { id: "end-halo", x: "index", y: "value", r: 9, fill: BLUE, fillOpacity: 0.14 })),
-      decorative(dot(last, { id: "end", x: "index", y: "value", r: 4, fill: BLUE, stroke: "#fff", strokeWidth: 2 })),
-      crosshair({ x: { stroke: INK, strokeOpacity: 0.25 }, y: false, marker: true })
+      lineY(rows, { id: "value", x: "index", y: "value", stroke: paint.line, strokeWidth: 2, key: "index" }),
+      decorative(dot(last, { id: "end-halo", x: "index", y: "value", r: 9, fill: lastColor, fillOpacity: 0.14 })),
+      decorative(
+        dot(last, { id: "end", x: "index", y: "value", r: 4, fill: lastColor, stroke: "#fff", strokeWidth: 2 })
+      ),
+      // The line's gradient would paint the marker in two colors, so its stroke follows the point read instead.
+      crosshair({
+        x: { stroke: INK, strokeOpacity: 0.25 },
+        y: false,
+        marker: profit ? { stroke: "var(--portfolio-chart-marker)" } : true
+      })
     ],
     scales: {
       x: {
@@ -91,7 +131,7 @@ const definitionFor = (rows: ReadonlyArray<PlotPoint>, animate: boolean, format:
       }
     },
     margin: { top: 14, right: 10, left: 0 },
-    gradients: [{
+    gradients: [...paint.gradients, {
       id: "portfolio-fill",
       x1: 0,
       y1: 0,
@@ -133,12 +173,21 @@ function TooltipBody(
 }
 
 /**
- * Your total value (or profit) over time in brand blue, with the starting value dashed for reference. Ranges are tabs. Hover, or
+ * Your total value (or profit) over time in brand blue, with the starting value (or zero) dashed for reference; a profit
+ * turns loss red below zero, and its headline takes the gain or loss color. Ranges are tabs. Hover, or
  * focus the chart and use ← →, to read any point; the headline follows.
  */
 export function PortfolioChart(
-  { ranges, defaultRange, title = "Total value", titleAddon, loading = false, measure = "value", className }:
-    PortfolioChartProps
+  {
+    ranges,
+    defaultRange,
+    title = "Total value",
+    titleAddon,
+    loading = false,
+    measure = "value",
+    height = 210,
+    className
+  }: PortfolioChartProps
 ) {
   const format = measure === "profit" ? formatChange : formatMoney
   const [rangeId, setRangeId] = useState(defaultRange ?? ranges.at(-1)?.id ?? "")
@@ -151,12 +200,13 @@ export function PortfolioChart(
     [range]
   )
   const definition = useMemo(
-    () => (rows.length < 2 ? undefined : definitionFor(rows, !reduced, format)),
-    [rows, reduced, format]
+    () => (rows.length < 2 ? undefined : definitionFor(rows, measure, !reduced, format)),
+    [rows, measure, reduced, format]
   )
 
   const current = index === null ? rows.at(-1) : rows[index]
   const base = rows[0]?.value ?? 0
+  const direction = measure === "profit" && current ? priceDirection(current.value) : "flat"
 
   return (
     <div
@@ -188,7 +238,11 @@ export function PortfolioChart(
                 <NumberRoll
                   value={current?.value ?? 0}
                   format={format}
-                  className="text-[32px] leading-[1.1] font-semibold tracking-[-0.035em]"
+                  className={cn(
+                    "text-[32px] leading-[1.1] font-semibold tracking-[-0.035em]",
+                    direction === "up" && "text-gain",
+                    direction === "down" && "text-loss"
+                  )}
                 />
               )}
             {!loading && current && (
@@ -212,7 +266,7 @@ export function PortfolioChart(
           {loading ?
             (
               // The chart's own frame while it loads: its height, gridlines and time axis, with the plot shimmering.
-              <div aria-busy className="grid h-[210px] grid-rows-[1fr_auto] gap-3">
+              <div aria-busy className="grid grid-rows-[1fr_auto] gap-3" style={{ height }}>
                 <div className="relative">
                   {[0, 1, 2].map((line) => (
                     <i
@@ -261,7 +315,8 @@ export function PortfolioChart(
                 key={rangeId}
                 definition={definition}
                 ariaLabel={title === "Total value" ? "Portfolio value" : String(title)}
-                height={210}
+                height={height}
+                style={{ "--portfolio-chart-marker": signedColor(current?.value ?? 0, PROFIT_COLORS) } as CSSProperties}
                 className="cursor-crosshair touch-pan-y text-caption-sm text-g-500"
                 onFocusChange={(point) => setIndex(point === null ? null : (point.datum as PlotPoint).index)}
                 renderTooltipBody={({ points }) => (

@@ -181,3 +181,44 @@ export const APPROVAL_ORDER = (price: number): TradeOrder => ({
   after: "Nvidia is 29% of your money",
   fee: 0.03
 })
+
+/** Profit and loss to show the chart's split at zero: once across, back and forth, and only ever down. */
+export const PROFIT_EXAMPLES: ReadonlyArray<readonly [state: string, range: PortfolioRange]> = [
+  ["Profit and loss", {
+    id: "All",
+    description: "Since your first trade",
+    points: [
+      { value: 0, label: "Mon 16 Nov" },
+      { value: -12.4, label: "Tue 17 Nov" },
+      { value: 8.15, label: "Wed 18 Nov" },
+      { value: 31.62, label: "Thu 19 Nov" },
+      { value: 24.9, label: "Fri 20 Nov" }
+    ]
+  }],
+  ["Profit crossing zero", {
+    id: "All",
+    description: "Since its first trade",
+    points: [
+      { value: 0, label: "Mon 9 Nov" },
+      { value: 18.3, label: "Tue 10 Nov" },
+      { value: 6.1, label: "Wed 11 Nov" },
+      { value: -14.75, label: "Thu 12 Nov" },
+      { value: -22.4, label: "Fri 13 Nov" },
+      { value: -3.2, label: "Mon 16 Nov" },
+      { value: 11.9, label: "Tue 17 Nov" },
+      { value: 27.45, label: "Wed 18 Nov" },
+      { value: 9.8, label: "Thu 19 Nov" },
+      { value: -8.6, label: "Fri 20 Nov" }
+    ]
+  }],
+  ["All loss", {
+    id: "All",
+    description: "Since your first trade",
+    points: [
+      { value: -1.2, label: "Mon 16 Nov" },
+      { value: -9.85, label: "Tue 17 Nov" },
+      { value: -6.4, label: "Wed 18 Nov" },
+      { value: -15.3, label: "Thu 19 Nov" }
+    ]
+  }]
+]

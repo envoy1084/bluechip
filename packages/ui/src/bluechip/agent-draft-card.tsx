@@ -10,6 +10,10 @@ export interface AgentDraftCardProps {
   readonly detail: ReactNode
   readonly can: ReadonlyArray<string>
   readonly never: ReadonlyArray<string>
+  /** Its limits at a glance, between the headline and its rules: an `AgentGlance`. */
+  readonly glance?: ReactNode
+  /** The most it could do on its worst day, under its rules: a quiet `WorstCaseCard`. */
+  readonly worstCase?: ReactNode
   /** Where it stands: "Not running yet", "Running". */
   readonly state: ReactNode
   readonly tone?: ChatCardTone
@@ -29,15 +33,31 @@ export interface AgentDraftCardProps {
  * Face ID. Nothing runs until it's locked.
  */
 export function AgentDraftCard(
-  { agentId, name, detail, can, never, state, tone = "waiting", footer, problem, children, automations, className }:
-    AgentDraftCardProps
+  {
+    agentId,
+    name,
+    detail,
+    can,
+    never,
+    glance,
+    worstCase,
+    state,
+    tone = "waiting",
+    footer,
+    problem,
+    children,
+    automations,
+    className
+  }: AgentDraftCardProps
 ) {
   return (
     <ChatCard tag="Draft agent" icon="agent" state={state} tone={tone} footer={footer} className={className}>
       {children ?? (
         <>
           <ChatCardHeadline media={<AgentAvatar agentId={agentId} size="lg" />} title={name} detail={detail} />
+          {glance}
           <ChatCardRules can={can} never={never} />
+          {worstCase}
         </>
       )}
       {automations}

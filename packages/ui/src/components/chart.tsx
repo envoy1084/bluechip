@@ -1,11 +1,12 @@
-import { areaY, barY, crosshair, defineChart, dot, group, lineY } from "@tanstack/charts"
+import { areaY, barY, crosshair, defineChart, dot, group, lineY, ruleY } from "@tanstack/charts"
 import { decorative } from "@tanstack/charts/mark/decorative"
 import { Chart } from "@tanstack/charts/react/tooltip"
 import { scaleBand } from "@tanstack/charts/scales/band"
 import { scaleLinear } from "@tanstack/charts/scales/linear"
 import { tooltip } from "@tanstack/charts/tooltip"
-import { useMemo, useState } from "react"
+import { type CSSProperties, useMemo, useState } from "react"
 import { cn } from "../lib/cn.ts"
+import { signedColor, type SignedPaint, signedPaint } from "../lib/zero-split.ts"
 import { useReducedMotion } from "../motion/use-reduced-motion.ts"
 
 // Written out in full: Tailwind only emits the theme variables it finds in the source.
@@ -19,6 +20,7 @@ const SERIES_COLORS = [
   "var(--color-series-7)",
   "var(--color-series-8)"
 ]
+const LOSS = "var(--color-loss)"
 
 export interface ChartSeries {
   readonly key: string
@@ -26,6 +28,11 @@ export interface ChartSeries {
   readonly values: ReadonlyArray<number>
   /** A CSS color; defaults to the next `--color-series-*` token. */
   readonly color?: string
+  /**
+   * An amount that can go below zero, such as profit: in area and line charts its line and fill turn loss red under
+   * zero, which is dashed.
+   */
+  readonly signed?: boolean
 }
 
 export interface ChartProps {
@@ -82,7 +89,10 @@ export const toggleHiddenSeries = (
 
 interface Palette {
   readonly keys: ReadonlyArray<string>
+  /** Each series' line: its color, or a signed series' paint. */
   readonly values: ReadonlyArray<string>
+  readonly colors: ReadonlyArray<string>
+  readonly signed: ReadonlyArray<SignedPaint | null>
 }
 
 interface Options {
@@ -99,14 +109,17 @@ const shared = (palette: Palette, options: Options) => ({
     axis: { line: false, ticks: { size: 0, padding: 6, format: options.formatTick } }
   },
   color: { domain: [...palette.keys], range: [...palette.values] },
-  gradients: palette.values.map((color, index) => ({
-    id: `chart-fill-${index}`,
-    x1: 0,
-    y1: 0,
-    x2: 0,
-    y2: 1,
-    stops: [{ offset: 0, color, opacity: 0.22 }, { offset: 1, color, opacity: 0 }]
-  })),
+  gradients: [
+    ...palette.colors.map((color, index) => ({
+      id: `chart-fill-${index}`,
+      x1: 0,
+      y1: 0,
+      x2: 0,
+      y2: 1,
+      stops: [{ offset: 0, color, opacity: 0.22 }, { offset: 1, color, opacity: 0 }]
+    })),
+    ...palette.signed.flatMap((paint) => paint?.gradients ?? [])
+  ],
   margin: { top: 14, right: 12 },
   focus: "group-x" as const,
   maxFocusDistance: Number.POSITIVE_INFINITY,
@@ -150,6 +163,7 @@ const seriesDefinition = (
 ) => {
   const { y, ...rest } = shared(palette, options)
   const last = rows.filter((row) => row.index === labels.length - 1)
+  const signed = palette.signed.some((paint) => paint !== null)
 
   return defineChart({
     ...rest,
@@ -162,27 +176,35 @@ const seriesDefinition = (
               x: "index",
               y1: 0,
               y2: "value",
-              fill: `url(#chart-fill-${index})`,
+              fill: palette.signed[index]?.area ?? `url(#chart-fill-${index})`,
               fillOpacity: 1
             })
           )
         ) :
         []),
+      ...(signed ?
+        [decorative(
+          ruleY([0], { id: "zero", stroke: "var(--color-ink)", strokeOpacity: 0.4, strokeDasharray: "2 4" })
+        )] :
+        []),
       lineY(rows, { id: "lines", x: "index", y: "value", z: "key", color: "key", strokeWidth: 2 }),
       ...(kind === "line" ?
-        palette.keys.map((key, index) =>
-          decorative(dot(last.filter((row) => row.key === key), {
+        palette.keys.map((key, index) => {
+          const latest = last.filter((row) => row.key === key)
+          const color = palette.colors[index]!
+          return decorative(dot(latest, {
             id: `last-${key}`,
             x: "index",
             y: "value",
             r: 3.5,
-            fill: palette.values[index]!,
+            fill: palette.signed[index] ? signedColor(latest[0]?.value ?? 0, { above: color, below: LOSS }) : color,
             stroke: "#fff",
             strokeWidth: 2
           }))
-        ) :
+        }) :
         []),
-      crosshair({ x: { strokeDasharray: "3 3" }, y: false, marker: true })
+      // A signed line's gradient would paint the marker in two colors, so its stroke follows the point read instead.
+      crosshair({ x: { strokeDasharray: "3 3" }, y: false, marker: signed ? { stroke: "var(--chart-marker)" } : true })
     ],
     scales: {
       x: {
@@ -200,6 +222,10 @@ const seriesDefinition = (
 
 const colorFor = (s: ChartSeries, i: number) => s.color ?? SERIES_COLORS[i % SERIES_COLORS.length]!
 
+/** A point's color: its series', or for a signed series, loss red below zero. */
+const pointColor = (s: ChartSeries, i: number, value: number) =>
+  s.signed ? signedColor(value, { above: colorFor(s, i), below: LOSS }) : colorFor(s, i)
+
 function SeriesChart({
   kind,
   labels,
@@ -212,6 +238,7 @@ function SeriesChart({
   className
 }: ChartProps & { readonly kind: ChartKind }) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set())
+  const [marker, setMarker] = useState<string | undefined>(undefined)
   const reduced = useReducedMotion()
 
   const visible = series.filter((s) => !hidden.has(s.key))
@@ -221,7 +248,20 @@ function SeriesChart({
     const rows = labels.flatMap((label, index) =>
       shown.map(({ s }): Row => ({ index, label, key: s.key, name: s.label, value: s.values[index] ?? 0 }))
     )
-    const palette = { keys: shown.map(({ s }) => s.key), values: shown.map(({ color }) => color) }
+    const signed = shown.map(({ s, color }, i) =>
+      kind !== "bar" && s.signed === true ?
+        signedPaint(`chart-signed-${i}`, labels.map((_, index) => s.values[index] ?? 0), {
+          above: color,
+          below: LOSS
+        }) :
+        null
+    )
+    const palette = {
+      keys: shown.map(({ s }) => s.key),
+      values: shown.map(({ color }, i) => signed[i]?.line ?? color),
+      colors: shown.map(({ color }) => color),
+      signed
+    }
     const options = { formatTick, animate: !reduced }
     return kind === "bar" ?
       { kind, chart: barDefinition(rows, labels, palette, options) } as const :
@@ -235,6 +275,12 @@ function SeriesChart({
     ariaLabel: title,
     height,
     className: "text-caption text-g-500",
+    style: { "--chart-marker": marker } as CSSProperties,
+    onFocusChange: (point: { readonly datum: unknown } | null) => {
+      const row = point?.datum as Row | undefined
+      const index = series.findIndex((s) => s.key === row?.key)
+      setMarker(row === undefined || index === -1 ? undefined : pointColor(series[index]!, index, row.value))
+    },
     renderTooltipBody: ({ points }: { readonly points: ReadonlyArray<{ readonly datum: unknown }> }) => {
       const first = points[0]?.datum as Row | undefined
       if (first === undefined) return null
@@ -247,15 +293,18 @@ function SeriesChart({
           {points.map((point) => {
             const row = point.datum as Row
             const index = series.findIndex((s) => s.key === row.key)
+            const loss = series[index]!.signed === true && row.value < 0
             return (
               <span key={row.key} className="flex items-center gap-2">
                 <i
                   aria-hidden
                   className="size-2 rounded-[2px]"
-                  style={{ background: colorFor(series[index]!, index) }}
+                  style={{ background: pointColor(series[index]!, index, row.value) }}
                 />
                 <span className="text-g-600">{row.name}</span>
-                <b className="ml-auto pl-3 font-semibold text-ink tabular-nums">{formatValue(row.value)}</b>
+                <b className={cn("ml-auto pl-3 font-semibold tabular-nums", loss ? "text-loss" : "text-ink")}>
+                  {formatValue(row.value)}
+                </b>
               </span>
             )
           })}

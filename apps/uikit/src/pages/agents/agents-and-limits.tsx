@@ -6,6 +6,7 @@ import { LimitEditor } from "@bluechip/ui/bluechip/limit-editor"
 import { PermissionCard } from "@bluechip/ui/bluechip/permission-card"
 import { PresetPicker } from "@bluechip/ui/bluechip/preset-picker"
 import { AGENT_TEMPLATES, type AgentTemplate, TemplatePicker } from "@bluechip/ui/bluechip/template-picker"
+import { UsageDial } from "@bluechip/ui/bluechip/usage-dial"
 import { UsageMeter } from "@bluechip/ui/bluechip/usage-meter"
 import { UsageRing } from "@bluechip/ui/bluechip/usage-ring"
 import { Button } from "@bluechip/ui/components/button"
@@ -290,6 +291,30 @@ export function UsageRingSection() {
         </Demo>
         <Demo label="Nothing yet">
           <UsageRing label="Lost to prices" used={0} limit={50} format={usd} detail="This week" />
+        </Demo>
+      </States>
+    </Section>
+  )
+}
+
+export function UsageDialSection() {
+  return (
+    <Section
+      title="Usage dial"
+      purpose="The top of an agent's Usage page: its daily budget against the clock. The thick ring fills as the budget is used, the thin one as the day goes, so a glance says whether it is spending ahead of the day. What's left rolls in the middle."
+    >
+      <States>
+        <Demo label="Room left" className="justify-center">
+          <UsageDial label="Daily budget" used={180} limit={500} dayGone={0.42} format={usd} />
+        </Demo>
+        <Demo label="Ahead of the day" className="justify-center">
+          <UsageDial label="Daily budget" used={420} limit={500} dayGone={0.35} format={usd} />
+        </Demo>
+        <Demo label="Used up" className="justify-center">
+          <UsageDial label="Trades today" used={5} limit={5} dayGone={0.6} />
+        </Demo>
+        <Demo label="No limit" className="justify-center">
+          <UsageDial label="Daily budget" used={120} limit={null} dayGone={0.5} format={usd} />
         </Demo>
       </States>
     </Section>

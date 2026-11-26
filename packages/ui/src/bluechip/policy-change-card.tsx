@@ -42,6 +42,8 @@ export interface PolicyChangeCardProps {
   readonly changes?: ReadonlyArray<{ readonly title: string; readonly change: RuleChange }>
   /** The update gives the agent more room than it has now. */
   readonly looser?: boolean
+  /** Its limits at a glance after an update: an `AgentGlance`. */
+  readonly glance?: ReactNode
   /** What the agent can and can never do after an update. */
   readonly can?: ReadonlyArray<string>
   readonly never?: ReadonlyArray<string>
@@ -63,6 +65,7 @@ export function PolicyChangeCard(
     note,
     changes = NO_CHANGES,
     looser = false,
+    glance,
     can = NONE,
     never = NONE,
     state,
@@ -96,6 +99,7 @@ export function PolicyChangeCard(
           {looser ?
             <ChatCardNote icon="warning" tone="warn">This gives the agent more room than it has now.</ChatCardNote> :
             null}
+          {glance}
           <ChatCardRules can={can} never={never} />
         </>
       )}

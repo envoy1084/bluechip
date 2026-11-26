@@ -1,7 +1,8 @@
-/* The 30 illustration objects. Each is ONE drawing: a list of shapes on the 20 × 20 grid, each with a material.
+/* The illustration objects. Each is ONE drawing: a list of shapes on the 20 × 20 grid, each with a material.
    `pixel.ts` and `halftone.ts` both read it, so the two styles can never drift apart. Ported from the kit
    (illustrations.js); `draw(t)` takes seconds for the objects that move in halftone. */
 import type { Palette } from "../motion/halftone/engine.ts"
+import { LEDGER_OBJECTS } from "./ledger-objects.ts"
 import { disc, ell, line, type MaterialKey, type Point, poly, rect, ring, type Shape, turn } from "./shapes.ts"
 
 export interface IllustrationObject {
@@ -550,7 +551,8 @@ export const OBJECTS = {
         poly(lift([[1.8, 9.2], [18.4, 2.4], [8.6, 11.8]]), "W")
       ]
     }
-  }
+  },
+  ...LEDGER_OBJECTS
 } as const satisfies Record<string, IllustrationObject>
 
 export type IllustrationName = keyof typeof OBJECTS

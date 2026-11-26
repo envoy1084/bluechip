@@ -67,6 +67,12 @@ export const VALUE_SERIES: ReadonlyArray<ChartSeries> = [
   { key: "cash", label: "Cash", values: CASH_VALUE }
 ]
 export const CASH_SERIES: ReadonlyArray<ChartSeries> = [{ key: "cash", label: "Cash", values: CASH_VALUE }]
+export const PROFIT_SERIES: ReadonlyArray<ChartSeries> = [{
+  key: "profit",
+  label: "Profit",
+  values: walk(0, (i, last) => last + Math.sin(i * 0.7) * 48 + Math.cos(i * 0.33) * 20 - 6),
+  signed: true
+}]
 export const WEEKS = ["Oct 6", "Oct 13", "Oct 20", "Oct 27", "Nov 3", "Nov 10", "Nov 17", "Nov 24"]
 export const FLOW_SERIES: ReadonlyArray<ChartSeries> = [
   { key: "bought", label: "Bought", values: [420, 380, 610, 290, 540, 470, 720, 380] },

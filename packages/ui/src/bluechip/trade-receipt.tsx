@@ -59,3 +59,47 @@ export function TradeReceipt(
     </section>
   )
 }
+
+export interface TradeFillProps {
+  readonly side: "buy" | "sell"
+  /** What was paid or received, in dollars. */
+  readonly total: number
+  readonly shares: number
+  /** The price it filled at, for one share. */
+  readonly price: number
+  /** The transaction on Base, for the BaseScan link under the facts. */
+  readonly txHash?: string
+  readonly className?: string
+}
+
+/**
+ * What a filled trade moved, compact for a card or a row: paid or got, shares and the price they make, side by side on
+ * a recessed panel, with the transaction on Base.
+ */
+export function TradeFill({ side, total, shares, price, txHash, className }: TradeFillProps) {
+  const facts = [
+    { label: side === "buy" ? "Paid" : "Got", value: formatMoney(total) },
+    { label: side === "buy" ? "Shares bought" : "Shares sold", value: formatShareCount(shares) },
+    { label: "Price", value: `${formatMoney(price)} a share` }
+  ]
+
+  return (
+    <div data-slot="trade-fill" className={cn("grid gap-1.5", className)}>
+      <dl className="grid grid-cols-3 gap-3 rounded-[10px] px-3 py-2.5 surface-well">
+        {facts.map((fact) => (
+          <div key={fact.label} className="grid gap-0.5">
+            <dt className="text-caption text-g-500">{fact.label}</dt>
+            <dd className="text-[13.5px] font-semibold tabular-nums">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {txHash === undefined ?
+        null :
+        (
+          <OutcomeLink href={`https://basescan.org/tx/${txHash}`} className="justify-self-end">
+            View on BaseScan
+          </OutcomeLink>
+        )}
+    </div>
+  )
+}

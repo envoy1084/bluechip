@@ -8,6 +8,7 @@ import {
   PresetSection,
   StatusSection,
   TemplateSection,
+  UsageDialSection,
   UsageRingSection,
   UsageSection
 } from "../pages/agents/agents-and-limits.tsx"
@@ -41,6 +42,7 @@ function KitAgents() {
         <PermissionSection />
         <UsageSection />
         <UsageRingSection />
+        <UsageDialSection />
         <PresetSection />
         <LimitEditorSection />
         <TemplateSection />

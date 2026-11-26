@@ -1,4 +1,4 @@
-import { AreaChart, BarChart, formatChartTick, toggleHiddenSeries } from "@bluechip/ui/components/chart"
+import { AreaChart, BarChart, formatChartTick, LineChart, toggleHiddenSeries } from "@bluechip/ui/components/chart"
 import { assert, describe, expect, it } from "@effect/vitest"
 import { render } from "vitest-browser-react"
 import { userEvent } from "vitest/browser"
@@ -106,6 +106,32 @@ describe("Chart", () => {
     it("a series with no value for a label reads $0 there", async () => {
       const screen = await focusPlot({ series: [{ key: "stocks", label: "Stocks", values: [] }] })
       await expect.element(screen.getByRole("status")).toHaveTextContent("Nov 17Stocks$0")
+    })
+  })
+
+  describe("signed series", () => {
+    const profit = [{ key: "profit", label: "Profit", values: [30, -10, 0], signed: true }]
+    const stopsOf = (container: HTMLElement, id: string) =>
+      [...container.querySelectorAll(`[data-ts-key^='gradient:${id}:stop']`)].map((stop) => [
+        stop.getAttribute("offset"),
+        stop.getAttribute("stop-color")
+      ])
+
+    it("a line splits at zero into its color and loss red", async () => {
+      const screen = await render(<LineChart title="Profit" labels={labels} series={profit} />)
+      await expect.element(screen.getByRole("img", { name: "Profit" })).toBeVisible()
+      expect(stopsOf(screen.container, "chart-signed-0-line")).toEqual([
+        ["0%", "var(--color-series-1)"],
+        ["75%", "var(--color-series-1)"],
+        ["75%", "var(--color-loss)"],
+        ["100%", "var(--color-loss)"]
+      ])
+    })
+
+    it("a series that isn't signed keeps one color", async () => {
+      const screen = await render(<LineChart title="Portfolio" labels={labels} series={series} />)
+      await expect.element(screen.getByRole("img", { name: "Portfolio" })).toBeVisible()
+      expect(screen.container.querySelector("[data-ts-key^='gradient:chart-signed']")).toBeNull()
     })
   })
 

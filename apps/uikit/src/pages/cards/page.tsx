@@ -7,6 +7,7 @@ import {
   SaveTemplateSection,
   ToolRowSection
 } from "./confirm.tsx"
+import { GlanceSection, PlanSection, ResultSection } from "./results.tsx"
 import { AgentTradeSection, DraftAgentSection, PolicyChangeSection, TradeApprovalSection } from "./trades.tsx"
 
 export function KitCards() {
@@ -35,6 +36,11 @@ export function KitCards() {
         <ResearchSection />
         <ToolRowSection />
         <NoticeSection />
+      </Group>
+      <Group n="04" title="What tools read">
+        <ResultSection />
+        <PlanSection />
+        <GlanceSection />
       </Group>
     </div>
   )

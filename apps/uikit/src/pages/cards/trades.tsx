@@ -1,9 +1,13 @@
 import { AgentDraftCard } from "@bluechip/ui/bluechip/agent-draft-card"
+import { AgentGlance } from "@bluechip/ui/bluechip/agent-glance"
 import { ChatCard } from "@bluechip/ui/bluechip/chat-card"
+import { FairPriceCheck, OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { Outcome } from "@bluechip/ui/bluechip/outcome"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
 import { PolicyChangeCard } from "@bluechip/ui/bluechip/policy-change-card"
 import { TradeApprovalCard } from "@bluechip/ui/bluechip/trade-approval-card"
+import { TradeFill } from "@bluechip/ui/bluechip/trade-receipt"
+import { WorstCaseCard } from "@bluechip/ui/bluechip/worst-case-card"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useState } from "react"
@@ -14,6 +18,28 @@ const OPEN = (
   <Button variant="secondary">
     Open Nimbus<Icon name="arrow-right" size={16} />
   </Button>
+)
+
+const PICKER_GLANCE = (
+  <AgentGlance
+    stocks={["NVDA", "AAPL"]}
+    direction="Buys and sells"
+    stats={[{ label: "A day", value: "$250" }, { label: "Per trade", value: "$100" }, {
+      label: "Trades a day",
+      value: "5"
+    }]}
+  />
+)
+
+const APPLE_ORDER = (
+  <OrderPreview>
+    <OrderPreviewRow label="You pay">$50.00</OrderPreviewRow>
+    <OrderPreviewRow label="Price">$190.62 a share</OrderPreviewRow>
+    <OrderPreviewRow label="You get about">0.2623 shares</OrderPreviewRow>
+    <OrderPreviewRow label="Fair price check">
+      <FairPriceCheck>Within 1%</FairPriceCheck>
+    </OrderPreviewRow>
+  </OrderPreview>
 )
 
 export function TradeApprovalSection() {
@@ -27,14 +53,15 @@ export function TradeApprovalSection() {
   return (
     <Section
       title="Your trade"
-      purpose="Your own trade from chat, prepared for Face ID. After you approve, the same card turns into the trade's end: a short wait, then what it bought."
+      purpose="Your own trade from chat, prepared for Face ID, with exactly what it does at the quoted price. After you approve, the same card turns into the trade's end: a short wait, then what it bought, with its receipt."
     >
       <Demo className="justify-center">
         {signed === "no" ?
           (
             <TradeApprovalCard
               title="Buy $50.00 of Apple"
-              detail="About 0.2623 shares at $190.62 each"
+              detail="At the pool's price now, checked against Chainlink's"
+              preview={APPLE_ORDER}
               reason="You asked for $50 of Apple."
               action={<PasskeyButton doneLabel="Sent" onAuthenticate={approve}>Buy with Face ID</PasskeyButton>}
             />
@@ -51,6 +78,9 @@ export function TradeApprovalSection() {
                   <Button variant="secondary" onClick={() => setSigned("no")}>Trade again</Button> :
                   undefined}
               />
+              {signed === "filled" ?
+                <TradeFill side="buy" total={50} shares={0.2623} price={190.62} txHash={`0x${"5e".repeat(32)}`} /> :
+                null}
             </ChatCard>
           )}
       </Demo>
@@ -144,7 +174,7 @@ export function DraftAgentSection() {
   return (
     <Section
       title="Draft agent"
-      purpose="An agent drafted from chat: what it can and never does, Customize to change it, Face ID to lock it. Once locked the card says so in place."
+      purpose="An agent drafted from chat: its limits at a glance, what it can and never does, the most it could do on its worst day, Customize to change it, Face ID to lock it. Once locked the card says so in place."
     >
       <Demo className="justify-center">
         <AgentDraftCard
@@ -152,6 +182,14 @@ export function DraftAgentSection() {
           name="Nimbus"
           detail="Runs for 90 days once locked. Pause it any time."
           {...PICKER_RULES}
+          glance={PICKER_GLANCE}
+          worstCase={
+            <WorstCaseCard tone="quiet">
+              On its worst day it could spend $250 in up to 5 trades of $100, $1,750 in a week. Each trade stays close
+              to Chainlink's price, so prices could cost it at most $5 a day, $35 a week. It can never send money out of
+              your account.
+            </WorstCaseCard>
+          }
           state={state === "draft" ? "Not running yet" : state === "locking" ? "Locking on Base" : "Running"}
           tone={state === "live" ? "done" : state === "locking" ? "quiet" : "waiting"}
           footer={footer}
@@ -198,6 +236,7 @@ export function PolicyChangeSection() {
           note="Its new rules are locked onchain once you approve."
           changes={CHANGES}
           looser
+          glance={PICKER_GLANCE}
           {...PICKER_RULES}
           state="Needs Face ID"
           footer={<PasskeyButton doneLabel="Sent" onAuthenticate={faceId}>Approve with Face ID</PasskeyButton>}

@@ -148,6 +148,28 @@ describe("PortfolioChart", () => {
       expect(changeOf(screen.container)).toBeUndefined()
     })
 
+    it("splits the line at zero: blue above, loss red below", async () => {
+      const screen = await render(
+        <PortfolioChart
+          ranges={[{
+            id: "All",
+            description: "Since your first trade",
+            points: [{ value: 0, label: "Mon" }, { value: -10, label: "Tue" }, { value: 30, label: "Wed" }]
+          }]}
+          title="Profit and loss"
+          measure="profit"
+        />
+      )
+      await expect.element(screen.getByRole("img", { name: "Profit and loss" })).toBeVisible()
+      const stops = [...screen.container.querySelectorAll("[data-ts-key^='gradient:portfolio-profit-line:stop']")]
+      expect(stops.map((stop) => [stop.getAttribute("offset"), stop.getAttribute("stop-color")])).toEqual([
+        ["0%", "#2a5bff"],
+        ["75%", "#2a5bff"],
+        ["75%", "#cc3519"],
+        ["100%", "#cc3519"]
+      ])
+    })
+
     it("invites a first trade when there is nothing to plot", async () => {
       const screen = await render(
         <PortfolioChart

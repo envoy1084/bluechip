@@ -38,7 +38,7 @@ function KitIllustrations() {
           <span className="text-caption-sm font-semibold tracking-[.06em] text-blue uppercase">Illustrations</span>
           <h1 className="text-display-3 font-semibold">Small objects, drawn two ways.</h1>
           <p className="max-w-[64ch] text-body-lg text-g-600">
-            Twenty-three objects for the moments that need more than an icon: an empty list, a first deposit, a trade
+            Thirty-five objects for the moments that need more than an icon: an empty list, a first deposit, a trade
             your limits stopped. Each one is a single drawing that renders as crisp pixel art in the interface and as
             Base-style line halftone when it is large.
           </p>

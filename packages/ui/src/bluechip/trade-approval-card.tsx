@@ -14,6 +14,8 @@ export interface TradeApprovalCardProps {
   readonly warnings?: ReadonlyArray<string>
   /** Its first transaction also sets the account up on Base. */
   readonly setsUpAccount?: boolean
+  /** Exactly what it does at the quoted price, under the title: an order preview. */
+  readonly preview?: ReactNode
   /** The Face ID button. */
   readonly action: ReactNode
   readonly problem?: string | null
@@ -24,11 +26,12 @@ export interface TradeApprovalCardProps {
  * one button. Nothing happens unless you approve it.
  */
 export function TradeApprovalCard(
-  { title, detail, reason, warnings = NONE, setsUpAccount = false, action, problem }: TradeApprovalCardProps
+  { title, detail, reason, warnings = NONE, setsUpAccount = false, preview, action, problem }: TradeApprovalCardProps
 ) {
   return (
     <ChatCard tag="Your trade" icon="face-id" state="Needs Face ID" footer={action}>
       <ChatCardHeadline title={title} detail={detail} />
+      {preview}
       {reason === undefined || reason === "" ? null : <p className="text-[13.5px] text-g-700">{reason}</p>}
       {warnings.map((warning) => <ChatCardNote key={warning} icon="warning" tone="warn">{warning}</ChatCardNote>)}
       {setsUpAccount ?

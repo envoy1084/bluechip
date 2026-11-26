@@ -9,7 +9,17 @@ import { ToggleGroup, ToggleGroupItem } from "@bluechip/ui/components/toggle-gro
 import { Icon } from "@bluechip/ui/icons/icon"
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { useState } from "react"
-import { AGENTS, CASH_SERIES, DAY_LABELS, FEE_SERIES, FLOW_SERIES, STOCKS, VALUE_SERIES, WEEKS } from "./data.ts"
+import {
+  AGENTS,
+  CASH_SERIES,
+  DAY_LABELS,
+  FEE_SERIES,
+  FLOW_SERIES,
+  PROFIT_SERIES,
+  STOCKS,
+  VALUE_SERIES,
+  WEEKS
+} from "./data.ts"
 import { Caption, Demo, Section, Status, Ticker } from "./layout.tsx"
 
 export function ChartSection() {
@@ -70,6 +80,17 @@ export function ChartSection() {
             height={180}
             formatValue={(value) => formatMoney(value)}
             formatTick={(value) => `$${value}`}
+          />
+        </Card>
+        <Card className="gap-3 pb-4 lg:col-span-2">
+          <CardDescription>A signed series: loss red below a dashed zero</CardDescription>
+          <AreaChart
+            title="Profit and loss, last 30 days"
+            labels={DAY_LABELS}
+            series={PROFIT_SERIES}
+            height={180}
+            showLegend={false}
+            formatValue={(value) => formatMoney(value, { signed: true })}
           />
         </Card>
       </div>

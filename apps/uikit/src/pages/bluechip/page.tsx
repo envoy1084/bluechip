@@ -25,6 +25,7 @@ import {
   FIRST_ACTIVITY,
   HOLDINGS,
   portfolioRanges,
+  PROFIT_EXAMPLES,
   type Quote,
   RESERVE,
   SENDER,
@@ -195,7 +196,8 @@ export function KitBluechip() {
             "Ranges are tabs: 1D, 1W, 1M, All",
             "Crosshair snaps to the nearest point",
             "Keyboard: focus the chart, ← → Home End",
-            "measure=\"profit\": signed amounts and no percent, for profit and loss"
+            "measure=\"profit\": signed amounts and no percent, for profit and loss",
+            "A profit fills to a dashed zero and turns loss red below it; its headline takes the gain or loss color"
           ]}
           states={[
             ["Loading", <PortfolioChart key="l" ranges={[]} loading className="shadow-none" />, true],
@@ -204,27 +206,19 @@ export function KitBluechip() {
               <PortfolioChart key="e" ranges={[{ id: "All", description: "", points: [] }]} className="shadow-none" />,
               true
             ],
-            [
-              "Profit and loss",
-              <PortfolioChart
-                key="p"
-                title="Profit and loss"
-                measure="profit"
-                ranges={[{
-                  id: "All",
-                  description: "Since your first trade",
-                  points: [
-                    { value: 0, label: "Mon 16 Nov" },
-                    { value: -12.4, label: "Tue 17 Nov" },
-                    { value: 8.15, label: "Wed 18 Nov" },
-                    { value: 31.62, label: "Thu 19 Nov" },
-                    { value: 24.9, label: "Fri 20 Nov" }
-                  ]
-                }]}
-                className="shadow-none"
-              />,
-              true
-            ]
+            ...PROFIT_EXAMPLES.map(([state, range]) =>
+              [
+                state,
+                <PortfolioChart
+                  key={state}
+                  title="Profit and loss"
+                  measure="profit"
+                  ranges={[range]}
+                  className="shadow-none"
+                />,
+                true
+              ] as const
+            )
           ]}
         >
           <PortfolioChart ranges={portfolioRanges(total, dayChange)} defaultRange="1M" />
