@@ -1,4 +1,5 @@
 import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
+import { ThemePicker } from "@bluechip/ui/bluechip/theme-picker"
 import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { Input } from "@bluechip/ui/components/input"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
@@ -20,7 +21,7 @@ function Section(
   { title, description, children }: Readonly<{ title: string; description: string; children: ReactNode }>
 ) {
   return (
-    <section className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2">
+    <section className="rounded-lg bg-surface px-[22px] pt-0.5 pb-1 shadow-e2">
       <div className="grid gap-1 border-b border-g-100 pt-[18px] pb-3.5">
         <h3 className="text-base font-semibold tracking-[-0.02em]">{title}</h3>
         <p className="text-[13.5px] text-g-600">{description}</p>
@@ -41,7 +42,7 @@ function Row(
         {icon === undefined ?
           null :
           (
-            <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] bg-[linear-gradient(180deg,#fff,#f1f3f6)] text-g-600 shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(10,11,13,.08)]">
+            <span className="grid size-[38px] shrink-0 place-items-center rounded-[11px] bg-[linear-gradient(180deg,var(--color-surface),var(--color-g-100))] text-g-600 shadow-[var(--inset-shadow-hi),0_0_0_1px_color-mix(in_srgb,var(--color-ink)_8%,transparent)]">
               <Icon name={icon} size={18} />
             </span>
           )}
@@ -122,6 +123,11 @@ export function SettingsScreen() {
             />
           )) :
           null}
+      </Section>
+      <Section title="Appearance" description="How bluechip looks in this browser.">
+        <Row title="Theme" description="System follows your device's light or dark setting.">
+          <ThemePicker />
+        </Row>
       </Section>
       <Section title="Assistant" description="What the assistant knows about you is yours to see and delete.">
         <Row title="Memory" description="Preferences, rules, goals and facts it uses to answer you." icon="book">
