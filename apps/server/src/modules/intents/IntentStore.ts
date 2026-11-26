@@ -25,6 +25,7 @@ import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { intents } from "./tables.ts"
 
@@ -121,6 +122,7 @@ export class IntentStore extends Context.Service<IntentStore, {
     Effect.gen(function*() {
       const db = yield* Database
       const live = yield* LiveEvents
+      const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const journal = yield* AgentJournal
 
@@ -213,12 +215,25 @@ export class IntentStore extends Context.Service<IntentStore, {
           // Set only from the status it was read in: of two moves from one status (a decline and a send), the second
           // finds the status changed and loses.
           const decision = event._tag === "Decided" ? { decision: event.decision } : {}
-          const [updated] = yield* db.update(intents)
-            .set({ ...changes, ...decision, status: next.success, updatedAt: yield* DateTime.now })
-            .where(and(eq(intents.id, row.id), eq(intents.status, row.status))).returning().pipe(Effect.orDie)
+          const now = yield* DateTime.now
+          // The change and its event in the notifications' outbox, in one transaction.
+          const updated = yield* db.transaction(() =>
+            Effect.gen(function*() {
+              const [updated] = yield* db.update(intents)
+                .set({ ...changes, ...decision, status: next.success, updatedAt: now })
+                .where(and(eq(intents.id, row.id), eq(intents.status, row.status))).returning()
+              if (updated !== undefined) {
+                yield* outbox.write(
+                  LiveEvent.cases.IntentChanged.make({ intent: toIntent(updated) }),
+                  row.userId as UserId
+                )
+              }
+              return updated
+            })
+          ).pipe(Effect.orDie)
           if (updated === undefined) return yield* new Conflict({ reason: "intentChanged" })
 
-          // The agent's journal first, so whoever hears of the change can read it there.
+          // The agent's journal next, so whoever hears of the change can read it there.
           const intent = toIntent(updated)
           const entry = intent.agentId === null ? undefined : journalOfIntent(intent, nameOf)
           if (entry !== undefined) {

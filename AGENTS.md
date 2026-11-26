@@ -315,8 +315,10 @@ To add a trigger, condition or action:
 
 ## Notifications: to add a kind, a notifier or a chat platform
 
-Features never send messages. They say what happened: a live event (`LiveEvents`, which `NotificationFanout` reads)
-or `Notifications.add` with a draft. `Notifications` stores it in your center once (`dedupe_key`), publishes
+Features never send messages. They say what happened: an event written to the notifications' outbox
+(`NotificationOutbox.write`) in the transaction of the change it tells, then published live (`LiveEvents`), which wakes
+`NotificationFanout` to turn the user's outbox rows into notifications (at least once; `OutboxCron` sweeps what a
+stopped process left), or `Notifications.add` with a draft. `Notifications` stores it in your center once (`dedupe_key`), publishes
 `NotificationAdded`, and starts a `DeliverNotification` workflow per channel its rule picks (quiet hours wait on a
 durable clock; a platform that says try again is retried). Domain in `packages/domain/src/notifications/` and
 `channels/`, server in `apps/server/src/modules/notifications/`, `push/` and `channels/`.
@@ -328,7 +330,7 @@ To add a notification kind:
    `Drafts.ts` (account safety in `SecurityDrafts.ts`), a pure function of what happened with a `dedupeKey`, tested
    with a table in `test/unit/notifications/`. A kind that offers an action where it lands (Pause all, Cancel
    recovery) says so in `actionsOf` (`Actions.ts`): the bell and Telegram show its buttons.
-2. **Server.** Make it from a live event in `Fanout.ts`, from time in `Reminders.ts`, or with `Notifications.add`
+2. **Server.** Make it from an outbox event in `Fanout.ts`, from time in `Reminders.ts`, or with `Notifications.add`
    where it happens. Never call a notifier.
 3. **Web.** Nothing: the settings page and the bell are built from the catalog.
 

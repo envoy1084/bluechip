@@ -12,6 +12,7 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { AgentSessions, type SessionRow } from "./AgentSessions.ts"
 import { agents, agentSessions } from "./tables.ts"
@@ -77,6 +78,7 @@ export class AgentStore extends Context.Service<AgentStore, {
     Effect.gen(function*() {
       const db = yield* Database
       const live = yield* LiveEvents
+      const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const sessions = yield* AgentSessions
 
@@ -174,9 +176,19 @@ export class AgentStore extends Context.Service<AgentStore, {
         changes: Partial<AgentRow>,
         change?: "paused" | "renewed" | undefined
       ) {
-        const [updated] = yield* db.update(agents).set({ ...changes, updatedAt: yield* DateTime.now })
-          .where(eq(agents.id, row.id)).returning().pipe(Effect.orDie)
-        const agent = yield* agentOf(updated!)
+        const now = yield* DateTime.now
+        // A change notifications tell is written to their outbox in the change's transaction.
+        const { agent, updated } = yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const [updated] = yield* db.update(agents).set({ ...changes, updatedAt: now })
+              .where(eq(agents.id, row.id)).returning()
+            const agent = yield* agentOf(updated!)
+            if (change !== undefined) {
+              yield* outbox.write(LiveEvent.cases.AgentChanged.make({ agent, change }), row.userId as UserId)
+            }
+            return { agent, updated }
+          })
+        ).pipe(Effect.orDie)
         // Pauses, resumes and each step of a lock, change, renewal or removal. Landing (active, removed) and an end
         // (expired) are bluechip following the chain; the rest is you.
         const action = changes.paused !== undefined && changes.paused !== row.paused ?

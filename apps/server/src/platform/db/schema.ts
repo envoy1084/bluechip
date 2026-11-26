@@ -14,6 +14,7 @@ export { ledgerAdjustments, lotClosings, lots, pnlDaily, reconciliationCursors }
 export { conversationSummaries, memories, memoryUses, recallEntries } from "../../modules/memory/tables.ts"
 export {
   notificationDeliveries,
+  notificationOutbox,
   notificationRules,
   notifications,
   notificationSettings

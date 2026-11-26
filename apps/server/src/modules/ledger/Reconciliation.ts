@@ -22,6 +22,7 @@ import { transfers } from "../funding/tables.ts"
 import { toTransfer } from "../funding/Transfers.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Notifications } from "../notifications/Notifications.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { trades } from "../trading/tables.ts"
 import { Ledger } from "./Ledger.ts"
@@ -67,6 +68,7 @@ export class Reconciliation extends Context.Service<Reconciliation, {
       const market = yield* MarketPrices
       const ledger = yield* Ledger
       const live = yield* LiveEvents
+      const outbox = yield* NotificationOutbox
       const notifications = yield* Notifications
       const balances = yield* AccountBalances
 
@@ -248,6 +250,7 @@ export class Reconciliation extends Context.Service<Reconciliation, {
                     settledAt: now
                   }).returning()
                   transferRows.push(row!)
+                  yield* outbox.write(LiveEvent.cases.TransferUpdated.make({ transfer: toTransfer(row!) }), userId)
                 }
 
                 const adjustmentRows = result.adjustments.length === 0 ?

@@ -21,6 +21,7 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { automationRuns, automations, judgments } from "./tables.ts"
 
 export type RunRow = typeof automationRuns.$inferSelect
@@ -95,6 +96,7 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
       const db = yield* Database
       const journal = yield* AgentJournal
       const live = yield* LiveEvents
+      const outbox = yield* NotificationOutbox
 
       // The agent's automation a run belongs to, when it trades for an agent.
       const agentAutomationOf = Effect.fnUntraced(function*(runId: string) {
@@ -147,12 +149,25 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
         readonly conditions: ReadonlyArray<ConditionRecord>
         readonly intentIds: ReadonlyArray<string>
       }) {
-        const [row] = yield* db.update(automationRuns).set({
-          outcome: result.outcome,
-          reason: result.reason,
-          conditions: result.conditions,
-          intentIds: [...result.intentIds]
-        }).where(eq(automationRuns.id, id as `run_${string}`)).returning().pipe(Effect.orDie)
+        // The run's end and its event in the notifications' outbox, in one transaction.
+        const { event, row } = yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const [row] = yield* db.update(automationRuns).set({
+              outcome: result.outcome,
+              reason: result.reason,
+              conditions: result.conditions,
+              intentIds: [...result.intentIds]
+            }).where(eq(automationRuns.id, id as `run_${string}`)).returning()
+            const [owned] = yield* db.select({ name: automations.name }).from(automations)
+              .where(eq(automations.id, row!.automationId))
+            const event = LiveEvent.cases.AutomationRan.make({
+              run: toRun(row!),
+              automationName: owned?.name ?? "An automation"
+            })
+            yield* outbox.write(event, row!.userId as UserId)
+            return { event, row }
+          })
+        ).pipe(Effect.orDie)
 
         const automation = yield* agentAutomationOf(id)
         if (automation !== undefined) {
@@ -164,12 +179,7 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
             refs: { automationId: automation.automationId as AutomationId, runId: id as AutomationRunId }
           })
         }
-        const [owned] = yield* db.select({ name: automations.name }).from(automations)
-          .where(eq(automations.id, row!.automationId)).pipe(Effect.orDie)
-        yield* live.publish(
-          LiveEvent.cases.AutomationRan.make({ run: toRun(row!), automationName: owned?.name ?? "An automation" }),
-          row!.userId as UserId
-        )
+        yield* live.publish(event, row!.userId as UserId)
         return row!
       })
 

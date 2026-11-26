@@ -65,6 +65,8 @@ import { DigestCron } from "./modules/notifications/DigestCron.ts"
 import { NotificationFanout } from "./modules/notifications/Fanout.ts"
 import { Notifications } from "./modules/notifications/Notifications.ts"
 import { Notifiers } from "./modules/notifications/Notifiers.ts"
+import { NotificationOutbox } from "./modules/notifications/Outbox.ts"
+import { OutboxCron } from "./modules/notifications/OutboxCron.ts"
 import { ReminderCron } from "./modules/notifications/ReminderCron.ts"
 import { Reminders } from "./modules/notifications/Reminders.ts"
 import { Drift } from "./modules/performance/Drift.ts"
@@ -112,7 +114,8 @@ const Schedules = Layer.unwrap(Effect.gen(function*() {
     PortfolioWatcher.watch,
     NewsWatcher.watch,
     ReminderCron,
-    DigestCron
+    DigestCron,
+    OutboxCron
   )
 }))
 
@@ -130,13 +133,13 @@ export const ServicesLive = Layer.mergeAll(
   KnowledgeRefreshCron,
   Knowledge.refreshOnStart,
   FireAutomationLive,
-  NotificationFanout,
+  NotificationFanout.listen,
   DeliverNotificationLive,
   AnswerChatMessageLive,
   ChatHandlerLive,
   BotInteractionsLive
 ).pipe(
-  Layer.provideMerge(Layer.mergeAll(ChatBot.layer, Deliveries.layer, Reminders.layer)),
+  Layer.provideMerge(Layer.mergeAll(ChatBot.layer, Deliveries.layer, Reminders.layer, NotificationFanout.layer)),
   Layer.provideMerge(Layer.mergeAll(Assistant.layer, Notifiers.layer)),
   Layer.provideMerge(Layer.mergeAll(PushNotifier.layer, ChatNotifier.layer)),
   Layer.provideMerge(
@@ -209,7 +212,8 @@ export const ServicesLive = Layer.mergeAll(
       RecallIndex.layer,
       PushSubscriptions.layer,
       PushConfig.layer,
-      TelegramConfig.layer
+      TelegramConfig.layer,
+      NotificationOutbox.layer
     )
   )
 )

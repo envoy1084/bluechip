@@ -25,6 +25,7 @@ import { encodeFunctionData, erc20Abi, getAddress, type Hex, isAddress, zeroAddr
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { Accounts } from "../accounts/Accounts.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { OwnerOperations, type OwnerPasskey } from "../signing/OwnerOperations.ts"
 import { type Owner, type SigningRequestRow, SigningRequests } from "../signing/SigningRequests.ts"
@@ -53,6 +54,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
       const db = yield* Database
       const chain = yield* ChainClient
       const live = yield* LiveEvents
+      const outbox = yield* NotificationOutbox
       const balances = yield* AccountBalances
       const owners = yield* Accounts
       const operations = yield* OwnerOperations
@@ -74,11 +76,24 @@ export class Withdrawals extends Context.Service<Withdrawals, {
         function*(transferId: string, owner: Owner, passkey: OwnerPasskey, userOpHash: Hex) {
           const outcome = yield* operations.wait(passkey, userOpHash).pipe(Effect.result)
           const settledAt = yield* DateTime.now
-          const [row] = yield* db.update(transfers).set(
-            outcome._tag === "Success"
-              ? { status: outcome.success.success ? "confirmed" : "failed", txHash: outcome.success.txHash, settledAt }
-              : { status: "failed", settledAt }
-          ).where(eq(transfers.id, transferId as `transfer_${string}`)).returning().pipe(Effect.orDie)
+          // The withdrawal's end and its event in the notifications' outbox, in one transaction.
+          const row = yield* db.transaction(() =>
+            Effect.gen(function*() {
+              const [row] = yield* db.update(transfers).set(
+                outcome._tag === "Success"
+                  ? {
+                    status: outcome.success.success ? "confirmed" : "failed",
+                    txHash: outcome.success.txHash,
+                    settledAt
+                  }
+                  : { status: "failed", settledAt }
+              ).where(eq(transfers.id, transferId as `transfer_${string}`)).returning()
+              if (row !== undefined) {
+                yield* outbox.write(LiveEvent.cases.TransferUpdated.make({ transfer: toTransfer(row) }), owner.id)
+              }
+              return row
+            })
+          ).pipe(Effect.orDie)
 
           // Fresh balances before the events, so a client that refetches on them already sees the money gone.
           yield* balances.invalidate(owner.account as Hex)
