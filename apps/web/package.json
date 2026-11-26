@@ -7,6 +7,7 @@
   "description": "bluechip web app.",
   "scripts": {
     "dev": "vite dev --port 3000",
+    "dev:preview": "vite dev --port 3000 --open \"/home?preview=typical\"",
     "build": "vite build",
     "start": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json"

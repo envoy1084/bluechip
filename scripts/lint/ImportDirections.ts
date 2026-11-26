@@ -23,6 +23,13 @@ const importsOf = (file: SourceFile): ReadonlyArray<string> =>
 const webProblem = (from: string, to: string): string | undefined => {
   const [fromTop, fromFeature] = from.slice(WEB.length).split("/")
   const [toTop, toFeature] = to.slice(WEB.length).split("/")
+  // Preview mode's made-up data never ships: only the browser entry loads it, in development.
+  if (toTop === "preview" && fromTop !== "preview" && from !== `${WEB}client.tsx`) {
+    return "imports preview/ (made-up data, development only): only client.tsx may load it"
+  }
+  if (fromTop === "preview" && (toTop === "features" || toTop === "routes")) {
+    return "preview/ imports the app's features or routes: it stands in for the server, not the app"
+  }
   if (SHARED_WEB.includes(fromTop!) && (toTop === "features" || toTop === "routes")) {
     return `shared code (${fromTop}/) imports ${toTop}/`
   }

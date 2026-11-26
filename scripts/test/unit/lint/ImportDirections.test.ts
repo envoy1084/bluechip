@@ -25,6 +25,28 @@ describe("importProblems", () => {
       ]
     },
     {
+      name: "the browser entry loading preview mode",
+      path: "apps/web/src/client.tsx",
+      source: `const { install } = await import("./preview/install.ts")`,
+      expected: []
+    },
+    {
+      name: "a feature importing preview mode's made-up data",
+      path: "apps/web/src/features/agents/screens/AgentScreen.tsx",
+      source: `import { castOf } from "../../../preview/world/cast.ts"`,
+      expected: [
+        "apps/web/src/features/agents/screens/AgentScreen.tsx: imports preview/ (made-up data, development only): only client.tsx may load it (apps/web/src/preview/world/cast.ts)"
+      ]
+    },
+    {
+      name: "preview mode importing a feature",
+      path: "apps/web/src/preview/panel/Panel.tsx",
+      source: `import { AgentScreen } from "../../features/agents/screens/AgentScreen.tsx"`,
+      expected: [
+        "apps/web/src/preview/panel/Panel.tsx: preview/ imports the app's features or routes: it stands in for the server, not the app (apps/web/src/features/agents/screens/AgentScreen.tsx)"
+      ]
+    },
+    {
       name: "shared code importing a feature",
       path: "apps/web/src/hooks/useStocks.ts",
       source: `import { stocksAtom } from "../features/stocks/atoms/market.ts"`,

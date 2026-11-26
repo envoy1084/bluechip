@@ -77,6 +77,15 @@ parts. Fork money: `pnpm --filter @bluechip/server dev:fund <address> --usdc 100
 rebuilds the devnet's state from the fork block in the root `.env.local` (needs `BASE_FORK_RPC_URL`); run it when
 bluechip starts using a new contract.
 
+Preview mode, for reviewing the UI: `pnpm dev:preview` runs only the web app and opens `/home?preview=typical`. With
+`?preview` (or `?preview=newPerson`, `typical`, `heavy`; `?preview=off` leaves it) the app talks to a mock of
+`BluechipApi` served in the browser from a made-up world (`apps/web/src/preview/`: the cast of each scenario in
+`world/cast.ts`, a slice per area in `world/`, the mock's handlers in `server/`), with fake Face ID. The god mode panel
+(the pill in the corner, or ⌘.) switches the account, puts agents, trades, automations, chats and the account in any
+state, and slows, hangs or breaks any area's requests. Only `client.tsx` loads it, in development (`pnpm lint` fails
+on any other import of `preview/`), so it never ships. Tests in `apps/web/test/unit/preview/` decode every mocked
+answer with the real API: a change to the API that the mock doesn't follow fails them.
+
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 
 ## Validation

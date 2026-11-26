@@ -13,6 +13,7 @@
     "clean": "node scripts/bin.ts clean",
     "dev": "node scripts/bin.ts dev up",
     "dev:stop": "node scripts/bin.ts dev down",
+    "dev:preview": "pnpm --filter @bluechip/web dev:preview",
     "format": "dprint fmt",
     "format:check": "dprint check",
     "lint": "oxlint --deny-warnings && node scripts/bin.ts lint",
