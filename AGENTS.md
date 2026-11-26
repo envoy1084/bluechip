@@ -247,6 +247,17 @@ cancel without Face ID. A compromised server can cancel recoveries, never start 
 (`TestAgents.sessionFor` with `secondsAhead`) and simulate the EntryPoint at that time (`Devnet.simulateAt`): never
 move the devnet's clock or revert a snapshot, which every suite sharing the worker's Anvil would see.
 
+## Ledger and performance
+
+Every fill goes to the ledger (`apps/server/src/modules/ledger/`) from `TradeLedger.settle`: its costs (the pool's fee,
+slippage against the trade's Chainlink reference, gas from the receipt), then its stock's lots rebuilt FIFO from that
+stock's fills and adjustments (`replay` in `packages/domain/src/ledger/Lots.ts`), then the day's `pnl_daily` rows. The
+ledger is always a replay, so backfill and repair are the same code (`Ledger.repair`, at startup and hourly). Every 5
+minutes `Reconciliation` compares each account's balances on chain with its ledger: USDC transfers in are deposits
+(the `deposit` notification), anything else is a flagged adjustment with a `balanceUnexplained` alert
+(`RECONCILE_ENABLED=false` turns the schedule off; tests call `check` per user). `Performance` reads it all for the API,
+the pages and the assistant's read tools. Never compute profit, cost basis or costs anywhere else.
+
 ## Agents and policies
 
 An agent is a session key carrying onchain policies; nothing offchain limits it. Its definition is an `AgentSpec`
