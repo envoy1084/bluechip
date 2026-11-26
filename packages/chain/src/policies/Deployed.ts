@@ -302,6 +302,146 @@ export const tradeGuardAbi = [
 ] as const
 
 /**
+ * `RecoveryDelayPolicy` (`bluechip.recovery-delay-policy`): its address on Base and the devnet.
+ *
+ * @stability unstable
+ * @category contracts
+ * @since 0.0.0
+ */
+export const recoveryDelayPolicy: Address = "0xF2C702138f8BFF92C19AA4e138ee6FE752916B4C"
+
+/**
+ * `RecoveryDelayPolicy`'s ABI.
+ *
+ * @stability unstable
+ * @category abis
+ * @since 0.0.0
+ */
+export const recoveryDelayPolicyAbi = [{
+  "type": "function",
+  "name": "MIN_DELAY",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view"
+}, {
+  "type": "function",
+  "name": "callHash",
+  "inputs": [{ "name": "target", "type": "address", "internalType": "address" }, {
+    "name": "data",
+    "type": "bytes",
+    "internalType": "bytes"
+  }],
+  "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+  "stateMutability": "pure"
+}, {
+  "type": "function",
+  "name": "cancel",
+  "inputs": [{ "name": "callHashes", "type": "bytes32[]", "internalType": "bytes32[]" }],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+}, {
+  "type": "function",
+  "name": "checkAction",
+  "inputs": [
+    { "name": "id", "type": "bytes32", "internalType": "bytes32" },
+    { "name": "account", "type": "address", "internalType": "address" },
+    { "name": "target", "type": "address", "internalType": "address" },
+    { "name": "value", "type": "uint256", "internalType": "uint256" },
+    { "name": "data", "type": "bytes", "internalType": "bytes" }
+  ],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "nonpayable"
+}, {
+  "type": "function",
+  "name": "initializeWithMultiplexer",
+  "inputs": [{ "name": "account", "type": "address", "internalType": "address" }, {
+    "name": "configId",
+    "type": "bytes32",
+    "internalType": "bytes32"
+  }, { "name": "initData", "type": "bytes", "internalType": "bytes" }],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+}, {
+  "type": "function",
+  "name": "request",
+  "inputs": [{ "name": "callHashes", "type": "bytes32[]", "internalType": "bytes32[]" }],
+  "outputs": [],
+  "stateMutability": "nonpayable"
+}, {
+  "type": "function",
+  "name": "requestedAt",
+  "inputs": [{ "name": "account", "type": "address", "internalType": "address" }, {
+    "name": "hash",
+    "type": "bytes32",
+    "internalType": "bytes32"
+  }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view"
+}, {
+  "type": "function",
+  "name": "supportsInterface",
+  "inputs": [{ "name": "interfaceId", "type": "bytes4", "internalType": "bytes4" }],
+  "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+  "stateMutability": "pure"
+}, {
+  "type": "event",
+  "name": "PolicySet",
+  "inputs": [{ "name": "id", "type": "bytes32", "indexed": false, "internalType": "bytes32" }, {
+    "name": "multiplexer",
+    "type": "address",
+    "indexed": false,
+    "internalType": "address"
+  }, { "name": "account", "type": "address", "indexed": false, "internalType": "address" }],
+  "anonymous": false
+}, {
+  "type": "event",
+  "name": "RecoveryCancelled",
+  "inputs": [{ "name": "account", "type": "address", "indexed": true, "internalType": "address" }, {
+    "name": "callHash",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+  }],
+  "anonymous": false
+}, {
+  "type": "event",
+  "name": "RecoveryRequested",
+  "inputs": [{ "name": "account", "type": "address", "indexed": true, "internalType": "address" }, {
+    "name": "callHash",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+  }],
+  "anonymous": false
+}, {
+  "type": "event",
+  "name": "RecoveryUsed",
+  "inputs": [{ "name": "account", "type": "address", "indexed": true, "internalType": "address" }, {
+    "name": "callHash",
+    "type": "bytes32",
+    "indexed": true,
+    "internalType": "bytes32"
+  }],
+  "anonymous": false
+}, {
+  "type": "error",
+  "name": "InvalidDelay",
+  "inputs": [{ "name": "delay", "type": "uint256", "internalType": "uint256" }]
+}, {
+  "type": "error",
+  "name": "NotRequested",
+  "inputs": [{ "name": "callHash", "type": "bytes32", "internalType": "bytes32" }]
+}, {
+  "type": "error",
+  "name": "PolicyNotInitialized",
+  "inputs": [{ "name": "id", "type": "bytes32", "internalType": "bytes32" }, {
+    "name": "multiplexer",
+    "type": "address",
+    "internalType": "address"
+  }, { "name": "account", "type": "address", "internalType": "address" }]
+}] as const
+
+/**
  * `TradeSizeRule` (`bluechip.trade-size-rule`): its address on Base and the devnet.
  *
  * @stability unstable

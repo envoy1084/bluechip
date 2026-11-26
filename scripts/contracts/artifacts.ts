@@ -27,7 +27,7 @@ export const RULES = [
 
 /** A contract bluechip deploys: its label, Foundry artifact, and constructor arguments. */
 export interface ContractSpec {
-  readonly name: "AerodromeTradePolicy" | "TradeGuard" | typeof RULES[number]
+  readonly name: "AerodromeTradePolicy" | "TradeGuard" | "RecoveryDelayPolicy" | typeof RULES[number]
   readonly label: string
   readonly constructorTypes: ReadonlyArray<{ readonly type: string }>
   readonly constructorArgs: ReadonlyArray<unknown>
@@ -45,6 +45,12 @@ export const CONTRACTS: ReadonlyArray<ContractSpec> = [
     label: "bluechip.trade-guard",
     constructorTypes: [{ type: "address" }, { type: "address" }, { type: "uint256" }],
     constructorArgs: [usdc, SEQUENCER_FEED, BigInt(SEQUENCER_GRACE_SECONDS)]
+  },
+  {
+    name: "RecoveryDelayPolicy",
+    label: "bluechip.recovery-delay-policy",
+    constructorTypes: [],
+    constructorArgs: []
   },
   // `TradeSizeRule` → `bluechip.trade-size-rule`.
   ...RULES.map((name) => ({
