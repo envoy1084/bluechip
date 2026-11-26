@@ -2,9 +2,10 @@
 // decoded from the tool's result with its own success schema. Tools whose answer is a card say nothing here; the card
 // shows it.
 import type { Stock } from "@bluechip/domain/market/Market"
-import { GetAgent, GetAgentHistory, ListAgents } from "@bluechip/domain/tools/AgentTools"
+import { GetAgent, GetAgentHistory, GetAgentJournal, ListAgents } from "@bluechip/domain/tools/AgentTools"
+import { GetStockFacts, SearchHelp } from "@bluechip/domain/tools/KnowledgeTools"
 import { GetActivity, GetPortfolio, GetPrices, GetQuote, GetStock } from "@bluechip/domain/tools/MarketTools"
-import { ListMemories } from "@bluechip/domain/tools/MemoryTools"
+import { ListMemories, SearchMemory } from "@bluechip/domain/tools/MemoryTools"
 import { CheckAgentSpec, ListPolicies, ListTemplates } from "@bluechip/domain/tools/PolicyTools"
 import { ProposeRebalance } from "@bluechip/domain/tools/TradeTools"
 import { formatMoney } from "@bluechip/ui/lib/format"
@@ -52,6 +53,10 @@ const SUMMARIES: Readonly<Record<string, (result: unknown) => string | null>> = 
     GetAgentHistory.successSchema,
     ({ intents }) => intents.length === 0 ? "No trades yet" : count(intents.length, "trade", "trades")
   ),
+  getAgentJournal: summarize(
+    GetAgentJournal.successSchema,
+    (entries) => entries.length === 0 ? "Nothing yet" : count(entries.length, "entry", "entries")
+  ),
   listPolicies: summarize(
     ListPolicies.successSchema,
     (policies) => count(policies.filter((policy) => !policy.hidden).length, "policy", "policies")
@@ -68,6 +73,12 @@ const SUMMARIES: Readonly<Record<string, (result: unknown) => string | null>> = 
     ListMemories.successSchema,
     (memories) => memories.length === 0 ? "Nothing yet" : count(memories.length, "memory", "memories")
   ),
+  searchMemory: summarize(
+    SearchMemory.successSchema,
+    (hits) => hits.length === 0 ? "Nothing found" : count(hits.length, "thing", "things")
+  ),
+  searchHelp: summarize(SearchHelp.successSchema, (passages) => passages[0]?.citation.title ?? "Nothing found"),
+  getStockFacts: summarize(GetStockFacts.successSchema, (facts) => facts.name),
   proposeRebalance: summarize(
     ProposeRebalance.successSchema,
     (cards) => cards.length === 0 ? "Nothing to trade" : count(cards.length, "trade", "trades")

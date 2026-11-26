@@ -6,12 +6,14 @@ const LABELS: Readonly<Record<string, readonly [running: string, done: string]>>
   getPortfolio: ["Reading your portfolio", "Read your portfolio"],
   getPrices: ["Checking prices", "Checked prices"],
   getStock: ["Looking up the stock", "Looked up the stock"],
+  getStockFacts: ["Looking up the stock's facts", "Looked up the stock's facts"],
   getQuote: ["Getting a quote", "Got a quote"],
   getActivity: ["Reading your activity", "Read your activity"],
   listAgents: ["Reading your agents", "Read your agents"],
   getAgent: ["Reading the agent", "Read the agent"],
   getAgentUsage: ["Checking what the agent has used", "Checked what the agent has used"],
   getAgentHistory: ["Reading the agent's history", "Read the agent's history"],
+  getAgentJournal: ["Reading the agent's journal", "Read the agent's journal"],
   explainDecision: ["Looking into the decision", "Looked into the decision"],
   listPolicies: ["Reading the policies", "Read the policies"],
   listTemplates: ["Reading your templates", "Read your templates"],
@@ -29,6 +31,8 @@ const LABELS: Readonly<Record<string, readonly [running: string, done: string]>>
   remember: ["Saving a memory", "Saved a memory"],
   forget: ["Forgetting a memory", "Forgot a memory"],
   listMemories: ["Reading your memories", "Read your memories"],
+  searchMemory: ["Searching what it remembers", "Searched what it remembers"],
+  searchHelp: ["Searching bluechip's help", "Searched bluechip's help"],
   [RESEARCH_TOOL]: ["Searching the web", "Searched the web"]
 }
 

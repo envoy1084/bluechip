@@ -1,7 +1,9 @@
+import { MemoryExport } from "@bluechip/domain/assistant/Memory"
 import type { ConversationId, SigningRequestId } from "@bluechip/domain/Ids"
 import type * as AgUiSchema from "effect/ai/AgUiSchema"
 import * as Effect from "effect/Effect"
 import * as Atom from "effect/reactivity/Atom"
+import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { BluechipApiClient, liveReactivityKey } from "../../../lib/api/client.ts"
 import { signWithPasskey } from "../../../lib/passkey.ts"
@@ -44,6 +46,17 @@ export const confirmMemoryAtom = BluechipApiClient.mutation("assistant", "confir
 export const deleteMemoryAtom = BluechipApiClient.mutation("assistant", "deleteMemory")
 
 export const deleteMemoriesAtom = BluechipApiClient.mutation("assistant", "deleteMemories")
+
+/** Everything the assistant remembers, as the JSON file the memory page downloads, with the day it was made. */
+export const exportMemoriesAtom = BluechipApiClient.runtime.fn(
+  Effect.fnUntraced(function*() {
+    const client = yield* BluechipApiClient
+    const exported = yield* client.assistant.exportMemories()
+    const encoded = yield* Schema.encodeEffect(Schema.toCodecJson(MemoryExport))(exported).pipe(Effect.orDie)
+    const json = JSON.stringify(encoded, null, 2)
+    return { exportedAt: exported.exportedAt, json }
+  })
+)
 
 /** A conversation with every message, read once when it opens (a run then adds to it as it streams). */
 export const loadThreadAtom = BluechipApiClient.runtime.fn(

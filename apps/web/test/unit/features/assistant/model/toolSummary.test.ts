@@ -199,6 +199,74 @@ describe("toolSummary", () => {
     },
     { name: "no memories", tool: "listMemories", result: [], expected: "Nothing yet" },
     { name: "one memory", tool: "listMemories", result: [memory], expected: "1 memory" },
+    { name: "nothing recalled", tool: "searchMemory", result: [], expected: "Nothing found" },
+    {
+      name: "things recalled: how many",
+      tool: "searchMemory",
+      result: [
+        {
+          kind: "memory",
+          sourceId: memory.id,
+          agentId: null,
+          text: "You like Nvidia.",
+          at: memory.createdAt,
+          score: 0.03
+        },
+        {
+          kind: "message",
+          sourceId: "message_01",
+          agentId: null,
+          text: "You said: hi",
+          at: memory.createdAt,
+          score: 0.02
+        }
+      ],
+      expected: "2 things"
+    },
+    { name: "an empty journal", tool: "getAgentJournal", result: [], expected: "Nothing yet" },
+    {
+      name: "a journal: how many entries",
+      tool: "getAgentJournal",
+      result: [{
+        id: "journal_01jd8v4t5m6n7p8q9r0s1t2v3w",
+        agentId: "agent_01jd8v4t5m6n7p8q9r0s1t2v3w",
+        at: memory.createdAt,
+        kind: "intent",
+        entry: "Buy $50.00 of NVIDIA: filled.",
+        refs: {}
+      }],
+      expected: "1 entry"
+    },
+    { name: "help that answers nothing", tool: "searchHelp", result: [], expected: "Nothing found" },
+    {
+      name: "help: the article it answers from",
+      tool: "searchHelp",
+      result: [{
+        citation: {
+          documentId: "document_01jd8v4t5m6n7p8q9r0s1t2v3w",
+          kind: "help",
+          title: "Gas",
+          section: "Who pays gas",
+          url: "/help/gas#who-pays-gas"
+        },
+        text: "Gas: Who pays gas"
+      }],
+      expected: "Gas"
+    },
+    {
+      name: "a stock's facts: its name",
+      tool: "getStockFacts",
+      result: {
+        symbol: "NVDA",
+        name: "NVIDIA",
+        token: "0xb20000000000000000000078ee7ce2fE4908108C",
+        feed: "0x04689a41629776563E6822F76f2e57D148d28513",
+        pool: null,
+        facts: "NVIDIA (NVDA) is one of Coinbase's tokenized stocks on Base.",
+        url: "https://basescan.org/token/0xb20000000000000000000078ee7ce2fE4908108C"
+      },
+      expected: "NVIDIA"
+    },
     { name: "a rebalance with nothing drifted", tool: "proposeRebalance", result: [], expected: "Nothing to trade" },
     { name: "a tool answering with a card: nothing", tool: "draftAgent", result: {}, expected: null },
     { name: "web research: nothing", tool: "AnthropicWebSearch", result: [], expected: null },

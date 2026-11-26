@@ -1,223 +1,115 @@
 import type { Memory } from "@bluechip/domain/assistant/Memory"
-import { Alert, AlertDescription } from "@bluechip/ui/components/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogIcon,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@bluechip/ui/components/alert-dialog"
 import { Button } from "@bluechip/ui/components/button"
+import { InputGroup, InputGroupInput } from "@bluechip/ui/components/input-group"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { formatDate } from "@bluechip/ui/lib/format"
-import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
-import * as DateTime from "effect/DateTime"
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
-import { localTimeZone } from "../../../lib/localTime.ts"
-import {
-  assistantReactivityKey,
-  confirmMemoryAtom,
-  deleteMemoriesAtom,
-  deleteMemoryAtom,
-  memoriesAtom
-} from "../atoms/assistant.ts"
-import { MEMORY_KIND } from "../model/cardText.ts"
+import { memoriesAtom } from "../atoms/assistant.ts"
+import { ExportMemories } from "../components/memory/ExportMemories.tsx"
+import { ForgetEverything } from "../components/memory/ForgetEverything.tsx"
+import { MemoryRow } from "../components/memory/MemoryRow.tsx"
 
-const reactivityKeys = [assistantReactivityKey]
+// A search runs once typing has settled for this long.
+const SEARCH_SETTLE_MS = 250
 
-const PROBLEM = "We couldn't reach bluechip just now. Nothing was deleted, so try again."
-
-const CONFIRM_PROBLEM = "We couldn't reach bluechip just now. It isn't confirmed yet, so try again."
-
-/** Where a memory came from, in words: "You said it", "Inferred, 72% sure", and whether it's in use. */
-const provenance = (memory: Memory): string => {
-  const from = memory.source === "said" ? "You said it" : `Inferred, ${Math.round(memory.confidence * 100)}% sure`
-  const on = formatDate(DateTime.toDateUtc(memory.createdAt), { timeZone: localTimeZone() })
-  return `${from}, on ${on}`
-}
-
-function MemoryRow({ memory, agentName }: Readonly<{ memory: Memory; agentName: string | undefined }>) {
-  const remove = useAtomSet(deleteMemoryAtom, { mode: "promise" })
-  const confirm = useAtomSet(confirmMemoryAtom, { mode: "promise" })
-  const [busy, setBusy] = useState(false)
-  const [confirming, setConfirming] = useState(false)
-  const [problem, setProblem] = useState<string | null>(null)
-
-  // Confirming also answers its card in the conversation; the list then shows it confirmed.
-  const keep = async () => {
-    setConfirming(true)
-    setProblem(null)
-    try {
-      await confirm({ params: { id: memory.id }, reactivityKeys })
-    } catch {
-      setProblem(CONFIRM_PROBLEM)
-    }
-    setConfirming(false)
-  }
-
-  const forget = async () => {
-    setBusy(true)
-    setProblem(null)
-    try {
-      await remove({ params: { id: memory.id }, reactivityKeys })
-    } catch {
-      setProblem(PROBLEM)
-      setBusy(false)
-    }
-  }
-
-  return (
-    <li className="grid gap-2 border-b border-g-100 py-3.5 last:border-b-0">
-      <div className="flex items-start justify-between gap-3">
-        <div className="grid min-w-0 gap-1">
-          <span className="flex flex-wrap items-center gap-1.5 text-[11.5px] font-semibold text-g-600">
-            <span className="rounded-full bg-g-100 px-2 py-0.5">{MEMORY_KIND[memory.kind]}</span>
-            {agentName === undefined
-              ? null
-              : <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue">{agentName}</span>}
-            {memory.confirmedAt === null ?
-              <span className="rounded-full bg-warn-wash px-2 py-0.5 text-warn">Not confirmed</span> :
-              null}
-          </span>
-          <p className="text-[14.5px] text-ink">{memory.text}</p>
-          <span className="text-label-sm text-g-500">{provenance(memory)}</span>
-          {memory.note === null ? null : <span className="text-label-sm text-g-500">{memory.note}</span>}
-          {memory.confirmedAt === null ?
-            (
-              <span className="text-label-sm text-g-500">
-                bluechip doesn't use it until you confirm it.
-              </span>
-            ) :
-            null}
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {memory.confirmedAt === null ?
-            (
-              <Button variant="secondary" size="sm" loading={confirming} onClick={() => void keep()}>
-                <Icon name="check" size={14} />Remember
-              </Button>
-            ) :
-            null}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Delete: ${memory.text}`}
-            loading={busy}
-            onClick={() => void forget()}
-          >
-            <Icon name="trash" size={16} />
-          </Button>
-        </div>
-      </div>
-      {problem === null ? null : (
-        <Alert variant="destructive">
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
-      )}
-    </li>
-  )
-}
-
-function DeleteAll() {
-  const removeAll = useAtomSet(deleteMemoriesAtom, { mode: "promise" })
-  const [problem, setProblem] = useState<string | null>(null)
-
-  return (
-    <div className="grid gap-2">
-      <AlertDialog>
-        <AlertDialogTrigger render={<Button variant="danger" size="sm" />}>
-          <Icon name="trash" size={14} />Delete everything
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogIcon name="trash" />
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete everything bluechip remembers?</AlertDialogTitle>
-            <AlertDialogDescription>
-              It forgets every preference, rule, goal and fact. Your conversations, agents and money stay as they are.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep them</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setProblem(null)
-                removeAll({ reactivityKeys }).catch(() => setProblem(PROBLEM))
-              }}
-            >
-              Delete everything
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {problem === null ? null : (
-        <Alert variant="destructive">
-          <AlertDescription>{problem}</AlertDescription>
-        </Alert>
-      )}
-    </div>
-  )
-}
-
-/** What the assistant remembers about you, where each memory came from, and the way to delete one or all of them. */
-export function MemoryScreen() {
-  const memories = useAtomValue(memoriesAtom(""))
-  const refresh = useAtomRefresh(memoriesAtom(""))
+function Memories({ search }: Readonly<{ search: string }>) {
+  const memories = useAtomValue(memoriesAtom(search))
+  const refresh = useAtomRefresh(memoriesAtom(search))
   const agents = useAtomValue(agentsAtom)
   const agentName = (memory: Memory) =>
     memory.agentId === null || !AsyncResult.isSuccess(agents) ?
       undefined :
       agents.value.find((agent) => agent.id === memory.agentId)?.name
 
+  if (AsyncResult.isInitial(memories)) {
+    return (
+      <div aria-busy className="grid gap-3 py-4">
+        {[0, 1, 2].map((row) => <SkeletonBlock key={row} className="h-14 w-full rounded-md" />)}
+      </div>
+    )
+  }
+  if (!AsyncResult.isSuccess(memories)) {
+    return (
+      <div className="grid justify-items-center gap-3 py-10 text-center">
+        <p className="text-body-sm text-g-600">We couldn't load your memories. Check your connection and try again.</p>
+        <Button variant="secondary" onClick={refresh}>Try again</Button>
+      </div>
+    )
+  }
+  if (memories.value.length === 0) {
+    return (
+      <p className="py-10 text-center text-body-sm text-g-600">
+        {search === "" ?
+          "Nothing yet. Tell the assistant what matters to you, like \"I never want to own Tesla\", and it remembers." :
+          `No memory matches “${search}”.`}
+      </p>
+    )
+  }
+  return (
+    <ul>
+      {memories.value.map((memory) => <MemoryRow key={memory.id} memory={memory} agentName={agentName(memory)} />)}
+    </ul>
+  )
+}
+
+/**
+ * What the assistant remembers about you, where each memory came from and how often answers used it: searchable, to
+ * export, and to delete one or all of.
+ */
+export function MemoryScreen() {
+  const all = useAtomValue(memoriesAtom(""))
+  const [query, setQuery] = useState("")
+  const [search, setSearch] = useState("")
+
+  useEffect(() => {
+    const settle = setTimeout(() => setSearch(query.trim()), SEARCH_SETTLE_MS)
+    return () => clearTimeout(settle)
+  }, [query])
+
+  const any = AsyncResult.isSuccess(all) && all.value.length > 0
+
   return (
     <AppPage title="Memory" sub="What bluechip remembers about you">
       <section className="rounded-lg bg-white px-[22px] pt-0.5 pb-1 shadow-e2">
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-g-100 pt-[18px] pb-3.5">
-          <div className="grid gap-1">
-            <h3 className="text-base font-semibold tracking-[-0.02em]">Memories</h3>
-            <p className="text-[13.5px] text-g-600">
-              The assistant uses these to answer you. It keeps what you tell it, and asks before keeping what it infers.
-            </p>
-          </div>
-          {AsyncResult.isSuccess(memories) && memories.value.length > 0 ? <DeleteAll /> : null}
-        </div>
-
-        {AsyncResult.isInitial(memories) ?
-          (
-            <div aria-busy className="grid gap-3 py-4">
-              {[0, 1, 2].map((row) => <SkeletonBlock key={row} className="h-14 w-full rounded-md" />)}
-            </div>
-          ) :
-          !AsyncResult.isSuccess(memories) ?
-          (
-            <div className="grid justify-items-center gap-3 py-10 text-center">
-              <p className="text-body-sm text-g-600">
-                We couldn't load your memories. Check your connection and try again.
+        <div className="grid gap-3.5 border-b border-g-100 pt-[18px] pb-3.5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="grid gap-1">
+              <h3 className="text-base font-semibold tracking-[-0.02em]">Memories</h3>
+              <p className="text-[13.5px] text-g-600">
+                The assistant uses these to answer you. It keeps what you tell it, and asks before keeping what it
+                infers.
               </p>
-              <Button variant="secondary" onClick={refresh}>Try again</Button>
             </div>
-          ) :
-          memories.value.length === 0 ?
-          (
-            <p className="py-10 text-center text-body-sm text-g-600">
-              Nothing yet. Tell the assistant what matters to you, like "I never want to own Tesla", and it remembers.
-            </p>
-          ) :
-          (
-            <ul>
-              {memories.value.map((memory) => (
-                <MemoryRow key={memory.id} memory={memory} agentName={agentName(memory)} />
-              ))}
-            </ul>
-          )}
+            {any ?
+              (
+                <div className="flex flex-wrap items-start gap-2">
+                  <ExportMemories />
+                  <ForgetEverything />
+                </div>
+              ) :
+              null}
+          </div>
+          {any ?
+            (
+              <InputGroup className="sm:max-w-[320px]">
+                <Icon name="search" size={16} />
+                <InputGroupInput
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  placeholder="Search memories"
+                  aria-label="Search memories"
+                  autoComplete="off"
+                />
+              </InputGroup>
+            ) :
+            null}
+        </div>
+        <Memories search={search} />
       </section>
     </AppPage>
   )

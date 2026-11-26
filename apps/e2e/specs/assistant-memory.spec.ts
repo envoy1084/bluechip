@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test"
+import { readFile } from "node:fs/promises"
 import type { Replies } from "../fixtures/replies.ts"
 import { expect, test } from "../fixtures/test.ts"
 import { apiHeaders } from "../fixtures/users.ts"
@@ -112,5 +113,47 @@ test.describe("the memory page", () => {
     await dialog.getByRole("button", { name: "Delete everything" }).click()
 
     await expect(page.getByText("Nothing yet. Tell the assistant what matters to you")).toBeVisible()
+  })
+
+  test("a search lists the memories it recalls, and says when none matches", async ({ page, user: _user, replies }) => {
+    await rememberTesla(page, replies)
+    await mentionKids(page, replies)
+    await page.goto("/memory")
+    const search = page.getByRole("searchbox", { name: "Search memories" })
+
+    await search.fill("Tesla")
+
+    await expect(page.getByText("You never want Tesla.")).toBeVisible()
+    await expect(page.getByText("You have kids.")).toBeHidden()
+    await search.fill("Nintendo Switch prices")
+    await expect(page.getByText("No memory matches “Nintendo Switch prices”.")).toBeVisible()
+  })
+
+  test("a memory an answer used says how many answers used it", async ({ page, user: _user, replies }) => {
+    await rememberTesla(page, replies)
+    await page.goto("/memory")
+    await expect(page.getByText("Not used in an answer yet")).toBeVisible()
+
+    await ask(page, replies, { to: unique("Should I buy some Tesla?"), rounds: [[{ text: "You said never." }]] })
+    await page.goto("/memory")
+
+    await expect(page.getByText("Used in 1 answer")).toBeVisible()
+  })
+
+  test("Export downloads every memory as JSON", async ({ page, user: _user, replies }) => {
+    await rememberTesla(page, replies)
+    await page.goto("/memory")
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Export" }).click()
+    ])
+    const file = await download.path()
+    const exported = JSON.parse(await readFile(file, "utf8")) as {
+      readonly memories: ReadonlyArray<{ readonly text: string }>
+    }
+
+    expect(download.suggestedFilename()).toMatch(/^bluechip-memory-\d{4}-\d{2}-\d{2}\.json$/)
+    expect(exported.memories.map((memory) => memory.text)).toEqual(["You never want Tesla."])
   })
 })
