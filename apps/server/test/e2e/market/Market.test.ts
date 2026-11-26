@@ -45,13 +45,16 @@ layer(TestUsers.layer, { excludeTestServices: true })("market API", (it) => {
     it.effect("200: a $100 buy of NVDA, within a few basis points of Chainlink's price", () =>
       Effect.gen(function*() {
         const { api } = yield* (yield* TestUsers).browser
+        // Earlier files on this worker's chain trade NVDA: the pool is put back at the feed's price first.
+        const nvda = (yield* api.market.stocks()).find((stock) => stock.symbol === "NVDA")!
+        yield* (yield* Devnet).movePool("NVDA", nvda.reference!.price)
 
         const quote = yield* api.market.quote({
           payload: { symbol: "NVDA", side: "buy", amount: { usdc: Usdc.make(BigInt(100_000_000)) } }
         })
 
         assert.isTrue(quote.shares > BigInt(0))
-        // The devnet's pools start at the feed's price, so the gap is the pool's fee and spread.
+        // The pool at the feed's price: the gap is the pool's fee and spread.
         assert.isAtMost(Math.abs(quote.gapBps), 20)
       }))
 
