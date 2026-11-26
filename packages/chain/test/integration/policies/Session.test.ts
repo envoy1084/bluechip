@@ -3,6 +3,7 @@ import {
   agentSession,
   changeCalls,
   changedGrant,
+  guardedCallGas,
   guardedTradeCallGas,
   lockCalls,
   lockedGrant,
@@ -17,7 +18,7 @@ import { Grant, KernelAccount, Session } from "@namera-ai/sdk"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
-import { nvda, tradeCalls } from "../../fixtures/Market.ts"
+import { aapl, nvda, tradeCalls } from "../../fixtures/Market.ts"
 import { changed, PICKER } from "../../fixtures/Specs.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 
@@ -46,6 +47,28 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       assert.isTrue(slippage!.policy === "slippageBudget" && slippage!.used > 0 && slippage!.used < BigInt(500_000))
       assert.deepStrictEqual([trades?.policy, trades?.used, trades?.limit], ["tradesPerDay", BigInt(1), BigInt(500)])
       assert.isTrue(gas!.policy === "gasBudget" && gas!.used > 0)
+    }))
+
+  it.effect("a buy of NVDA and of AAPL in one operation count as one trade, and both against the daily budget", () =>
+    Effect.gen(function*() {
+      const { address, grant, trade } = yield* (yield* TestAgents).lock()
+      const landed = yield* trade(
+        [
+          ...tradeCalls(nvda, "buy", BigInt(30_000_000), address),
+          ...tradeCalls(aapl, "buy", BigInt(20_000_000), address)
+        ],
+        guardedCallGas(2)
+      )
+
+      const [spent, , trades] = yield* readUsage({
+        spec: PICKER,
+        account: address,
+        grant,
+        now: Math.floor(Date.now() / 1000)
+      })
+
+      assert.isTrue(landed.success)
+      assert.deepStrictEqual([spent?.used, trades?.used], [BigInt(50_000_000), BigInt(1)])
     }))
 
   it.effect("a change to sell only refuses the agent's next buy", () =>

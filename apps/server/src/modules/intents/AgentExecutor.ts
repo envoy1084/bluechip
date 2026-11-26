@@ -48,10 +48,13 @@ export interface AgentGas {
   readonly preVerificationGas: bigint
 }
 
-/** A trade decided for an agent: what the pipeline decided, and, when it passes, the quote, calls and gas to send. */
+/**
+ * Trades decided for an agent, together: what the pipeline decided, and, when they pass, a quote per leg, the calls of
+ * them all and the gas to send them with in one operation.
+ */
 export interface Decided {
   readonly decision: Decision
-  readonly quote?: Quote | undefined
+  readonly quotes?: ReadonlyArray<Quote> | undefined
   readonly calls?: ReadonlyArray<{ readonly to: Address; readonly data: Hex }> | undefined
   readonly gas?: AgentGas | undefined
 }
@@ -66,16 +69,16 @@ export interface SignedOperation {
 /** Agents' trades: decided against their policies, then signed and sent with their session keys. */
 export class AgentExecutor extends Context.Service<AgentExecutor, {
   /**
-   * What the pipeline decides for an agent's trade, without sending it. A trade over the agent's largest trade goes
-   * to you (routing, not enforcement: the contract would refuse the agent anyway); then the waits (the day's last
-   * minute, prices bluechip can't trade on, no ETH for gas); then the agent's onchain policies, by simulating the
-   * operation as the agent.
+   * What the pipeline decides for an agent's trades sent in one operation (one leg per stock), without sending them.
+   * A leg over the agent's largest trade goes to you (routing, not enforcement: the contract would refuse the agent
+   * anyway); then the waits (the day's last minute, prices bluechip can't trade on, no ETH for gas); then the agent's
+   * onchain policies, by simulating the operation as the agent, which judge its legs' net result.
    */
   readonly decide: (options: {
     readonly agentId: string
     readonly account: Address
     readonly session: SessionRow
-    readonly leg: Leg
+    readonly legs: ReadonlyArray<Leg>
   }) => Effect.Effect<Decided, ChainError>
   /**
    * Signs the agent's operation and returns its hash before sending it, so the hash is stored first and a restart
@@ -130,11 +133,10 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         readonly agentId: string
         readonly account: Address
         readonly session: SessionRow
-        readonly leg: Leg
+        readonly legs: ReadonlyArray<Leg>
       }) {
         const now = yield* DateTime.now
         const spec = options.session.spec
-        const { leg } = options
         const waitFor = (reason: keyof typeof RETRY | "dayEnding" | "gasSpent", until: DateTime.Utc): Decided => ({
           decision: { _tag: "Wait", reason, until }
         })
@@ -145,24 +147,25 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
           return waitFor("dayEnding", DateTime.makeUnsafe((seconds - intoDay + 86_400 + 5) * 1000))
         }
 
-        const quoted = yield* quoter.quote(
-          "usdc" in leg.amount
-            ? { symbol: leg.symbol, side: "buy", usdc: leg.amount.usdc }
-            : { symbol: leg.symbol, side: "sell", shares: leg.amount.shares }
-        ).pipe(Effect.result)
+        const quoted = yield* Effect.forEach(options.legs, (leg) =>
+          quoter.quote(
+            "usdc" in leg.amount
+              ? { symbol: leg.symbol, side: "buy", usdc: leg.amount.usdc }
+              : { symbol: leg.symbol, side: "sell", shares: leg.amount.shares }
+          )).pipe(Effect.result)
         if (quoted._tag === "Failure") return waitFor("unavailable", DateTime.addDuration(now, RETRY.unavailable))
-        const quote = quoted.success
+        const quotes = quoted.success
 
         const largest = configOf(spec.policies, tradeSize)?.maxPerTrade
-        if (largest !== undefined && quote.usdc > largest) {
+        if (largest !== undefined && quotes.some((quote) => quote.usdc > largest)) {
           return { decision: { _tag: "OverLargestTrade", maxPerTrade: largest } } satisfies Decided
         }
 
         const tradesWhilePaused = configOf(spec.policies, fairPrice)?.tradeWhilePaused ?? false
-        if (quote.reference.status === "stale") {
+        if (quotes.some((quote) => quote.reference.status === "stale")) {
           return waitFor("pricesStale", DateTime.addDuration(now, RETRY.pricesStale))
         }
-        if (quote.reference.status === "paused" && !tradesWhilePaused) {
+        if (quotes.some((quote) => quote.reference.status === "paused") && !tradesWhilePaused) {
           return waitFor("pricesPaused", DateTime.addDuration(now, RETRY.pricesPaused))
         }
 
@@ -174,15 +177,16 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         const block = yield* chain.use("block", (client) => client.getBlock()).pipe(Effect.result)
         if (block._tag === "Failure") return waitFor("unavailable", DateTime.addDuration(now, RETRY.unavailable))
 
-        const stock = stocks.find((candidate) => candidate.symbol === leg.symbol)!
-        const calls = swapCalls({
-          stock,
-          side: leg.side,
-          amountIn: "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares,
-          minimumOut: quote.minimumOut,
-          recipient: options.account,
-          deadline: block.success.timestamp + SWAP_DEADLINE_SECONDS
-        })
+        const calls = options.legs.flatMap((leg, index) =>
+          swapCalls({
+            stock: stocks.find((candidate) => candidate.symbol === leg.symbol)!,
+            side: leg.side,
+            amountIn: "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares,
+            minimumOut: quotes[index]!.minimumOut,
+            recipient: options.account,
+            deadline: block.success.timestamp + SWAP_DEADLINE_SECONDS
+          })
+        )
 
         const client = yield* agentClient(options.agentId, options.session)
         const simulated = yield* simulateAsAgent(client as never, calls)
@@ -210,7 +214,12 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
                 : waitFor("gasSpent", DateTime.makeUnsafe(budget.resetsAt * 1000))
             }
 
-            return { decision: { _tag: "Passes", callGasLimit: gas.callGasLimit }, quote, calls, gas } satisfies Decided
+            return {
+              decision: { _tag: "Passes", callGasLimit: gas.callGasLimit },
+              quotes,
+              calls,
+              gas
+            } satisfies Decided
           }
           case "Refused":
             return { decision: { _tag: "Refused", ...simulated.refusal } } satisfies Decided

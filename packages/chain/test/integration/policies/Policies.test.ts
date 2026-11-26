@@ -38,6 +38,49 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
       }))
   })
 
+  describe("a batch", () => {
+    it.effect("a sale of NVDA and a buy of AAPL in one operation", () =>
+      Effect.gen(function*() {
+        const { address, agent } = yield* (yield* TestAgents).lock()
+        yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(20_000_000))
+
+        const decision = yield* simulateAsAgent(agent, [
+          ...tradeCalls(nvda, "sell", BigInt(20_000_000), address),
+          ...tradeCalls(aapl, "buy", dollars(50), address)
+        ])
+
+        assert.strictEqual(decision._tag, "Passes")
+      }))
+
+    it.effect("the same batch with its buy over the largest trade: refused whole", () =>
+      Effect.gen(function*() {
+        const { address, agent } = yield* (yield* TestAgents).lock()
+        yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(20_000_000))
+
+        const decision = yield* simulateAsAgent(agent, [
+          ...tradeCalls(nvda, "sell", BigInt(20_000_000), address),
+          ...tradeCalls(aapl, "buy", dollars(150), address)
+        ])
+
+        assert.strictEqual(decision._tag === "Refused" ? decision.refusal.policy : decision._tag, "trade")
+      }))
+
+    it.effect("two $60 buys of NVDA in one operation: their $120 is over the largest trade", () =>
+      Effect.gen(function*() {
+        const { address, agent } = yield* (yield* TestAgents).lock()
+
+        const decision = yield* simulateAsAgent(agent, [
+          ...tradeCalls(nvda, "buy", dollars(60), address),
+          ...tradeCalls(nvda, "buy", dollars(60), address)
+        ])
+
+        assert.deepStrictEqual(
+          decision._tag === "Refused" ? [decision.refusal.policy, decision.refusal.error] : decision._tag,
+          ["tradeSize", "OverTradeSize"]
+        )
+      }))
+  })
+
   describe("refused by trade", () => {
     it.effect("a stock it didn't pick", () =>
       Effect.gen(function*() {

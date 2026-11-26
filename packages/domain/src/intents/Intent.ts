@@ -255,6 +255,11 @@ export class Intent extends Schema.Class<Intent>("@bluechip/domain/intents/Inten
   reason: Schema.String,
   status: IntentStatus,
   decision: Schema.NullOr(Decision),
+  /**
+   * The plan it belongs to, when it's one of several trades planned together, and which operation of that plan it
+   * goes out in (`wave`): the legs of a wave are sent in one operation. `null` for a trade on its own.
+   */
+  batch: Schema.NullOr(Schema.Struct({ id: Schema.String, wave: Schema.Int })),
   tradeId: Schema.NullOr(TradeId),
   expiresAt: Schema.NullOr(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc,

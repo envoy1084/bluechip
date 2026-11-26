@@ -1,5 +1,5 @@
 import { Decision, Leg } from "@bluechip/domain/intents/Intent"
-import { boolean, index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
+import { boolean, index, integer, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
 import { dateTimeUtc, jsonbSchema, typeId } from "../../platform/db/columns.ts"
 import { users } from "../accounts/tables.ts"
 import { agents } from "../agents/tables.ts"
@@ -22,7 +22,7 @@ const INTENT_STATUSES = [
 
 /**
  * Every trade anyone wants to make, yours included: who asked (`source`), who signs (`executor`), the trade (`leg`),
- * why, whether it asks you first, what the pipeline decided, and how it ended. `dedupe_key` makes a retried request or a repeated automation
+ * why, the plan it's part of, whether it asks you first, what the pipeline decided, and how it ended. `dedupe_key` makes a retried request or a repeated automation
  * fire create one intent.
  */
 export const intents = pgTable("intents", {
@@ -37,6 +37,9 @@ export const intents = pgTable("intents", {
   ask: boolean("ask").notNull().default(false),
   dedupeKey: text("dedupe_key").notNull(),
   leg: jsonbSchema(Leg)("leg").notNull(),
+  /** The plan of several trades it belongs to (an automation's run), and the operation of it that carries it. */
+  batchId: text("batch_id"),
+  wave: integer("wave"),
   reason: text("reason").notNull(),
   status: text("status", { enum: INTENT_STATUSES }).notNull(),
   decision: jsonbSchema(Decision)("decision"),
@@ -51,5 +54,6 @@ export const intents = pgTable("intents", {
   uniqueIndex("intents_user_dedupe_key_idx").on(table.userId, table.dedupeKey),
   index("intents_user_created_at_idx").on(table.userId, table.createdAt),
   index("intents_agent_created_at_idx").on(table.agentId, table.createdAt),
-  index("intents_status_idx").on(table.status)
+  index("intents_status_idx").on(table.status),
+  index("intents_batch_idx").on(table.batchId, table.wave)
 ])

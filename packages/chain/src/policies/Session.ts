@@ -27,14 +27,23 @@ import { required, RULES } from "./Rules.ts"
 import { tradePolicyInitData } from "./Trade.ts"
 
 /**
- * The least call gas an agent's trade asks for: a swap's (`swapCallGas`, estimates of which come in short) and
- * TradeGuard's checks around it.
+ * The least call gas an agent's operation of `swaps` swaps asks for: each swap's (`swapCallGas`, estimates of which
+ * come in short) and TradeGuard's checks around them, made once per operation.
  *
  * @stability unstable
  * @category constants
  * @since 0.0.0
  */
-export const guardedTradeCallGas = swapCallGas + BigInt(600_000)
+export const guardedCallGas = (swaps: number): bigint => swapCallGas * BigInt(Math.max(1, swaps)) + BigInt(600_000)
+
+/**
+ * The least call gas an agent's trade of one swap asks for.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const guardedTradeCallGas = guardedCallGas(1)
 
 /**
  * Where a policy of the spec is enforced: the session's user operation policy, its fallback action, its execution

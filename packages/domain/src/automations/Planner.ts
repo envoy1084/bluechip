@@ -1,10 +1,12 @@
 /**
  * The trades an automation's action makes when it fires: the action's legs, split so each fits the agent's largest
- * trade and no more than its trades per day. Trades that ask you first, and your own, aren't split: your Face ID
- * signs them, outside the agent's limits. The agent's onchain policies still decide each one.
+ * trade and no more operations than its trades per day (an operation carries one leg per stock: `waves`). Trades that
+ * ask you first, and your own, aren't split: your Face ID signs them, outside the agent's limits. The agent's onchain
+ * policies still decide each one.
  *
  * @since 0.0.0
  */
+import { waves } from "../intents/Batch.ts"
 import type { Leg } from "../intents/Intent.ts"
 import { Shares, sharesFor, Usdc, valueOf } from "../market/Units.ts"
 import type { PlanContext } from "./Action.ts"
@@ -38,8 +40,9 @@ const split = (leg: Leg, maxPerTrade: bigint, context: PlanContext): ReadonlyArr
 }
 
 /**
- * The legs `action` makes now, in order (sells first in a rebalance), each within the agent's largest trade, at
- * most its trades per day; split only when `asking` is false and the automation trades through an agent.
+ * The legs `action` makes now, in order (sells first in a rebalance), each within the agent's largest trade, in at
+ * most its trades per day of operations; split only when `asking` is false and the automation trades through an
+ * agent. Split legs come wave by wave, the order they're sent in.
  *
  * **Example** (Selling half of $250 of NVIDIA through a $100 largest trade)
  *
@@ -66,5 +69,6 @@ export const planLegs = (action: Action, context: PlanContext, asking: boolean):
   const limits = limitsOf(context.spec)
   if (asking || limits === null || limits.maxPerTrade === null) return legs
   const planned = legs.flatMap((leg) => split(leg, limits.maxPerTrade!, context))
-  return limits.tradesPerDay === null ? planned : planned.slice(0, limits.tradesPerDay)
+  const operations = waves(planned)
+  return (limits.tradesPerDay === null ? operations : operations.slice(0, limits.tradesPerDay)).flat()
 }

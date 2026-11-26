@@ -18,6 +18,7 @@ export const nvidiaBuy = (createdAt: string): Intent =>
     reason: "You asked for $50 of Nvidia.",
     status: "needsApproval",
     decision: null,
+    batch: null,
     tradeId: null,
     expiresAt: null,
     createdAt: DateTime.makeUnsafe(createdAt),

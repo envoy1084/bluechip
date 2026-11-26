@@ -34,7 +34,10 @@ layer(TestAgents.layer, { excludeTestServices: true })("agents' journals", (it) 
           [first.items.map((entry) => [entry.kind, entry.entry]), second.items.map((entry) => entry.kind)],
           [[["intent", "Buy $150.00 of NVIDIA: you declined it."]], ["intent"]]
         )
-        assert.match(second.items[0]!.entry, /^Buy \$150\.00 of NVIDIA\. Over the agent's largest trade/)
+        assert.match(
+          second.items[0]!.entry,
+          /^Buy \$150\.00 of NVIDIA\. Over its \$100 limit, so it needs your approval/
+        )
         assert.isNull(second.nextPageToken)
       }))
 

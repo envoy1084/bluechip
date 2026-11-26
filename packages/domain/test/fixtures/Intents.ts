@@ -18,6 +18,7 @@ export const nvidiaBuy = (status: IntentStatus, decision: Decision | null = null
     reason: "You asked for $50 of Nvidia.",
     status,
     decision,
+    batch: null,
     tradeId: null,
     expiresAt: null,
     createdAt: DateTime.makeUnsafe("2026-11-26T10:00:00Z"),

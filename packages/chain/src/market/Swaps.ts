@@ -76,8 +76,9 @@ export const swapCalls = (swap: Swap): ReadonlyArray<{ readonly to: Address; rea
 }
 
 /**
- * What a swap moved for `account`, from the transaction's `Transfer` logs: the input that left it and the output
- * that arrived. `undefined` when the logs don't show both (the swap didn't happen).
+ * What a swap moved for `account`, from the transaction's `Transfer` logs: the input that left it for the stock's pool
+ * and the output that came back from that pool, so each swap of an operation that made several reads only its own.
+ * `undefined` when the logs don't show both (the swap didn't happen).
  *
  * @stability unstable
  * @category reads
@@ -89,6 +90,8 @@ export const fillOf = (
   account: Address
 ): { readonly amountIn: bigint; readonly amountOut: bigint } | undefined => {
   const { tokenIn, tokenOut } = tokensOf(swap)
+  const pool = swap.stock.pool?.address
+  if (pool === undefined) return undefined
   let amountIn = BigInt(0)
   let amountOut = BigInt(0)
 
@@ -100,10 +103,14 @@ export const fillOf = (
       continue
     }
     if (event.eventName !== "Transfer") continue
-    const transfer = event.args
+    const { from, to, value } = event.args
 
-    if (isAddressEqual(log.address, tokenIn) && isAddressEqual(transfer.from, account)) amountIn += transfer.value
-    if (isAddressEqual(log.address, tokenOut) && isAddressEqual(transfer.to, account)) amountOut += transfer.value
+    if (isAddressEqual(log.address, tokenIn) && isAddressEqual(from, account) && isAddressEqual(to, pool)) {
+      amountIn += value
+    }
+    if (isAddressEqual(log.address, tokenOut) && isAddressEqual(from, pool) && isAddressEqual(to, account)) {
+      amountOut += value
+    }
   }
 
   return amountIn > BigInt(0) && amountOut > BigInt(0) ? { amountIn, amountOut } : undefined

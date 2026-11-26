@@ -9,7 +9,7 @@ import * as Effect from "effect/Effect"
 import type { Address, Chain, Hex, Transport } from "viem"
 import type { BundlerClient, SmartAccount } from "viem/account-abstraction"
 import { type Refusal, refusalFrom } from "./Refusals.ts"
-import { guardedTradeCallGas } from "./Session.ts"
+import { guardedCallGas } from "./Session.ts"
 
 /**
  * What the chain said: the operation passes every policy (with its gas), a policy refused it, or the answer couldn't
@@ -30,8 +30,8 @@ export type Decision =
   | { readonly _tag: "Retry"; readonly reason: string }
 
 /**
- * Whether the agent's session lets it send `calls`, by estimating them as the agent. A trade asks for at least
- * `guardedTradeCallGas`, as it will when sent. The gas it passes with is what to send it with, so sending needs no
+ * Whether the agent's session lets it send `calls` (one or more approve-and-swap pairs, judged together), by
+ * estimating them as the agent. It asks for at least `guardedCallGas` for its swaps, as it will when sent. The gas it passes with is what to send it with, so sending needs no
  * second estimate.
  *
  * @stability unstable
@@ -41,12 +41,14 @@ export type Decision =
 export const simulateAsAgent = (
   agent: BundlerClient<Transport, Chain | undefined, SmartAccount>,
   calls: ReadonlyArray<{ readonly to: Address; readonly data?: Hex | undefined; readonly value?: bigint | undefined }>
-): Effect.Effect<Decision> =>
-  Effect.tryPromise(() => agent.estimateUserOperationGas({ calls: [...calls], callGasLimit: guardedTradeCallGas }))
+): Effect.Effect<Decision> => {
+  // Each swap is an approval and the swap it pays for.
+  const least = guardedCallGas(calls.length / 2)
+  return Effect.tryPromise(() => agent.estimateUserOperationGas({ calls: [...calls], callGasLimit: least }))
     .pipe(
       Effect.map((estimate): Decision => ({
         _tag: "Passes",
-        callGasLimit: estimate.callGasLimit > guardedTradeCallGas ? estimate.callGasLimit : guardedTradeCallGas,
+        callGasLimit: estimate.callGasLimit > least ? estimate.callGasLimit : least,
         verificationGasLimit: estimate.verificationGasLimit,
         preVerificationGas: estimate.preVerificationGas
       })),
@@ -59,3 +61,4 @@ export const simulateAsAgent = (
         )
       })
     )
+}

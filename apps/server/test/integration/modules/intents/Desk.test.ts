@@ -36,10 +36,10 @@ layer(TestAgents.layer, { excludeTestServices: true })("AccountDesk", (it) => {
           agentId: agent.id,
           account: user.account,
           session: session!,
-          leg: deciding.leg
+          legs: [deciding.leg]
         })
         const signed = yield* executor.sign(agent.id, session!, decided.calls!, decided.gas!)
-        const quote = decided.quote!
+        const quote = decided.quotes![0]!
         const trade = yield* ledger.record({
           id: typeid("trade").toString() as `trade_${string}`,
           userId: deciding.userId,
@@ -79,6 +79,114 @@ layer(TestAgents.layer, { excludeTestServices: true })("AccountDesk", (it) => {
             usage.policies.find((policy) => policy.policy === "tradesPerDay")?.used
           ],
           [["Done", "Done"], "filled", "filled", BigInt(1)]
+        )
+      }))
+  })
+
+  describe("Step, a plan of several trades", () => {
+    it.effect("its two buys in one wave: one operation, both filled, counted as one trade", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const intents = yield* IntentStore
+        const batch = { id: randomUUID(), wave: 0 }
+        const { row: nvidia } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("NVDA", 50),
+          batch
+        })
+        const { row: apple } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("AAPL", 40),
+          batch
+        })
+
+        const result = yield* (yield* AccountDesk.client)(me.id).Step({ intentId: apple.id })
+        const legs = yield* Effect.forEach([nvidia, apple], (row) =>
+          Effect.gen(function*() {
+            const intent = yield* user.api.intents.intent({ params: { id: IntentId.make(row.id) } })
+            const trade = yield* user.api.trades.trade({ params: { id: intent.tradeId! } })
+            return { status: intent.status, txHash: trade.txHash }
+          }))
+        const usage = yield* user.api.agents.usage({ params: { id: agent.id } })
+
+        assert.deepStrictEqual(
+          [
+            result._tag,
+            legs.map((leg) => leg.status),
+            legs[0]!.txHash === legs[1]!.txHash,
+            usage.policies.filter((policy) => policy.policy !== "gasBudget" && policy.policy !== "slippageBudget")
+              .map((policy) => [policy.policy, policy.used])
+          ],
+          ["Done", ["filled", "filled"], true, [["trade", BigInt(90_000_000)], ["tradesPerDay", BigInt(1)]]]
+        )
+      }))
+
+    it.effect("one of its buys over the largest trade: each decided alone, the other sent", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const intents = yield* IntentStore
+        const batch = { id: randomUUID(), wave: 0 }
+        const { row: nvidia } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("NVDA", 150),
+          batch
+        })
+        const { row: apple } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("AAPL", 40),
+          batch
+        })
+
+        yield* (yield* AccountDesk.client)(me.id).Step({ intentId: nvidia.id })
+        const statuses = yield* Effect.forEach(
+          [nvidia, apple],
+          (row) => user.api.intents.intent({ params: { id: IntentId.make(row.id) } }).pipe(Effect.map((i) => i.status))
+        )
+
+        assert.deepStrictEqual(statuses, ["needsApproval", "filled"])
+      }))
+
+    it.effect("two pieces of one stock: the second's step sends the first's operation, then its own", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const intents = yield* IntentStore
+        const id = randomUUID()
+        const { row: first } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("AAPL", 40),
+          batch: { id, wave: 0 }
+        })
+        const { row: second } = yield* intents.insert({ id: me.id, account: user.account }, {
+          requestId: randomUUID(),
+          agentId: agent.id,
+          leg: buy("AAPL", 40),
+          batch: { id, wave: 1 }
+        })
+
+        yield* (yield* AccountDesk.client)(me.id).Step({ intentId: second.id })
+        const legs = yield* Effect.forEach([first, second], (row) =>
+          Effect.gen(function*() {
+            const intent = yield* user.api.intents.intent({ params: { id: IntentId.make(row.id) } })
+            const trade = yield* user.api.trades.trade({ params: { id: intent.tradeId! } })
+            return { status: intent.status, txHash: trade.txHash }
+          }))
+        const usage = yield* user.api.agents.usage({ params: { id: agent.id } })
+
+        assert.deepStrictEqual(
+          [
+            legs.map((leg) => leg.status),
+            legs[0]!.txHash === legs[1]!.txHash,
+            usage.policies.find((policy) => policy.policy === "tradesPerDay")?.used
+          ],
+          [["filled", "filled"], false, BigInt(2)]
         )
       }))
   })

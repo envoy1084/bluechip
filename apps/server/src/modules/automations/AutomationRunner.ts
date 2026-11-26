@@ -5,6 +5,7 @@ import { planLegs } from "@bluechip/domain/automations/Planner"
 import type { ConditionRecord, RunOutcome, TriggerData } from "@bluechip/domain/automations/Run"
 import { gate, type SkipReason } from "@bluechip/domain/automations/Settings"
 import type { UserId } from "@bluechip/domain/Ids"
+import { waves } from "@bluechip/domain/intents/Batch"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { Price, Shares } from "@bluechip/domain/market/Units"
 import { complete } from "@bluechip/domain/policies/Catalog"
@@ -165,20 +166,26 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
           return { outcome: "skipped" as RunOutcome, reason: "There was nothing to trade.", conditions, intentIds: [] }
         }
 
+        // Several legs are one plan (the run's), sent wave by wave: each wave in one operation, or one approval.
+        const operations = waves(legs)
         const proposed = []
-        for (const [index, leg] of legs.entries()) {
-          proposed.push(
-            yield* intents.propose(owner, {
-              requestId: `${runId}:${index}`,
-              dedupeKey: `automation:${runId}:${index}`,
-              agentId: row.agentId as never,
-              leg,
-              reason: `${row.name}: ${trigger.summary}`,
-              source: "automation",
-              sourceId: runId,
-              ask: asking
-            })
-          )
+        for (const [wave, operation] of operations.entries()) {
+          for (const leg of operation) {
+            const index = proposed.length
+            proposed.push(
+              yield* intents.propose(owner, {
+                requestId: `${runId}:${index}`,
+                dedupeKey: `automation:${runId}:${index}`,
+                agentId: row.agentId as never,
+                leg,
+                reason: `${row.name}: ${trigger.summary}`,
+                source: "automation",
+                sourceId: runId,
+                ask: asking,
+                batch: legs.length > 1 ? { id: runId, wave } : undefined
+              })
+            )
+          }
         }
         return {
           outcome: (asking ? "asked" : "proposed") as RunOutcome,

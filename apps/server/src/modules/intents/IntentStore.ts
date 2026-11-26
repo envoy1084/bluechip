@@ -13,7 +13,7 @@ import {
 } from "@bluechip/domain/intents/Intent"
 import { journalOfIntent } from "@bluechip/domain/journal/Journal"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
-import { and, desc, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, or } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -45,6 +45,8 @@ export type IntentInput = {
   readonly dedupeKey?: string | undefined
   /** Waits for your approval whatever the agent's policies allow (an automation that asks you first). */
   readonly ask?: boolean | undefined
+  /** One of several trades planned together, and the operation of the plan it goes out in. */
+  readonly batch?: { readonly id: string; readonly wave: number } | undefined
 }
 
 /** An intent as the API returns it. */
@@ -58,6 +60,7 @@ export const toIntent = (row: IntentRow): Intent =>
     reason: row.reason,
     status: row.status,
     decision: row.decision,
+    batch: row.batchId === null || row.wave === null ? null : { id: row.batchId, wave: row.wave },
     tradeId: row.tradeId as TradeId | null,
     expiresAt: row.expiresAt,
     createdAt: row.createdAt,
@@ -85,6 +88,8 @@ export class IntentStore extends Context.Service<IntentStore, {
     owner: Owner,
     input: IntentInput
   ) => Effect.Effect<{ readonly row: IntentRow; readonly created: boolean }>
+  /** The intents of a user's plan of several trades, operation by operation, in the plan's order. */
+  readonly batch: (userId: string, batchId: string) => Effect.Effect<ReadonlyArray<IntentRow>>
   readonly remove: (id: IntentRow["id"]) => Effect.Effect<void>
   /** The owner's intents, newest first, a page at a time. */
   readonly list: (owner: Owner, query: {
@@ -161,6 +166,8 @@ export class IntentStore extends Context.Service<IntentStore, {
           ask,
           dedupeKey,
           leg: input.leg,
+          batchId: input.batch?.id ?? null,
+          wave: input.batch?.wave ?? null,
           reason: input.reason ?? (input.agentId === null ? "You traded." : "You asked this agent to trade."),
           status: "proposed",
           expiresAt: input.agentId === null && !ask ? null : DateTime.add(now, { hours: OPEN_HOURS }),
@@ -174,6 +181,12 @@ export class IntentStore extends Context.Service<IntentStore, {
           eq(intents.dedupeKey, dedupeKey)
         )).pipe(Effect.orDie)
         return { row: existing!, created: false }
+      })
+
+      const batch = Effect.fn("IntentStore.batch")(function*(userId: string, batchId: string) {
+        return yield* db.select().from(intents)
+          .where(and(eq(intents.userId, userId as `user_${string}`), eq(intents.batchId, batchId)))
+          .orderBy(asc(intents.wave), asc(intents.createdAt), asc(intents.id)).pipe(Effect.orDie)
       })
 
       const remove = (id: IntentRow["id"]) => db.delete(intents).where(eq(intents.id, id)).pipe(Effect.ignore)
@@ -299,6 +312,7 @@ export class IntentStore extends Context.Service<IntentStore, {
         owned,
         byTrade,
         insert,
+        batch,
         remove,
         list,
         approvals,

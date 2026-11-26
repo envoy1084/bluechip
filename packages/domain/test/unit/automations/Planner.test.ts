@@ -58,6 +58,23 @@ describe("planLegs", () => {
       expected: [{ symbol: "AAPL", side: "buy", amount: { usdc: Usdc.make(83_333_333n) } }]
     },
     {
+      name: "$400 split 50/50 through a $100 largest trade, 1 trade a day: a piece of each, in one operation",
+      action: buy(400, ["AAPL", 5000], ["NVDA", 5000]),
+      spec: WEEKLY_BUYER,
+      expected: [{ symbol: "AAPL", side: "buy", amount: usdc(100) }, { symbol: "NVDA", side: "buy", amount: usdc(100) }]
+    },
+    {
+      name: "$400 split 50/50 through a $100 largest trade, 12 trades a day: one operation per piece of each",
+      action: buy(400, ["AAPL", 5000], ["NVDA", 5000]),
+      spec: changed(WEEKLY_BUYER, { id: "tradesPerDay", config: { count: 12 } }),
+      expected: [
+        { symbol: "AAPL", side: "buy", amount: usdc(100) },
+        { symbol: "NVDA", side: "buy", amount: usdc(100) },
+        { symbol: "AAPL", side: "buy", amount: usdc(100) },
+        { symbol: "NVDA", side: "buy", amount: usdc(100) }
+      ]
+    },
+    {
       name: "$250 of your own: not split",
       action: buy(250, ["AAPL", 10_000]),
       spec: null,

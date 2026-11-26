@@ -74,7 +74,6 @@ export class Intents extends Context.Service<Intents, {
       const desk = yield* AccountDesk.client
 
       // The agent, and its session in force, while it can trade.
-      // The agent, and its session in force, while it can trade.
       const tradingAgent = Effect.fnUntraced(function*(owner: Owner, agentId: AgentId) {
         yield* agentStore.owned(owner, agentId)
         const { agent, canTrade, session } = yield* agentStore.tradingState(agentId)
@@ -108,7 +107,12 @@ export class Intents extends Context.Service<Intents, {
 
       const preview = Effect.fn("Intents.preview")(function*(owner: Owner, agentId: AgentId, leg: Leg) {
         const { agent, session } = yield* tradingAgent(owner, agentId)
-        const decided = yield* executor.decide({ agentId: agent.id, account: owner.account as Hex, session, leg })
+        const decided = yield* executor.decide({
+          agentId: agent.id,
+          account: owner.account as Hex,
+          session,
+          legs: [leg]
+        })
           .pipe(
             Effect.catchTag(
               "ChainError",
