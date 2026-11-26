@@ -162,6 +162,14 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     defaults: EVERYWHERE
   }),
   kind({
+    kind: "balanceUnexplained",
+    group: "money",
+    label: "Money moved outside bluechip",
+    description: "Cash or a stock that arrived or left in a way no trade, deposit or withdrawal explains.",
+    severity: "important",
+    defaults: EVERYWHERE
+  }),
+  kind({
     kind: "passkeyAdded",
     group: "security",
     label: "A new passkey",

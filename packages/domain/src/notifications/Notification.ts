@@ -71,6 +71,7 @@ export const NotificationKind = Schema.Literals([
   "chatUnlinked",
   "deposit",
   "withdrawal",
+  "balanceUnexplained",
   "dailyDigest"
 ])
 
