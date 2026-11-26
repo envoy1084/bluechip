@@ -16,6 +16,7 @@ import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { ActivityDetails } from "../components/ActivityDetails.tsx"
+import { emptyActivity } from "../model/emptyActivity.ts"
 
 type Kind = typeof ActivityKind.Type
 type Period = typeof ActivityPeriod.Type
@@ -82,17 +83,7 @@ export function ActivityScreen() {
       )}
 
       {AsyncResult.isSuccess(activity) && items.length === 0 && (
-        <Empty variant="outline" size="sm">
-          <EmptyMedia>
-            <Icon name="activity" size={18} />
-          </EmptyMedia>
-          <EmptyTitle>Nothing here yet</EmptyTitle>
-          <EmptyDescription>
-            {kind === "all" && period === "all" ?
-              "Your trades and withdrawals show up here." :
-              "Try another type or a longer period."}
-          </EmptyDescription>
-        </Empty>
+        <EmptyActivity filtered={kind !== "all" || period !== "all"} />
       )}
 
       {days.map((day) => (
@@ -113,5 +104,22 @@ export function ActivityScreen() {
 
       <ActivityDetails item={selected} names={names} onClose={() => setSelected(undefined)} />
     </AppPage>
+  )
+}
+
+/** The empty list. It reads the whole history only once a filter comes back empty, to know what to say. */
+function EmptyActivity({ filtered }: Readonly<{ filtered: boolean }>) {
+  const everything = useAtomValue(activityAtom("all all"))
+  const history = !AsyncResult.isSuccess(everything) ? "unknown" : everything.value.items.length === 0 ? "none" : "some"
+  const { title, description } = emptyActivity(history, filtered)
+
+  return (
+    <Empty variant="outline" size="sm">
+      <EmptyMedia>
+        <Icon name="activity" size={18} />
+      </EmptyMedia>
+      <EmptyTitle>{title}</EmptyTitle>
+      <EmptyDescription>{description}</EmptyDescription>
+    </Empty>
   )
 }

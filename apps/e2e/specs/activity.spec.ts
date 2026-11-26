@@ -13,10 +13,11 @@ test.describe("activity", () => {
   test("a new person's activity is empty, and says where trades will show", async ({ page, user: _user }) => {
     await page.goto("/activity")
 
-    await expect(page.getByText("Nothing here yet")).toBeVisible()
-    await expect(page.getByText("Try another type or a longer period.")).toBeVisible()
-    await choosePeriod(page, "All time")
+    await expect(page.getByText("No activity yet")).toBeVisible()
     await expect(page.getByText("Your trades and withdrawals show up here.")).toBeVisible()
+    await choosePeriod(page, "All time")
+    await expect(page.getByText("No activity yet")).toBeVisible()
+    await expect(page.getByText("Try another type or a longer period.")).toBeHidden()
   })
 
   test("a withdrawal is listed under today", async ({ page, funded: _funded }) => {
@@ -59,6 +60,7 @@ test.describe("activity", () => {
 
     await expect(page.getByText("Withdrew $15.00")).toBeHidden()
     await expect(page.getByText("Nothing here yet")).toBeVisible()
+    await expect(page.getByText("Try another type or a longer period.")).toBeVisible()
     await filter.getByRole("tab", { name: "Cash" }).click()
     await expect(page.getByText("Withdrew $15.00")).toBeVisible()
   })
