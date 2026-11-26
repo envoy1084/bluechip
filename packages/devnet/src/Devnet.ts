@@ -109,6 +109,8 @@ const make = Effect.fnUntraced(function*(rpcUrl: string, bundlerUrl: string) {
     Effect.promise(() => Controls.mintShares(anvil, stockOf(symbol).token, account, shares))
   const movePool = (symbol: string, price: bigint) =>
     Effect.promise(() => Controls.movePool(anvil, stockOf(symbol), price))
+  const sendSharesOut = (account: Address, symbol: string, shares: bigint) =>
+    Effect.promise(() => Controls.transferTokens(anvil, stockOf(symbol).token, account, Controls.DEVNET_ADMIN, shares))
 
   yield* Effect.promise(async () => {
     // The captured state brings back the capture's clock: agents state the latest block's time and Namera
@@ -134,7 +136,7 @@ const make = Effect.fnUntraced(function*(rpcUrl: string, bundlerUrl: string) {
       return block!.calls.map((call) => ({ success: call.status === "0x1", returnData: call.returnData }))
     })
 
-  return { rpcUrl, bundlerUrl, setPrice, mintShares, movePool, simulateAt }
+  return { rpcUrl, bundlerUrl, setPrice, mintShares, sendSharesOut, movePool, simulateAt }
 })
 
 /**
@@ -152,6 +154,11 @@ export class Devnet extends Context.Service<Devnet, {
   readonly setPrice: (symbol: string, price: bigint, options?: { readonly ageSeconds?: number }) => Effect.Effect<void>
   /** Mints `shares` (8 decimals) of a stock to `account`. */
   readonly mintShares: (account: Address, symbol: string, shares: bigint) => Effect.Effect<void>
+  /**
+   * Sends `shares` (8 decimals) of a stock out of `account` to the admin, as the account itself: a transfer made
+   * outside bluechip, as with the account's key elsewhere. The account keeps its ETH.
+   */
+  readonly sendSharesOut: (account: Address, symbol: string, shares: bigint) => Effect.Effect<void>
   /** Trades against a stock's pool until it prices the stock at `price` (USD per token, 8 decimals). */
   readonly movePool: (symbol: string, price: bigint) => Effect.Effect<void>
   /**

@@ -120,6 +120,25 @@ layer(DevnetTest.layer)("Devnet", (it) => {
       }))
   })
 
+  describe("sendSharesOut", () => {
+    it.effect("an account's shares leave it as it sent them, and its ETH stays", () =>
+      Effect.gen(function*() {
+        const chain = yield* ChainClient
+        const devnet = yield* Devnet
+        const account = "0x00000000000000000000000000000000000b0b00"
+        yield* devnet.mintShares(account, "NVDA", BigInt(300_000_000))
+        yield* (yield* DevChain).setEthBalance(account, BigInt(5))
+
+        yield* devnet.sendSharesOut(account, "NVDA", BigInt(100_000_000))
+        const balance = yield* chain.use("balanceOf", (client) =>
+          client.readContract({ address: nvda.token, abi: erc20Abi, functionName: "balanceOf", args: [account] }))
+        const eth = yield* chain.use("getBalance", (client) =>
+          client.getBalance({ address: account }))
+
+        assert.deepStrictEqual([balance, eth], [BigInt(200_000_000), BigInt(5)])
+      }))
+  })
+
   describe("movePool", () => {
     it.effect.each([
       { name: "a pool moved up prices the stock higher", price: BigInt(18_000_000_000) },

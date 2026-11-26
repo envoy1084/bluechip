@@ -1,6 +1,6 @@
 /**
- * What the devnet lets you do that Base doesn't, over JSON-RPC: set a feed's price, mint stock tokens, and move a
- * pool's price by trading against it. Shared by the `Devnet` test service and `pnpm dev`'s price sync.
+ * What the devnet lets you do that Base doesn't, over JSON-RPC: set a feed's price, mint stock tokens, move them out
+ * of an account as the account, and move a pool's price by trading against it. Shared by the `Devnet` test service and `pnpm dev`'s price sync.
  *
  * @since 0.0.0
  */
@@ -71,6 +71,7 @@ const abi = parseAbi([
   "function mint(address to, uint256 amount)",
   "function balanceOf(address account) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16, uint16, uint16, bool)",
   "function exactInputSingle((address tokenIn, address tokenOut, int24 tickSpacing, address recipient, uint256 deadline, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) returns (uint256)"
 ])
@@ -109,9 +110,10 @@ export const rpc = (url: string): Rpc => async (method, params = []) => {
   return body.result
 }
 
-// Sends a transaction from the admin and waits for it: Anvil answers before automine has the block.
-const transact = async (node: Rpc, to: Address, data: Hex, gas?: bigint) => {
-  const hash = await node("eth_sendTransaction", [{ from: DEVNET_ADMIN, to, data, gas: gas && toHex(gas) }])
+// Sends a transaction (from the admin unless `from` is given, which Anvil must be impersonating) and waits for it: Anvil
+// answers before automine has the block.
+const transact = async (node: Rpc, to: Address, data: Hex, gas?: bigint, from: Address = DEVNET_ADMIN) => {
+  const hash = await node("eth_sendTransaction", [{ from, to, data, gas: gas && toHex(gas) }])
   for (;;) {
     const receipt = await node("eth_getTransactionReceipt", [hash]) as { status: Hex } | null
     if (receipt !== null) {
@@ -155,6 +157,32 @@ export const setFeedTime = async (node: Rpc, feed: Address, updatedAt: number) =
  */
 export const mintShares = (node: Rpc, token: Address, account: Address, shares: bigint) =>
   transact(node, token, encodeFunctionData({ abi, functionName: "mint", args: [account, shares] }))
+
+/**
+ * Transfers `amount` of `token` from `from` to `to`, sent as `from` (Anvil impersonates it, a smart account too): a
+ * transfer made outside whatever owns `from`. `from` keeps the ETH it had: the gas is lent, then taken back.
+ *
+ * @stability unstable
+ * @category controls
+ * @since 0.0.0
+ */
+export const transferTokens = async (node: Rpc, token: Address, from: Address, to: Address, amount: bigint) => {
+  const eth = await node("eth_getBalance", [from, "latest"]) as Hex
+  await node("anvil_setBalance", [from, toHex(BigInt(eth) + BigInt(10) ** BigInt(16))])
+  await node("anvil_impersonateAccount", [from])
+  try {
+    await transact(
+      node,
+      token,
+      encodeFunctionData({ abi, functionName: "transfer", args: [to, amount] }),
+      undefined,
+      from
+    )
+  } finally {
+    await node("anvil_stopImpersonatingAccount", [from])
+    await node("anvil_setBalance", [from, eth])
+  }
+}
 
 /**
  * Trades against a stock's pool until it prices the stock at `price` (USD per token, 8 decimals): buying the stock
