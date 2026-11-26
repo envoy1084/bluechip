@@ -6,6 +6,7 @@ import { formatPercent } from "@bluechip/domain/policies/Format"
 import { configOf, type Field } from "@bluechip/domain/policies/Policy"
 import type { Target } from "@bluechip/domain/policies/Rebalance"
 import { stockCap } from "@bluechip/domain/policies/StockCap"
+import type { Floor } from "@bluechip/domain/policies/StopLossFloor"
 import { type Direction, trade } from "@bluechip/domain/policies/Trade"
 import { ChoiceField } from "../../../../../components/fields/ChoiceField.tsx"
 import { NumberField } from "../../../../../components/fields/NumberField.tsx"
@@ -13,6 +14,7 @@ import { StockField } from "../../../../../components/fields/StockField.tsx"
 import { ToggleField } from "../../../../../components/fields/ToggleField.tsx"
 import { fieldText, toDollars } from "../../../model/fieldText.ts"
 import { DirectionField } from "./DirectionField.tsx"
+import { FloorsField } from "./FloorsField.tsx"
 import { MixField } from "./MixField.tsx"
 
 /** What a field's editor may read besides its own value: the whole draft, the stocks bluechip lists. */
@@ -136,8 +138,19 @@ export function FieldEditor(
           onChange={onChange}
         />
       )
-    // Shown, not edited: floors have no editor of their own yet.
     case "floors":
+      return (
+        <FloorsField
+          label={field.label}
+          problem={problem}
+          value={value as ReadonlyArray<Floor>}
+          symbols={configOf(context.spec.policies, trade)?.stocks ?? []}
+          stocks={context.stocks}
+          nameOf={context.nameOf}
+          onChange={onChange}
+        />
+      )
+    // Shown, not edited: bluechip watches gas, not you.
     case "wei":
       return (
         <p className="flex justify-between gap-3 text-[13.5px] text-g-700">
