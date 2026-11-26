@@ -25,6 +25,13 @@ export const trades = pgTable("trades", {
   gapBps: integer("gap_bps").notNull(),
   userOpHash: text("user_op_hash"),
   txHash: text("tx_hash"),
+  /** The pool's fee, in USDC base units, once filled. */
+  fee: units("fee"),
+  /** How much worse than Chainlink beyond the fee, in USDC base units (signed), once filled. */
+  slippage: units("slippage"),
+  /** The gas the operation cost, in wei, once settled (`null` for trades before gas was recorded). */
+  gasWei: units("gas_wei"),
+  gasPaidBy: text("gas_paid_by", { enum: ["account", "sponsor"] }),
   createdAt: dateTimeUtc("created_at").notNull(),
   settledAt: dateTimeUtc("settled_at")
 }, (table) => [index("trades_user_created_at_idx").on(table.userId, table.createdAt)])

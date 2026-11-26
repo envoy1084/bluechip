@@ -5,7 +5,7 @@ import { isoBase64URL } from "@simplewebauthn/server/helpers"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { type Hex, hexToBytes, type Log } from "viem"
+import { type Hex, hexToBytes, type Log, zeroAddress } from "viem"
 import {
   formatUserOperation,
   formatUserOperationRequest,
@@ -13,7 +13,8 @@ import {
   InsufficientPrefundError,
   type RpcUserOperation,
   toWebAuthnAccount,
-  type UserOperation
+  type UserOperation,
+  type UserOperationReceipt
 } from "viem/account-abstraction"
 import { base } from "viem/chains"
 import { AppConfig } from "../../config/AppConfig.ts"
@@ -32,12 +33,27 @@ export interface Call {
   readonly data: Hex
 }
 
-/** A user operation's receipt: its transaction, whether its calls succeeded, and the logs they emitted. */
+/**
+ * A user operation's receipt: its transaction, whether its calls succeeded, the logs they emitted, and the gas it
+ * cost (wei), paid by the account or, through a paymaster, by a sponsor.
+ */
 export interface Receipt {
   readonly success: boolean
   readonly txHash: Hex
   readonly logs: ReadonlyArray<Log>
+  readonly gas: { readonly wei: bigint; readonly paidBy: "account" | "sponsor" }
 }
+
+/** The receipt of a user operation, as the bundler reports it. */
+export const toReceipt = (receipt: UserOperationReceipt): Receipt => ({
+  success: receipt.success,
+  txHash: receipt.receipt.transactionHash,
+  logs: receipt.logs,
+  gas: {
+    wei: receipt.actualGasCost,
+    paidBy: receipt.paymaster === undefined || receipt.paymaster === zeroAddress ? "account" : "sponsor"
+  }
+})
 
 // ERC-4337's AA21: the account couldn't pay the operation's prefund, so it has no ETH for gas and nothing sponsors it.
 // The bundler's code reaches us inside a chain of wrapped errors (Effect's, viem's, Namera's), so every cause is read.
@@ -177,7 +193,7 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
         const receipt = yield* Effect.tryPromise(() =>
           namera.bundlerClient(account).waitForUserOperationReceipt({ hash, timeout: 120_000 })
         ).pipe(Effect.catch(unavailable))
-        return { success: receipt.success, txHash: receipt.receipt.transactionHash, logs: receipt.logs }
+        return toReceipt(receipt)
       })
 
       return OwnerOperations.of({ account: (passkey) => kernelAccount(passkey), prepare, send, wait })

@@ -43,6 +43,8 @@ import { IntentStore } from "./modules/intents/IntentStore.ts"
 import { AgentJournal } from "./modules/journal/AgentJournal.ts"
 import { Knowledge } from "./modules/knowledge/Knowledge.ts"
 import { KnowledgeRefreshCron } from "./modules/knowledge/RefreshCron.ts"
+import { Ledger } from "./modules/ledger/Ledger.ts"
+import { LedgerCron } from "./modules/ledger/LedgerCron.ts"
 import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
@@ -92,6 +94,8 @@ export const ServicesLive = Layer.mergeAll(
   ExpireIntentsCron,
   ExpireAgentsCron,
   PortfolioSnapshotCron,
+  LedgerCron,
+  Ledger.repairOnStart,
   RecallEmbedCron,
   MemoryDecayCron,
   KnowledgeRefreshCron,
@@ -152,7 +156,8 @@ export const ServicesLive = Layer.mergeAll(
       Charts.layer,
       Stocks.layer,
       PortfolioSnapshots.layer,
-      ChannelLinks.layer
+      ChannelLinks.layer,
+      Ledger.layer
     )
   ),
   Layer.provideMerge(

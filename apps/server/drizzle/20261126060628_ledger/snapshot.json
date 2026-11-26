@@ -1,0 +1,1706 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "ec229536-30d0-4693-81cd-a4defee275cd",
+  "prevIds": [
+    "cceb58ff-298d-4af9-ac07-bf3f54c960c7"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "ledger_adjustments"
+      ],
+      "writes": [
+        "s|tbl|public.ledger_adjustments",
+        "n|tbl|public.ledger_adjustments",
+        "e|tbl|public.ledger_adjustments",
+        "n|rel|public.ledger_adjustments",
+        "n|type|public.ledger_adjustments",
+        "n|rel|public.ledger_adjustments_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "lot_closings"
+      ],
+      "writes": [
+        "s|tbl|public.lot_closings",
+        "n|tbl|public.lot_closings",
+        "e|tbl|public.lot_closings",
+        "n|rel|public.lot_closings",
+        "n|type|public.lot_closings",
+        "n|rel|public.lot_closings_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "lots"
+      ],
+      "writes": [
+        "s|tbl|public.lots",
+        "n|tbl|public.lots",
+        "e|tbl|public.lots",
+        "n|rel|public.lots",
+        "n|type|public.lots",
+        "n|rel|public.lots_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "pnl_daily"
+      ],
+      "writes": [
+        "s|tbl|public.pnl_daily",
+        "n|tbl|public.pnl_daily",
+        "e|tbl|public.pnl_daily",
+        "n|rel|public.pnl_daily",
+        "n|type|public.pnl_daily",
+        "n|rel|public.pnl_daily_user_day_symbol_agent_key"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "trades",
+        "fee"
+      ],
+      "writes": [
+        "s|col|public.trades.fee",
+        "n|col|public.trades.fee",
+        "e|col|public.trades.fee"
+      ],
+      "reads": [
+        "n|tbl|public.trades",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "trades",
+        "slippage"
+      ],
+      "writes": [
+        "s|col|public.trades.slippage",
+        "n|col|public.trades.slippage",
+        "e|col|public.trades.slippage"
+      ],
+      "reads": [
+        "n|tbl|public.trades",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "trades",
+        "gas_wei"
+      ],
+      "writes": [
+        "s|col|public.trades.gas_wei",
+        "n|col|public.trades.gas_wei",
+        "e|col|public.trades.gas_wei"
+      ],
+      "reads": [
+        "n|tbl|public.trades",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "trades",
+        "gas_paid_by"
+      ],
+      "writes": [
+        "s|col|public.trades.gas_paid_by",
+        "n|col|public.trades.gas_paid_by",
+        "e|col|public.trades.gas_paid_by"
+      ],
+      "reads": [
+        "n|tbl|public.trades",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "ledger_adjustments",
+        "ledger_adjustments_user_asset_idx"
+      ],
+      "writes": [
+        "s|idx|public.ledger_adjustments_user_asset_idx",
+        "n|idx|public.ledger_adjustments_user_asset_idx",
+        "e|idx|public.ledger_adjustments_user_asset_idx",
+        "n|rel|public.ledger_adjustments_user_asset_idx"
+      ],
+      "reads": [
+        "n|tbl|public.ledger_adjustments",
+        "n|sch|public",
+        "n|col|public.ledger_adjustments.user_id",
+        "n|col|public.ledger_adjustments.asset"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "lot_closings",
+        "lot_closings_user_closed_at_idx"
+      ],
+      "writes": [
+        "s|idx|public.lot_closings_user_closed_at_idx",
+        "n|idx|public.lot_closings_user_closed_at_idx",
+        "e|idx|public.lot_closings_user_closed_at_idx",
+        "n|rel|public.lot_closings_user_closed_at_idx"
+      ],
+      "reads": [
+        "n|tbl|public.lot_closings",
+        "n|sch|public",
+        "n|col|public.lot_closings.user_id",
+        "n|col|public.lot_closings.closed_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "lots",
+        "lots_user_symbol_idx"
+      ],
+      "writes": [
+        "s|idx|public.lots_user_symbol_idx",
+        "n|idx|public.lots_user_symbol_idx",
+        "e|idx|public.lots_user_symbol_idx",
+        "n|rel|public.lots_user_symbol_idx"
+      ],
+      "reads": [
+        "n|tbl|public.lots",
+        "n|sch|public",
+        "n|col|public.lots.user_id",
+        "n|col|public.lots.symbol"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "ledger_adjustments"
+      ],
+      "writes": [
+        "s|fk|public.ledger_adjustments.ledger_adjustments_user_id_users_id_fkey",
+        "n|fk|public.ledger_adjustments.ledger_adjustments_user_id_users_id_fkey",
+        "e|fk|public.ledger_adjustments.ledger_adjustments_user_id_users_id_fkey",
+        "n|con|public.ledger_adjustments.ledger_adjustments_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.ledger_adjustments",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.ledger_adjustments.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lot_closings"
+      ],
+      "writes": [
+        "s|fk|public.lot_closings.lot_closings_user_id_users_id_fkey",
+        "n|fk|public.lot_closings.lot_closings_user_id_users_id_fkey",
+        "e|fk|public.lot_closings.lot_closings_user_id_users_id_fkey",
+        "n|con|public.lot_closings.lot_closings_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lot_closings",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.lot_closings.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lot_closings"
+      ],
+      "writes": [
+        "s|fk|public.lot_closings.lot_closings_lot_id_lots_id_fkey",
+        "n|fk|public.lot_closings.lot_closings_lot_id_lots_id_fkey",
+        "e|fk|public.lot_closings.lot_closings_lot_id_lots_id_fkey",
+        "n|con|public.lot_closings.lot_closings_lot_id_lots_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lot_closings",
+        "n|sch|public",
+        "n|tbl|public.lots",
+        "n|sch|public",
+        "n|col|public.lot_closings.lot_id",
+        "n|col|public.lots.id",
+        "e|uniqueness|public.lots.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lot_closings"
+      ],
+      "writes": [
+        "s|fk|public.lot_closings.lot_closings_trade_id_trades_id_fkey",
+        "n|fk|public.lot_closings.lot_closings_trade_id_trades_id_fkey",
+        "e|fk|public.lot_closings.lot_closings_trade_id_trades_id_fkey",
+        "n|con|public.lot_closings.lot_closings_trade_id_trades_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lot_closings",
+        "n|sch|public",
+        "n|tbl|public.trades",
+        "n|sch|public",
+        "n|col|public.lot_closings.trade_id",
+        "n|col|public.trades.id",
+        "e|uniqueness|public.trades.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lot_closings"
+      ],
+      "writes": [
+        "s|fk|public.lot_closings.lot_closings_adjustment_id_ledger_adjustments_id_fkey",
+        "n|fk|public.lot_closings.lot_closings_adjustment_id_ledger_adjustments_id_fkey",
+        "e|fk|public.lot_closings.lot_closings_adjustment_id_ledger_adjustments_id_fkey",
+        "n|con|public.lot_closings.lot_closings_adjustment_id_ledger_adjustments_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lot_closings",
+        "n|sch|public",
+        "n|tbl|public.ledger_adjustments",
+        "n|sch|public",
+        "n|col|public.lot_closings.adjustment_id",
+        "n|col|public.ledger_adjustments.id",
+        "e|uniqueness|public.ledger_adjustments.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lot_closings"
+      ],
+      "writes": [
+        "s|fk|public.lot_closings.lot_closings_agent_id_agents_id_fkey",
+        "n|fk|public.lot_closings.lot_closings_agent_id_agents_id_fkey",
+        "e|fk|public.lot_closings.lot_closings_agent_id_agents_id_fkey",
+        "n|con|public.lot_closings.lot_closings_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lot_closings",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.lot_closings.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lots"
+      ],
+      "writes": [
+        "s|fk|public.lots.lots_user_id_users_id_fkey",
+        "n|fk|public.lots.lots_user_id_users_id_fkey",
+        "e|fk|public.lots.lots_user_id_users_id_fkey",
+        "n|con|public.lots.lots_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lots",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.lots.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lots"
+      ],
+      "writes": [
+        "s|fk|public.lots.lots_agent_id_agents_id_fkey",
+        "n|fk|public.lots.lots_agent_id_agents_id_fkey",
+        "e|fk|public.lots.lots_agent_id_agents_id_fkey",
+        "n|con|public.lots.lots_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lots",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.lots.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lots"
+      ],
+      "writes": [
+        "s|fk|public.lots.lots_trade_id_trades_id_fkey",
+        "n|fk|public.lots.lots_trade_id_trades_id_fkey",
+        "e|fk|public.lots.lots_trade_id_trades_id_fkey",
+        "n|con|public.lots.lots_trade_id_trades_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lots",
+        "n|sch|public",
+        "n|tbl|public.trades",
+        "n|sch|public",
+        "n|col|public.lots.trade_id",
+        "n|col|public.trades.id",
+        "e|uniqueness|public.trades.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "lots"
+      ],
+      "writes": [
+        "s|fk|public.lots.lots_adjustment_id_ledger_adjustments_id_fkey",
+        "n|fk|public.lots.lots_adjustment_id_ledger_adjustments_id_fkey",
+        "e|fk|public.lots.lots_adjustment_id_ledger_adjustments_id_fkey",
+        "n|con|public.lots.lots_adjustment_id_ledger_adjustments_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.lots",
+        "n|sch|public",
+        "n|tbl|public.ledger_adjustments",
+        "n|sch|public",
+        "n|col|public.lots.adjustment_id",
+        "n|col|public.ledger_adjustments.id",
+        "e|uniqueness|public.ledger_adjustments.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pnl_daily"
+      ],
+      "writes": [
+        "s|fk|public.pnl_daily.pnl_daily_user_id_users_id_fkey",
+        "n|fk|public.pnl_daily.pnl_daily_user_id_users_id_fkey",
+        "e|fk|public.pnl_daily.pnl_daily_user_id_users_id_fkey",
+        "n|con|public.pnl_daily.pnl_daily_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pnl_daily",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.pnl_daily.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "pnl_daily"
+      ],
+      "writes": [
+        "s|fk|public.pnl_daily.pnl_daily_agent_id_agents_id_fkey",
+        "n|fk|public.pnl_daily.pnl_daily_agent_id_agents_id_fkey",
+        "e|fk|public.pnl_daily.pnl_daily_agent_id_agents_id_fkey",
+        "n|con|public.pnl_daily.pnl_daily_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.pnl_daily",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.pnl_daily.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "ledger_adjustments",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "lot_closings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "lots",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "pnl_daily",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "asset",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "amount",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "price",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "value",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "block_number",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "symbol",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "trade_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "adjustment_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "shares",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "cost",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "proceeds",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "realised",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "closed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "flagged",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "symbol",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "trade_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "adjustment_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "shares",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "cost",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "remaining",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "remaining_cost",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "opened_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "closed_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "flagged",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "symbol",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "realised",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "unrealised",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "fees",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "slippage",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "gas_wei",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "trades",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "trades",
+        "name": "fee",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "trades",
+        "name": "slippage",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "trades",
+        "name": "gas_wei",
+        "type": "numeric(78,0)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "trades",
+        "name": "gas_paid_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "ledger_adjustments_user_asset_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "asset",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_user_closed_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "closed_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "lots_user_symbol_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "symbol",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "ledger_adjustments_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_lot_id_lots_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "lot_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "lots",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_trade_id_trades_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "trade_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "trades",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_adjustment_id_ledger_adjustments_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "adjustment_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "ledger_adjustments",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "lots_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "lots_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "lots_trade_id_trades_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "trade_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "trades",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "lots_adjustment_id_ledger_adjustments_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "adjustment_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "ledger_adjustments",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "pnl_daily_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "pnl_daily_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "ledger_adjustments",
+        "name": "ledger_adjustments_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lot_closings",
+        "name": "lot_closings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "lots",
+        "name": "lots_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "pnl_daily",
+        "name": "pnl_daily_user_day_symbol_agent_key",
+        "nameExplicit": true,
+        "columns": [
+          "user_id",
+          "day",
+          "symbol",
+          "agent_id"
+        ],
+        "nullsNotDistinct": true,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

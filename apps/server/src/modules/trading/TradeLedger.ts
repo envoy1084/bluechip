@@ -15,6 +15,7 @@ import * as Result from "effect/Result"
 import type { Hex } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { Ledger } from "../ledger/Ledger.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import type { Receipt } from "../signing/OwnerOperations.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
@@ -51,7 +52,8 @@ export class TradeLedger extends Context.Service<TradeLedger, {
   readonly find: (owner: Owner, id: TradeId) => Effect.Effect<Trade, NotFound>
   /**
    * Records how a sent trade ended, from its receipt (`undefined` when none came): filled with exactly what moved
-   * (read from the logs), or failed (the money stays). Then refreshes the account's balances and tells its owner.
+   * (read from the logs), or failed (the money stays); a fill goes to the ledger. Then refreshes the account's
+   * balances and tells its owner.
    * Returns the trade as saved, or `undefined` when it had already ended.
    */
   readonly settle: (row: TradeRow, account: Hex, receipt: Receipt | undefined) => Effect.Effect<TradeRow | undefined>
@@ -62,6 +64,7 @@ export class TradeLedger extends Context.Service<TradeLedger, {
       const db = yield* Database
       const live = yield* LiveEvents
       const balances = yield* AccountBalances
+      const ledger = yield* Ledger
 
       const record = Effect.fn("TradeLedger.record")(function*(trade: typeof trades.$inferInsert) {
         const [row] = yield* db.insert(trades).values(trade).returning().pipe(Effect.orDie)
@@ -111,6 +114,10 @@ export class TradeLedger extends Context.Service<TradeLedger, {
             settledAt: yield* DateTime.now,
             ...filled
           }).where(eq(trades.id, row.id)).returning().pipe(Effect.orDie)
+          // The ledger catches up on its next repair if this is cut off; the trade's own record never waits on it.
+          yield* ledger.recordFill(updated!, receipt?.gas).pipe(
+            Effect.catchCause((cause) => Effect.logWarning(`Trade ${row.id}: the ledger couldn't record it`, cause))
+          )
 
           // Fresh balances before the events, so a client that refetches on them sees the new holdings.
           yield* balances.invalidate(account)

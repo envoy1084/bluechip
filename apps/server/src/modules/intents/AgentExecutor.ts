@@ -19,7 +19,7 @@ import { getUserOperationHash } from "viem/account-abstraction"
 import { Namera } from "../../platform/namera/Namera.ts"
 import { AgentSessions, type SessionRow } from "../agents/AgentSessions.ts"
 import { Quoter } from "../market/Quoter.ts"
-import type { Receipt } from "../signing/OwnerOperations.ts"
+import { type Receipt, toReceipt } from "../signing/OwnerOperations.ts"
 
 // How long until an intent that waits is decided again.
 const RETRY = {
@@ -122,11 +122,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
       const receiptOf = (client: Effect.Success<ReturnType<typeof agentClient>>, hash: Hex) =>
         chain.use("agent operation receipt", () => client.waitForUserOperationReceipt({ hash, timeout: 120_000 }))
           .pipe(
-            Effect.map((receipt): Receipt => ({
-              success: receipt.success,
-              txHash: receipt.receipt.transactionHash,
-              logs: receipt.logs
-            })),
+            Effect.map(toReceipt),
             Effect.orElseSucceed(() => undefined)
           )
 
