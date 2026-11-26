@@ -8,7 +8,7 @@
 import * as Schema from "effect/Schema"
 import { Agent, AgentRequest } from "../agents/Agent.ts"
 import { Automation, AutomationDescription, AutomationDraft } from "../automations/Automation.ts"
-import { AgentId, AutomationId, CardId } from "../Ids.ts"
+import { AgentId, AutomationId, CardId, RequestId } from "../Ids.ts"
 import { describeDecision } from "../intents/Describe.ts"
 import { Intent, IntentRequest } from "../intents/Intent.ts"
 import { AgentSpec } from "../policies/AgentSpec.ts"
@@ -54,6 +54,32 @@ export const Citation = Schema.Struct({
 export type Citation = typeof Citation.Type
 
 /**
+ * One automation a drafted agent's template comes with, as its card offers it: kept or left out while the agent is a
+ * draft, saved for the agent once it is live.
+ *
+ * @stability unstable
+ * @category schemas
+ * @since 0.0.0
+ */
+export const DraftAutomation = Schema.Struct({
+  /** Saves it once, however often it is asked for. */
+  requestId: RequestId,
+  draft: AutomationDraft,
+  /** What it does, in a sentence. */
+  sentence: Schema.String,
+  kept: Schema.Boolean,
+  /** The automation it became once the agent was live; `null` before (or when left out). */
+  automationId: Schema.NullOr(AutomationId)
+})
+
+/**
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export type DraftAutomation = typeof DraftAutomation.Type
+
+/**
  * Every card:
  *
  * - `Trade`: an agent's trade, decided by its policies: follow it with `IntentChanged` (sent, waiting for your
@@ -61,7 +87,8 @@ export type Citation = typeof Citation.Type
  * - `Approval`: your own trade, prepared for your Face ID (`request`; prepare it again with `POST /api/intents`
  *   once it expires).
  * - `DraftAgent`: an agent drafted from policies, locked with your Face ID (`request`; `POST /api/agents/:id/lock`
- *   prepares it again).
+ *   prepares it again), with the automations its template comes with (`automations`), kept or left out while it is
+ *   a draft and saved once it is live.
  * - `PolicyChange`: a change, renewal or removal of an agent, signed with your Face ID (`request`; `null` when a
  *   draft was removed outright).
  * - `AgentControl`: pausing or resuming an agent (or every agent), applied when you confirm.
@@ -82,7 +109,14 @@ export type Citation = typeof Citation.Type
 export const Card = Schema.TaggedUnion({
   Trade: { id: CardId, intent: Intent },
   Approval: { id: CardId, intent: Intent, request: IntentRequest },
-  DraftAgent: { id: CardId, agent: Agent, request: AgentRequest, description: SpecDescription },
+  DraftAgent: {
+    id: CardId,
+    agent: Agent,
+    request: AgentRequest,
+    description: SpecDescription,
+    /** Absent on cards drafted before automations came with them. */
+    automations: Schema.optionalKey(Schema.Array(DraftAutomation))
+  },
   PolicyChange: {
     id: CardId,
     action: Schema.Literals(["update", "renew", "remove"]),
@@ -211,7 +245,11 @@ export const describeCard = (card: Card): string => {
         "Nothing happens unless they approve it on the card."
     case "DraftAgent":
       return `Shown as a draft agent card for "${card.agent.name}" (${card.agent.id}). ` +
-        "It is locked only when the user approves it with Face ID on the card."
+        "It is locked only when the user approves it with Face ID on the card." +
+        ((card.automations ?? []).length === 0 ?
+          "" :
+          ` It comes with these automations, each kept or left out by the user on the card, the kept ones started ` +
+          `once it is live: ${(card.automations ?? []).map((automation) => automation.sentence).join(" ")}`)
     case "PolicyChange":
       return card.request === null ?
         `The draft agent ${card.agent.id} was removed.` :

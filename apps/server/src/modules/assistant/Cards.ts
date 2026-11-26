@@ -41,6 +41,21 @@ export class Cards extends Context.Service<Cards, {
   readonly confirmMemory: (owner: Owner, memoryId: string) => Effect.Effect<Memory, NotFound>
   /** Dismisses a pending card: nothing is applied. */
   readonly dismiss: (owner: Owner, id: string) => Effect.Effect<Card, NotFound | Conflict>
+  /**
+   * Keeps or leaves out one of a draft agent card's automations; `Conflict` once the agent is no longer a draft (its
+   * automations were decided when it was locked).
+   */
+  readonly keepAutomation: (
+    owner: Owner,
+    id: string,
+    requestId: string,
+    kept: boolean
+  ) => Effect.Effect<Card, NotFound | Conflict>
+  /**
+   * Saves a draft agent card's kept automations for its agent, once the agent is live: each once (by its request id),
+   * so asking again changes nothing. `Conflict` while the agent isn't live.
+   */
+  readonly startAutomations: (owner: Owner, id: string) => Effect.Effect<Card, NotFound | Conflict | InvalidAutomation>
 }>()("@bluechip/server/Cards") {
   static readonly layer = Layer.effect(
     Cards,
@@ -147,12 +162,56 @@ export class Cards extends Context.Service<Cards, {
         const card = yield* pending(owner, id)
         // An inferred memory the user turns down is not kept; one already deleted needs nothing more.
         if (card._tag === "Memory") {
-          yield* memories.remove(owner, card.memory.id).pipe(Effect.catchTag("NotFound", () => Effect.void))
+          yield* memories.discard(owner, card.memory.id).pipe(Effect.catchTag("NotFound", () => Effect.void))
         }
         return yield* save(owner, { ...card, status: "dismissed" })
       })
 
-      return Cards.of({ create, find, confirm, confirmMemory, dismiss })
+      const draftAgentCard = Effect.fnUntraced(function*(owner: Owner, id: string) {
+        const card = yield* find(owner, id)
+        if (card._tag !== "DraftAgent") return yield* new NotFound({ resource: "card", id })
+        return { card, agent: yield* agents.find(owner, card.agent.id) }
+      })
+
+      const keepAutomation = Effect.fn("Cards.keepAutomation")(
+        function*(owner: Owner, id: string, requestId: string, kept: boolean) {
+          const { agent, card } = yield* draftAgentCard(owner, id)
+          const list = card.automations ?? []
+          if (!list.some((automation) => automation.requestId === requestId)) {
+            return yield* new NotFound({ resource: "automation", id: requestId })
+          }
+          if (agent.status !== "draft") return yield* new Conflict({ reason: "cardClosed" })
+          return yield* save(owner, {
+            ...card,
+            agent,
+            automations: list.map((automation) =>
+              automation.requestId === requestId ? { ...automation, kept } : automation
+            )
+          })
+        }
+      )
+
+      const startAutomations = Effect.fn("Cards.startAutomations")(function*(owner: Owner, id: string) {
+        const { agent, card } = yield* draftAgentCard(owner, id)
+        if (agent.status !== "active") return yield* new Conflict({ reason: "agentBusy" })
+
+        const started = []
+        for (const automation of card.automations ?? []) {
+          if (!automation.kept || automation.automationId !== null) {
+            started.push(automation)
+            continue
+          }
+          const saved = yield* automations.create(owner, {
+            requestId: automation.requestId,
+            draft: automation.draft,
+            createdBy: "template"
+          })
+          started.push({ ...automation, automationId: saved.id })
+        }
+        return yield* save(owner, { ...card, agent, automations: started })
+      })
+
+      return Cards.of({ create, find, confirm, confirmMemory, dismiss, keepAutomation, startAutomations })
     })
   )
 }

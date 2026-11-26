@@ -102,11 +102,19 @@ export const chatCard = (
           "approve it in bluechip.",
         inApp
       )
-    case "DraftAgent":
+    case "DraftAgent": {
+      const automations = card.automations ?? []
+      const comes = automations.length === 0 ?
+        "" :
+        `\n\nIt comes with ${automations.length === 1 ? "an automation" : `${automations.length} automations`}, ` +
+        `kept or left out in bluechip before you lock it:\n${
+          automations.map((automation) => `- ${automation.sentence}`).join("\n")
+        }`
       return reply(
-        `**${card.agent.name}** is drafted. It runs only once you lock it with Face ID in bluechip.`,
+        `**${card.agent.name}** is drafted. It runs only once you lock it with Face ID in bluechip.${comes}`,
         inApp
       )
+    }
     case "PolicyChange":
       return card.request === null ?
         reply(`The draft **${card.agent.name}** was removed.`) :

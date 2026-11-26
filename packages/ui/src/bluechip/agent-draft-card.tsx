@@ -19,6 +19,8 @@ export interface AgentDraftCardProps {
   readonly problem?: string | null
   /** In place of the rules once it's locked, such as an `Outcome`. */
   readonly children?: ReactNode
+  /** What it comes with, under its rules (and under `children`): the automations its template starts once it's live. */
+  readonly automations?: ReactNode
   readonly className?: string
 }
 
@@ -27,7 +29,7 @@ export interface AgentDraftCardProps {
  * Face ID. Nothing runs until it's locked.
  */
 export function AgentDraftCard(
-  { agentId, name, detail, can, never, state, tone = "waiting", footer, problem, children, className }:
+  { agentId, name, detail, can, never, state, tone = "waiting", footer, problem, children, automations, className }:
     AgentDraftCardProps
 ) {
   return (
@@ -38,6 +40,7 @@ export function AgentDraftCard(
           <ChatCardRules can={can} never={never} />
         </>
       )}
+      {automations}
       <ChatCardProblem>{problem}</ChatCardProblem>
     </ChatCard>
   )

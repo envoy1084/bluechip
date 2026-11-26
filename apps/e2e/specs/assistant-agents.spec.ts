@@ -49,6 +49,33 @@ test.describe("draft agent cards", () => {
     await expect(page).toHaveURL(/\/agents\/new\?draft=agent_[0-9a-z]+$/)
     await expect(page.getByRole("heading", { name: "Its limits" })).toBeVisible()
   })
+
+  test("a Weekly buyer's automations: one left out, the kept one started once it's live", async ({ page, funded: _funded, replies }) => {
+    await ask(page, replies, {
+      to: unique("Make me a weekly buyer of Apple and Nvidia"),
+      rounds: [
+        [{
+          call: "draftAgent",
+          params: {
+            name: "Weekly two",
+            draft: { template: "weeklyBuyer", preset: "balanced", stocks: ["AAPL", "NVDA"] }
+          }
+        }],
+        [{ text: "Here's the draft, with its weekly buys." }]
+      ]
+    })
+    const card = page.getByRole("region", { name: "Draft agent" })
+    await expect(card.getByText("It comes with these automations. They start once it's live.")).toBeVisible()
+
+    await card.getByRole("switch", { name: "Keep: Weekly buy of NVDA" }).click()
+    await expect(card.getByRole("switch", { name: "Keep: Weekly buy of NVDA" })).not.toBeChecked()
+    await card.getByRole("button", { name: "Lock with Face ID" }).click()
+
+    await expect(card.getByRole("link", { name: "Weekly buy of AAPL" })).toBeVisible()
+    await expect(card.getByText("Weekly buy of NVDA")).toHaveCount(0)
+    await card.getByRole("link", { name: "Weekly buy of AAPL" }).click()
+    await expect(page).toHaveURL(/\/automations\/automation_[0-9a-z]+$/)
+  })
 })
 
 test.describe("policy change cards", () => {

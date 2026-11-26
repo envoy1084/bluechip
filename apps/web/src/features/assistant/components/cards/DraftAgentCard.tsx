@@ -12,10 +12,12 @@ import { useState } from "react"
 import { confirmAgentAtom, lockAgentAtom } from "../../atoms/assistant.ts"
 import { useLiveAgent } from "../../hooks/useLiveAgent.ts"
 import { AGENT_STANDING, agentOutcome, hasExpired, signingProblem } from "../../model/cardText.ts"
+import { DraftAutomations } from "./DraftAutomations.tsx"
 
 /**
- * An agent drafted from chat: what it can and never does, Customize to change its policies in the new-agent flow, and
- * Face ID to lock it. The lock request runs out after two minutes and is prepared again when you approve.
+ * An agent drafted from chat: what it can and never does, the automations its template comes with (kept or left out,
+ * started once it's live), Customize to change its policies in the new-agent flow, and Face ID to lock it. The lock
+ * request runs out after two minutes and is prepared again when you approve.
  */
 export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: "DraftAgent" }> }>) {
   const agent = useLiveAgent(card.agent)
@@ -51,6 +53,7 @@ export function DraftAgentCard({ card }: Readonly<{ card: Extract<Card, { _tag: 
       state={AGENT_STANDING[agent.status]}
       tone={draft ? "waiting" : agent.status === "active" ? "done" : "quiet"}
       problem={problem}
+      automations={<DraftAutomations card={card} agent={agent} />}
       footer={draft ?
         (
           <>

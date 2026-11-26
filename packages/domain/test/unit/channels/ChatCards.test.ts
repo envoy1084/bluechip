@@ -75,6 +75,22 @@ describe("chatCard", () => {
         }
       },
       {
+        name: "a draft agent with its automations: listed, kept or left out in the app",
+        card: card({
+          _tag: "DraftAgent",
+          agent: { name: "Weekly two" },
+          automations: [{ sentence: "Every Monday at 10:00, buy $50 of Apple." }, {
+            sentence: "Every Tuesday at 10:00, buy $50 of NVIDIA."
+          }]
+        }),
+        expected: {
+          markdown: "**Weekly two** is drafted. It runs only once you lock it with Face ID in bluechip.\n\n" +
+            "It comes with 2 automations, kept or left out in bluechip before you lock it:\n" +
+            "- Every Monday at 10:00, buy $50 of Apple.\n- Every Tuesday at 10:00, buy $50 of NVIDIA.",
+          actions: [inApp]
+        }
+      },
+      {
         name: "a renewal: a link",
         card: card({ _tag: "PolicyChange", action: "renew", agent: { name: "Tech picker" }, request: {} }),
         expected: {

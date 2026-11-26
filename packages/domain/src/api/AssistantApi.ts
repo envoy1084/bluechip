@@ -11,7 +11,7 @@ import { Conversation, ConversationThread } from "../assistant/Conversation.ts"
 import { Memory, MemoryExport } from "../assistant/Memory.ts"
 import { Authentication } from "../Auth.ts"
 import { Conflict, InvalidAutomation, InvalidSpec, NotFound } from "../Errors.ts"
-import { AgentId, CardId, ConversationId, MemoryId, RunId } from "../Ids.ts"
+import { AgentId, CardId, ConversationId, MemoryId, RequestId, RunId } from "../Ids.ts"
 import { Page, PageQuery } from "../Page.ts"
 
 /**
@@ -55,6 +55,19 @@ export class AssistantApi extends HttpApiGroup.make("assistant").add(
     /** The card, applied. An automation that no longer fits its agent's policies is `InvalidAutomation`. */
     success: Card,
     error: [NotFound, Conflict, InvalidSpec, InvalidAutomation]
+  }),
+  HttpApiEndpoint.post("keepCardAutomation", "/assistant/cards/:id/automations/:requestId", {
+    params: { id: CardId, requestId: RequestId },
+    /** Keeps or leaves out one of a draft agent's automations, while the agent is a draft. */
+    payload: Schema.Struct({ kept: Schema.Boolean }),
+    success: Card,
+    error: [NotFound, Conflict]
+  }),
+  HttpApiEndpoint.post("startCardAutomations", "/assistant/cards/:id/start-automations", {
+    params: { id: CardId },
+    /** Saves a draft agent's kept automations for it, once it is live (each once). */
+    success: Card,
+    error: [NotFound, Conflict, InvalidAutomation]
   }),
   HttpApiEndpoint.post("dismissCard", "/assistant/cards/:id/dismiss", {
     params: { id: CardId },

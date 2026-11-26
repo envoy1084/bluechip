@@ -39,6 +39,12 @@ export const confirmCardAtom = BluechipApiClient.mutation("assistant", "confirmC
 
 export const dismissCardAtom = BluechipApiClient.mutation("assistant", "dismissCard")
 
+/** Keeps or leaves out one of a draft agent card's automations. */
+export const keepCardAutomationAtom = BluechipApiClient.mutation("assistant", "keepCardAutomation")
+
+/** Starts a draft agent card's kept automations once its agent is live. */
+export const startCardAutomationsAtom = BluechipApiClient.mutation("assistant", "startCardAutomations")
+
 export const cancelRunAtom = BluechipApiClient.mutation("assistant", "cancel")
 
 export const confirmMemoryAtom = BluechipApiClient.mutation("assistant", "confirmMemory")

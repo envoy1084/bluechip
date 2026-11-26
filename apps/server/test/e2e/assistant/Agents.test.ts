@@ -1,4 +1,4 @@
-import { NotFound } from "@bluechip/domain/Errors"
+import { Conflict, NotFound } from "@bluechip/domain/Errors"
 import { checkSpec } from "@bluechip/domain/policies/Catalog"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
@@ -120,6 +120,63 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           const { agent } = yield* (yield* TestAgents).sign(user, card.request, "active")
 
           assert.deepStrictEqual([agent.id, agent.status], [card.agent.id, "active"])
+        }))
+
+      it.effect("a Weekly buyer's draft comes with its automations: kept ones start once it's live, each once", () =>
+        Effect.gen(function*() {
+          const user = yield* (yield* TestUsers).funded
+          const assistant = yield* TestAssistant
+          yield* (yield* RecordedModel).record({
+            to: "Draft a weekly buyer of Apple and Nvidia",
+            rounds: [
+              [{
+                call: "draftAgent",
+                params: {
+                  name: "Weekly two",
+                  draft: { template: "weeklyBuyer", preset: "balanced", stocks: ["AAPL", "NVDA"] }
+                }
+              }],
+              [{ text: "Approve it on the card." }]
+            ]
+          })
+          const conversation = yield* assistant.start(user)
+          const run = yield* assistant.ask(user, conversation.id, "Draft a weekly buyer of Apple and Nvidia")
+          const [card] = run.cards
+          assert(card?._tag === "DraftAgent")
+          const [apple, nvidia] = card.automations!
+
+          const early = yield* Effect.flip(user.api.assistant.startCardAutomations({ params: { id: card.id } }))
+          yield* user.api.assistant.keepCardAutomation({
+            params: { id: card.id, requestId: nvidia!.requestId },
+            payload: { kept: false }
+          })
+          yield* (yield* TestAgents).sign(user, card.request, "active")
+          const started = yield* user.api.assistant.startCardAutomations({ params: { id: card.id } })
+          const again = yield* user.api.assistant.startCardAutomations({ params: { id: card.id } })
+          const late = yield* Effect.flip(user.api.assistant.keepCardAutomation({
+            params: { id: card.id, requestId: nvidia!.requestId },
+            payload: { kept: true }
+          }))
+          const saved = yield* user.api.automations.list({ query: { agentId: card.agent.id } })
+
+          assert.deepStrictEqual(
+            [
+              [apple!.draft.name, nvidia!.draft.name],
+              { ...early },
+              started._tag === "DraftAgent" ? started.automations!.map((each) => [each.kept, each.automationId]) : [],
+              again,
+              { ...late },
+              saved.map((automation) => automation.name)
+            ],
+            [
+              ["Weekly buy of AAPL", "Weekly buy of NVDA"],
+              { ...new Conflict({ reason: "agentBusy" }) },
+              [[true, saved[0]?.id], [false, null]],
+              started,
+              { ...new Conflict({ reason: "cardClosed" }) },
+              ["Weekly buy of AAPL"]
+            ]
+          )
         }))
 
       it.effect("a draft with problems makes no agent, and the model is told the problems", () =>

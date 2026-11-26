@@ -95,6 +95,8 @@ export class Memories extends Context.Service<Memories, {
    * the turn the assistant is answering now, leaves that turn as it is.
    */
   readonly remove: (owner: Owner, id: string, during?: MessageId | undefined) => Effect.Effect<Memory, NotFound>
+  /** Deletes a guess turned down, alone: the conversation it came from stays as it is. */
+  readonly discard: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
   /** Forgets everything: every memory, conversation summary and recall entry of the user's conversations. */
   readonly removeAll: (owner: Owner) => Effect.Effect<void>
   /** Everything remembered, to download. */
@@ -364,6 +366,7 @@ export class Memories extends Context.Service<Memories, {
         learn,
         confirm,
         remove,
+        discard: drop,
         removeAll,
         export: exportAll,
         dropStale

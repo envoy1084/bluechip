@@ -1,8 +1,9 @@
 import { stocks } from "@bluechip/chain/Contracts"
 import { AgentRequest } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
-import { AutomationDraft } from "@bluechip/domain/automations/Automation"
-import { type Address, type AgentId, SavedTemplateId } from "@bluechip/domain/Ids"
+import { AutomationDraft, describeAutomation } from "@bluechip/domain/automations/Automation"
+import { defaultAutomations } from "@bluechip/domain/automations/Templates"
+import { type Address, type AgentId, RequestId, SavedTemplateId } from "@bluechip/domain/Ids"
 import { describeDecision } from "@bluechip/domain/intents/Describe"
 import { type Intent, IntentRequest, type Leg } from "@bluechip/domain/intents/Intent"
 import { rebalanceLegs } from "@bluechip/domain/intents/RebalanceLegs"
@@ -361,11 +362,24 @@ export const CoreToolsLive = CoreToolkit.toLayer(Effect.gen(function*() {
         template: draft.template,
         spec
       })
+      // What its template comes with, offered on the card; the kept ones start once it is live.
+      const defaults = defaultAutomations(
+        Schema.is(SavedTemplateId)(draft.template) ? null : draft.template,
+        complete(spec),
+        request.agent.id
+      )
       return yield* card({
         _tag: "DraftAgent",
         agent: request.agent,
         request,
-        description: describeSpec(spec, nameOf)
+        description: describeSpec(spec, nameOf),
+        automations: defaults.map((automation) => ({
+          requestId: RequestId.make(randomUUID()),
+          draft: automation,
+          sentence: describeAutomation(automation, nameOf).sentence,
+          kept: true,
+          automationId: null
+        }))
       })
     }, asProblem),
     changeAgentPolicies: Effect.fn("AssistantTools.changeAgentPolicies")(function*({ agentId, changes }) {

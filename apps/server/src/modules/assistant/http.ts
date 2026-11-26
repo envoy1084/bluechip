@@ -30,6 +30,9 @@ export const AssistantHandlers = HttpApiBuilder.group(
       cancel: ({ params }) => CurrentUser.use((user) => assistant.cancel(user, params.id)),
       confirmCard: ({ params }) => CurrentUser.use((user) => cards.confirm(user, params.id)),
       dismissCard: ({ params }) => CurrentUser.use((user) => cards.dismiss(user, params.id)),
+      keepCardAutomation: ({ params, payload }) =>
+        CurrentUser.use((user) => cards.keepAutomation(user, params.id, params.requestId, payload.kept)),
+      startCardAutomations: ({ params }) => CurrentUser.use((user) => cards.startAutomations(user, params.id)),
       memories: ({ query }) => CurrentUser.use((user) => memories.list(user, { text: query.q })),
       exportMemories: () => CurrentUser.use((user) => memories.export(user)),
       confirmMemory: ({ params }) => CurrentUser.use((user) => cards.confirmMemory(user, params.id)),
