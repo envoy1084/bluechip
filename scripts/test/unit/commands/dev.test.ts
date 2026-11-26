@@ -24,7 +24,7 @@ describe("devProcesses", () => {
 describe("localChainProcesses", () => {
   const chain = localChainProcesses({ stateFile: "/repo/.data/devnet/state.json", alto: "/repo/alto" })
 
-  it("Anvil on Base's hardfork and chain id, keeping its state in the file", () => {
+  it("Anvil on Base's hardfork, chain id and block time, keeping its state in the file", () => {
     assert.deepStrictEqual(chain.anvil.args, [
       "--hardfork",
       "base:Denim",
@@ -36,6 +36,8 @@ describe("localChainProcesses", () => {
       "/repo/.data/devnet/state.json",
       "--block-base-fee-per-gas",
       "10000000",
+      "--block-time",
+      "2",
       "--silent"
     ])
   })

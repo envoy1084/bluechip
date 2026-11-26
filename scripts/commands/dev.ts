@@ -45,6 +45,9 @@ export const devProcesses = (options: { readonly uikit: boolean }): Array<DevPro
 /**
  * The local chain: Anvil on Base's latest hardfork, keeping its state in `stateFile` across runs, and Alto in safe
  * mode bundling as soon as an operation arrives.
+ *
+ * Anvil mines a block every 2 s, like Base: an agent's operation states the latest block's time, and Namera bounds it
+ * to that time's UTC day, so a chain idle since yesterday would send operations the bundler rejects as expired.
  */
 export const localChainProcesses = (options: { readonly stateFile: string; readonly alto: string }) => ({
   anvil: {
@@ -62,6 +65,8 @@ export const localChainProcesses = (options: { readonly stateFile: string; reado
       options.stateFile,
       "--block-base-fee-per-gas",
       String(BASE_FEE_WEI),
+      "--block-time",
+      "2",
       "--silent"
     ]
   } satisfies DevProcess,
