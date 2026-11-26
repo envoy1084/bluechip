@@ -26,8 +26,8 @@ export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddlewar
  * startup that the bundler and paymaster work together, and refuses to boot otherwise. The browser suite runs it with
  * fixed market data, recorded models and a route of its own (`test/stack/`).
  */
-export const makeServer = <Out, E, R = never>(
-  adapters: Layer.Layer<Alpaca | AssistantModels | Out, E>,
+export const makeServer = <Out, E, RA = never, R = never>(
+  adapters: Layer.Layer<Alpaca | AssistantModels | Out, E, RA>,
   routes: Layer.Layer<never, never, R> = Layer.empty as Layer.Layer<never, never, R>
 ) =>
   HttpRouter.serve(Layer.merge(Routes, routes)).pipe(

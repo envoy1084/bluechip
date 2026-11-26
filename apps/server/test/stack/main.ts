@@ -1,5 +1,6 @@
-// The server as the browser suite (`apps/e2e`) runs it: the real server, on fixed market data (`AlpacaTest`) and the
-// assistant's recorded models (`RecordedModel`), with routes of its own for what a browser can't arrange:
+// The server as the browser suite (`apps/e2e`) runs it: the real server, on market data at the devnet's prices
+// (`AlpacaFromChain`) and the assistant's recorded models (`RecordedModel`), with routes of its own for what a
+// browser can't arrange:
 //
 // - `POST /e2e/replies` records the model's replies a test is about to ask for (a JSON array of `Reply`).
 // - `POST /e2e/expire` runs the agents' expiry cron for one user (`{ userId, at }`) as if the server's clock read `at`
@@ -17,8 +18,8 @@ import * as TestClock from "effect/testing/TestClock"
 import { Agents } from "../../src/modules/agents/Agents.ts"
 import { AssistantModels } from "../../src/modules/assistant/AssistantModels.ts"
 import { makeServer } from "../../src/Server.ts"
-import { AlpacaTest } from "../utils/AlpacaTest.ts"
 import { RecordedModel, type Reply } from "../utils/RecordedModel.ts"
+import { AlpacaFromChain } from "./AlpacaFromChain.ts"
 
 const RepliesRoute = Layer.unwrap(Effect.gen(function*() {
   const recorded = yield* RecordedModel
@@ -47,7 +48,7 @@ const ExpireRoute = Layer.unwrap(Effect.gen(function*() {
 }))
 
 const server = process.env["BLUECHIP_E2E_LIVE"] === "1" ?
-  makeServer(Layer.merge(AlpacaTest, AssistantModels.layer), ExpireRoute) :
-  makeServer(Layer.merge(AlpacaTest, RecordedModel.layer), Layer.merge(RepliesRoute, ExpireRoute))
+  makeServer(Layer.merge(AlpacaFromChain, AssistantModels.layer), ExpireRoute) :
+  makeServer(Layer.merge(AlpacaFromChain, RecordedModel.layer), Layer.merge(RepliesRoute, ExpireRoute))
 
 NodeRuntime.runMain(Layer.launch(server))
