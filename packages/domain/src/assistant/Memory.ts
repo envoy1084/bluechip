@@ -5,7 +5,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
-import { AgentId, MemoryId, MessageId } from "../Ids.ts"
+import { AgentId, ConversationId, MemoryId, MessageId } from "../Ids.ts"
 
 /**
  * What a memory is about: how you like things done, a limit you set, what you are working towards, or a fact.
@@ -80,7 +80,85 @@ export class Memory extends Schema.Class<Memory>("@bluechip/domain/assistant/Mem
   /** When you confirmed it; an unconfirmed memory never reaches a prompt. */
   confirmedAt: Schema.NullOr(Schema.DateTimeUtc),
   createdAt: Schema.DateTimeUtc,
-  lastUsedAt: Schema.NullOr(Schema.DateTimeUtc)
+  /** When it was last recalled for an answer. */
+  lastUsedAt: Schema.NullOr(Schema.DateTimeUtc),
+  /** How many answers it was recalled for. */
+  uses: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+}) {}
+
+/**
+ * What a conversation was about up to a point, kept so long conversations and later ones can recall it.
+ *
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export class ConversationSummary
+  extends Schema.Class<ConversationSummary>("@bluechip/domain/assistant/Memory/ConversationSummary")({
+    conversationId: ConversationId,
+    text: Schema.String,
+    updatedAt: Schema.DateTimeUtc
+  })
+{}
+
+/**
+ * A conversation is summarised once more than this many messages follow its summary (or its start).
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const SUMMARY_AFTER = 12
+
+/**
+ * The latest turns (your messages and the answers to them) a summary never covers: prompts carry them word for word.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const KEEP_TURNS = 4
+
+/**
+ * Where a conversation's summary should now end, given its messages' roles in order and how many the summary covers
+ * already: the count of messages to cover (up to, not including, the first of the {@link KEEP_TURNS} latest turns),
+ * or `undefined` while fewer than {@link SUMMARY_AFTER} messages follow it.
+ *
+ * **Example** (Sixteen messages, none summarised)
+ *
+ * ```ts import.meta.vitest
+ * import { summaryCut } from "@bluechip/domain/assistant/Memory"
+ *
+ * summaryCut(Array.from({ length: 16 }, (_, i) => (i % 2 === 0 ? "user" : "assistant")), 0) // => 8
+ * ```
+ *
+ * @stability unstable
+ * @category decisions
+ * @since 0.0.0
+ */
+export const summaryCut = (
+  roles: ReadonlyArray<"user" | "assistant">,
+  summarized: number
+): number | undefined => {
+  if (roles.length - summarized <= SUMMARY_AFTER) return undefined
+  const turns = roles.flatMap((role, index) => index >= summarized && role === "user" ? [index] : [])
+  if (turns.length <= KEEP_TURNS) return undefined
+  const cut = turns[turns.length - KEEP_TURNS]!
+  return cut > summarized ? cut : undefined
+}
+
+/**
+ * Everything the assistant remembers about you, to download: your memories (with how often each was used) and the
+ * summaries of your conversations.
+ *
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export class MemoryExport extends Schema.Class<MemoryExport>("@bluechip/domain/assistant/Memory/MemoryExport")({
+  exportedAt: Schema.DateTimeUtc,
+  memories: Schema.Array(Memory),
+  summaries: Schema.Array(ConversationSummary)
 }) {}
 
 /**

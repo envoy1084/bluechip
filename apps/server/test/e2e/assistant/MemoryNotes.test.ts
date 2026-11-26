@@ -33,7 +33,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memory note
         const conversation = yield* assistant.start(user)
 
         yield* assistant.ask(user, conversation.id, note.message)
-        const kept = yield* user.api.assistant.memories()
+        const kept = yield* user.api.assistant.memories({ query: {} })
 
         assert.deepStrictEqual(
           kept.map((memory) => ({

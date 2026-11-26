@@ -1,7 +1,21 @@
-import { Memory, type MemoryCandidate, type MemoryKind, planMemoryWrite } from "@bluechip/domain/assistant/Memory"
+import {
+  ConversationSummary,
+  Memory,
+  type MemoryCandidate,
+  MemoryExport,
+  type MemoryKind,
+  planMemoryWrite
+} from "@bluechip/domain/assistant/Memory"
+import {
+  fitBudget,
+  importanceOf,
+  PROMPT_BUDGET,
+  type RecallHit,
+  selectMemories
+} from "@bluechip/domain/assistant/Recall"
 import { NotFound } from "@bluechip/domain/Errors"
-import { type AgentId, MemoryId, type MessageId } from "@bluechip/domain/Ids"
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm"
+import { type AgentId, type ConversationId, MemoryId, type MessageId, type UserId } from "@bluechip/domain/Ids"
+import { and, asc, count, desc, eq, gte, inArray, isNull, lt } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -9,12 +23,15 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { messages } from "../assistant/tables.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
-import { memories } from "./tables.ts"
+import { Recall } from "./Recall.ts"
+import { RecallIndex } from "./RecallIndex.ts"
+import { conversationSummaries, memories, memoryUses, recallEntries } from "./tables.ts"
 
 type MemoryRow = typeof memories.$inferSelect
 
-const toMemory = (row: MemoryRow) =>
+const toMemory = (row: MemoryRow, uses: number) =>
   new Memory({
     id: row.id as MemoryId,
     agentId: row.agentId as AgentId | null,
@@ -26,18 +43,38 @@ const toMemory = (row: MemoryRow) =>
     messageId: row.messageId as MessageId | null,
     confirmedAt: row.confirmedAt,
     createdAt: row.createdAt,
-    lastUsedAt: row.lastUsedAt
+    lastUsedAt: row.lastUsedAt,
+    uses
   })
 
+// The longest a recalled message or summary is in a prompt: the start says what it was about.
+const RECALLED_LENGTH = 500
+
+/** What a prompt carries from memory: the memories within the budget, and what was recalled from earlier. */
+export interface PromptMemory {
+  readonly memories: ReadonlyArray<Memory>
+  readonly recalled: ReadonlyArray<RecallHit>
+}
+
 /**
- * What the assistant remembers about each user. Confirmed memories go into its prompts; unconfirmed ones (inferences
- * it isn't sure of) wait for the user, and deleted ones are gone.
+ * What the assistant remembers about each user. Confirmed memories go into its prompts (within the budget, the ones
+ * recalled for the message first); unconfirmed ones (inferences it isn't sure of) wait for the user. Deleting a
+ * memory deletes its recall entry and uses with it; forgetting everything also deletes the user's conversation
+ * summaries and what can be recalled from their messages.
  */
 export class Memories extends Context.Service<Memories, {
-  /** Every memory, newest first, confirmed or not. */
-  readonly list: (owner: Owner) => Effect.Effect<ReadonlyArray<Memory>>
-  /** The memories a prompt may use, marked as used now. */
-  readonly forPrompt: (owner: Owner) => Effect.Effect<ReadonlyArray<Memory>>
+  /** Every memory, newest first, confirmed or not; with `text`, the ones it recalls, best first. */
+  readonly list: (owner: Owner, query?: { readonly text?: string | undefined }) => Effect.Effect<ReadonlyArray<Memory>>
+  /**
+   * The memories and earlier context for a turn's prompt. Memories recalled for the message count as used by the turn
+   * (`messageId`, the user's message).
+   */
+  readonly forPrompt: (owner: Owner, turn: {
+    readonly text: string
+    readonly agentId: AgentId | null
+    readonly conversationId: ConversationId
+    readonly messageId: MessageId
+  }) => Effect.Effect<PromptMemory>
   /** What the user asked to be remembered: confirmed at once. */
   readonly remember: (owner: Owner, input: {
     readonly kind: MemoryKind
@@ -51,28 +88,94 @@ export class Memories extends Context.Service<Memories, {
   >
   /** Confirms a memory so prompts use it; one already confirmed is returned as it is. */
   readonly confirm: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
-  /** Deletes a memory; returns it as it was. */
+  /**
+   * Deletes a memory, its recall entry and its uses, and stops recalling the turn it came from; returns it as it was.
+   */
   readonly remove: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
+  /** Forgets everything: every memory, conversation summary and recall entry of the user's conversations. */
   readonly removeAll: (owner: Owner) => Effect.Effect<void>
+  /** Everything remembered, to download. */
+  readonly export: (owner: Owner) => Effect.Effect<MemoryExport>
+  /** Deletes guesses still unconfirmed after `days` (everyone's, or one user's); returns how many. */
+  readonly dropStale: (days: number, options?: { readonly userId?: UserId | undefined }) => Effect.Effect<number>
 }>()("@bluechip/server/Memories") {
   static readonly layer = Layer.effect(
     Memories,
     Effect.gen(function*() {
       const db = yield* Database
+      const recall = yield* Recall
+      const recallIndex = yield* RecallIndex
 
       const ofOwner = (owner: Owner) => eq(memories.userId, owner.id as `user_${string}`)
       const byId = (owner: Owner, id: string) => and(ofOwner(owner), eq(memories.id, id as `memory_${string}`))
 
-      const list = Effect.fn("Memories.list")(function*(owner: Owner) {
-        const rows = yield* db.select().from(memories).where(ofOwner(owner)).orderBy(desc(memories.id))
-          .pipe(Effect.orDie)
-        return rows.map(toMemory)
+      const withUses = Effect.fnUntraced(function*(rows: ReadonlyArray<MemoryRow>) {
+        const counts = rows.length === 0 ? [] : yield* db.select({ memoryId: memoryUses.memoryId, uses: count() })
+          .from(memoryUses).where(inArray(memoryUses.memoryId, rows.map((row) => row.id)))
+          .groupBy(memoryUses.memoryId).pipe(Effect.orDie)
+        const uses = new Map(counts.map((row) => [row.memoryId as string, row.uses]))
+        return rows.map((row) => toMemory(row, uses.get(row.id) ?? 0))
       })
 
-      const forPrompt = Effect.fn("Memories.forPrompt")(function*(owner: Owner) {
-        const rows = yield* db.update(memories).set({ lastUsedAt: yield* DateTime.now })
-          .where(and(ofOwner(owner), isNotNull(memories.confirmedAt))).returning().pipe(Effect.orDie)
-        return rows.map(toMemory).sort((a, b) => a.id.localeCompare(b.id))
+      const one = Effect.fnUntraced(function*(row: MemoryRow) {
+        return (yield* withUses([row]))[0]!
+      })
+
+      const all = Effect.fnUntraced(function*(owner: Owner) {
+        return yield* withUses(
+          yield* db.select().from(memories).where(ofOwner(owner)).orderBy(desc(memories.id)).pipe(Effect.orDie)
+        )
+      })
+
+      const list = Effect.fn("Memories.list")(
+        function*(owner: Owner, query: { readonly text?: string | undefined } = {}) {
+          if (query.text === undefined || query.text.trim().length === 0) return yield* all(owner)
+
+          const hits = yield* recall.search(owner, {
+            text: query.text,
+            kinds: ["memory"],
+            includeUnconfirmed: true,
+            limit: 50
+          })
+          const found = yield* all(owner)
+          return hits.flatMap((hit) => found.filter((memory) => memory.id === hit.sourceId))
+        }
+      )
+
+      const forPrompt = Effect.fn("Memories.forPrompt")(function*(owner: Owner, turn: {
+        readonly text: string
+        readonly agentId: AgentId | null
+        readonly conversationId: ConversationId
+        readonly messageId: MessageId
+      }) {
+        const [known, hits] = yield* Effect.all([
+          all(owner),
+          recall.search(owner, {
+            text: turn.text,
+            agentId: turn.agentId,
+            excludeConversation: turn.conversationId,
+            limit: 20
+          })
+        ], { concurrency: 2 })
+
+        const relevant = hits.flatMap((hit) => hit.kind === "memory" ? [hit.sourceId] : [])
+        const selected = selectMemories(known, relevant, PROMPT_BUDGET.memories)
+        const used = selected.filter((memory) => relevant.includes(memory.id))
+        if (used.length > 0) {
+          const now = yield* DateTime.now
+          yield* db.insert(memoryUses).values(used.map((memory) => ({
+            memoryId: memory.id as `memory_${string}`,
+            messageId: turn.messageId as `message_${string}`,
+            at: now
+          }))).onConflictDoNothing().pipe(Effect.orDie)
+          yield* db.update(memories).set({ lastUsedAt: now })
+            .where(inArray(memories.id, used.map((memory) => memory.id as `memory_${string}`))).pipe(Effect.orDie)
+        }
+
+        const earlier = hits.filter((hit) => hit.kind !== "memory").map((hit) =>
+          hit.text.length <= RECALLED_LENGTH ? hit : { ...hit, text: `${hit.text.slice(0, RECALLED_LENGTH - 1)}…` }
+        )
+        return { memories: selected, recalled: fitBudget(earlier, PROMPT_BUDGET.recalled) as ReadonlyArray<RecallHit> }
       })
 
       const insert = Effect.fnUntraced(function*(owner: Owner, memory: {
@@ -100,7 +203,18 @@ export class Memories extends Context.Service<Memories, {
           createdAt: now,
           lastUsedAt: null
         }).returning().pipe(Effect.orDie)
-        return toMemory(row!)
+
+        yield* recallIndex.index([{
+          kind: "memory",
+          sourceId: row!.id,
+          userId: owner.id,
+          agentId: memory.agentId,
+          conversationId: null,
+          text: memory.text,
+          importance: importanceOf({ kind: "memory", memory }),
+          at: now
+        }])
+        return toMemory(row!, 0)
       })
 
       const remember = Effect.fn("Memories.remember")(function*(owner: Owner, input: {
@@ -121,15 +235,38 @@ export class Memories extends Context.Service<Memories, {
           yield* db.select().from(memories).where(byId(owner, id)).pipe(Effect.orDie) :
           [confirmed]
         if (row === undefined) return yield* new NotFound({ resource: "memory", id })
-        return toMemory(row)
+        return yield* one(row)
+      })
+
+      // Stops recalling the turn a memory came from: the user's message and the answers up to their next message.
+      const forgetTurn = Effect.fnUntraced(function*(owner: Owner, messageId: MessageId) {
+        const [source] = yield* db.select().from(messages).where(eq(messages.id, messageId as `message_${string}`))
+          .pipe(Effect.orDie)
+        if (source === undefined) return
+        const following = yield* db.select({ id: messages.id, role: messages.role }).from(messages).where(and(
+          eq(messages.conversationId, source.conversationId),
+          gte(messages.createdAt, source.createdAt)
+        )).orderBy(asc(messages.createdAt), asc(messages.id)).pipe(Effect.orDie)
+
+        const next = following.findIndex((message, index) => index > 0 && message.role === "user")
+        const turn = following.slice(0, next === -1 ? following.length : next).map((message) => message.id)
+        yield* db.delete(recallEntries).where(and(
+          eq(recallEntries.userId, owner.id as `user_${string}`),
+          inArray(recallEntries.messageId, turn)
+        )).pipe(Effect.orDie)
       })
 
       const remove = Effect.fn("Memories.remove")(function*(owner: Owner, id: string) {
         const [row] = Schema.is(MemoryId)(id) ?
-          yield* db.delete(memories).where(byId(owner, id)).returning().pipe(Effect.orDie) :
+          yield* db.select().from(memories).where(byId(owner, id)).pipe(Effect.orDie) :
           []
         if (row === undefined) return yield* new NotFound({ resource: "memory", id })
-        return toMemory(row)
+        const memory = yield* one(row)
+
+        // The recall entry and the uses go with it (`on delete cascade`).
+        yield* db.delete(memories).where(byId(owner, id)).pipe(Effect.orDie)
+        if (memory.messageId !== null) yield* forgetTurn(owner, memory.messageId)
+        return memory
       })
 
       const learn = Effect.fn("Memories.learn")(function*(
@@ -137,7 +274,7 @@ export class Memories extends Context.Service<Memories, {
         candidate: MemoryCandidate,
         messageId: MessageId | null
       ) {
-        const existing = yield* list(owner)
+        const existing = yield* all(owner)
         const write = planMemoryWrite(existing, candidate)
         const fields = { ...candidate, text: candidate.text.trim(), agentId: null, messageId }
 
@@ -155,6 +292,50 @@ export class Memories extends Context.Service<Memories, {
         }
       })
 
+      const removeAll = Effect.fn("Memories.removeAll")(function*(owner: Owner) {
+        const userId = owner.id as `user_${string}`
+        yield* db.transaction((tx) =>
+          Effect.gen(function*() {
+            yield* tx.delete(memories).where(eq(memories.userId, userId))
+            yield* tx.delete(conversationSummaries).where(eq(conversationSummaries.userId, userId))
+            yield* tx.delete(recallEntries).where(and(
+              eq(recallEntries.userId, userId),
+              inArray(recallEntries.kind, ["memory", "message", "summary"])
+            ))
+          })
+        ).pipe(Effect.orDie)
+      })
+
+      const exportAll = Effect.fn("Memories.export")(function*(owner: Owner) {
+        const summaries = yield* db.select().from(conversationSummaries)
+          .where(eq(conversationSummaries.userId, owner.id as `user_${string}`))
+          .orderBy(desc(conversationSummaries.updatedAt)).pipe(Effect.orDie)
+        return new MemoryExport({
+          exportedAt: yield* DateTime.now,
+          memories: yield* all(owner),
+          summaries: summaries.map((row) =>
+            new ConversationSummary({
+              conversationId: row.conversationId as ConversationId,
+              text: row.text,
+              updatedAt: row.updatedAt
+            })
+          )
+        })
+      })
+
+      const dropStale = Effect.fn("Memories.dropStale")(function*(
+        days: number,
+        options: { readonly userId?: UserId | undefined } = {}
+      ) {
+        const before = DateTime.subtract(yield* DateTime.now, { days })
+        const dropped = yield* db.delete(memories).where(and(
+          isNull(memories.confirmedAt),
+          lt(memories.createdAt, before),
+          options.userId === undefined ? undefined : eq(memories.userId, options.userId as `user_${string}`)
+        )).returning({ id: memories.id }).pipe(Effect.orDie)
+        return dropped.length
+      })
+
       return Memories.of({
         list,
         forPrompt,
@@ -162,9 +343,9 @@ export class Memories extends Context.Service<Memories, {
         learn,
         confirm,
         remove,
-        removeAll: Effect.fn("Memories.removeAll")(function*(owner: Owner) {
-          yield* db.delete(memories).where(ofOwner(owner)).pipe(Effect.orDie)
-        })
+        removeAll,
+        export: exportAll,
+        dropStale
       })
     })
   )

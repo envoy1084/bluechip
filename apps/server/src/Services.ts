@@ -38,9 +38,11 @@ import { Charts } from "./modules/market/Charts.ts"
 import { MarketPrices } from "./modules/market/MarketPrices.ts"
 import { Quoter } from "./modules/market/Quoter.ts"
 import { Stocks } from "./modules/market/Stocks.ts"
+import { ConversationMemory } from "./modules/memory/ConversationMemory.ts"
 import { RecallEmbedCron } from "./modules/memory/EmbedCron.ts"
 import { Memories } from "./modules/memory/Memories.ts"
 import { MemoryExtractor } from "./modules/memory/MemoryExtractor.ts"
+import { Recall } from "./modules/memory/Recall.ts"
 import { RecallIndex } from "./modules/memory/RecallIndex.ts"
 import { SavedTemplates } from "./modules/policies/SavedTemplates.ts"
 import { AccountBalances } from "./modules/portfolio/AccountBalances.ts"
@@ -78,7 +80,14 @@ export const ServicesLive = Layer.mergeAll(
   ),
   Layer.provideMerge(AutomationRunner.layer),
   Layer.provideMerge(
-    Layer.mergeAll(AssistantToolsLive, MemoryExtractor.layer, Titles.layer, Judgments.layer, NewsItems.layer)
+    Layer.mergeAll(
+      AssistantToolsLive,
+      MemoryExtractor.layer,
+      Titles.layer,
+      ConversationMemory.layer,
+      Judgments.layer,
+      NewsItems.layer
+    )
   ),
   Layer.provideMerge(Conversations.layer),
   Layer.provideMerge(Layer.mergeAll(Cards.layer, Budgets.layer)),
@@ -107,7 +116,8 @@ export const ServicesLive = Layer.mergeAll(
       SavedTemplates.layer,
       Transfers.layer,
       Activity.layer,
-      AutomationRuns.layer
+      AutomationRuns.layer,
+      Recall.layer
     )
   ),
   Layer.provideMerge(

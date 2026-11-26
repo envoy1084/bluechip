@@ -4,7 +4,7 @@ import { MAX_MESSAGE_LENGTH, type Message, type MessagePart } from "@bluechip/do
 import { CARD_EVENT, CardEvent } from "@bluechip/domain/assistant/RunEvents"
 import { systemPrompt } from "@bluechip/domain/assistant/SystemPrompt"
 import { NotFound } from "@bluechip/domain/Errors"
-import type { ConversationId } from "@bluechip/domain/Ids"
+import type { AgentId, ConversationId } from "@bluechip/domain/Ids"
 import { Caller } from "@bluechip/domain/tools/Caller"
 import * as AgUi from "effect/ai/AgUi"
 import type * as AgUiSchema from "effect/ai/AgUiSchema"
@@ -24,6 +24,7 @@ import * as Queue from "effect/Queue"
 import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { Agents } from "../agents/Agents.ts"
+import { ConversationMemory } from "../memory/ConversationMemory.ts"
 import { Memories } from "../memory/Memories.ts"
 import { MemoryExtractor } from "../memory/MemoryExtractor.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
@@ -90,6 +91,7 @@ export class Assistant extends Context.Service<Assistant, {
       const agents = yield* Agents
       const models = yield* AssistantModels
       const extractor = yield* MemoryExtractor
+      const conversationMemory = yield* ConversationMemory
       const titles = yield* Titles
       const toolkit = yield* AssistantToolkit
       const runs = new Map<string, Run>()
@@ -104,13 +106,20 @@ export class Assistant extends Context.Service<Assistant, {
       const turn = (owner: Owner, context: {
         readonly input: AgUiSchema.RunAgentInput
         readonly conversationId: ConversationId
+        readonly agentId: AgentId | null
         readonly userMessage: Message
         readonly userText: string
         readonly wantsTitle: boolean
         readonly stopped: Deferred.Deferred<Stopped>
       }): Stream.Stream<AgUiSchema.Event> => {
         const { conversationId, input } = context
-        const caller = { id: owner.id, account: owner.account, conversationId, source: "assistant" as const }
+        const caller = {
+          id: owner.id,
+          account: owner.account,
+          conversationId,
+          messageId: context.userMessage.id,
+          source: "assistant" as const
+        }
         const waiting: Array<Card> = []
 
         // A card the assistant makes itself, stored in its own message.
@@ -133,15 +142,22 @@ export class Assistant extends Context.Service<Assistant, {
           outcome
         })
 
-        // What the turn learned, then the cards still waiting for the user, as the run's outcome.
+        // What the turn learned, then the cards still waiting for the user, as the run's outcome. The turn's messages
+        // are indexed for recall (and the conversation summarised when it is due) either way.
         const finish = (learn: boolean) =>
           Stream.unwrap(Effect.gen(function*() {
+            const kept = conversationMemory.afterTurn(owner, {
+              conversationId,
+              agentId: context.agentId,
+              from: context.userMessage.id
+            })
             const [learned] = learn ?
               yield* Effect.all([
                 extractor.extract(owner, { userText: context.userText, messageId: context.userMessage.id }),
-                context.wantsTitle ? titles.name(owner, conversationId, context.userText) : Effect.void
-              ], { concurrency: 2 }) :
-              [[]]
+                context.wantsTitle ? titles.name(owner, conversationId, context.userText) : Effect.void,
+                kept
+              ], { concurrency: 3 }) :
+              [[], yield* kept]
 
             const memoryCards = yield* ownCards(learned.map((memory) =>
               memory.confirmedAt === null ?
@@ -290,25 +306,37 @@ export class Assistant extends Context.Service<Assistant, {
         const finishTurn = () => finish(true)
 
         return Stream.unwrap(Effect.gen(function*() {
-          const [thread, owned, remembered] = yield* Effect.all([
+          const [thread, owned, remembered, summary] = yield* Effect.all([
             conversations.thread(owner, conversationId).pipe(Effect.orDie),
             agents.list(owner),
-            memories.forPrompt(owner)
-          ], { concurrency: 3 })
+            memories.forPrompt(owner, {
+              text: context.userText,
+              agentId: context.agentId,
+              conversationId,
+              messageId: context.userMessage.id
+            }),
+            conversationMemory.summary(conversationId)
+          ], { concurrency: 4 })
           const focus = owned.find((agent) => agent.id === thread.conversation.agentId) ?? null
           const system = systemPrompt({
             today: DateTime.formatIsoDateUtc(yield* DateTime.now),
             agents: owned,
-            memories: remembered,
+            memories: remembered.memories,
+            recalled: remembered.recalled,
+            summary: summary?.text ?? null,
             focus
           })
+          // A summarised conversation sends only the messages after its summary.
+          const after = summary === undefined ?
+            -1 :
+            thread.messages.findIndex((message) => message.id === summary.throughMessageId)
           const prompt = Prompt.concat(
             Prompt.make([{
               role: "system",
               content: system,
               options: { anthropic: { cacheControl: { type: "ephemeral" } } }
             }]),
-            promptOf(thread.messages)
+            promptOf(thread.messages.slice(after + 1))
           )
           return round(1, prompt)
         })).pipe(
@@ -369,6 +397,7 @@ export class Assistant extends Context.Service<Assistant, {
         yield* turn(owner, {
           input,
           conversationId: conversation.id,
+          agentId: conversation.agentId,
           userMessage,
           userText,
           wantsTitle: conversation.title === null,

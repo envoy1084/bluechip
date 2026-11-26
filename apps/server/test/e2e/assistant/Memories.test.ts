@@ -24,7 +24,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         const conversation = yield* assistant.start(user)
 
         const run = yield* assistant.ask(user, conversation.id, "Remember that I never want Tesla")
-        const memories = yield* user.api.assistant.memories()
+        const memories = yield* user.api.assistant.memories({ query: {} })
 
         assert.deepStrictEqual(
           [
@@ -177,7 +177,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         const run = yield* assistant.ask(user, conversation.id, "My kids love Nintendo games")
 
         yield* user.api.assistant.dismissCard({ params: { id: run.cards[0]!.id } })
-        const memories = yield* user.api.assistant.memories()
+        const memories = yield* user.api.assistant.memories({ query: {} })
 
         assert.deepStrictEqual(memories, [])
       }))
@@ -214,7 +214,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         })
 
         yield* assistant.ask(user, conversation.id, "Actually I like Tesla now")
-        const memories = yield* user.api.assistant.memories()
+        const memories = yield* user.api.assistant.memories({ query: {} })
 
         assert.deepStrictEqual(
           memories.map((memory) => [memory.text, memory.note, memory.confirmedAt !== null]),
@@ -242,7 +242,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         yield* assistant.ask(user, conversation.id, "Remember two things")
 
         yield* user.api.assistant.deleteMemories()
-        const memories = yield* user.api.assistant.memories()
+        const memories = yield* user.api.assistant.memories({ query: {} })
 
         assert.deepStrictEqual(memories, [])
       }))
@@ -308,7 +308,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         })
         const conversation = yield* assistant.start(user)
         yield* assistant.ask(user, conversation.id, "Remember I hold for years")
-        const [saved] = yield* user.api.assistant.memories()
+        const [saved] = yield* user.api.assistant.memories({ query: {} })
 
         const confirmed = yield* user.api.assistant.confirmMemory({ params: { id: saved!.id } })
 

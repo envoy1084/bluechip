@@ -6,12 +6,12 @@
  */
 import * as Context from "effect/Context"
 import * as Schema from "effect/Schema"
-import type { Address, ConversationId, UserId } from "../Ids.ts"
+import type { Address, ConversationId, MessageId, UserId } from "../Ids.ts"
 import type { IntentSource } from "../intents/Intent.ts"
 
 /**
- * The user a tool call acts for, the conversation its cards belong to (`null` outside a conversation), and the source
- * the intents it creates carry.
+ * The user a tool call acts for, the conversation its cards belong to (`null` outside a conversation) and the message it
+ * answers (`null` outside one), and the source the intents it creates carry.
  *
  * @stability unstable
  * @category services
@@ -21,6 +21,7 @@ export class Caller extends Context.Service<Caller, {
   readonly id: UserId
   readonly account: Address
   readonly conversationId: ConversationId | null
+  readonly messageId: MessageId | null
   readonly source: IntentSource
 }>()("@bluechip/domain/tools/Caller") {}
 

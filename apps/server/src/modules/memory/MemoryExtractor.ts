@@ -12,6 +12,8 @@ import { tokenUsage } from "../assistant/Transcript.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { Memories } from "./Memories.ts"
 
+const NOTES_CONTEXT = 50
+
 /** What the model notes after a turn: the memories worth keeping, none when nothing lasts. */
 export const Notes = Schema.Struct({ memories: Schema.Array(MemoryCandidate) })
 
@@ -62,7 +64,9 @@ export class MemoryExtractor extends Context.Service<MemoryExtractor, {
         readonly userText: string
         readonly messageId: MessageId
       }) {
-        const existing = yield* memories.list(owner)
+        // Up to this many memories, the notes see them all; past it, the ones recalled for the message.
+        const known = yield* memories.list(owner)
+        const existing = known.length <= NOTES_CONTEXT ? known : yield* memories.list(owner, { text: turn.userText })
         const response = yield* models.onConversation(LanguageModel.generateObject({
           objectName: "memory_notes",
           schema: Notes,

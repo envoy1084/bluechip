@@ -169,8 +169,8 @@ function DeleteAll() {
 
 /** What the assistant remembers about you, where each memory came from, and the way to delete one or all of them. */
 export function MemoryScreen() {
-  const memories = useAtomValue(memoriesAtom)
-  const refresh = useAtomRefresh(memoriesAtom)
+  const memories = useAtomValue(memoriesAtom(""))
+  const refresh = useAtomRefresh(memoriesAtom(""))
   const agents = useAtomValue(agentsAtom)
   const agentName = (memory: Memory) =>
     memory.agentId === null || !AsyncResult.isSuccess(agents) ?

@@ -33,6 +33,7 @@ import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
 import { Stocks } from "../market/Stocks.ts"
 import { Memories } from "../memory/Memories.ts"
+import { Recall } from "../memory/Recall.ts"
 import { SavedTemplates } from "../policies/SavedTemplates.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { valueHoldings } from "../portfolio/Valuation.ts"
@@ -141,6 +142,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
   const intents = yield* Intents
   const templates = yield* SavedTemplates
   const memories = yield* Memories
+  const recall = yield* Recall
   const cards = yield* Cards
   const live = yield* LiveEvents
   const automations = yield* Automations
@@ -390,7 +392,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     remember: Effect.fn("AssistantTools.remember")(function*({ agentId, kind, text }) {
       const caller = yield* Caller
       if (agentId !== null) yield* agents.find(caller, agentId)
-      const memory = yield* memories.remember(caller, { kind, text, agentId, messageId: null })
+      const memory = yield* memories.remember(caller, { kind, text, agentId, messageId: caller.messageId })
       return yield* card({ _tag: "Memory", action: "saved", memory, status: "applied" })
     }, asProblem),
     forget: Effect.fn("AssistantTools.forget")(function*({ memoryId }) {
@@ -399,6 +401,9 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     }, asProblem),
     listMemories: Effect.fn("AssistantTools.listMemories")(function*() {
       return yield* memories.list(yield* Caller)
+    }),
+    searchMemory: Effect.fn("AssistantTools.searchMemory")(function*({ query }) {
+      return yield* recall.search(yield* Caller, { text: query, limit: 10 })
     }),
 
     listAutomations: Effect.fn("AssistantTools.listAutomations")(function*({ agentId }) {

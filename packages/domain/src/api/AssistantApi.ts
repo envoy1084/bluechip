@@ -8,7 +8,7 @@ import * as Schema from "effect/Schema"
 import { Budget } from "../assistant/Budget.ts"
 import { Card } from "../assistant/Card.ts"
 import { Conversation, ConversationThread } from "../assistant/Conversation.ts"
-import { Memory } from "../assistant/Memory.ts"
+import { Memory, MemoryExport } from "../assistant/Memory.ts"
 import { Authentication } from "../Auth.ts"
 import { Conflict, InvalidAutomation, InvalidSpec, NotFound } from "../Errors.ts"
 import { AgentId, CardId, ConversationId, MemoryId, RunId } from "../Ids.ts"
@@ -62,7 +62,13 @@ export class AssistantApi extends HttpApiGroup.make("assistant").add(
     error: [NotFound, Conflict]
   }),
   HttpApiEndpoint.get("memories", "/assistant/memories", {
+    /** `q`: only the memories it recalls (by words and meaning), best first; every memory, newest first, without. */
+    query: { q: Schema.optionalKey(Schema.String) },
     success: Schema.Array(Memory)
+  }),
+  HttpApiEndpoint.get("exportMemories", "/assistant/memories/export", {
+    /** Every memory (with its uses) and conversation summary, to download as JSON. */
+    success: MemoryExport
   }),
   HttpApiEndpoint.post("confirmMemory", "/assistant/memories/:id/confirm", {
     params: { id: MemoryId },
@@ -75,6 +81,7 @@ export class AssistantApi extends HttpApiGroup.make("assistant").add(
     success: Schema.Void,
     error: NotFound
   }),
+  /** Forgets everything: every memory, conversation summary and what can be recalled from past conversations. */
   HttpApiEndpoint.delete("deleteMemories", "/assistant/memories", {
     success: Schema.Void
   }),

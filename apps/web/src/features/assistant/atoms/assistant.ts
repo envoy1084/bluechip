@@ -1,6 +1,7 @@
 import type { ConversationId, SigningRequestId } from "@bluechip/domain/Ids"
 import type * as AgUiSchema from "effect/ai/AgUiSchema"
 import * as Effect from "effect/Effect"
+import * as Atom from "effect/reactivity/Atom"
 import * as Stream from "effect/Stream"
 import { BluechipApiClient, liveReactivityKey } from "../../../lib/api/client.ts"
 import { signWithPasskey } from "../../../lib/passkey.ts"
@@ -19,8 +20,13 @@ export const conversationsAtom = BluechipApiClient.query("assistant", "conversat
   reactivityKeys
 })
 
-/** What the assistant remembers about you, newest first. */
-export const memoriesAtom = BluechipApiClient.query("assistant", "memories", { reactivityKeys })
+/** What the assistant remembers about you: every memory, newest first, or the ones a search recalls, best first. */
+export const memoriesAtom = Atom.family((search: string) =>
+  BluechipApiClient.query("assistant", "memories", {
+    query: search.trim() === "" ? {} : { q: search.trim() },
+    reactivityKeys
+  })
+)
 
 /** Today's model cost against the daily budget. */
 export const budgetAtom = BluechipApiClient.query("assistant", "budget", { reactivityKeys })

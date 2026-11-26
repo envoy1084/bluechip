@@ -40,8 +40,11 @@ const EMBED_RUN = 512
  */
 export class RecallIndex extends Context.Service<RecallIndex, {
   readonly index: (sources: ReadonlyArray<RecallSource>) => Effect.Effect<void>
-  /** Embeds entries without a vector of the current model; returns how many it embedded. */
-  readonly embedPending: Effect.Effect<number>
+  /**
+   * Embeds entries without a vector of the current model (everyone's, the job; or one user's); returns how many it
+   * embedded.
+   */
+  readonly embedPending: (options?: { readonly userId?: UserId | undefined }) => Effect.Effect<number>
 }>()("@bluechip/server/RecallIndex") {
   static readonly layer = Layer.effect(
     RecallIndex,
@@ -98,15 +101,19 @@ export class RecallIndex extends Context.Service<RecallIndex, {
         )
       })
 
-      const embedPending = Effect.gen(function*() {
+      const embedPending = Effect.fn("RecallIndex.embedPending")(function*(
+        options: { readonly userId?: UserId | undefined } = {}
+      ) {
         const rows = yield* db.select({ id: recallEntries.id, text: recallEntries.text }).from(recallEntries)
-          .where(or(isNull(recallEntries.model), ne(recallEntries.model, embeddings.model))).limit(EMBED_RUN)
-          .pipe(Effect.orDie)
+          .where(and(
+            or(isNull(recallEntries.model), ne(recallEntries.model, embeddings.model)),
+            options.userId === undefined ? undefined : eq(recallEntries.userId, options.userId as `user_${string}`)
+          )).limit(EMBED_RUN).pipe(Effect.orDie)
         return yield* embed(rows)
-      }).pipe(
-        Effect.catchTag("AiError", (error) => Effect.as(Effect.logWarning("The recall embed job failed", error), 0)),
-        Effect.withSpan("RecallIndex.embedPending")
-      )
+      }, (effect) =>
+        effect.pipe(
+          Effect.catchTag("AiError", (error) => Effect.as(Effect.logWarning("The recall embed job failed", error), 0))
+        ))
 
       return RecallIndex.of({ index, embedPending })
     })

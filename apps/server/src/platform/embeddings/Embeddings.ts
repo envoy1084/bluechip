@@ -48,7 +48,7 @@ export class Embeddings extends Context.Service<Embeddings, {
         const embedding = yield* EmbeddingModel.EmbeddingModel
         return Embeddings.of({
           model,
-          relevance: 0.35,
+          relevance: 0.4,
           documents: (texts) =>
             embedAll(embedding, texts).pipe(VoyageEmbeddingModel.withConfigOverride({ input_type: "document" })),
           query: (text) =>

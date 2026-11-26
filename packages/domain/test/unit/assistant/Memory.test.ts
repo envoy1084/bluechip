@@ -1,4 +1,4 @@
-import { type MemoryCandidate, type MemoryWrite, planMemoryWrite } from "@bluechip/domain/assistant/Memory"
+import { type MemoryCandidate, type MemoryWrite, planMemoryWrite, summaryCut } from "@bluechip/domain/assistant/Memory"
 import { MemoryId } from "@bluechip/domain/Ids"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
@@ -104,5 +104,28 @@ describe("planMemoryWrite", () => {
     }
   ])("$name", ({ candidate, expected }) => {
     assert.deepStrictEqual(planMemoryWrite(existing, candidate), expected)
+  })
+})
+
+describe("summaryCut", () => {
+  it.each([
+    { name: "12 messages since the start are not due", messages: 12, summarized: 0, expected: undefined },
+    { name: "13 messages since the start cut before the last 4 turns", messages: 13, summarized: 0, expected: 6 },
+    { name: "16 messages cut at the 5th turn from the end", messages: 16, summarized: 0, expected: 8 },
+    { name: "12 messages after the summary are not due", messages: 20, summarized: 8, expected: undefined },
+    { name: "13 after the summary move it on", messages: 22, summarized: 8, expected: 14 }
+  ])("$name, turns taking turns", ({ expected, messages, summarized }) => {
+    const roles = Array.from(
+      { length: messages },
+      (_, index) => index % 2 === 0 ? "user" as const : "assistant" as const
+    )
+
+    assert.strictEqual(summaryCut(roles, summarized), expected)
+  })
+
+  it("long answers without 5 turns are not due", () => {
+    const roles = ["user" as const, ...Array.from({ length: 20 }, () => "assistant" as const)]
+
+    assert.strictEqual(summaryCut(roles, 0), undefined)
   })
 })

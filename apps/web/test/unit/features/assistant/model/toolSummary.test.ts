@@ -71,7 +71,8 @@ const memory = {
   messageId: null,
   confirmedAt: "2026-11-26T10:00:00.000Z",
   createdAt: "2026-11-26T10:00:00.000Z",
-  lastUsedAt: null
+  lastUsedAt: null,
+  uses: 0
 }
 
 describe("toolSummary", () => {

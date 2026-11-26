@@ -11,6 +11,6 @@ import { RecallIndex } from "./RecallIndex.ts"
 export const RecallEmbedCron = ClusterCron.make({
   name: "memory.embed",
   cron: Cron.parseUnsafe("*/5 * * * *"),
-  execute: Effect.asVoid(RecallIndex.use((index) => index.embedPending)),
+  execute: Effect.asVoid(RecallIndex.use((index) => index.embedPending())),
   skipIfOlderThan: Duration.minutes(5)
 })
