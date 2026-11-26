@@ -35,6 +35,29 @@ layer(DevnetTest.layer)("DevChain", (it) => {
         )
         assert.strictEqual(balance, BigInt(3_500_000))
       }))
+
+    it.effect("four accounts sent USDC at once each receive it", () =>
+      Effect.gen(function*() {
+        const dev = yield* DevChain
+        const chain = yield* ChainClient
+        const accounts = [
+          "0x00000000000000000000000000000000b1c4f010",
+          "0x00000000000000000000000000000000b1c4f011",
+          "0x00000000000000000000000000000000b1c4f012",
+          "0x00000000000000000000000000000000b1c4f013"
+        ] as const
+        yield* Effect.forEach(accounts, (account) => dev.sendUsdc(account, BigInt(2_000_000)), {
+          concurrency: "unbounded"
+        })
+
+        const balances = yield* Effect.forEach(accounts, (account) =>
+          chain.use(
+            "balanceOf",
+            (client) =>
+              client.readContract({ address: usdc, abi: erc20Abi, functionName: "balanceOf", args: [account] })
+          ))
+        assert.deepStrictEqual(balances, [BigInt(2_000_000), BigInt(2_000_000), BigInt(2_000_000), BigInt(2_000_000)])
+      }))
   })
 
   describe("setEthBalance", () => {

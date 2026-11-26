@@ -6,6 +6,7 @@
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as Semaphore from "effect/Semaphore"
 import {
   type Address,
   createTestClient,
@@ -69,7 +70,12 @@ export class DevChain extends Context.Service<DevChain, {
             value: numberToHex(units, { size: 32 })
           }))
 
-      const sendUsdc = Effect.fnUntraced(function*(account: Address, units: bigint) {
+      // One send at a time: each one tops up the faucet and sends from it, so two at once would spend one top-up and
+      // share a nonce.
+      const faucetLock = yield* Semaphore.make(1)
+      const sendUsdc = (account: Address, units: bigint) =>
+        Semaphore.withPermit(faucetLock, sendFromFaucet(account, units))
+      const sendFromFaucet = Effect.fnUntraced(function*(account: Address, units: bigint) {
         yield* use("anvil_setBalance", () => anvil.setBalance({ address: faucet, value: BigInt(10) ** BigInt(18) }))
         yield* setUsdcBalance(faucet, units)
 
@@ -80,7 +86,9 @@ export class DevChain extends Context.Service<DevChain, {
             address: usdc,
             abi: erc20Abi,
             functionName: "transfer",
-            args: [account, units]
+            args: [account, units],
+            // A USDC transfer takes about 60k; without a limit the estimate can claim the whole block.
+            gas: BigInt(100_000)
           })
           await chain.client.waitForTransactionReceipt({ hash })
         })
