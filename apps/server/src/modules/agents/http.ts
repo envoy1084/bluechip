@@ -26,7 +26,11 @@ export const AgentsHandlers = HttpApiBuilder.group(
       change: ({ params, payload }) => CurrentUser.use((user) => requests.change(user, params.id, payload)),
       renew: ({ params, payload }) => CurrentUser.use((user) => requests.renew(user, params.id, payload.requestId)),
       remove: ({ params, payload }) => CurrentUser.use((user) => requests.remove(user, params.id, payload.requestId)),
-      confirm: ({ params, payload }) => CurrentUser.use((user) => requests.confirm(user, params.id, payload.credential))
+      confirm: ({ params, payload }) =>
+        CurrentUser.use((user) => requests.confirm(user, params.id, payload.credential)),
+      removeAll: ({ payload }) => CurrentUser.use((user) => requests.removeAll(user, payload.requestId)),
+      confirmRemoveAll: ({ params, payload }) =>
+        CurrentUser.use((user) => requests.confirmRemoveAll(user, params.id, payload.credential))
     })
   })
 )

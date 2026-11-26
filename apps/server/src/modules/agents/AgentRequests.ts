@@ -7,7 +7,14 @@ import {
   renewCalls,
   revokeCalls
 } from "@bluechip/chain/policies/Session"
-import { type Agent, type AgentAction, AgentRequest, SESSION_DAYS, transition } from "@bluechip/domain/agents/Agent"
+import {
+  type Agent,
+  type AgentAction,
+  AgentRequest,
+  AgentsRemoval,
+  SESSION_DAYS,
+  transition
+} from "@bluechip/domain/agents/Agent"
 import { Conflict, InvalidSpec, type NotFound, type SignatureRejected, type Unavailable } from "@bluechip/domain/Errors"
 import type { AgentId, SigningRequestId, UserId } from "@bluechip/domain/Ids"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
@@ -75,6 +82,17 @@ export class AgentRequests extends Context.Service<AgentRequests, {
     id: SigningRequestId,
     credential: typeof AuthenticationCredential.Type
   ) => Effect.Effect<Agent, NotFound | Conflict | SignatureRejected | Unavailable>
+  /** Prepares one owner operation that revokes the session of every agent that has one (the kill switch's removal). */
+  readonly removeAll: (
+    owner: Owner,
+    requestId: string
+  ) => Effect.Effect<AgentsRemoval, NotFound | Conflict | Unavailable>
+  /** Sends the removal of every agent the passkey signed. */
+  readonly confirmRemoveAll: (
+    owner: Owner,
+    id: SigningRequestId,
+    credential: typeof AuthenticationCredential.Type
+  ) => Effect.Effect<ReadonlyArray<Agent>, NotFound | Conflict | SignatureRejected | Unavailable>
 }>()("@bluechip/server/AgentRequests") {
   static readonly layer = Layer.effect(
     AgentRequests,
@@ -362,7 +380,71 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         return agent
       })
 
-      return AgentRequests.of({ create, lock, change, renew, remove, confirm })
+      // Every agent with a session in force (active or past its end), in the order they were made.
+      const removable = Effect.fnUntraced(function*(owner: Owner) {
+        const all = yield* store.list(owner)
+        const ids = all.filter((agent) => agent.status === "active" || agent.status === "expired").map((a) => a.id)
+        return yield* Effect.forEach(ids, (id) => store.owned(owner, id))
+      })
+
+      const toRemoval = Effect.fnUntraced(function*(request: SigningRequestRow, rows: ReadonlyArray<AgentRow>) {
+        return new AgentsRemoval({
+          id: request.id as SigningRequestId,
+          options: yield* signing.webAuthnOptions(request),
+          agents: yield* Effect.forEach(rows, store.toAgent),
+          expiresAt: request.expiresAt
+        })
+      })
+
+      const removeAll = Effect.fn("AgentRequests.removeAll")(function*(owner: Owner, requestId: string) {
+        const existing = yield* signing.findPrepared(owner, requestId, (payload) => payload["action"] === "removeAll")
+        if (Option.isSome(existing)) {
+          const ids = existing.value.payload["agentIds"]!.split(",")
+          return yield* toRemoval(existing.value, yield* Effect.forEach(ids, (id) => store.owned(owner, id as AgentId)))
+        }
+        const rows = yield* removable(owner)
+        if (rows.length === 0) return yield* new Conflict({ reason: "agentBusy" })
+
+        const calls = yield* Effect.forEach(
+          rows,
+          (row) => Effect.map(sessions.get(row.currentSessionId), (current) => revokeCalls(Grant.parse(current.grant!)))
+        )
+        const request = yield* signing.create(owner, {
+          requestId,
+          kind: "agents",
+          payload: { action: "removeAll", agentIds: rows.map((row) => row.id).join(",") },
+          calls: calls.flat()
+        })
+        return yield* toRemoval(request, rows)
+      })
+
+      const confirmRemoveAll = Effect.fn("AgentRequests.confirmRemoveAll")(function*(
+        owner: Owner,
+        id: SigningRequestId,
+        credential: typeof AuthenticationCredential.Type
+      ) {
+        const { passkey, request } = yield* signing.claim(owner, id, "agents", credential)
+        const rows = yield* Effect.forEach(
+          request.payload["agentIds"]!.split(","),
+          (agentId) => store.owned(owner, agentId as AgentId)
+        )
+        // Every one must still be where it was when the operation was prepared, or the operation revokes the wrong
+        // sessions.
+        const next = rows.map((row) => transition(row.status, { _tag: "Sent", action: "remove" }))
+        if (next.some(Result.isFailure)) return yield* new Conflict({ reason: "agentBusy" })
+
+        const userOpHash = yield* operations.send(passkey, request.userOperation, credential)
+        const agents: Array<Agent> = []
+        for (const [index, row] of rows.entries()) {
+          yield* intents.cancelAgentIntents(row.id)
+          yield* sessions.save(row.currentSessionId!, { userOpHash })
+          agents.push(yield* store.save(row, { status: Result.getOrThrow(next[index]!) }))
+          yield* track(row.id, passkey)
+        }
+        return agents
+      })
+
+      return AgentRequests.of({ create, lock, change, renew, remove, confirm, removeAll, confirmRemoveAll })
     })
   )
 }

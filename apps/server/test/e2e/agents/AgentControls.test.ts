@@ -1,7 +1,9 @@
 import { PolicyUsage } from "@bluechip/domain/agents/Agent"
 import { Conflict } from "@bluechip/domain/Errors"
+import { RequestId } from "@bluechip/domain/Ids"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
+import { randomUUID } from "node:crypto"
 import { TestAgents } from "../../utils/TestAgents.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
 
@@ -51,6 +53,45 @@ layer(TestAgents.layer, { excludeTestServices: true })("agent controls", (it) =>
         const all = yield* user.api.agents.resumeAll()
 
         assert.deepStrictEqual(all.map((agent) => agent.paused), [false])
+      }))
+  })
+
+  describe("POST /api/agents/remove-all", () => {
+    it.effect("one Face ID revokes every agent's session, drafts aside", () =>
+      Effect.gen(function*() {
+        const agents = yield* TestAgents
+        const { agent, user } = yield* agents.locked
+        const second = yield* agents.sign(user, yield* agents.create(user), "active")
+        const draft = yield* agents.create(user)
+
+        const removal = yield* user.api.agents.removeAll({ payload: { requestId: RequestId.make(randomUUID()) } })
+        const sent = yield* user.api.agents.confirmRemoveAll({
+          params: { id: removal.id },
+          payload: { credential: user.authenticator.authenticate(removal.options) }
+        })
+        yield* user.events.next("AgentChanged", (event) =>
+          event.agent.id === agent.id && event.agent.status === "removed")
+        yield* user.events.next(
+          "AgentChanged",
+          (event) =>
+            event.agent.id === second.agent.id && event.agent.status === "removed"
+        )
+        const all = yield* user.api.agents.list()
+
+        assert.deepStrictEqual(removal.agents.map((removed) => removed.id), [agent.id, second.agent.id])
+        assert.deepStrictEqual(sent.map((removed) => removed.status), ["removing", "removing"])
+        assert.deepStrictEqual(all.map((listed) => [listed.id, listed.status]), [[draft.agent.id, "draft"]])
+      }))
+
+    it.effect("409 agentBusy: nothing to remove", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+
+        const error = yield* Effect.flip(
+          user.api.agents.removeAll({ payload: { requestId: RequestId.make(randomUUID()) } })
+        )
+
+        assert.deepStrictEqual({ ...error }, { ...new Conflict({ reason: "agentBusy" }) })
       }))
   })
 
