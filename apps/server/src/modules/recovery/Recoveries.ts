@@ -7,10 +7,11 @@ import {
   requestedAt
 } from "@bluechip/chain/account/Recovery"
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import type { Me } from "@bluechip/domain/Account"
 import type { RecoveringUser } from "@bluechip/domain/Auth"
 import { Conflict, NotFound, SignatureRejected, type Unavailable } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
-import type { Address, PasskeyId, RecoveryRequestId, UserId } from "@bluechip/domain/Ids"
+import type { Address, PasskeyId, RecoveryRequestId, SessionId, UserId } from "@bluechip/domain/Ids"
 import { notificationOfRecovery } from "@bluechip/domain/notifications/SecurityDrafts"
 import { type CancelledFrom, isDue, Recovering, RecoverySigning } from "@bluechip/domain/recovery/Recovery"
 import { type AuthenticationCredential, Ceremony, type RegistrationCredential } from "@bluechip/domain/WebAuthn"
@@ -82,6 +83,14 @@ export class Recoveries extends Context.Service<Recoveries, {
   readonly cancel: (userId: UserId, from: CancelledFrom) => Effect.Effect<RecoveryRequestRow, Conflict | Unavailable>
   /** Marks an open recovery cancelled without sending anything (its recovery key's sessions were revoked). */
   readonly abandon: (userId: UserId) => Effect.Effect<void>
+  /**
+   * Signs the device that made the recovery in with its new passkey, once the recovery landed, and ends its recovery
+   * sign-in. `Conflict` before it landed, and for any other recovery sign-in.
+   */
+  readonly signInRecovered: (user: RecoveringUser["Service"], userAgent: string | undefined) => Effect.Effect<
+    { readonly token: string; readonly expiresAt: DateTime.Utc; readonly me: Me },
+    Conflict
+  >
 }>()("@bluechip/server/Recoveries") {
   static readonly layer = Layer.effect(
     Recoveries,
@@ -185,7 +194,8 @@ export class Recoveries extends Context.Service<Recoveries, {
         }
         yield* accounts.savePasskey(row.newPasskeyId, { status: "active" })
         const saved = yield* store.saveRequest(row.id, { status: "completed", executedAt: now, userOpHash: null })
-        yield* sessions.signOutAll(userId)
+        // Every device is signed out but the one that made it, which signs in with its new passkey next.
+        yield* sessions.signOutAll(userId, row.executedBy === null ? undefined : row.executedBy as SessionId)
         yield* recordAudit(saved, "completed", "owner")
         yield* notifications.add(userId, notificationOfRecovery(saved, { _tag: "Completed" }))
         yield* changed(userId)
@@ -361,7 +371,7 @@ export class Recoveries extends Context.Service<Recoveries, {
           row.id,
           row.signing === "request" ?
             { status: "requesting", userOpHash, requestedAt: now } :
-            { status: "executing", userOpHash }
+            { status: "executing", userOpHash, executedBy: user.session as `session_${string}` }
         )
         yield* changed(user.id)
         yield* track(saved)
@@ -405,7 +415,34 @@ export class Recoveries extends Context.Service<Recoveries, {
         yield* notifications.add(userId, notificationOfRecovery(saved, { _tag: "Cancelled", from: "app" }))
       })
 
+      const signInRecovered = Effect.fn("Recoveries.signInRecovered")(
+        function*(user: RecoveringUser["Service"], userAgent: string | undefined) {
+          const latest = yield* store.latest(user.id)
+          if (
+            Option.isNone(latest) || latest.value.status !== "completed" || latest.value.executedBy !== user.session
+          ) {
+            return yield* new Conflict({ reason: "noRecoveryRequest" })
+          }
+          const session = yield* sessions.create({
+            userId: user.id,
+            passkeyId: latest.value.newPasskeyId as PasskeyId,
+            device: deviceOf(userAgent)
+          })
+          yield* sessions.signOut(user.id, user.session).pipe(Effect.catchTag("NotFound", () => Effect.void))
+          yield* audit.record({
+            userId: user.id,
+            actor: "owner",
+            action: "device.signedIn",
+            subjectType: "session",
+            subjectId: session.id,
+            data: { device: deviceOf(userAgent), recovered: true }
+          })
+          return { token: session.token, expiresAt: session.expiresAt, me: yield* accounts.me(user.id) }
+        }
+      )
+
       return Recoveries.of({
+        signInRecovered,
         signInOptions,
         signIn,
         get,

@@ -149,7 +149,8 @@ export class Sessions extends Context.Service<Sessions, {
           Option.map((found) => ({
             id: found.userId as UserId,
             account: found.address as Address,
-            passkey: found.passkeyId as PasskeyId
+            passkey: found.passkeyId as PasskeyId,
+            session: found.id as SessionId
           }))
         )
       })

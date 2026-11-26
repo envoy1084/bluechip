@@ -4,6 +4,7 @@
 import * as HttpApiEndpoint from "effect/http-api/HttpApiEndpoint"
 import * as HttpApiGroup from "effect/http-api/HttpApiGroup"
 import * as Schema from "effect/Schema"
+import { Me } from "../Account.ts"
 import { Authentication, RecoveryAuthentication } from "../Auth.ts"
 import { Conflict, NotFound, SignatureRejected, Unavailable } from "../Errors.ts"
 import { RecoveryRequestId, RequestId, SigningRequestId } from "../Ids.ts"
@@ -62,7 +63,7 @@ export class RecoveryApi extends HttpApiGroup.make("recovery").add(
 
 /**
  * Recovering, signed in with the recovery passkey: make this device's new passkey and ask for the recovery (the
- * recovery passkey signs), then, 48 hours later, make it.
+ * recovery passkey signs), then, 48 hours later, make it; once it lands, this device is signed in with its new passkey.
  *
  * @stability unstable
  * @category groups
@@ -85,5 +86,13 @@ export class RecoveringApi extends HttpApiGroup.make("recovering").add(
     payload: Schema.Struct({ credential: AuthenticationCredential }),
     success: Recovering,
     error: [NotFound, Conflict, SignatureRejected, Unavailable]
+  }),
+  HttpApiEndpoint.post("signInRecovered", "/recovery/sign-in-recovered", {
+    /**
+     * Once the recovery this device made has landed: signs it in with its new passkey (the session cookie), ending
+     * the recovery sign-in. `Conflict` until then, and on any other device.
+     */
+    success: Me,
+    error: Conflict
   })
 ).middleware(RecoveryAuthentication) {}

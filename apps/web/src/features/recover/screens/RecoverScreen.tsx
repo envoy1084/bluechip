@@ -9,19 +9,28 @@ import { useNavigate } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { useEffect, useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
+import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
-import { executeRecoveryAtom, recoveringAtom, recoverySignInAtom, requestRecoveryAtom } from "../atoms/recover.ts"
+import {
+  executeRecoveryAtom,
+  recoveringAtom,
+  recoverySignInAtom,
+  requestRecoveryAtom,
+  signInRecoveredAtom
+} from "../atoms/recover.ts"
 import { recoverProblem, recoverStep } from "../model/recoverText.ts"
 
 /**
  * Recovering an account with its recovery passkey, from a device with none of its passkeys: sign in with the recovery
- * key, ask for the recovery (this device's new passkey replaces the old ones 48 hours later), and make it once due.
+ * key, ask for the recovery (this device's new passkey replaces the old ones 48 hours later), and make it once due:
+ * once it lands, this device is signed in with its new passkey.
  */
 export function RecoverScreen() {
   const signIn = useAtomSet(recoverySignInAtom, { mode: "promise" })
   const reload = useAtomSet(recoveringAtom, { mode: "promise" })
   const request = useAtomSet(requestRecoveryAtom, { mode: "promise" })
   const execute = useAtomSet(executeRecoveryAtom, { mode: "promise" })
+  const signInRecovered = useAtomSet(signInRecoveredAtom, { mode: "promise" })
   const navigate = useNavigate()
   const [recovering, setRecovering] = useState<Recovering | undefined>(undefined)
   const [busy, setBusy] = useState(false)
@@ -35,6 +44,17 @@ export function RecoverScreen() {
     const timer = setInterval(() => void reload().then(setRecovering, () => undefined), 3000)
     return () => clearInterval(timer)
   }, [step?.tone, reload])
+
+  // The recovery this device made landed: it is signed in with its new passkey, and goes home. Another device (or a
+  // recovery sign-in that ended) signs in with the new passkey by hand.
+  const completed = step?.offer === "signIn"
+  useEffect(() => {
+    if (!completed) return
+    void signInRecovered({ reactivityKeys: [accountReactivityKey] }).then(
+      () => navigate({ to: "/home" }),
+      () => undefined
+    )
+  }, [completed, signInRecovered, navigate])
 
   const run = async (action: () => Promise<Recovering>) => {
     setBusy(true)

@@ -1,6 +1,7 @@
 import { jsonb, pgTable, text } from "drizzle-orm/pg-core"
 import { dateTimeUtc, typeId } from "../../platform/db/columns.ts"
 import { passkeys, users } from "../accounts/tables.ts"
+import { sessions } from "../auth/tables.ts"
 
 /**
  * The account's recovery passkey and its guard: two Namera sessions locked in one owner operation (`user_op_hash`
@@ -45,5 +46,7 @@ export const recoveryRequests = pgTable("recovery_requests", {
   executableAt: dateTimeUtc("executable_at"),
   cancelledAt: dateTimeUtc("cancelled_at"),
   cancelledFrom: text("cancelled_from", { enum: ["app", "telegram"] }),
-  executedAt: dateTimeUtc("executed_at")
+  executedAt: dateTimeUtc("executed_at"),
+  /** The recovery sign-in that made it: that device is signed in with the new passkey once it lands. */
+  executedBy: typeId("session")("executed_by").references(() => sessions.id, { onDelete: "set null" })
 })

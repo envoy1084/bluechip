@@ -1,0 +1,90 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "d46dbd84-ab6b-45a2-bc49-fcf2f04e76ef",
+  "prevIds": [
+    "a009a373-bc57-4b23-88bb-72a71a7f5ccc"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "recovery_requests",
+        "executed_by"
+      ],
+      "writes": [
+        "s|col|public.recovery_requests.executed_by",
+        "n|col|public.recovery_requests.executed_by",
+        "e|col|public.recovery_requests.executed_by"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_requests",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "recovery_requests"
+      ],
+      "writes": [
+        "s|fk|public.recovery_requests.recovery_requests_executed_by_sessions_id_fkey",
+        "n|fk|public.recovery_requests.recovery_requests_executed_by_sessions_id_fkey",
+        "e|fk|public.recovery_requests.recovery_requests_executed_by_sessions_id_fkey",
+        "n|con|public.recovery_requests.recovery_requests_executed_by_sessions_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.recovery_requests",
+        "n|sch|public",
+        "n|tbl|public.sessions",
+        "n|sch|public",
+        "n|col|public.recovery_requests.executed_by",
+        "n|col|public.sessions.id",
+        "e|uniqueness|public.sessions.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "executed_by",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "recovery_requests",
+        "name": "recovery_requests_executed_by_sessions_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "executed_by"
+        ],
+        "schemaTo": "public",
+        "tableTo": "sessions",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    }
+  ]
+}

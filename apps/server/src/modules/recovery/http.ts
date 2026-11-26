@@ -1,9 +1,11 @@
 import { BluechipApi } from "@bluechip/domain/Api"
-import { CurrentUser, RecoveringUser, recoveryCookie } from "@bluechip/domain/Auth"
+import { CurrentUser, RecoveringUser, recoveryCookie, sessionCookie } from "@bluechip/domain/Auth"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
+import * as HttpEffect from "effect/http/HttpEffect"
 import * as HttpServerRequest from "effect/http/HttpServerRequest"
+import * as HttpServerResponse from "effect/http/HttpServerResponse"
 import * as Layer from "effect/Layer"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Recoveries } from "./Recoveries.ts"
@@ -67,6 +69,7 @@ const RecoveringHandlers = HttpApiBuilder.group(
   "recovering",
   Effect.fn(function*(handlers) {
     const recoveries = yield* Recoveries
+    const config = yield* AppConfig
 
     return handlers.handleAll({
       get: () => RecoveringUser.use((user) => recoveries.get(user)),
@@ -77,7 +80,21 @@ const RecoveringHandlers = HttpApiBuilder.group(
       }),
       execute: () => RecoveringUser.use((user) => recoveries.execute(user)),
       confirm: ({ params, payload }) =>
-        RecoveringUser.use((user) => recoveries.confirm(user, params.id, payload.credential))
+        RecoveringUser.use((user) => recoveries.confirm(user, params.id, payload.credential)),
+      signInRecovered: Effect.fn(function*() {
+        const user = yield* RecoveringUser
+        const signedIn = yield* recoveries.signInRecovered(user, yield* userAgent)
+        yield* HttpApiBuilder.securitySetCookie(sessionCookie, signedIn.token, {
+          path: "/",
+          sameSite: "lax",
+          secure: config.env === "production",
+          expires: DateTime.toDateUtc(signedIn.expiresAt)
+        })
+        yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+          Effect.succeed(HttpServerResponse.expireCookieUnsafe(response, recoveryCookie.key, { path: "/" }))
+        )
+        return signedIn.me
+      })
     })
   })
 )

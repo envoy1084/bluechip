@@ -69,6 +69,8 @@ export class RecoveringUser extends Context.Service<RecoveringUser, {
   readonly account: Address
   /** The recovery passkey that signed in. */
   readonly passkey: PasskeyId
+  /** The recovery session: the device recovering. */
+  readonly session: SessionId
 }>()("@bluechip/domain/Auth/RecoveringUser") {}
 
 /**

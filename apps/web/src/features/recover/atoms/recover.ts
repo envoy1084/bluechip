@@ -54,3 +54,6 @@ export const executeRecoveryAtom = BluechipApiClient.runtime.fn(
     })
   })
 )
+
+/** Once the recovery this device made landed, signs it in with its new passkey (no prompt: the server knows it). */
+export const signInRecoveredAtom = BluechipApiClient.mutation("recovering", "signInRecovered")

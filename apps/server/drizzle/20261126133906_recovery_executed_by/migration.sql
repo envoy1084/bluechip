@@ -1,0 +1,2 @@
+ALTER TABLE "recovery_requests" ADD COLUMN "executed_by" uuid;--> statement-breakpoint
+ALTER TABLE "recovery_requests" ADD CONSTRAINT "recovery_requests_executed_by_sessions_id_fkey" FOREIGN KEY ("executed_by") REFERENCES "sessions"("id") ON DELETE SET NULL;
