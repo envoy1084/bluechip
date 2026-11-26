@@ -15,11 +15,12 @@ import { configOf } from "@bluechip/domain/policies/Policy"
 import { rebalance } from "@bluechip/domain/policies/Rebalance"
 import { Caller, ToolProblem } from "@bluechip/domain/tools/Caller"
 import { applyPatch, draftAgentSpec, type PatchedSpec, type SpecDraft } from "@bluechip/domain/tools/SpecPatch"
-import { BluechipToolkit } from "@bluechip/domain/tools/Toolkit"
+import { BluechipToolkit, CoreToolkit } from "@bluechip/domain/tools/Toolkit"
 import * as AnthropicTool from "@effect/ai-anthropic/AnthropicTool"
 import * as Toolkit from "effect/ai/Toolkit"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
+import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
 import { randomUUID } from "node:crypto"
@@ -40,6 +41,7 @@ import { SavedTemplates } from "../policies/SavedTemplates.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { valueHoldings } from "../portfolio/Valuation.ts"
 import { Cards } from "./Cards.ts"
+import { PerformanceToolsLive } from "./PerformanceTools.ts"
 
 /**
  * The toolkit the assistant runs: bluechip's tools and Anthropic's web search (`research`), which Anthropic runs and
@@ -129,11 +131,11 @@ const fromPatch = ({ problems, spec }: PatchedSpec): Effect.Effect<AgentSpec, To
     Effect.fail(problem(`The policies have problems: ${problems.map((p) => `${p.policy}: ${p.message}`).join(" ")}`))
 
 /**
- * The toolkit's handlers on bluechip's services, for the user in `Caller`. Read tools read; propose tools create
+ * The core toolkit's handlers on bluechip's services, for the user in `Caller`. Read tools read; propose tools create
  * intents (the desk decides them); configure tools store a pending card; sign tools prepare a signing request and stop
  * there, so only the user's passkey completes them.
  */
-export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*() {
+export const CoreToolsLive = CoreToolkit.toLayer(Effect.gen(function*() {
   const balances = yield* AccountBalances
   const market = yield* MarketPrices
   const stockList = yield* Stocks
@@ -204,7 +206,7 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
 
   const asProblem = Effect.mapError(problemOf)
 
-  return BluechipToolkit.of({
+  return CoreToolkit.of({
     getPortfolio: Effect.fn("AssistantTools.getPortfolio")(function*() {
       return yield* portfolio
     }, asProblem),
@@ -465,3 +467,6 @@ export const AssistantToolsLive = BluechipToolkit.toLayer(Effect.gen(function*()
     }, asProblem)
   })
 }))
+
+/** Every handler of bluechip's toolkit. */
+export const AssistantToolsLive = Layer.merge(CoreToolsLive, PerformanceToolsLive)

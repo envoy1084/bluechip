@@ -1,0 +1,221 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "9d62df2f-e683-4071-a0a8-df06b71bef3f",
+  "prevIds": [
+    "d3935eb2-de47-46a5-8a18-b3c571baf61b"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "drift_history"
+      ],
+      "writes": [
+        "s|tbl|public.drift_history",
+        "n|tbl|public.drift_history",
+        "e|tbl|public.drift_history",
+        "n|rel|public.drift_history",
+        "n|type|public.drift_history",
+        "n|rel|public.drift_history_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "drift_history"
+      ],
+      "writes": [
+        "s|fk|public.drift_history.drift_history_agent_id_agents_id_fkey",
+        "n|fk|public.drift_history.drift_history_agent_id_agents_id_fkey",
+        "e|fk|public.drift_history.drift_history_agent_id_agents_id_fkey",
+        "n|con|public.drift_history.drift_history_agent_id_agents_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.drift_history",
+        "n|sch|public",
+        "n|tbl|public.agents",
+        "n|sch|public",
+        "n|col|public.drift_history.agent_id",
+        "n|col|public.agents.id",
+        "e|uniqueness|public.agents.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "drift_history"
+      ],
+      "writes": [
+        "s|fk|public.drift_history.drift_history_user_id_users_id_fkey",
+        "n|fk|public.drift_history.drift_history_user_id_users_id_fkey",
+        "e|fk|public.drift_history.drift_history_user_id_users_id_fkey",
+        "n|con|public.drift_history.drift_history_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.drift_history",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.drift_history.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "drift_history",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "agent_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "user_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "drift_bps",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "trigger_bps",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "drift_history_agent_id_agents_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "agent_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "agents",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "drift_history_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "user_id"
+        ],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "drift_history",
+        "name": "drift_history_pkey",
+        "columns": [
+          "agent_id",
+          "at"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

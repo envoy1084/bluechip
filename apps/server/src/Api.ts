@@ -17,6 +17,7 @@ import { TransfersHandlers } from "./modules/funding/http.ts"
 import { IntentsHandlers } from "./modules/intents/http.ts"
 import { MarketHandlers } from "./modules/market/http.ts"
 import { NotificationsHandlers } from "./modules/notifications/http.ts"
+import { PerformanceHandlers } from "./modules/performance/http.ts"
 import { PoliciesHandlers } from "./modules/policies/http.ts"
 import { PortfolioHandlers } from "./modules/portfolio/http.ts"
 import { PushHandlers } from "./modules/push/http.ts"
@@ -34,6 +35,7 @@ export const ApiHandlers = Layer.mergeAll(
   RecoveryApiHandlers,
   MarketHandlers,
   PortfolioHandlers,
+  PerformanceHandlers,
   TransfersHandlers,
   TradesHandlers,
   PoliciesHandlers,

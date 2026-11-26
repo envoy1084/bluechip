@@ -65,6 +65,8 @@ import { Notifications } from "./modules/notifications/Notifications.ts"
 import { Notifiers } from "./modules/notifications/Notifiers.ts"
 import { ReminderCron } from "./modules/notifications/ReminderCron.ts"
 import { Reminders } from "./modules/notifications/Reminders.ts"
+import { DriftCron } from "./modules/performance/DriftCron.ts"
+import { Performance } from "./modules/performance/Performance.ts"
 import { SavedTemplates } from "./modules/policies/SavedTemplates.ts"
 import { AccountBalances } from "./modules/portfolio/AccountBalances.ts"
 import { PortfolioSnapshots } from "./modules/portfolio/PortfolioSnapshots.ts"
@@ -98,6 +100,7 @@ export const ServicesLive = Layer.mergeAll(
   PortfolioSnapshotCron,
   LedgerCron,
   ReconcileCron,
+  DriftCron,
   Ledger.repairOnStart,
   RecallEmbedCron,
   MemoryDecayCron,
@@ -146,7 +149,8 @@ export const ServicesLive = Layer.mergeAll(
     AgentExecutor.layer,
     TradeLedger.layer,
     RecoveryOperations.layer,
-    Reconciliation.layer
+    Reconciliation.layer,
+    Performance.layer
   )),
   Layer.provideMerge(
     Layer.mergeAll(

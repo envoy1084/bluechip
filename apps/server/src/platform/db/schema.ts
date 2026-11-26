@@ -18,6 +18,7 @@ export {
   notifications,
   notificationSettings
 } from "../../modules/notifications/tables.ts"
+export { driftHistory } from "../../modules/performance/tables.ts"
 export { agentTemplates } from "../../modules/policies/tables.ts"
 export { portfolioSnapshots } from "../../modules/portfolio/tables.ts"
 export { pushSubscriptions } from "../../modules/push/tables.ts"
