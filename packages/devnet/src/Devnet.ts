@@ -49,6 +49,22 @@ const stockOf = (symbol: string) => {
 }
 
 /**
+ * The EntryPoint's `handleOps` of signed user operations, with the admin as beneficiary: a bundler's transaction.
+ *
+ * @stability unstable
+ * @category encoding
+ * @since 0.0.0
+ */
+export const handleOpsCall = (operations: ReadonlyArray<UserOperation<"0.7">>): { to: Address; data: Hex } => ({
+  to: entryPoint07Address,
+  data: encodeFunctionData({
+    abi: entryPoint07Abi,
+    functionName: "handleOps",
+    args: [operations.map((operation) => toPackedUserOperation(operation)), Controls.DEVNET_ADMIN]
+  })
+})
+
+/**
  * The current worker's devnet and the controls tests need beyond the chain's own: prices and stock balances.
  * Cash and ETH come from `DevChain`, which works on the devnet as on a fork.
  *
@@ -66,16 +82,15 @@ export class Devnet extends Context.Service<Devnet, {
   /** Trades against a stock's pool until it prices the stock at `price` (USD per token, 8 decimals). */
   readonly movePool: (symbol: string, price: bigint) => Effect.Effect<void>
   /**
-   * Runs `effect` on the chain `seconds` ahead of now, then puts the chain back as it was (a snapshot), so the
-   * worker's later tests see the real time again: the bundler checks operations against the wall clock.
+   * Simulates `calls` in one block `seconds` after the latest, from the admin, and returns each call's result; the
+   * chain itself doesn't change. The bundler refuses an operation not valid yet by the wall clock, so a test checks
+   * what the EntryPoint decides later with `handleOpsCall` here. Moving the chain's clock instead would move it for
+   * every suite sharing the worker's Anvil.
    */
-  readonly inFuture: <A, E, R>(seconds: number, effect: Effect.Effect<A, E, R>) => Effect.Effect<A, E, R>
-  /**
-   * Sends signed user operations straight to the EntryPoint from the admin, as a bundler would, and says whether the
-   * transaction went through. The bundler refuses an operation not valid yet by the wall clock; this lets a test
-   * check what the EntryPoint itself decides on a chain moved ahead (`inFuture`).
-   */
-  readonly handleOps: (operations: ReadonlyArray<UserOperation<"0.7">>) => Effect.Effect<boolean>
+  readonly simulateAt: (
+    seconds: number,
+    calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>
+  ) => Effect.Effect<ReadonlyArray<{ readonly success: boolean; readonly returnData: Hex }>>
 }>()("@bluechip/devnet/Devnet") {
   /**
    * Connects to the current worker's devnet: sets Base's base fee (loading the captured state brings the fork's own),
@@ -114,44 +129,19 @@ export class Devnet extends Context.Service<Devnet, {
           await Controls.rpc(bundlerUrl)("eth_supportedEntryPoints")
         })
 
-        const inFuture = <A, E, R>(seconds: number, effect: Effect.Effect<A, E, R>) =>
-          Effect.acquireUseRelease(
-            Effect.promise(async () => {
-              const snapshot = await anvil("evm_snapshot") as Hex
-              await anvil("evm_increaseTime", [toHex(seconds)])
-              await anvil("anvil_mine", ["0x1"])
-              return snapshot
-            }),
-            () => effect,
-            (snapshot) =>
-              Effect.promise(async () => {
-                await anvil("evm_revert", [snapshot])
-                // The snapshot's block keeps its time; the next one is stamped from the wall clock again.
-                await anvil("anvil_setTime", [now()])
-                await anvil("anvil_mine", ["0x1"])
-              })
-          )
-
-        const handleOps = (operations: ReadonlyArray<UserOperation<"0.7">>) =>
+        const simulateAt = (seconds: number, calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>) =>
           Effect.promise(async () => {
-            const data = encodeFunctionData({
-              abi: entryPoint07Abi,
-              functionName: "handleOps",
-              args: [operations.map((operation) => toPackedUserOperation(operation)), Controls.DEVNET_ADMIN]
-            })
-            const hash = await anvil("eth_sendTransaction", [{
-              from: Controls.DEVNET_ADMIN,
-              to: entryPoint07Address,
-              data,
-              gas: toHex(5_000_000)
-            }])
-            for (;;) {
-              const receipt = await anvil("eth_getTransactionReceipt", [hash]) as { status: Hex } | null
-              if (receipt !== null) return receipt.status === "0x1"
-            }
+            const latest = await anvil("eth_getBlockByNumber", ["latest", false]) as { readonly timestamp: Hex }
+            const [block] = await anvil("eth_simulateV1", [{
+              blockStateCalls: [{
+                blockOverrides: { time: toHex(Number(latest.timestamp) + seconds) },
+                calls: calls.map((call) => ({ from: Controls.DEVNET_ADMIN, gas: toHex(10_000_000), ...call }))
+              }]
+            }, "latest"]) as ReadonlyArray<{ readonly calls: ReadonlyArray<{ status: Hex; returnData: Hex }> }>
+            return block!.calls.map((call) => ({ success: call.status === "0x1", returnData: call.returnData }))
           })
 
-        return { rpcUrl, bundlerUrl, setPrice, mintShares, movePool, inFuture, handleOps }
+        return { rpcUrl, bundlerUrl, setPrice, mintShares, movePool, simulateAt }
       })
     )
 

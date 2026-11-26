@@ -15,7 +15,7 @@ that match the task.
   - `packages/devnet` (`@bluechip/devnet`, private): a local Base for tests, Anvil and Alto per Vitest worker,
     started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), with
     every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`), software
-    passkeys (`Passkeys`), time ahead (`inFuture`) and sends straight to the EntryPoint (`handleOps`).
+    passkeys (`Passkeys`), and calls simulated at a later block time (`simulateAt`, `handleOpsCall`).
   - `packages/ui` (`@bluechip/ui`, private): the design system: Tailwind v4 theme, base components on Base UI,
     bluechip's product components, motion and illustrations. Presentational only.
 - `apps/*`: runnable applications (private).
@@ -243,7 +243,9 @@ is a Namera session (`account/Recovery.ts`) that may only ask for owner changes 
 `RecoveryDelayPolicy`, which returns the request's due time as `validAfter`: the 48-hour delay is enforced onchain.
 bluechip's guard key (sealed like agents' keys) may only cancel a request, so any signed-in device or Telegram can
 cancel without Face ID. A compromised server can cancel recoveries, never start or speed one. Alto checks
-`validAfter` against the wall clock, so chain tests make a due recovery with `Devnet.inFuture` and `handleOps`.
+`validAfter` against the wall clock, so chain tests prepare a due recovery as it would be later
+(`TestAgents.sessionFor` with `secondsAhead`) and simulate the EntryPoint at that time (`Devnet.simulateAt`): never
+move the devnet's clock or revert a snapshot, which every suite sharing the worker's Anvil would see.
 
 ## Agents and policies
 

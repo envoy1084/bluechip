@@ -11,7 +11,18 @@ import { Grant, KernelAccount, type Policy, Session, SessionKey } from "@namera-
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import { type Address, type Chain, type Hex, http, type LocalAccount, parseEther, type Transport } from "viem"
+import {
+  type Address,
+  type Chain,
+  createPublicClient,
+  custom,
+  type Hex,
+  http,
+  type LocalAccount,
+  parseEther,
+  toHex,
+  type Transport
+} from "viem"
 import {
   type BundlerClient,
   createBundlerClient,
@@ -19,6 +30,7 @@ import {
   type WebAuthnAccount
 } from "viem/account-abstraction"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
+import { base } from "viem/chains"
 import { PICKER } from "../fixtures/Specs.ts"
 
 type Calls = ReadonlyArray<
@@ -54,10 +66,15 @@ export class TestAgents extends Context.Service<TestAgents, {
    * A new Kernel account (a passkey owner) with $1,000 and gas, and an agent locked onto it with `spec` (`PICKER` by
    * default), or with `policies` compiled by the caller.
    */
-  /** Operations under `grant` signed by `signer` (a session key: a local key or a passkey), through the bundler. */
+  /**
+   * Operations under `grant` signed by `signer` (a session key: a local key or a passkey), through the bundler. With
+   * `secondsAhead`, they are prepared as they would be that long from now: Namera states the time of each operation
+   * from the latest block (its policies' periods count from it), so the session reads blocks stamped that much later.
+   */
   readonly sessionFor: (
     grant: Grant.Grant,
-    signer: LocalAccount | WebAuthnAccount
+    signer: LocalAccount | WebAuthnAccount,
+    options?: { readonly secondsAhead?: number }
   ) => Effect.Effect<Bundler, ChainError>
   readonly lock: (options?: {
     readonly spec?: AgentSpec | undefined
@@ -133,11 +150,30 @@ export class TestAgents extends Context.Service<TestAgents, {
       }
     })
 
-    const sessionFor = (grant: Grant.Grant, signer: LocalAccount | WebAuthnAccount) =>
-      chain.use(
-        "Grant.toAccount",
-        async (client) => bundler(await Grant.toAccount(client, { grant, signer, check: false }))
-      )
+    const later = (seconds: number) =>
+      createPublicClient({
+        chain: base,
+        transport: custom({
+          request: async ({ method, params }) => {
+            const answer = await chain.client.request({ method, params } as never) as Record<string, unknown> | null
+            if (method !== "eth_getBlockByNumber" || answer === null) return answer
+            return { ...answer, timestamp: toHex(BigInt(answer["timestamp"] as Hex) + BigInt(seconds)) }
+          }
+        })
+      })
+
+    const sessionFor = (
+      grant: Grant.Grant,
+      signer: LocalAccount | WebAuthnAccount,
+      sessionOptions: { readonly secondsAhead?: number } = {}
+    ) =>
+      chain.use("Grant.toAccount", async (client) =>
+        bundler(
+          await Grant.toAccount(
+            sessionOptions.secondsAhead === undefined ? client : later(sessionOptions.secondsAhead),
+            { grant, signer, check: false }
+          )
+        ))
 
     return TestAgents.of({ lock, sessionFor })
   })
