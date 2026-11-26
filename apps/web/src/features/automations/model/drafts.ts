@@ -1,5 +1,6 @@
 // An automation as its editor holds it, and every change the editor makes to it: picking a trigger, a condition or
 // an action starts it from the catalog's defaults, on the stocks this automation is about.
+import { TRADE_ACTIONS } from "@bluechip/domain/automations/actions/Ask"
 import {
   type Action,
   ACTIONS,
@@ -70,9 +71,10 @@ export const evenSplit = (symbols: ReadonlyArray<StockSymbol>) => {
 
 /**
  * The catalog's defaults for `entry`, about `stock` instead of the catalog's example stock: every stock field, the
- * stocks of a list or a split, and the trade an `ask` proposes.
+ * stocks of a list or a split, and the trade an `ask` proposes (the catalog's sale, or with `context` the first trade
+ * the automation may make when it may not sell: a buy for an agent that only buys).
  */
-export const freshEntry = (kind: Kind, type: string, stock: StockSymbol): Entry => {
+export const freshEntry = (kind: Kind, type: string, stock: StockSymbol, context?: CheckContext): Entry => {
   const entry = catalogEntry(kind, type)
   const config: Record<string, unknown> = { ...(entry.defaults as Record<string, unknown>) }
 
@@ -80,19 +82,32 @@ export const freshEntry = (kind: Kind, type: string, stock: StockSymbol): Entry 
     if (field.unit === "stock" && config[name] !== null) config[name] = stock
     if (field.unit === "stocks") config[name] = [stock]
     if (field.unit === "split") config[name] = evenSplit([stock])
-    if (field.unit === "action") config[name] = freshEntry("action", (config[name] as Entry).type, stock)
+    if (field.unit === "action") {
+      const catalogs = (config[name] as Entry).type
+      const trades = context === undefined ? [] : offeredTrades(context).map((trade) => trade.type)
+      const trade = trades.length === 0 || trades.includes(catalogs) ? catalogs : trades[0]!
+      config[name] = freshEntry("action", trade, stock)
+    }
   }
   return { type, config }
 }
 
+const fits = (entry: CatalogEntry, context: CheckContext) =>
+  entry.check(entry.defaults as never, context).every((problem) => problem.field !== null)
+
+const TRADES = TRADE_ACTIONS as unknown as ReadonlyArray<CatalogEntry>
+
+/** The trades an `ask` of this automation can propose: those its agent may make when it asks you first. */
+export const offeredTrades = (context: CheckContext): ReadonlyArray<CatalogEntry> =>
+  TRADES.filter((entry) => fits(entry, { ...context, asking: true }))
+
 /**
  * The entries of a catalog that can run for this automation: those whose defaults aren't refused as a whole (an agent
- * that only buys never sells; only an agent with a target mix watches drift). Fields can still be wrong.
+ * that only buys never sells; only an agent with a target mix watches drift), and `ask` while there is a trade it can
+ * propose. Fields can still be wrong.
  */
 export const offered = (kind: Kind, context: CheckContext): ReadonlyArray<CatalogEntry> =>
-  CATALOG[kind].filter((entry) =>
-    entry.check(entry.defaults as never, context).every((problem) => problem.field !== null)
-  )
+  CATALOG[kind].filter((entry) => entry.type === "ask" ? offeredTrades(context).length > 0 : fits(entry, context))
 
 /** The entry with one field changed. */
 export const withField = <E extends Entry>(entry: E, name: string, value: unknown): E => ({

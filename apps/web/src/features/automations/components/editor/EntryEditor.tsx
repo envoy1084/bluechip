@@ -1,4 +1,3 @@
-import { TRADE_ACTIONS } from "@bluechip/domain/automations/actions/Ask"
 import { SIMPLE_CONDITIONS } from "@bluechip/domain/automations/conditions/Logic"
 import { Button } from "@bluechip/ui/components/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
@@ -11,7 +10,8 @@ import {
   type Entry,
   fieldsOf,
   freshEntry,
-  type Kind
+  type Kind,
+  offeredTrades
 } from "../../model/drafts.ts"
 import type { EditorContext } from "./editorContext.ts"
 import { EntryField } from "./EntryField.tsx"
@@ -46,7 +46,6 @@ export function EntryTypeSelect(
 }
 
 const SIMPLE = SIMPLE_CONDITIONS as unknown as ReadonlyArray<CatalogEntry>
-const TRADES = TRADE_ACTIONS as unknown as ReadonlyArray<CatalogEntry>
 
 /** One condition inside `all`, `any` or `not`: which one, its fields, and Remove when there may be fewer. */
 function NestedCondition(
@@ -157,7 +156,7 @@ export function EntryEditor(
               <EntryTypeSelect
                 label={field.label}
                 value={trade.type}
-                entries={TRADES}
+                entries={offeredTrades(context.check)}
                 onChange={(type) => set(name, freshEntry("action", type, stock))}
               />
               <EntryEditor

@@ -124,7 +124,8 @@ export function AutomationForm(
             label="Action"
             value={draft.action.type}
             entries={offered("action", context.check)}
-            onChange={(type) => onChange({ ...draft, action: freshEntry("action", type, stock) as Action })}
+            onChange={(type) =>
+              onChange({ ...draft, action: freshEntry("action", type, stock, context.check) as Action })}
           />
           <PartProblem message={problemOf("action", null)(null)} />
           <EntryEditor

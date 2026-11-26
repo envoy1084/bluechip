@@ -83,6 +83,26 @@ describe("freshEntry", () => {
   )("$name", ({ kind, type, expected }) => {
     assert.deepStrictEqual(freshEntry(kind, type, "AAPL"), expected)
   })
+
+  it("an ask for a Weekly buyer proposes a buy, the one trade it may make", () => {
+    const spec = complete(draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["AAPL"], targets: [] }))
+
+    const entry = freshEntry("action", "ask", "AAPL", { spec, trigger: "schedule", asking: false })
+
+    assert.deepStrictEqual(entry, {
+      type: "ask",
+      config: { trade: { type: "buy", config: { amount: 50_000_000n, split: [{ symbol: "AAPL", weight: 10_000 }] } } }
+    })
+  })
+
+  it("an ask for your own trades keeps the catalog's sale", () => {
+    const entry = freshEntry("action", "ask", "AAPL", { spec: null, trigger: "schedule", asking: false })
+
+    assert.deepStrictEqual(entry, {
+      type: "ask",
+      config: { trade: { type: "sellShare", config: { symbol: "AAPL", bps: 5000 } } }
+    })
+  })
 })
 
 describe("offered", () => {
@@ -105,12 +125,12 @@ describe("offered", () => {
     ])
   })
 
-  it("a Weekly buyer only buys or tells you", () => {
+  it("a Weekly buyer buys, tells you, or asks you about a buy", () => {
     const spec = complete(draftSpec({ template: "weeklyBuyer", preset: "balanced", stocks: ["NVDA"], targets: [] }))
 
     const actions = offered("action", { spec, trigger: "schedule", asking: false })
 
-    assert.deepStrictEqual(actions.map((entry) => entry.type), ["buy", "notify"])
+    assert.deepStrictEqual(actions.map((entry) => entry.type), ["buy", "notify", "ask"])
   })
 
   it("a Rebalancer watches drift and only rebalances", () => {
@@ -120,7 +140,7 @@ describe("offered", () => {
     const context = { spec, trigger: "schedule", asking: false }
 
     assert.isTrue(offered("trigger", context).some((entry) => entry.type === "drift"))
-    assert.deepStrictEqual(offered("action", context).map((entry) => entry.type), ["rebalance", "notify"])
+    assert.deepStrictEqual(offered("action", context).map((entry) => entry.type), ["rebalance", "notify", "ask"])
   })
 
   it.each([
