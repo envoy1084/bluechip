@@ -6,6 +6,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { notificationSettingsAtom } from "../atoms/notifications.ts"
 import { KindRules } from "../components/settings/KindRules.tsx"
+import { PushCard } from "../components/settings/PushCard.tsx"
 import { QuietHoursCard } from "../components/settings/QuietHoursCard.tsx"
 
 /** Where each kind of notification goes (the app, push, Telegram), quiet hours, this device's push and Telegram. */
@@ -22,6 +23,7 @@ export function NotificationSettingsScreen() {
         </ButtonLink>
       }
     >
+      <PushCard />
       {AsyncResult.isSuccess(settings) ?
         (
           <>
