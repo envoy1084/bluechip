@@ -31,6 +31,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarRail,
   SidebarTrigger
 } from "@bluechip/ui/components/sidebar"
 import { toast } from "@bluechip/ui/components/toast"
@@ -49,13 +50,13 @@ function SidebarDemo() {
     ["approvals", "Approvals", "2"]
   ]
   return (
-    <SidebarProvider className="h-[440px] min-h-0 bg-canvas">
-      <Sidebar>
+    <SidebarProvider className="h-[440px] min-h-0 bg-canvas" shortcut={false}>
+      <Sidebar collapsible="icon" className="h-full">
         <SidebarHeader>
           <span className="grid size-[22px] place-items-center rounded-full bg-blue text-white">
             <Icon name="layers" size={14} />
           </span>
-          <span className="text-[17px] font-semibold tracking-tight transition-opacity duration-base group-data-[state=collapsed]/sidebar-panel:opacity-0">
+          <span className="text-[17px] font-semibold tracking-tight transition-opacity duration-base group-data-[collapsible=icon]/sidebar-panel:opacity-0">
             bluechip
           </span>
         </SidebarHeader>
@@ -102,6 +103,7 @@ function SidebarDemo() {
             <span>Settings</span>
           </SidebarMenuButton>
         </SidebarFooter>
+        <SidebarRail />
       </Sidebar>
       <SidebarInset>
         <div className="flex h-[50px] items-center gap-2.5 border-b border-ink/6 px-3">
@@ -291,7 +293,7 @@ export function SidebarSection() {
       title="Sidebar"
       base="Sidebar"
       flush
-      purpose="The app's main navigation. Collapses to an icon rail with tooltips; ⌘B toggles it. On phones it opens as a sheet."
+      purpose="The app's main navigation, after shadcn's sidebar. Its trigger and its rail on the edge fold it to icons with tooltips; in the app, ⌘B does too. The current page is a blue wash. On phones it opens as a sheet."
     >
       <SidebarDemo />
     </Section>

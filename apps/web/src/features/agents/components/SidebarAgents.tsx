@@ -5,7 +5,8 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  SidebarMenuItem
+  SidebarMenuItem,
+  useSidebar
 } from "@bluechip/ui/components/sidebar"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
@@ -31,6 +32,7 @@ export function SidebarAgents() {
             <SidebarMenuItem key={agent.id}>
               <SidebarMenuButton
                 isActive={matchRoute({ to: "/agents/$agentId", params: { agentId: agent.id } }) !== false}
+                tooltip={agent.name}
                 render={<Link to="/agents/$agentId" params={{ agentId: agent.id }} />}
               >
                 {/* `contents` keeps the avatar out of the button's `> span` label styles (flex-1, truncate). */}
@@ -45,6 +47,7 @@ export function SidebarAgents() {
         <SidebarMenuItem>
           <SidebarMenuButton
             isActive={matchRoute({ to: "/agents/new" }) !== false}
+            tooltip="New agent"
             render={<Link to="/agents/new" />}
           >
             <Icon name="plus" />
@@ -59,21 +62,27 @@ export function SidebarAgents() {
 /** The sidebar footer's kill switch: "Pause all agents", or "Resume all" once every one is paused. */
 export function SidebarPauseAll() {
   const { shown, allPaused, busy, failed, toggle } = usePauseAll()
+  const { state, isMobile } = useSidebar()
   if (!shown) return null
 
+  // Folded to icons, the kill switch stays: as its icon alone, named for screen readers.
+  const folded = state === "collapsed" && !isMobile
+  const label = allPaused ? "Resume all" : "Pause all agents"
   return (
-    <div className="grid gap-1.5 px-1.5 pb-3">
+    <div className="grid gap-1.5 px-1.5 pb-3 group-data-[collapsible=icon]/sidebar-panel:px-0">
       <Button
         variant={allPaused ? "secondary" : "danger"}
-        size="sm"
-        className="w-full"
+        size={folded ? "icon-sm" : "sm"}
+        className={folded ? "justify-self-center" : "w-full"}
         loading={busy}
+        aria-label={folded ? label : undefined}
+        title={folded ? label : undefined}
         onClick={() => void toggle()}
       >
         <Icon name={allPaused ? "play" : "pause"} size={14} />
-        {allPaused ? "Resume all" : "Pause all agents"}
+        {folded ? null : label}
       </Button>
-      {failed ?
+      {failed && !folded ?
         <p role="alert" className="text-caption text-loss">We couldn't reach bluechip. Try again.</p> :
         null}
     </div>

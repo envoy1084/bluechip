@@ -20,9 +20,7 @@ export function AppPage(
     <>
       <header className="sticky top-0 z-10 flex min-h-[60px] items-center justify-between gap-3 border-b border-ink/6 bg-canvas/90 px-4 py-2.5 backdrop-blur md:px-7">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="md:hidden">
-            <SidebarTrigger />
-          </span>
+          <SidebarTrigger className="-ml-1.5" />
           <LogoMark className="md:hidden" />
           {icon}
           <div className="grid min-w-0">

@@ -11,7 +11,8 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider
+  SidebarProvider,
+  SidebarRail
 } from "@bluechip/ui/components/sidebar"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { useAtomMount } from "@effect/atom-react/Hooks"
@@ -55,11 +56,11 @@ export function AppLayout(
         me.user.eligibility !== "outsideUs" ?
           <Navigate to="/welcome/eligibility" /> :
           (
-            <SidebarProvider className="bg-canvas">
+            <SidebarProvider className="bg-canvas" storageKey="bluechip:sidebar">
               <LiveUpdates />
               {dialogs}
-              <Sidebar collapsible="none" className="bg-g-50">
-                <SidebarHeader className="px-2 pt-0.5 pb-1">
+              <Sidebar collapsible="icon" className="bg-g-50">
+                <SidebarHeader className="px-2 pt-0.5 pb-1 group-data-[collapsible=icon]/sidebar-panel:px-[7px] [&_[data-slot=logo]>span]:transition-opacity group-data-[collapsible=icon]/sidebar-panel:[&_[data-slot=logo]>span]:opacity-0">
                   <Logo />
                 </SidebarHeader>
                 <SidebarContent>
@@ -69,6 +70,7 @@ export function AppLayout(
                         <SidebarMenuItem key={item.to}>
                           <SidebarMenuButton
                             isActive={matchRoute({ to: item.to }) !== false}
+                            tooltip={item.label}
                             render={<Link to={item.to} />}
                           >
                             <Icon name={item.icon} />
@@ -86,15 +88,16 @@ export function AppLayout(
                 <SidebarFooter>
                   {pauseAll}
                   <div className="flex items-center gap-2.5 border-t border-ink/6 px-1.5 pt-3">
-                    <span className="grid size-[30px] shrink-0 place-items-center rounded-full bg-[linear-gradient(180deg,#eef1ff,#dfe5ff)] text-[13px] font-semibold text-blue shadow-[inset_0_1px_0_#fff,0_0_0_1px_rgba(42,91,255,.14)]">
+                    <span className="grid size-[30px] shrink-0 place-items-center rounded-full bg-blue-50 text-[13px] font-semibold text-blue ring-1 ring-blue/15">
                       {(me.user.displayName ?? "Y").charAt(0).toUpperCase()}
                     </span>
-                    <span className="grid min-w-0">
+                    <span className="grid min-w-0 transition-opacity duration-base group-data-[collapsible=icon]/sidebar-panel:opacity-0">
                       <b className="truncate text-[13px] font-semibold">{me.user.displayName ?? "You"}</b>
                       <span className="font-mono text-[11.5px] text-g-500">{shortAddress(me.account.address)}</span>
                     </span>
                   </div>
                 </SidebarFooter>
+                <SidebarRail />
               </Sidebar>
               <SidebarInset>
                 <Outlet />

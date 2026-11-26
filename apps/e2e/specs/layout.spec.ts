@@ -24,6 +24,27 @@ test.describe("sidebar navigation", () => {
   }
 })
 
+test.describe("sidebar", () => {
+  test("its trigger folds it to icons, and the current page stays marked", async ({ page, user: _user }) => {
+    await page.goto("/portfolio")
+    const sidebar = page.getByRole("complementary", { name: "App navigation" })
+
+    await page.getByRole("button", { name: "Toggle sidebar" }).click()
+
+    await expect(sidebar).toHaveAttribute("data-collapsible", "icon")
+    await expect(sidebar.getByRole("link", { name: "Portfolio" })).toHaveAttribute("aria-current", "page")
+  })
+
+  test("folded, it stays folded on the next visit", async ({ page, user: _user }) => {
+    await page.goto("/portfolio")
+    await page.getByRole("button", { name: "Toggle sidebar" }).click()
+
+    await page.reload()
+
+    await expect(page.getByRole("complementary", { name: "App navigation" })).toHaveAttribute("data-state", "collapsed")
+  })
+})
+
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 } })
 

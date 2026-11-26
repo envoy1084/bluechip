@@ -8,6 +8,7 @@ import {
   type SidebarProps,
   SidebarProvider,
   type SidebarProviderProps,
+  SidebarRail,
   SidebarTrigger
 } from "@bluechip/ui/components/sidebar"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -42,6 +43,7 @@ function AppFrame(
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
+        <SidebarRail />
       </Sidebar>
       <SidebarInset>
         <SidebarTrigger />
@@ -128,6 +130,52 @@ describe("Sidebar", () => {
       await page.viewport(1280, 800)
       await render(<AppFrame provider={{ defaultOpen: false }} sidebar={{ collapsible: "none" }} />)
       await expect.element(sidebar()).toHaveAttribute("data-state", "expanded")
+    })
+
+    it("its rail collapses it", async () => {
+      await page.viewport(1280, 800)
+      const screen = await render(<AppFrame />)
+      await userEvent.click(screen.container.querySelector("[data-slot=sidebar-rail]")!)
+      await expect.element(sidebar()).toHaveAttribute("data-state", "collapsed")
+    })
+
+    it("collapsible icon folds it to icons", async () => {
+      await page.viewport(1280, 800)
+      await render(<AppFrame provider={{ defaultOpen: false }} />)
+      await expect.element(sidebar()).toHaveAttribute("data-collapsible", "icon")
+    })
+
+    it("collapsible offcanvas slides it away", async () => {
+      await page.viewport(1280, 800)
+      await render(<AppFrame provider={{ defaultOpen: false }} sidebar={{ collapsible: "offcanvas" }} />)
+      await expect.element(sidebar()).toHaveAttribute("data-collapsible", "offcanvas")
+    })
+
+    it("with a storage key, it starts as it was left", async () => {
+      await page.viewport(1280, 800)
+      window.localStorage.setItem("test-sidebar", "collapsed")
+      await render(<AppFrame provider={{ storageKey: "test-sidebar" }} />)
+      await expect.element(sidebar()).toHaveAttribute("data-state", "collapsed")
+      window.localStorage.removeItem("test-sidebar")
+    })
+
+    it("with a storage key, a toggle is remembered", async () => {
+      await page.viewport(1280, 800)
+      window.localStorage.removeItem("test-sidebar-toggle")
+      await render(<AppFrame provider={{ storageKey: "test-sidebar-toggle" }} />)
+      await userEvent.click(trigger())
+      expect(window.localStorage.getItem("test-sidebar-toggle")).toBe("collapsed")
+      window.localStorage.removeItem("test-sidebar-toggle")
+    })
+
+    it("with the shortcut off, ⌘B leaves it", async () => {
+      await page.viewport(1280, 800)
+      await render(<AppFrame provider={{ shortcut: false }} />)
+      await expect.element(sidebar()).toHaveAttribute("data-state", "expanded")
+      // Had ⌘B toggled it, the trigger's press would expand it again.
+      await userEvent.keyboard("{Meta>}b{/Meta}")
+      await userEvent.click(trigger())
+      await expect.element(sidebar()).toHaveAttribute("data-state", "collapsed")
     })
 
     it("label names it", async () => {
