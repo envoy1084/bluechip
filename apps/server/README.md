@@ -54,8 +54,7 @@ account's desk.
   per account, so local and production use separate keys.
 - News comes from Alpaca's news stream (`wss://stream.data.alpaca.markets/v1beta1/news`), subscribed to the stocks
   automations watch (all news when one watches a topic) and not connected while none does. It uses the main keys: the
-  price and news streams were checked open together on one free account (2026-11-26). `ALPACA_NEWS_KEY_ID` and
-  `ALPACA_NEWS_SECRET_KEY` give news another account's keys if that ever changes. If Alpaca refuses the stream (bad keys, the connection limit, news
+  price and news streams were checked open together on one free account (2026-11-26). If Alpaca refuses the stream (bad keys, the connection limit, news
   not in the plan) the server logs it and reads the REST news endpoint every minute instead. Stories are stored once
   each (`news_items`, by source id).
 - Charts are Alpaca's bars, cached per stock and range (1D for a minute, 1W for 5 minutes, longer ranges an hour)
@@ -149,8 +148,6 @@ account's desk.
 | `ALPACA_API_KEY_ID`      | required                | Alpaca market data key (paper account is enough)                 |
 | `ALPACA_API_SECRET_KEY`  | required                | Its secret (redacted)                                            |
 | `ALPACA_FEED`            | `iex`                   | `iex` (free plan) or `sip` (Algo Trader Plus)                    |
-| `ALPACA_NEWS_KEY_ID`     | the main key            | Another Alpaca account's key for the news stream (optional)      |
-| `ALPACA_NEWS_SECRET_KEY` | the main secret         | Its secret (redacted); set both or neither                       |
 | `ANTHROPIC_API_KEY`      | —                       | Anthropic key (redacted) for the assistant                       |
 | `ASSISTANT_MODEL`        | `claude-sonnet-5-5`     | The assistant's conversation model, and its memory notes         |
 | `ASSISTANT_SMALL_MODEL`  | `claude-haiku-5-5`      | Conversation titles                                              |

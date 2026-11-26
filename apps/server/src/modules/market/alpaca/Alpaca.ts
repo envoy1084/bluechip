@@ -7,12 +7,10 @@ import * as FetchHttpClient from "effect/http/FetchHttpClient"
 import * as HttpClient from "effect/http/HttpClient"
 import * as HttpClientRequest from "effect/http/HttpClientRequest"
 import * as Layer from "effect/Layer"
-import * as Option from "effect/Option"
 import * as Queue from "effect/Queue"
 import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
-import { AppConfig } from "../../../config/AppConfig.ts"
 import { readNewsFrame, type ShareNews } from "./NewsFrames.ts"
 
 export class AlpacaError extends Data.TaggedError("AlpacaError")<{
@@ -97,8 +95,8 @@ export class Alpaca extends Context.Service<Alpaca, {
    */
   readonly news: (options: { readonly start: Date }) => Effect.Effect<ReadonlyArray<ShareNews>, AlpacaError>
   /**
-   * News about `symbols` (`*`: all) as it is published, on its own connection with the news keys (the main keys when
-   * none are set). Fails with `NewsStreamRefused` when the account can't have it, otherwise with `AlpacaError` when
+   * News about `symbols` (`*`: all) as it is published, on its own connection (the price and news streams run
+   * together on one free account). Fails with `NewsStreamRefused` when the account can't have it, otherwise with `AlpacaError` when
    * the connection drops, so callers reconnect.
    */
   readonly newsStream: (
@@ -113,10 +111,6 @@ export class Alpaca extends Context.Service<Alpaca, {
       const keyId = yield* Config.String("ALPACA_API_KEY_ID")
       const secret = yield* Config.Redacted("ALPACA_API_SECRET_KEY")
       const feed = yield* Config.Literals(["iex", "sip"], "ALPACA_FEED").pipe(Config.withDefault("iex"))
-      const newsKey = Option.getOrElse((yield* AppConfig).alpacaNewsKey, () => ({
-        keyId: Redacted.make(keyId),
-        secret
-      }))
 
       const client = (yield* HttpClient.HttpClient).pipe(
         HttpClient.mapRequest((request) =>
@@ -249,8 +243,8 @@ export class Alpaca extends Context.Service<Alpaca, {
               socket.addEventListener("open", () => {
                 socket.send(JSON.stringify({
                   action: "auth",
-                  key: Redacted.value(newsKey.keyId),
-                  secret: Redacted.value(newsKey.secret)
+                  key: keyId,
+                  secret: Redacted.value(secret)
                 }))
                 socket.send(JSON.stringify({ action: "subscribe", news: symbols }))
               })
