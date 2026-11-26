@@ -1,4 +1,4 @@
-import { actionsOf, type NotificationAction } from "@bluechip/domain/notifications/Actions"
+import { ACTION_LABELS as LABELS, actionsOf, type NotificationAction } from "@bluechip/domain/notifications/Actions"
 import type { NotificationKind } from "@bluechip/domain/notifications/Notification"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
@@ -7,11 +7,6 @@ import { useState } from "react"
 import { pauseAllAgentsAtom } from "../../../atoms/agents.ts"
 import { cancelRecoveryAtom } from "../../../atoms/recovery.ts"
 import { agentsReactivityKey, securityReactivityKey } from "../../../lib/api/client.ts"
-
-const LABELS: Readonly<Record<NotificationAction, { readonly idle: string; readonly done: string }>> = {
-  pauseAll: { idle: "Pause all agents", done: "Every agent is paused" },
-  cancelRecovery: { idle: "Cancel recovery", done: "Recovery cancelled" }
-}
 
 /**
  * What a notification lets you do right here: pause every agent from news of their trades, or cancel a recovery you

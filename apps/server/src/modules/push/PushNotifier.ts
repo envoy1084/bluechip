@@ -1,6 +1,6 @@
 import type { UserId } from "@bluechip/domain/Ids"
 import type { Notification } from "@bluechip/domain/notifications/Notification"
-import type { PushMessage } from "@bluechip/domain/push/Push"
+import { pushMessageOf } from "@bluechip/domain/push/Push"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -32,12 +32,7 @@ export class PushNotifier extends Context.Service<PushNotifier, {
         const devices = yield* subscriptions.rows(userId)
         if (vapid === undefined || devices.length === 0) return "skipped" as const
 
-        const message: PushMessage = {
-          id: notification.id,
-          title: notification.title,
-          body: notification.body,
-          link: notification.link ?? "/home"
-        }
+        const message = pushMessageOf(notification)
         const now = Math.floor(DateTime.toEpochMillis(yield* DateTime.now) / 1000)
         const results = yield* Effect.forEach(devices, (device) =>
           http.execute(

@@ -14,6 +14,18 @@ import type { NotificationKind } from "./Notification.ts"
  */
 export type NotificationAction = "pauseAll" | "cancelRecovery"
 
+/**
+ * Each action's button, and what it says once done.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const ACTION_LABELS: Readonly<Record<NotificationAction, { readonly idle: string; readonly done: string }>> = {
+  pauseAll: { idle: "Pause all agents", done: "Every agent is paused" },
+  cancelRecovery: { idle: "Cancel recovery", done: "Recovery cancelled" }
+}
+
 const TRADES: ReadonlyArray<NotificationKind> = [
   "intentFilled",
   "intentBlocked",

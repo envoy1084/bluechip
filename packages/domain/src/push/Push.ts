@@ -6,6 +6,8 @@
  */
 import * as Schema from "effect/Schema"
 import { PushSubscriptionId } from "../Ids.ts"
+import { ACTION_LABELS, actionsOf } from "../notifications/Actions.ts"
+import type { Notification } from "../notifications/Notification.ts"
 
 /**
  * A subscription as the browser's `PushSubscription.toJSON()` gives it, with a name for the device.
@@ -49,7 +51,7 @@ export class PushDevice extends Schema.Class<PushDevice>("@bluechip/domain/push/
 }) {}
 
 /**
- * What the service worker receives in a push: the notification's words and the page to open.
+ * What the service worker receives in a push: the notification's words, the page to open, and its buttons.
  *
  * @stability unstable
  * @category schemas
@@ -60,7 +62,13 @@ export const PushMessage = Schema.Struct({
   title: Schema.String,
   body: Schema.String,
   /** A path in the app. */
-  link: Schema.String
+  link: Schema.String,
+  /** Buttons that act without opening the app (and without Face ID): `title` on the button, `done` once it worked. */
+  actions: Schema.Array(Schema.Struct({
+    action: Schema.Literals(["pauseAll", "cancelRecovery"]),
+    title: Schema.String,
+    done: Schema.String
+  }))
 })
 
 /**
@@ -69,3 +77,33 @@ export const PushMessage = Schema.Struct({
  * @since 0.0.0
  */
 export type PushMessage = typeof PushMessage.Type
+
+/**
+ * The push of a notification: its words, the page it opens (home when it has none) and the buttons its kind offers.
+ *
+ * **Example** (A recovery asked for)
+ *
+ * ```ts import.meta.vitest
+ * import { pushMessageOf } from "@bluechip/domain/push/Push"
+ *
+ * pushMessageOf({ id: "n1", kind: "recoveryRequested", title: "Recovery", body: "48 hours.", link: null }).actions
+ * // => [{ action: "cancelRecovery", title: "Cancel recovery", done: "Recovery cancelled" }]
+ * ```
+ *
+ * @stability unstable
+ * @category constructors
+ * @since 0.0.0
+ */
+export const pushMessageOf = (
+  notification: Pick<Notification, "id" | "kind" | "title" | "body" | "link">
+): PushMessage => ({
+  id: notification.id,
+  title: notification.title,
+  body: notification.body,
+  link: notification.link ?? "/home",
+  actions: actionsOf(notification.kind).map((action) => ({
+    action,
+    title: ACTION_LABELS[action].idle,
+    done: ACTION_LABELS[action].done
+  }))
+})
