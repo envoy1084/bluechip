@@ -81,7 +81,7 @@ export function MemoryScreen() {
               <h3 className="text-base font-semibold tracking-[-0.02em]">Memories</h3>
               <p className="text-[13.5px] text-g-600">
                 The assistant uses these to answer you. It keeps what you tell it, and asks before keeping what it
-                infers.
+                infers. Deleting one also deletes the conversation turn it came from.
               </p>
             </div>
             {any ?

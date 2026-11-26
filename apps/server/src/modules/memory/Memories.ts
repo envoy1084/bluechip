@@ -59,8 +59,9 @@ export interface PromptMemory {
 /**
  * What the assistant remembers about each user. Confirmed memories go into its prompts (within the budget, the ones
  * recalled for the message first); unconfirmed ones (inferences it isn't sure of) wait for the user. Deleting a
- * memory deletes its recall entry and uses with it; forgetting everything also deletes the user's conversation
- * summaries and what can be recalled from their messages.
+ * memory deletes it and the conversation turn it came from, with what can be recalled of them and the conversation's
+ * summary when it covered that turn; forgetting everything also deletes the user's conversation summaries and what
+ * can be recalled from their messages.
  */
 export class Memories extends Context.Service<Memories, {
   /** Every memory, newest first, confirmed or not; with `text`, the ones it recalls, best first. */
@@ -89,9 +90,11 @@ export class Memories extends Context.Service<Memories, {
   /** Confirms a memory so prompts use it; one already confirmed is returned as it is. */
   readonly confirm: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
   /**
-   * Deletes a memory, its recall entry and its uses, and stops recalling the turn it came from; returns it as it was.
+   * Deletes a memory with its recall entry and uses, and the conversation turn it came from (its messages, what can
+   * be recalled of them, and the summary that covered them); returns the memory as it was. A memory from `during`,
+   * the turn the assistant is answering now, leaves that turn as it is.
    */
-  readonly remove: (owner: Owner, id: string) => Effect.Effect<Memory, NotFound>
+  readonly remove: (owner: Owner, id: string, during?: MessageId | undefined) => Effect.Effect<Memory, NotFound>
   /** Forgets everything: every memory, conversation summary and recall entry of the user's conversations. */
   readonly removeAll: (owner: Owner) => Effect.Effect<void>
   /** Everything remembered, to download. */
@@ -238,34 +241,52 @@ export class Memories extends Context.Service<Memories, {
         return yield* one(row)
       })
 
-      // Stops recalling the turn a memory came from: the user's message and the answers up to their next message.
-      const forgetTurn = Effect.fnUntraced(function*(owner: Owner, messageId: MessageId) {
+      // Deletes the turn a memory came from: the user's message and the answers up to their next message. Their recall
+      // entries and uses go with them (`on delete cascade`), and so does a summary that covered any of them: the next
+      // turn summarises the conversation again without it.
+      const deleteTurn = Effect.fnUntraced(function*(messageId: MessageId) {
         const [source] = yield* db.select().from(messages).where(eq(messages.id, messageId as `message_${string}`))
           .pipe(Effect.orDie)
         if (source === undefined) return
-        const following = yield* db.select({ id: messages.id, role: messages.role }).from(messages).where(and(
-          eq(messages.conversationId, source.conversationId),
-          gte(messages.createdAt, source.createdAt)
-        )).orderBy(asc(messages.createdAt), asc(messages.id)).pipe(Effect.orDie)
+        const following = yield* db.select({ id: messages.id, role: messages.role, createdAt: messages.createdAt })
+          .from(messages).where(and(
+            eq(messages.conversationId, source.conversationId),
+            gte(messages.createdAt, source.createdAt)
+          )).orderBy(asc(messages.createdAt), asc(messages.id)).pipe(Effect.orDie)
 
         const next = following.findIndex((message, index) => index > 0 && message.role === "user")
         const turn = following.slice(0, next === -1 ? following.length : next).map((message) => message.id)
-        yield* db.delete(recallEntries).where(and(
-          eq(recallEntries.userId, owner.id as `user_${string}`),
-          inArray(recallEntries.messageId, turn)
-        )).pipe(Effect.orDie)
+        yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const [summary] = yield* db.select({ through: messages.createdAt }).from(conversationSummaries)
+              .innerJoin(messages, eq(messages.id, conversationSummaries.throughMessageId))
+              .where(eq(conversationSummaries.conversationId, source.conversationId))
+            if (summary !== undefined && DateTime.isGreaterThanOrEqualTo(summary.through, source.createdAt)) {
+              yield* db.delete(conversationSummaries)
+                .where(eq(conversationSummaries.conversationId, source.conversationId))
+            }
+            yield* db.delete(messages).where(and(
+              eq(messages.conversationId, source.conversationId),
+              inArray(messages.id, turn)
+            ))
+          })
+        ).pipe(Effect.orDie)
       })
 
-      const remove = Effect.fn("Memories.remove")(function*(owner: Owner, id: string) {
+      // Deletes a memory alone; its recall entry and uses go with it (`on delete cascade`).
+      const drop = Effect.fnUntraced(function*(owner: Owner, id: string) {
         const [row] = Schema.is(MemoryId)(id) ?
           yield* db.select().from(memories).where(byId(owner, id)).pipe(Effect.orDie) :
           []
         if (row === undefined) return yield* new NotFound({ resource: "memory", id })
         const memory = yield* one(row)
-
-        // The recall entry and the uses go with it (`on delete cascade`).
         yield* db.delete(memories).where(byId(owner, id)).pipe(Effect.orDie)
-        if (memory.messageId !== null) yield* forgetTurn(owner, memory.messageId)
+        return memory
+      })
+
+      const remove = Effect.fn("Memories.remove")(function*(owner: Owner, id: string, during?: MessageId | undefined) {
+        const memory = yield* drop(owner, id)
+        if (memory.messageId !== null && memory.messageId !== during) yield* deleteTurn(memory.messageId)
         return memory
       })
 
@@ -286,7 +307,7 @@ export class Memories extends Context.Service<Memories, {
           case "Refresh":
             return yield* Effect.orDie(confirm(owner, write.memoryId))
           case "Replace": {
-            yield* Effect.orDie(remove(owner, write.memoryId))
+            yield* Effect.orDie(drop(owner, write.memoryId))
             return yield* insert(owner, { ...fields, note: write.note, confirmed: write.confirmed })
           }
         }

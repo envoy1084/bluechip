@@ -165,5 +165,67 @@ layer(TestAssistant.layer, { excludeTestServices: true })("the memory page", (it
 
         assert.deepStrictEqual(recalled, [])
       }))
+
+    it.effect("deletes the conversation turn it came from, and keeps the turns after it", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        const conversation = yield* assistant.start(user)
+        const [said, asked] = [`Remember I sail ${crypto.randomUUID()}`, `What's new? ${crypto.randomUUID()}`]
+        yield* (yield* RecordedModel).record(
+          {
+            to: said,
+            rounds: [
+              [{ call: "remember", params: { kind: "fact", text: "You sail.", agentId: null } }],
+              [{ text: "Noted, sailing." }]
+            ]
+          },
+          { to: asked, rounds: [[{ text: "Nothing yet." }]] }
+        )
+        const run = yield* assistant.ask(user, conversation.id, said)
+        yield* assistant.ask(user, conversation.id, asked)
+        const [card] = run.cards
+        assert(card?._tag === "Memory")
+
+        yield* user.api.assistant.deleteMemory({ params: { id: card.memory.id } })
+        const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
+
+        assert.deepStrictEqual(
+          thread.messages.map((message) => [
+            message.role,
+            message.parts.flatMap((part) => part.type === "text" ? [part.text] : []).join("")
+          ]),
+          [["user", asked], ["assistant", "Nothing yet."]]
+        )
+      }))
+
+    it.effect.each([
+      { name: "in the turns its summary covers: the summary goes too", from: 0, summaries: 0 },
+      { name: "in a turn after its summary: the summary stays", from: 6, summaries: 1 }
+    ])("a memory from a long conversation, $name", ({ from, summaries }) =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        const conversation = yield* assistant.start(user)
+        const turns = Array.from({ length: 7 }, (_, index) => `Summarised turn ${index + 1} ${crypto.randomUUID()}`)
+        yield* (yield* RecordedModel).record(
+          ...turns.map((to, index) => ({
+            to,
+            rounds: index === from ?
+              [
+                [{ call: "remember", params: { kind: "fact", text: "You keep bees.", agentId: null } }],
+                [{ text: "Noted." }]
+              ] :
+              [[{ text: "Okay." }]]
+          }))
+        )
+        for (const turn of turns) yield* assistant.ask(user, conversation.id, turn)
+        const before = yield* user.api.assistant.exportMemories()
+
+        yield* user.api.assistant.deleteMemory({ params: { id: before.memories[0]!.id } })
+        const after = yield* user.api.assistant.exportMemories()
+
+        assert.deepStrictEqual([before.summaries.length, after.summaries.length], [1, summaries])
+      }))
   })
 })

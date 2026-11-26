@@ -13,6 +13,7 @@ agent did and why, written by bluechip as it happened.
 ## Seeing, exporting and deleting
 
 The memory page lists every memory, where it came from and how many answers used it. You can search them, download
-everything as JSON, and delete one or all. Deleting a memory also stops the assistant recalling the conversation turn
-it came from; deleting everything also forgets the summaries and what it could recall from earlier conversations.
-Your conversations themselves stay in your history.
+everything as JSON, and delete one or all. Deleting a memory also deletes the conversation turn it came from: your
+message and the assistant's answer leave the conversation, the assistant can no longer recall them, and a summary of
+that conversation that included them is written again without them. Deleting everything forgets every memory, the
+summaries and what it could recall from earlier conversations, while your conversations stay in your history.

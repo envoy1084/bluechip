@@ -413,7 +413,8 @@ export const CoreToolsLive = CoreToolkit.toLayer(Effect.gen(function*() {
       return yield* card({ _tag: "Memory", action: "saved", memory, status: "applied" })
     }, asProblem),
     forget: Effect.fn("AssistantTools.forget")(function*({ memoryId }) {
-      const memory = yield* memories.remove(yield* Caller, memoryId)
+      const caller = yield* Caller
+      const memory = yield* memories.remove(caller, memoryId, caller.messageId ?? undefined)
       return yield* card({ _tag: "Memory", action: "forgotten", memory, status: "applied" })
     }, asProblem),
     listMemories: Effect.fn("AssistantTools.listMemories")(function*() {
