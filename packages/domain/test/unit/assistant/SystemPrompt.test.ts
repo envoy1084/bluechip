@@ -1,8 +1,10 @@
+import { Agent, AgentName } from "@bluechip/domain/agents/Agent"
 import { Memory } from "@bluechip/domain/assistant/Memory"
 import { systemPrompt } from "@bluechip/domain/assistant/SystemPrompt"
-import { MemoryId } from "@bluechip/domain/Ids"
+import { AgentId, MemoryId } from "@bluechip/domain/Ids"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
+import { PICKER } from "../../fixtures/Specs.ts"
 
 const AT = DateTime.makeUnsafe("2026-11-20T10:00:00Z")
 
@@ -67,5 +69,39 @@ describe("systemPrompt", () => {
     const prompt = systemPrompt({ today: "2026-11-26", agents: [], focus: null, memories: [] })
 
     assert.include(prompt, "## Today\n2026-11-26 (UTC)")
+  })
+
+  it("a conversation about an agent makes it the trader, the user's account only when asked or when it's blocked", () => {
+    const agent = new Agent({
+      id: AgentId.make("agent_01jd8v4t5m6n7p8q9r0s1t2v3w"),
+      name: AgentName.make("Tech picker"),
+      template: "stockPicker",
+      status: "active",
+      paused: false,
+      spec: PICKER,
+      pendingSpec: null,
+      lockedUntil: AT,
+      createdAt: AT
+    })
+
+    const prompt = systemPrompt({ today: "2026-11-26", agents: [agent], focus: agent, memories: [] })
+
+    assert.include(
+      prompt,
+      "## This conversation's agent\nThis conversation is about agent_01jd8v4t5m6n7p8q9r0s1t2v3w \"Tech picker\", and " +
+        "it trades for the user here. Propose every trade with agentId agent_01jd8v4t5m6n7p8q9r0s1t2v3w first, even " +
+        "when the user doesn't name it (\"sell $100 of Nvidia\" goes through Tech picker): within its policies it " +
+        "sends the trade itself, with nothing to confirm, and over its largest trade its card asks for Face ID. If the " +
+        "result is blocked (a policy, a stock it doesn't trade), propose the same trade again with agentId null, from " +
+        "the user's own account for their Face ID, and say why in one line (\"Tech picker can't buy Tesla, so this " +
+        "one needs your Face ID\"). Use agentId null straight away only when the user asks for their own account. " +
+        "Never use it while Tech picker could make the trade."
+    )
+  })
+
+  it("without an agent, no conversation agent", () => {
+    const prompt = systemPrompt({ today: "2026-11-26", agents: [], focus: null, memories: [] })
+
+    assert.notInclude(prompt, "## This conversation's agent")
   })
 })
