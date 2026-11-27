@@ -9,6 +9,7 @@ import * as Layer from "effect/Layer"
 import * as RateLimiter from "effect/persistence/RateLimiter"
 import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
+import { count, RpcProxyCalls } from "../../platform/telemetry/Metrics.ts"
 
 /** Who is calling, for the rate limits: their session and their address on the network. */
 export interface RpcCaller {
@@ -72,6 +73,10 @@ export class RpcProxy extends Context.Service<RpcProxy, {
         })
       })
 
+      // Refused methods are anyone's strings: counted together, so the metric keeps a series per method served.
+      const countCall = (request: JsonRpcRequest, outcome: string) =>
+        count(RpcProxyCalls, { "rpc.method": outcome === "refused" ? "other" : request.method, outcome })
+
       const call = Effect.fn("RpcProxy.call")(function*(
         payload: JsonRpcRequest | ReadonlyArray<JsonRpcRequest>,
         caller: RpcCaller
@@ -82,6 +87,7 @@ export class RpcProxy extends Context.Service<RpcProxy, {
           return rpcError(null, -32600, `A batch holds 1 to ${MAX_BATCH} calls.`)
         }
         if (!(yield* within(caller, requests.length))) {
+          for (const request of requests) yield* countCall(request, "rate_limited")
           const refused = requests.map((request) =>
             rpcError(request.id, -32005, "Too many calls. Try again in a minute.")
           )
@@ -91,6 +97,13 @@ export class RpcProxy extends Context.Service<RpcProxy, {
         const forwarded = requests.filter((request) => refusal(request) === undefined)
         const answers = forwarded.length === 0 ? [] : yield* forward(forwarded)
         const answered = requests.map((request) => refusal(request) ?? answers[forwarded.indexOf(request)]!)
+        for (const [index, request] of requests.entries()) {
+          const answer = answered[index]!
+          yield* countCall(
+            request,
+            refusal(request) !== undefined ? "refused" : answer.error?.code === -32603 ? "upstream_error" : "ok"
+          )
+        }
         return batch ? answered : answered[0]!
       })
 

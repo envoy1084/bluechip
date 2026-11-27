@@ -13,6 +13,7 @@ import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Database } from "../../platform/db/Database.ts"
+import { AutomationsJudgments, count } from "../../platform/telemetry/Metrics.ts"
 import { AssistantModels } from "../assistant/AssistantModels.ts"
 import { Budgets } from "../assistant/Budgets.ts"
 import { tokenUsage } from "../assistant/Transcript.ts"
@@ -74,7 +75,7 @@ export class Judgments extends Context.Service<Judgments, {
             }
           ]
         }))
-        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage))
+        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "judgment")
         return response.value satisfies JudgmentAnswer
       })
 
@@ -104,7 +105,9 @@ export class Judgments extends Context.Service<Judgments, {
           model: models.smallModel,
           answer: answer.success
         })
-        return { ...judged(config, answer.success), judgmentId }
+        const verdict = judged(config, answer.success)
+        yield* count(AutomationsJudgments, { preset: config.preset, verdict: verdict.pass ? "pass" : "fail" })
+        return { ...verdict, judgmentId }
       })
 
       return Judgments.of({ judge })

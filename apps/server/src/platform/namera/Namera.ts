@@ -25,6 +25,7 @@ import {
 export type GasSponsorship = "none" | "alchemy-bso" | "alchemy-paymaster"
 
 interface Setup {
+  readonly provider: "alto" | "alchemy"
   readonly gas: GasSponsorship
   readonly bundler: Bundler.Bundler
   readonly paymaster: Paymaster.Paymaster | undefined
@@ -37,14 +38,26 @@ const setupFromConfig = Effect.gen(function*() {
   if (bundler === "local") {
     if (gas !== "none") return yield* Effect.die(new Error(`GAS_SPONSORSHIP=${gas} needs BUNDLER=alchemy`))
     const url = yield* Config.String("BUNDLER_URL").pipe(Config.withDefault("http://localhost:4337"))
-    return { gas, bundler: Bundler.from({ url }), paymaster: undefined } satisfies Setup
+    return { provider: "alto", gas, bundler: Bundler.from({ url }), paymaster: undefined } satisfies Setup
   }
   const apiKey = Redacted.value(yield* Config.Redacted("ALCHEMY_API_KEY"))
-  if (gas === "none") return { gas, bundler: Bundler.alchemy({ apiKey }), paymaster: undefined } satisfies Setup
+  if (gas === "none") {
+    return { provider: "alchemy", gas, bundler: Bundler.alchemy({ apiKey }), paymaster: undefined } satisfies Setup
+  }
   const policyId = yield* Config.String("ALCHEMY_GAS_POLICY_ID")
   return gas === "alchemy-bso"
-    ? { gas, bundler: Bundler.alchemy({ apiKey, sponsorship: { policyId } }), paymaster: undefined } satisfies Setup
-    : { gas, bundler: Bundler.alchemy({ apiKey }), paymaster: Paymaster.alchemy({ apiKey, policyId }) } satisfies Setup
+    ? {
+      provider: "alchemy",
+      gas,
+      bundler: Bundler.alchemy({ apiKey, sponsorship: { policyId } }),
+      paymaster: undefined
+    } satisfies Setup
+    : {
+      provider: "alchemy",
+      gas,
+      bundler: Bundler.alchemy({ apiKey }),
+      paymaster: Paymaster.alchemy({ apiKey, policyId })
+    } satisfies Setup
 })
 
 /**
@@ -58,6 +71,8 @@ export class Namera extends Context.Service<Namera, {
    * an operation's fees must be zero.
    */
   readonly sponsorship: GasSponsorship
+  /** Whose bundler sends operations: Alto (`BUNDLER=local`) or Alchemy's; named in bundler spans and metrics. */
+  readonly provider: "alto" | "alchemy"
   /**
    * The user's Kernel account owned by `owner`: at the address the sign-up passkey fixed (computed from `owner` when
    * no `address` is given), whether or not it is deployed yet. Any of the account's passkeys signs for it.
@@ -92,6 +107,7 @@ export class Namera extends Context.Service<Namera, {
       }
       return {
         sponsorship: setup.gas,
+        provider: setup.provider,
         kernelAccount: (owner, address) =>
           KernelAccount.from({ client: chain.client, owner, ...(address === undefined ? {} : { address }) }),
         bundlerClient: (account, options) =>

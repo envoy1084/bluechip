@@ -4,7 +4,6 @@
  *
  * @since 0.0.0
  */
-import * as Effect from "effect/Effect"
 import { b20Abi } from "../Abis.ts"
 import type { ChainClient } from "../ChainClient.ts"
 
@@ -32,4 +31,4 @@ export const readMultipliers = (chain: ChainClient["Service"]) =>
       allowFailure: false
     })
     return new Map(stocks.map((stock, index) => [stock.symbol, multipliers[index]!]))
-  }).pipe(Effect.withSpan("chain.readMultipliers"))
+  })

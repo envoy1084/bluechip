@@ -13,6 +13,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count, DevicesSignedOut } from "../../platform/telemetry/Metrics.ts"
 import { accounts, passkeys } from "../accounts/tables.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { sessions } from "./tables.ts"
@@ -194,6 +195,7 @@ export class Sessions extends Context.Service<Sessions, {
         )).returning({ id: sessions.id, device: sessions.device }).pipe(Effect.orDie)
         if (revoked.length === 0) return yield* new NotFound({ resource: "device", id })
         yield* signedOut(userId, id, { device: revoked[0]!.device })
+        yield* count(DevicesSignedOut, { scope: "one" })
       })
 
       const signOutAll = Effect.fn("Sessions.signOutAll")(function*(userId: UserId, keep?: SessionId | undefined) {
@@ -203,6 +205,7 @@ export class Sessions extends Context.Service<Sessions, {
           keep === undefined ? undefined : ne(sessions.id, keep as `session_${string}`)
         )).pipe(Effect.orDie)
         yield* signedOut(userId, keep ?? userId, { everywhere: true, kept: keep ?? null })
+        yield* count(DevicesSignedOut, { scope: keep === undefined ? "all" : "others" })
       })
 
       const signOutPasskey = Effect.fn("Sessions.signOutPasskey")(function*(passkeyId: string) {

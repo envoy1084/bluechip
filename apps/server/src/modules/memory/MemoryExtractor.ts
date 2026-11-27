@@ -72,7 +72,7 @@ export class MemoryExtractor extends Context.Service<MemoryExtractor, {
           schema: Notes,
           prompt: notesPrompt(existing, turn.userText)
         }))
-        yield* budgets.record(owner, models.conversationModel, tokenUsage(response.usage))
+        yield* budgets.record(owner, models.conversationModel, tokenUsage(response.usage), "memory")
 
         const learned: Array<Memory> = []
         for (const candidate of response.value.memories) {

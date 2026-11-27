@@ -1,6 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
-import type { ChainError } from "@bluechip/chain/ChainError"
+import { ChainError } from "@bluechip/chain/ChainError"
+import { callBundler } from "@bluechip/chain/ChainTelemetry"
 import { swapCalls } from "@bluechip/chain/market/Swaps"
 import { simulateAsAgent } from "@bluechip/chain/policies/Simulate"
 import type { Decision, Leg } from "@bluechip/domain/intents/Intent"
@@ -17,6 +18,7 @@ import * as Layer from "effect/Layer"
 import type { Address, Hex } from "viem"
 import { getUserOperationHash } from "viem/account-abstraction"
 import { Namera } from "../../platform/namera/Namera.ts"
+import { recordUserOp } from "../../platform/telemetry/Metrics.ts"
 import { AgentSessions, type SessionRow } from "../agents/AgentSessions.ts"
 import { Quoter } from "../market/Quoter.ts"
 import { type Receipt, toReceipt } from "../signing/OwnerOperations.ts"
@@ -127,12 +129,23 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         return namera.bundlerClient(account as never, { estimateFeesPerGas: agentFees })
       })
 
-      const receiptOf = (client: Effect.Success<ReturnType<typeof agentClient>>, hash: Hex) =>
-        chain.use("agent operation receipt", () => client.waitForUserOperationReceipt({ hash, timeout: 120_000 }))
-          .pipe(
-            Effect.map(toReceipt),
-            Effect.orElseSucceed(() => undefined)
-          )
+      const receiptOf = Effect.fnUntraced(function*(client: Effect.Success<ReturnType<typeof agentClient>>, hash: Hex) {
+        const [took, receipt] = yield* Effect.timed(
+          callBundler(
+            "eth_getUserOperationReceipt",
+            namera.provider,
+            () => client.waitForUserOperationReceipt({ hash, timeout: 120_000 })
+          ).pipe(Effect.map(toReceipt), Effect.orElseSucceed(() => undefined))
+        )
+        yield* recordUserOp({
+          kind: "trade",
+          executor: "agent",
+          provider: namera.provider,
+          seconds: Duration.toSeconds(took),
+          receipt
+        })
+        return receipt
+      })
 
       const decide = Effect.fn("AgentExecutor.decide")(function*(options: {
         readonly agentId: string
@@ -140,6 +153,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         readonly session: SessionRow
         readonly legs: ReadonlyArray<Leg>
       }) {
+        yield* Effect.annotateCurrentSpan({ "agent.id": options.agentId, "intent.legs": options.legs.length })
         const now = yield* DateTime.now
         const spec = options.session.spec
         const waitFor = (reason: keyof typeof RETRY | "dayEnding" | "gasSpent", until: DateTime.Utc): Decided => ({
@@ -197,7 +211,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         )
 
         const client = yield* agentClient(options.agentId, options.session)
-        const simulated = yield* simulateAsAgent(deployment, client as never, calls)
+        const simulated = yield* simulateAsAgent(deployment, client as never, calls, namera.provider)
         switch (simulated._tag) {
           case "Passes": {
             const gas = {
@@ -251,7 +265,10 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
           // With every gas limit given, viem doesn't ask the bundler to estimate again.
           () => client.prepareUserOperation({ account, calls: [...calls], ...gas })
         )
-        const signature = yield* chain.use("sign agent operation", () => account.signUserOperation(prepared as never))
+        const signature = yield* Effect.tryPromise({
+          try: () => account.signUserOperation(prepared as never),
+          catch: (cause) => new ChainError({ operation: "sign agent operation", cause })
+        })
         const hash = getUserOperationHash({
           chainId: chain.client.chain.id,
           entryPointAddress: account.entryPoint.address,
@@ -260,8 +277,10 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         })
 
         // Sent exactly as signed: given no account, viem doesn't prepare the operation again.
-        const send = chain.use(
-          "send agent operation",
+        yield* Effect.annotateCurrentSpan("user_op.hash", hash)
+        const send = callBundler(
+          "eth_sendUserOperation",
+          namera.provider,
           () =>
             client.sendUserOperation(
               {
@@ -276,6 +295,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
       })
 
       const wait = Effect.fn("AgentExecutor.wait")(function*(agentId: string, session: SessionRow, hash: Hex) {
+        yield* Effect.annotateCurrentSpan({ "agent.id": agentId, "user_op.hash": hash })
         return yield* receiptOf(yield* agentClient(agentId, session), hash)
       })
 

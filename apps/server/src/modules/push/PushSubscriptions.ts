@@ -8,6 +8,7 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { count, PushSubscriptions as PushSubscriptionsMetric } from "../../platform/telemetry/Metrics.ts"
 import { pushSubscriptions } from "./tables.ts"
 
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect
@@ -57,6 +58,7 @@ export class PushSubscriptions extends Context.Service<PushSubscriptions, {
             endpoint: subscription.endpoint,
             ...values
           }).onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: values }).returning().pipe(Effect.orDie)
+          yield* count(PushSubscriptionsMetric, { change: "added" })
           return toDevice(row!)
         }
       )
@@ -67,10 +69,15 @@ export class PushSubscriptions extends Context.Service<PushSubscriptions, {
           eq(pushSubscriptions.userId, userId as `user_${string}`)
         )).returning().pipe(Effect.orDie)
         if (removed.length === 0) return yield* new NotFound({ resource: "pushDevice", id })
+        yield* count(PushSubscriptionsMetric, { change: "removed" })
       })
 
+      // A device its push service no longer knows (404, 410).
       const forget = (id: string) =>
-        db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, id as `pushsub_${string}`)).pipe(Effect.orDie)
+        db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, id as `pushsub_${string}`)).pipe(
+          Effect.orDie,
+          Effect.andThen(count(PushSubscriptionsMetric, { change: "expired_410" }))
+        )
 
       return PushSubscriptions.of({
         devices: (userId) => Effect.map(rows(userId), (found) => found.map(toDevice)),

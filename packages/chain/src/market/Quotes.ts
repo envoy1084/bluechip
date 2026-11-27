@@ -3,7 +3,6 @@
  *
  * @since 0.0.0
  */
-import * as Effect from "effect/Effect"
 import type { Address } from "viem"
 import type { ChainClient } from "../ChainClient.ts"
 import { metaquoterAbi } from "./Aerodrome.ts"
@@ -28,4 +27,4 @@ export const quoteExactIn = (
       args: [input.pool, input.tokenIn, input.amountIn, BigInt(0)]
     })
     return result[0]
-  }).pipe(Effect.withSpan("chain.quoteExactIn"))
+  })

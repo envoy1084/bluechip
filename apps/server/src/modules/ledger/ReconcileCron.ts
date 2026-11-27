@@ -1,9 +1,9 @@
-import * as ClusterCron from "effect/cluster/ClusterCron"
 import * as Config from "effect/Config"
 import * as Cron from "effect/Cron"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import { measuredCron } from "../../platform/engine/Measured.ts"
 import { Reconciliation } from "./Reconciliation.ts"
 
 /**
@@ -14,7 +14,7 @@ export const ReconcileCron = Layer.unwrap(Effect.gen(function*() {
   const enabled = yield* Config.Boolean("RECONCILE_ENABLED").pipe(Config.withDefault(true))
   if (!enabled) return Layer.empty
 
-  return ClusterCron.make({
+  return measuredCron({
     name: "ledger.reconcile",
     cron: Cron.parseUnsafe("*/5 * * * *"),
     execute: Effect.gen(function*() {

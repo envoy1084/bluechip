@@ -20,15 +20,28 @@ import { EngineLive } from "./platform/engine/Engine.ts"
 import { HealthRoutes } from "./platform/http/Health.ts"
 import { OriginCheckMiddleware } from "./platform/http/OriginCheck.ts"
 import { RequestIdMiddleware } from "./platform/http/RequestId.ts"
+import { RequestTelemetryMiddleware } from "./platform/http/RequestTelemetry.ts"
+import { TelemetryLive } from "./platform/telemetry/Telemetry.ts"
+import { TelemetryProxyRoutes } from "./platform/telemetry/TelemetryProxy.ts"
 import { ServicesLive } from "./Services.ts"
 
-/** Every HTTP route the server answers: health and the API under `/api` (passkey auth included). */
-export const Routes = Layer.mergeAll(HealthRoutes, ApiRoutes, RequestIdMiddleware, OriginCheckMiddleware)
+/**
+ * Every HTTP route the server answers: health, the API under `/api` (passkey auth included) and the web app's
+ * telemetry proxy (`/ingest`, `/api/telemetry`), every request measured.
+ */
+export const Routes = Layer.mergeAll(
+  HealthRoutes,
+  ApiRoutes,
+  TelemetryProxyRoutes,
+  RequestIdMiddleware,
+  OriginCheckMiddleware,
+  RequestTelemetryMiddleware
+)
 
 /**
  * The server with its market data, the assistant's models and the embedder given: routes, Node HTTP on `PORT`, the app's services
  * (the desk and crons among them) on the durable engine, the Telegram bot when it has a token, the database, the chain,
- * config and logging. Namera checks at
+ * config, telemetry (exported to Axiom on paper and production) and logging. Namera checks at
  * startup that the bundler and paymaster work together, and refuses to boot otherwise. The browser suite runs it with
  * fixed market data, recorded models and a route of its own (`test/stack/`).
  */
@@ -50,6 +63,7 @@ export const makeServer = <Out, E, RA = never, R = never>(
     Layer.provide(Database.layer),
     Layer.provide(Layer.merge(ChainClient.layer, ChainDeployment.layer)),
     Layer.provide(AppConfig.layer),
+    Layer.provide(TelemetryLive),
     Layer.provide(LoggingLive)
   )
 

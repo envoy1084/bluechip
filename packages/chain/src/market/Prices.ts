@@ -3,7 +3,6 @@
  *
  * @since 0.0.0
  */
-import * as Effect from "effect/Effect"
 import { aggregatorAbi } from "../Abis.ts"
 import type { ChainClient } from "../ChainClient.ts"
 import type { Stock } from "../Deployment.ts"
@@ -55,4 +54,4 @@ export const readPrices = (chain: ChainClient["Service"]) =>
         : []
     )
     return { asOf: new Date(Number(block.timestamp) * 1000), prices }
-  }).pipe(Effect.withSpan("chain.readPrices"))
+  })

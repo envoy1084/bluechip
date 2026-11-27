@@ -1,10 +1,10 @@
-import * as ClusterCron from "effect/cluster/ClusterCron"
 import * as Cron from "effect/Cron"
 import * as Duration from "effect/Duration"
+import { measuredCron } from "../../platform/engine/Measured.ts"
 import { IntentStore } from "./IntentStore.ts"
 
 /** Approvals, signatures and waiting trades left open past their time, every 5 minutes. */
-export const ExpireIntentsCron = ClusterCron.make({
+export const ExpireIntentsCron = measuredCron({
   name: "intents.expire",
   cron: Cron.parseUnsafe("*/5 * * * *"),
   execute: IntentStore.use((store) => store.expire()),

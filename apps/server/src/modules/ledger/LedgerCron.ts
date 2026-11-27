@@ -1,7 +1,7 @@
-import * as ClusterCron from "effect/cluster/ClusterCron"
 import * as Cron from "effect/Cron"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
+import { measuredCron } from "../../platform/engine/Measured.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Ledger } from "./Ledger.ts"
 
@@ -9,7 +9,7 @@ import { Ledger } from "./Ledger.ts"
  * Every hour: the ledger repaired (costs and lots any fill is missing), then every open lot's unrealised profit
  * written to today's rows at market prices. A run more than half an hour late is skipped.
  */
-export const LedgerCron = ClusterCron.make({
+export const LedgerCron = measuredCron({
   name: "ledger.hourly",
   cron: Cron.parseUnsafe("5 * * * *"),
   execute: Effect.gen(function*() {

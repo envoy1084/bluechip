@@ -10,6 +10,7 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { AssistantCards, count } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Automations } from "../automations/Automations.ts"
 import { Memories } from "../memory/Memories.ts"
@@ -84,6 +85,7 @@ export class Cards extends Context.Service<Cards, {
           createdAt: now,
           updatedAt: now
         }).pipe(Effect.orDie)
+        yield* count(AssistantCards, { kind: card._tag, outcome: "shown" })
         return card
       })
 
@@ -98,6 +100,10 @@ export class Cards extends Context.Service<Cards, {
       const save = Effect.fnUntraced(function*(owner: Owner, card: Card) {
         yield* db.update(assistantCards).set({ card, updatedAt: yield* DateTime.now })
           .where(byId(owner, card.id)).pipe(Effect.orDie)
+        const status = (card as { readonly status?: string }).status
+        if (status === "applied" || status === "dismissed") {
+          yield* count(AssistantCards, { kind: card._tag, outcome: status === "applied" ? "confirmed" : "dismissed" })
+        }
         return card
       })
 
@@ -108,6 +114,7 @@ export class Cards extends Context.Service<Cards, {
       })
 
       const confirm = Effect.fn("Cards.confirm")(function*(owner: Owner, id: string) {
+        yield* Effect.annotateCurrentSpan("card.id", id)
         const card = yield* pending(owner, id)
 
         switch (card._tag) {

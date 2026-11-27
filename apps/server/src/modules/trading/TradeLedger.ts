@@ -15,6 +15,19 @@ import * as Result from "effect/Result"
 import type { Hex } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import {
+  count,
+  record as recordMetric,
+  sourceOf,
+  TradesFailed,
+  TradesFees,
+  TradesFilled,
+  TradesSize,
+  TradesSlippage,
+  TradesValue,
+  usd
+} from "../../platform/telemetry/Metrics.ts"
+import { intents } from "../intents/tables.ts"
 import { Ledger } from "../ledger/Ledger.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import type { Receipt } from "../signing/OwnerOperations.ts"
@@ -85,8 +98,45 @@ export class TradeLedger extends Context.Service<TradeLedger, {
         return toTrade(row)
       })
 
+      // The trades' metrics, once a trade ended: its value and costs (the ledger has recorded them by now) when it
+      // filled, why not otherwise.
+      const measure = Effect.fnUntraced(function*(trade: TradeRow, receipt: Receipt | undefined) {
+        const [intent] = trade.intentId === null ?
+          [] :
+          yield* db.select({ source: intents.source, executor: intents.executor })
+            .from(intents).where(eq(intents.id, trade.intentId)).pipe(Effect.orDie)
+        const executor = intent?.executor ?? (trade.agentId === null ? "owner" : "agent")
+        const source = sourceOf(intent?.source ?? "owner", executor)
+        yield* Effect.annotateCurrentSpan({
+          "trade.side": trade.side,
+          "stock.symbol": trade.symbol,
+          "intent.source": source
+        })
+
+        if (trade.status !== "filled") {
+          return yield* count(TradesFailed, { reason: receipt === undefined ? "bundler" : "reverted", source })
+        }
+        const dollars = usd(trade.usdc)
+        yield* Effect.annotateCurrentSpan("trade.usd", dollars)
+        const traded = { side: trade.side, source, executor, symbol: trade.symbol }
+        yield* count(TradesFilled, traded)
+        yield* recordMetric(TradesValue, dollars, traded)
+        yield* recordMetric(TradesSize, dollars, { side: trade.side, source })
+        yield* recordMetric(TradesSlippage, trade.gapBps, { side: trade.side, symbol: trade.symbol })
+
+        const costs = yield* row(trade.id)
+        const gasPaidBy = costs?.gasPaidBy ?? "unknown"
+        if (costs?.fee != null) {
+          yield* recordMetric(TradesFees, usd(costs.fee), { kind: "pool", gas_paid_by: gasPaidBy })
+        }
+        if (costs?.slippage != null) {
+          yield* recordMetric(TradesFees, usd(costs.slippage), { kind: "slippage", gas_paid_by: gasPaidBy })
+        }
+      })
+
       const settle = Effect.fn("TradeLedger.settle")(
         function*(row: TradeRow, account: Hex, receipt: Receipt | undefined) {
+          yield* Effect.annotateCurrentSpan({ "trade.id": row.id, "user.id": row.userId })
           const stock = deployment.stocks.find((candidate) => candidate.symbol === row.symbol)!
           const fill = receipt?.success === true
             ? fillOf(deployment, receipt.logs, { stock, side: row.side }, account)
@@ -121,6 +171,8 @@ export class TradeLedger extends Context.Service<TradeLedger, {
           yield* ledger.recordFill(updated!, receipt?.gas).pipe(
             Effect.catchCause((cause) => Effect.logWarning(`Trade ${row.id}: the ledger couldn't record it`, cause))
           )
+
+          yield* measure(updated!, receipt)
 
           // Fresh balances before the events, so a client that refetches on them sees the new holdings.
           yield* balances.invalidate(account)

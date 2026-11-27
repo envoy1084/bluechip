@@ -10,6 +10,7 @@ import * as Layer from "effect/Layer"
 import { createPublicClient, http, type HttpTransport, type PublicClient } from "viem"
 import { deploymentOf } from "./ChainDeployment.ts"
 import { ChainError } from "./ChainError.ts"
+import { traceChain } from "./ChainTelemetry.ts"
 import type { Deployment } from "./Deployment.ts"
 import { type Network, NetworkConfig } from "./Network.ts"
 
@@ -24,8 +25,8 @@ export type BaseClient = PublicClient<HttpTransport, Deployment["chain"]>
 
 /**
  * A viem public client for the network's chain (the local chain keeps Base's chain id), with calls batched into
- * multicalls, and the network's {@link Deployment}. `use` runs a viem call and turns its failure into a
- * {@link ChainError}.
+ * multicalls, and the network's {@link Deployment}. `use` runs a viem call in a `chain.<operation>` span, measured
+ * (`ChainTelemetry`), and turns its failure into a {@link ChainError}.
  *
  * @stability unstable
  * @category services
@@ -70,7 +71,9 @@ export class ChainClient extends Context.Service<ChainClient, {
       rpcUrl,
       client,
       use: (operation, f) =>
-        Effect.tryPromise({ try: () => f(client), catch: (cause) => new ChainError({ operation, cause }) })
+        Effect.tryPromise({ try: () => f(client), catch: (cause) => new ChainError({ operation, cause }) }).pipe(
+          traceChain(network, operation)
+        )
     }
   }
 }

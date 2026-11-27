@@ -14,6 +14,8 @@ import * as Layer from "effect/Layer"
 import * as Activity from "effect/workflow/Activity"
 import * as Workflow from "effect/workflow/Workflow"
 import { AppConfig } from "../../config/AppConfig.ts"
+import { measuredWorkflow } from "../../platform/engine/Measured.ts"
+import { count, TelegramMessages } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Cards } from "../assistant/Cards.ts"
 import { Recoveries } from "../recovery/Recoveries.ts"
@@ -35,7 +37,7 @@ export const AnswerChatMessage = Workflow.make("AnswerChatMessage", {
 export const AnswerChatMessageLive = AnswerChatMessage.toLayer(Effect.fnUntraced(function*(message) {
   const bot = yield* ChatBot
   yield* Activity.make({ name: "answer", execute: bot.answer(message) })
-}))
+}, measuredWorkflow("AnswerChatMessage")))
 
 /** Every message people send (not other bots'), handed to `AnswerChatMessage`. */
 export const ChatHandlerLive = ChatHandler.layer((event) => {
@@ -101,6 +103,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
 
   const answerCard = (confirmed: boolean) =>
     Effect.fnUntraced(function*(click: ChatInteraction.Click<string>) {
+      yield* count(TelegramMessages, { direction: "in", kind: "button" })
       const who = yield* bot.ownerOf(click.thread, click.userId)
       if (who === undefined) return ChatInteraction.ack
       const answered = yield* (confirmed ? cards.confirm : cards.dismiss)(who.owner, click.value).pipe(
@@ -125,7 +128,10 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
     run: (who: ChatOwner) => Effect.Effect<ChatInteraction.Respond>
   ): Effect.Effect<ChatInteraction.Respond> =>
     Effect.flatMap(
-      bot.ownerOf(event.thread, event.userId),
+      Effect.andThen(
+        count(TelegramMessages, { direction: "in", kind: "command" }),
+        bot.ownerOf(event.thread, event.userId)
+      ),
       (who) => who === undefined ? Effect.succeed(respond(NOT_LINKED)) : run(who)
     )
 

@@ -12,6 +12,7 @@ import * as HttpServerRequest from "effect/http/HttpServerRequest"
 import * as HttpServerResponse from "effect/http/HttpServerResponse"
 import * as Option from "effect/Option"
 import { AppConfig } from "../../config/AppConfig.ts"
+import { count, UsersSignedIn } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Notifications } from "../notifications/Notifications.ts"
@@ -81,19 +82,23 @@ export const AuthHandlers = HttpApiBuilder.group(
         const challengeId = yield* challenges.issue("login", options.challenge)
         return new Ceremony({ challengeId, options: toJson(options) })
       }),
-      loginVerify: Effect.fn(function*({ payload }) {
-        const challenge = yield* challenges.consume("login", payload.challengeId)
-        const passkey = yield* accounts.findPasskey(payload.credential.id)
-        // Only the account's owners sign in here: a recovery passkey signs in to recover, and a passkey being added
-        // or removed doesn't own the account.
-        if (Option.isNone(passkey) || passkey.value.role !== "owner" || passkey.value.status !== "active") {
-          return yield* new SignatureRejected({ reason: "unknownPasskey" })
-        }
-        const counter = yield* webAuthn.verifyAuthentication(payload.credential, challenge, passkey.value)
-        yield* accounts.recordPasskeyUse(passkey.value.id, counter)
-        yield* signIn(passkey.value.userId as UserId, passkey.value.id as PasskeyId, false)
-        return yield* accounts.me(passkey.value.userId as UserId)
-      }),
+      loginVerify: Effect.fn(
+        function*({ payload }) {
+          const challenge = yield* challenges.consume("login", payload.challengeId)
+          const passkey = yield* accounts.findPasskey(payload.credential.id)
+          // Only the account's owners sign in here: a recovery passkey signs in to recover, and a passkey being added
+          // or removed doesn't own the account.
+          if (Option.isNone(passkey) || passkey.value.role !== "owner" || passkey.value.status !== "active") {
+            return yield* new SignatureRejected({ reason: "unknownPasskey" })
+          }
+          const counter = yield* webAuthn.verifyAuthentication(payload.credential, challenge, passkey.value)
+          yield* accounts.recordPasskeyUse(passkey.value.id, counter)
+          yield* signIn(passkey.value.userId as UserId, passkey.value.id as PasskeyId, false)
+          yield* count(UsersSignedIn, { method: "passkey", outcome: "ok" })
+          return yield* accounts.me(passkey.value.userId as UserId)
+        },
+        Effect.tapErrorTag("SignatureRejected", () => count(UsersSignedIn, { method: "passkey", outcome: "rejected" }))
+      ),
       logout: Effect.fn(function*() {
         const request = yield* HttpServerRequest.HttpServerRequest
         const token = request.cookies[sessionCookie.key]

@@ -13,6 +13,7 @@ import * as Ref from "effect/Ref"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count, MarketStreamReconnects } from "../../platform/telemetry/Metrics.ts"
 import { Alpaca, type AlpacaError } from "./alpaca/Alpaca.ts"
 
 /** A share's price in dollars as a token's price (USD × 1e8): the share price times the token's multiplier. */
@@ -98,7 +99,12 @@ export class MarketPrices extends Context.Service<MarketPrices, {
             )
           })
         ),
-        Effect.tapError((error) => Effect.logWarning("Alpaca trade stream dropped", error)),
+        Effect.tapError((error) =>
+          Effect.andThen(
+            Effect.logWarning("Alpaca trade stream dropped", error),
+            count(MarketStreamReconnects, { stream: "trades" })
+          )
+        ),
         Effect.retry(Schedule.min([Schedule.exponential("1 second"), Schedule.spaced("1 minute")]))
       )
 

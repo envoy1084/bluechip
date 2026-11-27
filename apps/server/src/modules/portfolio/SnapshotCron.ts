@@ -1,11 +1,11 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import * as ClusterCron from "effect/cluster/ClusterCron"
 import * as Cron from "effect/Cron"
 import * as DateTime from "effect/DateTime"
 import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { measuredCron } from "../../platform/engine/Measured.ts"
 import { jobRuns } from "../../platform/engine/tables.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { PortfolioSnapshots } from "./PortfolioSnapshots.ts"
@@ -14,7 +14,7 @@ import { PortfolioSnapshots } from "./PortfolioSnapshots.ts"
  * Every portfolio's value every 4 hours on the hour, at prices read afresh, for the 30-day chart; each run is recorded
  * in `job_runs`. A run more than an hour late is skipped. The engine runs it once per schedule across instances.
  */
-export const PortfolioSnapshotCron = ClusterCron.make({
+export const PortfolioSnapshotCron = measuredCron({
   name: "portfolio.snapshot",
   cron: Cron.parseUnsafe("0 */4 * * *"),
   execute: Effect.gen(function*() {

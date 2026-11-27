@@ -11,13 +11,18 @@ export const AuthenticationLive = Layer.effect(
   Authentication,
   Effect.gen(function*() {
     const sessions = yield* Sessions
+    const signedIn = Effect.fn("Authentication.session")(function*(token: string) {
+      if (token === "") return yield* new Unauthenticated()
+      const user = yield* sessions.user(token)
+      if (Option.isNone(user)) return yield* new Unauthenticated()
+      return user.value
+    })
     return Authentication.of({
-      session: Effect.fn("Authentication.session")(function*(httpEffect, { credential }) {
-        const token = Redacted.value(credential)
-        if (token === "") return yield* new Unauthenticated()
-        const user = yield* sessions.user(token)
-        if (Option.isNone(user)) return yield* new Unauthenticated()
-        return yield* Effect.provideService(httpEffect, CurrentUser, user.value)
+      // The user goes on the request's span, so every trace says whose request it was.
+      session: Effect.fnUntraced(function*(httpEffect, { credential }) {
+        const user = yield* signedIn(Redacted.value(credential))
+        yield* Effect.annotateCurrentSpan("user.id", user.id)
+        return yield* Effect.provideService(httpEffect, CurrentUser, user)
       })
     })
   })

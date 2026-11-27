@@ -25,6 +25,7 @@ import type { Hex } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count, Recovery as RecoveryMetric, UsersSignedIn } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { decryptKey } from "../agents/Keys.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
@@ -121,7 +122,7 @@ export class Recoveries extends Context.Service<Recoveries, {
           subjectType: "recovery",
           subjectId: row.id,
           data
-        })
+        }).pipe(Effect.andThen(count(RecoveryMetric, { change: action === "requested" ? "started" : action })))
 
       // The recovery passkey's session and guard, as locked on the account.
       const grantsOf = Effect.fnUntraced(function*(stored: StoredKey) {
@@ -158,7 +159,7 @@ export class Recoveries extends Context.Service<Recoveries, {
       const settle = Effect.fnUntraced(function*(row: RecoveryRequestRow) {
         const userId = row.userId as UserId
         const signer = yield* accounts.ownerPasskey(userId)
-        const outcome = yield* owners.wait(signer, row.userOpHash as Hex).pipe(Effect.result)
+        const outcome = yield* owners.wait(signer, row.userOpHash as Hex, "recovery").pipe(Effect.result)
         const now = yield* DateTime.now
 
         if (row.status === "requesting") {
@@ -218,41 +219,45 @@ export class Recoveries extends Context.Service<Recoveries, {
         return new Ceremony({ challengeId, options: toJson(options) })
       })
 
-      const signIn = Effect.fn("Recoveries.signIn")(function*(input: {
-        readonly challengeId: string
-        readonly credential: typeof AuthenticationCredential.Type
-        readonly userAgent: string | undefined
-      }) {
-        const challenge = yield* challenges.consume("recovery", input.challengeId)
-        const found = yield* accounts.findPasskey(input.credential.id)
-        if (Option.isNone(found) || found.value.role !== "recovery" || found.value.status !== "active") {
-          return yield* new SignatureRejected({ reason: "unknownPasskey" })
-        }
-        const passkey = found.value
-        const counter = yield* webAuthn.verifyAuthentication(input.credential, challenge, passkey)
-        yield* accounts.recordPasskeyUse(passkey.id, counter)
+      const signIn = Effect.fn("Recoveries.signIn")(
+        function*(input: {
+          readonly challengeId: string
+          readonly credential: typeof AuthenticationCredential.Type
+          readonly userAgent: string | undefined
+        }) {
+          const challenge = yield* challenges.consume("recovery", input.challengeId)
+          const found = yield* accounts.findPasskey(input.credential.id)
+          if (Option.isNone(found) || found.value.role !== "recovery" || found.value.status !== "active") {
+            return yield* new SignatureRejected({ reason: "unknownPasskey" })
+          }
+          const passkey = found.value
+          const counter = yield* webAuthn.verifyAuthentication(input.credential, challenge, passkey)
+          yield* accounts.recordPasskeyUse(passkey.id, counter)
 
-        const userId = passkey.userId as UserId
-        const session = yield* sessions.create({
-          userId,
-          passkeyId: passkey.id as PasskeyId,
-          device: deviceOf(input.userAgent),
-          scope: "recovery"
-        })
-        yield* audit.record({
-          userId,
-          actor: "owner",
-          action: "recovery.signedIn",
-          subjectType: "passkey",
-          subjectId: passkey.id
-        })
-        const { account } = yield* accounts.ownerPasskey(userId)
-        return {
-          token: session.token,
-          expiresAt: session.expiresAt,
-          recovering: new Recovering({ account: account as Address, request: yield* requestOf(userId) })
-        }
-      })
+          const userId = passkey.userId as UserId
+          const session = yield* sessions.create({
+            userId,
+            passkeyId: passkey.id as PasskeyId,
+            device: deviceOf(input.userAgent),
+            scope: "recovery"
+          })
+          yield* audit.record({
+            userId,
+            actor: "owner",
+            action: "recovery.signedIn",
+            subjectType: "passkey",
+            subjectId: passkey.id
+          })
+          yield* count(UsersSignedIn, { method: "recovery", outcome: "ok" })
+          const { account } = yield* accounts.ownerPasskey(userId)
+          return {
+            token: session.token,
+            expiresAt: session.expiresAt,
+            recovering: new Recovering({ account: account as Address, request: yield* requestOf(userId) })
+          }
+        },
+        Effect.tapErrorTag("SignatureRejected", () => count(UsersSignedIn, { method: "recovery", outcome: "rejected" }))
+      )
 
       const passkeyOptions = Effect.fn("Recoveries.passkeyOptions")(function*(user: RecoveringUser["Service"]) {
         const known = yield* accounts.owners(user.id)
@@ -393,7 +398,7 @@ export class Recoveries extends Context.Service<Recoveries, {
         const hash = yield* operations.sendAsGuard(guard, key, [
           cancelCall(deployment, row.calls as ReadonlyArray<Call>)
         ])
-        const receipt = yield* owners.wait(yield* accounts.ownerPasskey(userId), hash)
+        const receipt = yield* owners.wait(yield* accounts.ownerPasskey(userId), hash, "recovery")
         if (!receipt.success) return yield* new Conflict({ reason: "noRecoveryRequest" })
 
         const now = yield* DateTime.now

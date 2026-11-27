@@ -25,6 +25,7 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { AutomationsCreated, count } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
@@ -199,6 +200,11 @@ export class Automations extends Context.Service<Automations, {
         yield* db.insert(automationState).values({ automationId: row.id, state: EMPTY_STATE, updatedAt: now })
           .pipe(Effect.orDie)
         yield* record(row, "created")
+        yield* count(AutomationsCreated, {
+          trigger: row.trigger.type,
+          action: row.action.type,
+          created_by: row.createdBy
+        })
         return toAutomation(row)
       })
 

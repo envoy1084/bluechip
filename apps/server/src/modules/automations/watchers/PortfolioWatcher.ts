@@ -45,6 +45,7 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
           const now = yield* DateTime.now
           const at = DateTime.formatIso(now)
           const prices = yield* market.prices
+          let fired = 0
 
           yield* Effect.forEach(
             yield* automations.watched("portfolio", options.userId),
@@ -68,6 +69,7 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
                     stepDrift(target, state, portfolio, at) :
                     { state, fire: null })
                 if (fire === null) return
+                fired++
 
                 const trigger: TriggerData = {
                   summary: row.trigger.type === "drift"
@@ -87,6 +89,8 @@ export class PortfolioWatcher extends Context.Service<PortfolioWatcher, {
                 )
               )
           )
+          // A minute that fired nothing leaves no trace (`BluechipTracer` drops it).
+          if (fired === 0) yield* Effect.annotateCurrentSpan("bluechip.idle", true)
         }
       )
 

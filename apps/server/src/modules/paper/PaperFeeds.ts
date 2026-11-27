@@ -9,6 +9,14 @@ import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Schedule from "effect/Schedule"
 import { parseEther } from "viem"
+import {
+  count,
+  PaperFeedAge,
+  PaperFeedPushes,
+  PaperOperatorBalance,
+  record,
+  secondsSince
+} from "../../platform/telemetry/Metrics.ts"
 import { marketStatus } from "../market/Calendar.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Operator } from "./Operator.ts"
@@ -46,7 +54,10 @@ export const PaperFeeds = Singleton.make(
         prices: [...(yield* market.prices).values()],
         feeds
       })
-      if (updates.length === 0) return
+      for (const [symbol, feed] of feeds) {
+        yield* record(PaperFeedAge, yield* secondsSince(feed.updatedAt), { symbol })
+      }
+      if (updates.length === 0) return yield* count(PaperFeedPushes, { outcome: "skipped", feeds: "0" })
 
       const stocks = new Map(chain.deployment.stocks.map((stock) => [stock.symbol, stock.feed]))
       const hash = yield* operator.pushFeeds(
@@ -56,12 +67,19 @@ export const PaperFeeds = Singleton.make(
         })
       )
       yield* Effect.logDebug("Paper feeds written", { symbols: updates.map((update) => update.symbol), hash })
+      yield* count(PaperFeedPushes, { outcome: "pushed", feeds: updates.length <= 3 ? "1-3" : "4+" })
     }).pipe(
-      Effect.catchCause((cause) => Effect.logWarning("Paper feeds: the write failed", cause)),
+      Effect.catchCause((cause) =>
+        Effect.andThen(
+          Effect.logWarning("Paper feeds: the write failed", cause),
+          count(PaperFeedPushes, { outcome: "failed", feeds: "0" })
+        )
+      ),
       Effect.withSpan("PaperFeeds.push")
     )
 
     const checkBalance = operator.ethBalance.pipe(
+      Effect.tap((balance) => record(PaperOperatorBalance, Number(balance) / 1e18, {})),
       Effect.flatMap((balance) =>
         balance < LOW_ETH
           ? Effect.logWarning("Paper operator is low on ETH", { address: operator.address, wei: balance.toString() })

@@ -8,6 +8,7 @@ import {
   type IntentEvent,
   type IntentSource,
   type IntentStatus,
+  isEnded,
   type Leg,
   transition
 } from "@bluechip/domain/intents/Intent"
@@ -23,6 +24,20 @@ import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import {
+  ApprovalsRequested,
+  ApprovalsResolved,
+  ApprovalsTimeToResolve,
+  count,
+  IntentsBlocked,
+  IntentsCreated,
+  IntentsDuration,
+  IntentsEnded,
+  IntentsWaited,
+  record,
+  secondsSince,
+  sourceOf
+} from "../../platform/telemetry/Metrics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
@@ -30,6 +45,16 @@ import type { Owner } from "../signing/SigningRequests.ts"
 import { intents } from "./tables.ts"
 
 export type IntentRow = typeof intents.$inferSelect
+
+/** The ids and kind of an intent, as its spans carry them. */
+export const spanAttributesOf = (row: IntentRow) => ({
+  "intent.id": row.id,
+  "intent.source": row.source,
+  "intent.executor": row.executor,
+  "user.id": row.userId,
+  ...(row.agentId === null ? {} : { "agent.id": row.agentId }),
+  ...(row.batchId === null ? {} : { "batch.id": row.batchId })
+})
 
 /** A trade someone asked for: yours (`agentId` null) or one of your agents'. */
 export type IntentInput = {
@@ -174,7 +199,15 @@ export class IntentStore extends Context.Service<IntentStore, {
           createdAt: now,
           updatedAt: now
         }).onConflictDoNothing().returning().pipe(Effect.orDie)
-        if (created !== undefined) return { row: created, created: true }
+        if (created !== undefined) {
+          yield* Effect.annotateCurrentSpan(spanAttributesOf(created))
+          yield* count(IntentsCreated, {
+            source: sourceOf(created.source, created.executor),
+            executor: created.executor,
+            batched: String(created.batchId !== null)
+          })
+          return { row: created, created: true }
+        }
 
         const [existing] = yield* db.select().from(intents).where(and(
           eq(intents.userId, owner.id as `user_${string}`),
@@ -220,8 +253,39 @@ export class IntentStore extends Context.Service<IntentStore, {
         return rows.map(toIntent)
       })
 
+      // The intents' metrics for a move from `from` to `row.status`.
+      const measure = Effect.fnUntraced(function*(row: IntentRow, from: IntentStatus) {
+        const source = sourceOf(row.source, row.executor)
+        const approval = row.agentId !== null || row.source === "automation"
+        const decision = row.decision
+
+        if (row.status === "waiting" && decision?._tag === "Wait") {
+          yield* count(IntentsWaited, { reason: decision.reason })
+        }
+        if (row.status === "needsApproval" && decision !== null) {
+          yield* count(ApprovalsRequested, { reason: decision._tag })
+        }
+        if (row.status === "blocked" && decision?._tag === "Refused") {
+          yield* count(IntentsBlocked, { policy: decision.policy, source })
+        }
+        const resolved = row.status === "sending" && from === "awaitingSignature" ? "approved" : row.status
+        if (
+          approval && (from === "needsApproval" || from === "awaitingSignature") &&
+          (resolved === "approved" || resolved === "declined" || resolved === "expired")
+        ) {
+          yield* count(ApprovalsResolved, { outcome: resolved, surface: "app" })
+          yield* record(ApprovalsTimeToResolve, yield* secondsSince(row.createdAt), { outcome: resolved })
+        }
+        if (isEnded(row.status)) {
+          const ended = { outcome: row.status, source, executor: row.executor }
+          yield* count(IntentsEnded, ended)
+          yield* record(IntentsDuration, yield* secondsSince(row.createdAt), ended)
+        }
+      })
+
       const advance = Effect.fn("IntentStore.advance")(
         function*(row: IntentRow, event: IntentEvent, changes: Partial<IntentRow> = {}) {
+          yield* Effect.annotateCurrentSpan({ ...spanAttributesOf(row), "intent.event": event._tag })
           const next = transition(row.status, event)
           if (Result.isFailure(next)) return yield* new Conflict({ reason: "intentClosed" })
 
@@ -245,6 +309,7 @@ export class IntentStore extends Context.Service<IntentStore, {
             })
           ).pipe(Effect.orDie)
           if (updated === undefined) return yield* new Conflict({ reason: "intentChanged" })
+          yield* measure(updated, row.status)
 
           // The agent's journal next, so whoever hears of the change can read it there.
           const intent = toIntent(updated)

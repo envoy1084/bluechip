@@ -15,6 +15,7 @@ import type { Hex } from "viem"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count, Recovery as RecoveryMetric } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { encryptKey } from "../agents/Keys.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
@@ -110,9 +111,10 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
 
       const settle = Effect.fnUntraced(function*(row: RecoveryKeyRow) {
         const userId = row.userId as UserId
-        const outcome = yield* owners.wait(yield* accounts.ownerPasskey(userId), row.userOpHash as Hex).pipe(
-          Effect.result
-        )
+        const outcome = yield* owners.wait(yield* accounts.ownerPasskey(userId), row.userOpHash as Hex, "recovery")
+          .pipe(
+            Effect.result
+          )
         const landed = outcome._tag === "Success" && outcome.success.success
         const locking = row.status === "locking"
         const now = yield* DateTime.now
@@ -149,6 +151,7 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
           subjectId: row.id,
           data: { label: passkey.label }
         })
+        yield* count(RecoveryMetric, { change: locking ? "key_added" : "key_removed" })
         yield* notifications.add(userId, notificationOfRecoveryKey({ id: row.id, label: passkey.label }, locking))
         yield* changed(userId)
       })

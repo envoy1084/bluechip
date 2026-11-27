@@ -19,6 +19,8 @@ import * as DurableClock from "effect/workflow/DurableClock"
 import * as Workflow from "effect/workflow/Workflow"
 import { typeid } from "typeid-js"
 import type { Hex } from "viem"
+import { measuredWorkflow } from "../../platform/engine/Measured.ts"
+import { BatchesWavesSent, count } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import type { SessionRow } from "../agents/AgentSessions.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
@@ -27,7 +29,7 @@ import type { TradeRow } from "../trading/TradeLedger.ts"
 import { TradeLedger } from "../trading/TradeLedger.ts"
 import { Trades } from "../trading/Trades.ts"
 import { AgentExecutor, type Decided } from "./AgentExecutor.ts"
-import { type IntentRow, IntentStore } from "./IntentStore.ts"
+import { type IntentRow, IntentStore, spanAttributesOf } from "./IntentStore.ts"
 
 // Waits that hold for every leg of an operation alike: the legs wait together instead of trying one by one.
 const TOGETHER: ReadonlyArray<WaitReason> = ["dayEnding", "pricesPaused", "pricesStale", "noGas"]
@@ -231,7 +233,10 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     })
     const decision = decided.decision
 
-    if (decision._tag === "Passes") return yield* send(deciding, decided, context)
+    if (decision._tag === "Passes") {
+      if (deciding.length > 1) yield* count(BatchesWavesSent, { outcome: "sent" })
+      return yield* send(deciding, decided, context)
+    }
     if (decision._tag === "Wait" && (deciding.length === 1 || TOGETHER.includes(decision.reason))) {
       for (const row of deciding) {
         yield* intents.advance(row, { _tag: "Decided", decision }, { retryAt: decision.until })
@@ -249,14 +254,17 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     }
 
     yield* Effect.logInfo(`Intents ${deciding.map((row) => row.id)}: not sent together (${decision._tag}), one by one`)
+    yield* count(BatchesWavesSent, { outcome: "split" })
     const results: Array<StepResult> = []
     for (const row of deciding) results.push(yield* run([row], context))
     return earliest(results)
   })
 
   const step = Effect.fn("AccountDesk.step")(function*(intentId: string) {
+    yield* Effect.annotateCurrentSpan("intent.id", intentId)
     const row = yield* intents.find(intentId)
     if (row === undefined || isEnded(row.status)) return done
+    yield* Effect.annotateCurrentSpan(spanAttributesOf(row))
     if (row.ask || row.executor === "owner") return yield* ask(row)
 
     const { agent, canTrade, session } = yield* agentStore.tradingState(row.agentId!)
@@ -330,6 +338,6 @@ export const ExecuteIntentLive = ExecuteIntent.toLayer(Effect.fnUntraced(functio
     const wait = DateTime.distance(yield* DateTime.now, result.until)
     yield* DurableClock.sleep({ name: `wait-${attempt}`, duration: wait })
   }
-}))
+}, measuredWorkflow("ExecuteIntent")))
 
 export const DeskLive = Layer.mergeAll(AccountDeskLive, ExecuteIntentLive)

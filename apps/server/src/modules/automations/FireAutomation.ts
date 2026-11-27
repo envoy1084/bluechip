@@ -3,6 +3,7 @@ import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import * as Activity from "effect/workflow/Activity"
 import * as Workflow from "effect/workflow/Workflow"
+import { measuredWorkflow } from "../../platform/engine/Measured.ts"
 import { AutomationRunner } from "./AutomationRunner.ts"
 
 /**
@@ -22,5 +23,5 @@ export const FireAutomationLive = FireAutomation.toLayer(
       name: "fire",
       execute: runner.fire(automationId, windowKey, trigger)
     })
-  })
+  }, measuredWorkflow("FireAutomation"))
 )

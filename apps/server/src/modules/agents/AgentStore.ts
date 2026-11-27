@@ -3,6 +3,7 @@ import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, UserId } from "@bluechip/domain/Ids"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
+import { TEMPLATES } from "@bluechip/domain/policies/Templates"
 import { and, asc, eq, inArray, lt, ne } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -11,6 +12,7 @@ import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { AgentsCreated, AgentsLifecycle, AgentsLocked, count } from "../../platform/telemetry/Metrics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
@@ -41,6 +43,10 @@ const toAgent = (row: AgentRow, sessions: ReadonlyArray<SessionRow>): Agent => {
 }
 
 /** The agents table: each agent's row, read as the API returns it, and saved with word to its owner. */
+// A built-in template by its id; a template of your own as `saved`; none as `custom`, so the metrics stay few.
+const templateOf = (template: string | null) =>
+  template === null ? "custom" : template in TEMPLATES ? template : "saved"
+
 export class AgentStore extends Context.Service<AgentStore, {
   /** A new draft agent, with its first session (a new key, valid for 90 days) waiting to be locked. */
   readonly create: (owner: Owner, input: {
@@ -113,7 +119,7 @@ export class AgentStore extends Context.Service<AgentStore, {
               .where(eq(agents.id, id)).returning()
             return inserted!
           })
-        ).pipe(Effect.orDie)
+        ).pipe(Effect.orDie, Effect.tap(count(AgentsCreated, { template: templateOf(input.template) })))
       })
 
       const owned = Effect.fn("AgentStore.owned")(function*(owner: Owner, id: AgentId) {
@@ -171,6 +177,26 @@ export class AgentStore extends Context.Service<AgentStore, {
         return toAgent(row, yield* sessions.ofAgents([row.id]))
       })
 
+      // The agents' metrics for a move from `row` to `updated`: a lock that landed or failed, or a change of life.
+      const measure = Effect.fnUntraced(function*(row: AgentRow, updated: AgentRow, change: string | undefined) {
+        const template = templateOf(row.templateId)
+        if (row.status === "locking" && updated.status !== "locking") {
+          yield* count(AgentsLocked, { template, outcome: updated.status === "active" ? "locked" : "failed" })
+        }
+        const lifecycle = updated.paused !== row.paused
+          ? (updated.paused ? "paused" : "resumed")
+          : change === "renewed"
+          ? "renewed"
+          : updated.status === row.status
+          ? undefined
+          : updated.status === "removed" || updated.status === "expired"
+          ? updated.status
+          : row.status === "updating" && updated.status === "active"
+          ? "changed"
+          : undefined
+        if (lifecycle !== undefined) yield* count(AgentsLifecycle, { change: lifecycle })
+      })
+
       const save = Effect.fn("AgentStore.save")(function*(
         row: AgentRow,
         changes: Partial<AgentRow>,
@@ -196,6 +222,7 @@ export class AgentStore extends Context.Service<AgentStore, {
           changes.status !== undefined && changes.status !== row.status ?
           `agent.${changes.status}` :
           undefined
+        yield* measure(row, updated!, change)
         if (action !== undefined) {
           const byBluechip = action === "agent.active" || action === "agent.removed" || action === "agent.expired"
           yield* audit.record({

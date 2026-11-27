@@ -6,8 +6,18 @@ import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Database } from "../../platform/db/Database.ts"
+import {
+  count,
+  LlmBudgetExhausted,
+  LlmCost,
+  LlmTokens,
+  record as recordMetric
+} from "../../platform/telemetry/Metrics.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { usageBudgets } from "./tables.ts"
+
+/** What a model call is for. */
+export type ModelFeature = "chat" | "title" | "memory" | "judgment"
 
 /**
  * Each user's assistant spend per UTC day, against `ASSISTANT_DAILY_BUDGET` dollars: every model call is recorded,
@@ -15,8 +25,8 @@ import { usageBudgets } from "./tables.ts"
  */
 export class Budgets extends Context.Service<Budgets, {
   readonly today: (owner: Owner) => Effect.Effect<Budget>
-  /** Adds a call's tokens and cost to today's spend. */
-  readonly record: (owner: Owner, model: string, usage: TokenUsage) => Effect.Effect<Budget>
+  /** Adds a call's tokens and cost to today's spend; `feature` is what the call was for, in the models' metrics. */
+  readonly record: (owner: Owner, model: string, usage: TokenUsage, feature: ModelFeature) => Effect.Effect<Budget>
 }>()("@bluechip/server/Budgets") {
   static readonly layer = Layer.effect(
     Budgets,
@@ -43,7 +53,12 @@ export class Budgets extends Context.Service<Budgets, {
         return budgetOf(day, row)
       })
 
-      const record = Effect.fn("Budgets.record")(function*(owner: Owner, model: string, usage: TokenUsage) {
+      const record = Effect.fn("Budgets.record")(function*(
+        owner: Owner,
+        model: string,
+        usage: TokenUsage,
+        feature: ModelFeature
+      ) {
         const day = DateTime.formatIsoDateUtc(yield* DateTime.now)
         const input = usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
         const cost = costMicros(model, usage)
@@ -62,6 +77,20 @@ export class Budgets extends Context.Service<Budgets, {
             costMicros: sql`${usageBudgets.costMicros} + ${cost}`
           }
         }).returning().pipe(Effect.orDie)
+
+        for (
+          const [kind, tokens] of [
+            ["input", usage.inputTokens],
+            ["output", usage.outputTokens],
+            ["cache_read", usage.cacheReadTokens],
+            ["cache_write", usage.cacheWriteTokens]
+          ] as const
+        ) {
+          if (tokens > 0) yield* recordMetric(LlmTokens, tokens, { model, feature, kind })
+        }
+        yield* recordMetric(LlmCost, cost / 1_000_000, { model, feature })
+        // The call that spent the day's budget, once per person and day.
+        if (row!.costMicros >= limitMicros && row!.costMicros - cost < limitMicros) yield* count(LlmBudgetExhausted, {})
         return budgetOf(day, row)
       })
 

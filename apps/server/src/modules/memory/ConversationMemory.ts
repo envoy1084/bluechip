@@ -99,7 +99,7 @@ export class ConversationMemory extends Context.Service<ConversationMemory, {
             }
           ]
         }))
-        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage))
+        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "memory")
 
         const now = yield* DateTime.now
         const text = response.value.summary.trim()

@@ -24,6 +24,13 @@ import { typeid } from "typeid-js"
 import { encodeFunctionData, erc20Abi, getAddress, type Hex, isAddress, zeroAddress } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import {
+  count,
+  record as recordMetric,
+  usd,
+  Withdrawals as WithdrawalsMetric,
+  WithdrawalsValue
+} from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
@@ -76,7 +83,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
       // Follows a sent withdrawal to its receipt, then tells its owner and refreshes balances. */
       const track = Effect.fnUntraced(
         function*(transferId: string, owner: Owner, passkey: OwnerPasskey, userOpHash: Hex) {
-          const outcome = yield* operations.wait(passkey, userOpHash).pipe(Effect.result)
+          const outcome = yield* operations.wait(passkey, userOpHash, "withdrawal").pipe(Effect.result)
           const settledAt = yield* DateTime.now
           // The withdrawal's end and its event in the notifications' outbox, in one transaction.
           const row = yield* db.transaction(() =>
@@ -96,6 +103,12 @@ export class Withdrawals extends Context.Service<Withdrawals, {
               return row
             })
           ).pipe(Effect.orDie)
+
+          if (row !== undefined) {
+            const outcome = row.status === "confirmed" ? "sent" : "failed"
+            yield* count(WithdrawalsMetric, { outcome })
+            yield* recordMetric(WithdrawalsValue, usd(BigInt(row.amount ?? 0)), { outcome })
+          }
 
           // Fresh balances before the events, so a client that refetches on them already sees the money gone.
           yield* balances.invalidate(owner.account as Hex)

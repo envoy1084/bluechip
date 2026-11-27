@@ -8,6 +8,7 @@ import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { Embeddings } from "../../platform/embeddings/Embeddings.ts"
+import { count, EmbeddingsCalls } from "../../platform/telemetry/Metrics.ts"
 import { recallEntries } from "./tables.ts"
 
 /** Something recallable, from the record it comes from (whose id `sourceId` is). */
@@ -63,7 +64,10 @@ export class RecallIndex extends Context.Service<RecallIndex, {
       // Embeds rows by id, keeping only vectors for text that didn't change meanwhile.
       const embed = Effect.fnUntraced(function*(rows: ReadonlyArray<{ readonly id: string; readonly text: string }>) {
         if (rows.length === 0) return 0
-        const vectors = yield* embeddings.documents(rows.map((row) => row.text))
+        const vectors = yield* embeddings.documents(rows.map((row) => row.text)).pipe(
+          Effect.tapError(() => count(EmbeddingsCalls, { model: embeddings.model, outcome: "error" })),
+          Effect.tap(() => count(EmbeddingsCalls, { model: embeddings.model, outcome: "ok" }))
+        )
         yield* Effect.forEach(
           rows,
           (row, index) =>

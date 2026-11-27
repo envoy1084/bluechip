@@ -90,6 +90,7 @@ import { RecoveryStore } from "./modules/recovery/RecoveryStore.ts"
 import { RpcProxy } from "./modules/rpc/RpcProxy.ts"
 import { OwnerOperations } from "./modules/signing/OwnerOperations.ts"
 import { SigningRequests } from "./modules/signing/SigningRequests.ts"
+import { TelemetryGauges } from "./modules/telemetry/TelemetryGauges.ts"
 import { TradeLedger } from "./modules/trading/TradeLedger.ts"
 import { Trades } from "./modules/trading/Trades.ts"
 import { LiveEvents } from "./platform/live/LiveEvents.ts"
@@ -122,6 +123,7 @@ const Schedules = Layer.unwrap(Effect.gen(function*() {
     ReminderCron,
     DigestCron,
     OutboxCron,
+    TelemetryGauges.watch,
     chain.deployment.paper === null ? Layer.empty : PaperFeeds
   )
 }))
@@ -164,7 +166,7 @@ export const ServicesLive = Layer.mergeAll(
   Layer.provideMerge(
     Layer.mergeAll(PriceWatcher.layer, ScheduleWatcher.layer, PortfolioWatcher.layer, NewsWatcher.layer)
   ),
-  Layer.provideMerge(AutomationRunner.layer),
+  Layer.provideMerge(Layer.merge(AutomationRunner.layer, TelemetryGauges.layer)),
   Layer.provideMerge(
     Layer.mergeAll(
       AssistantToolsLive,

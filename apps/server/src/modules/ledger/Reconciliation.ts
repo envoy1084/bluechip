@@ -17,6 +17,14 @@ import { typeid } from "typeid-js"
 import { type Address, getAddress, parseAbiItem } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import {
+  count,
+  Deposits,
+  DepositsValue,
+  ReconcileUnexplained,
+  record as recordMetric,
+  usd
+} from "../../platform/telemetry/Metrics.ts"
 import { accounts, users } from "../accounts/tables.ts"
 import { transfers } from "../funding/tables.ts"
 import { toTransfer } from "../funding/Transfers.ts"
@@ -300,6 +308,14 @@ export class Reconciliation extends Context.Service<Reconciliation, {
               if (symbol !== "USDC") yield* ledger.rebuild(userId, symbol)
             }
             if (transferRows.length === 0 && adjustmentRows.length === 0) continue
+
+            for (const row of transferRows) {
+              yield* count(Deposits, { network: chain.network })
+              yield* recordMetric(DepositsValue, usd(row.amount), { network: chain.network })
+            }
+            for (const row of adjustmentRows) {
+              yield* count(ReconcileUnexplained, { asset: row.asset === "USDC" ? "usdc" : "stock" })
+            }
 
             yield* balances.invalidate(address)
             for (const row of transferRows) {

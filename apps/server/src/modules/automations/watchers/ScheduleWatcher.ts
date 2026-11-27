@@ -29,7 +29,10 @@ export class ScheduleWatcher extends Context.Service<ScheduleWatcher, {
         now: DateTime.Utc,
         options: { readonly userId?: UserId | undefined } = {}
       ) {
-        for (const row of yield* automations.due(now, options.userId)) {
+        const due = yield* automations.due(now, options.userId)
+        // A tick with nothing due leaves no trace (`BluechipTracer` drops it).
+        if (due.length === 0) yield* Effect.annotateCurrentSpan("bluechip.idle", true)
+        for (const row of due) {
           const at = row.nextRunAt!
           const trigger: TriggerData = {
             summary: "Its scheduled time came.",

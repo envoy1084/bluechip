@@ -19,6 +19,7 @@ import * as WorkflowEngine from "effect/workflow/WorkflowEngine"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count as countMetric, NotificationsCreated } from "../../platform/telemetry/Metrics.ts"
 import { DeliverNotification } from "./DeliverNotification.ts"
 import { notificationDeliveries, notificationRules, notifications, notificationSettings } from "./tables.ts"
 
@@ -102,6 +103,7 @@ export class Notifications extends Context.Service<Notifications, {
           readAt: null
         }).onConflictDoNothing().returning().pipe(Effect.orDie)
         if (row === undefined) return undefined
+        yield* countMetric(NotificationsCreated, { kind: row.kind, severity: row.severity })
 
         // The deliveries are stored before anyone hears of it, so whoever does can follow them.
         const deliveries: Array<`delivery_${string}`> = []

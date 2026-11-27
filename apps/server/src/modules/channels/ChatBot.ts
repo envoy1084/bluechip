@@ -24,6 +24,7 @@ import * as Stream from "effect/Stream"
 import { randomUUID } from "node:crypto"
 import type { Address } from "viem"
 import { AppConfig } from "../../config/AppConfig.ts"
+import { count, TelegramMessages } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Assistant } from "../assistant/Assistant.ts"
@@ -93,6 +94,7 @@ export class ChatBot extends Context.Service<ChatBot, {
 
       const post = (thread: ChatThread.ChatThread, reply: ChatReply) =>
         chat.post(thread, chatContent(reply, publicOrigin)).pipe(
+          Effect.andThen(count(TelegramMessages, { direction: "out", kind: "text" })),
           Effect.catch((error) => Effect.logWarning("A chat reply couldn't be sent", error))
         )
 
@@ -174,6 +176,7 @@ export class ChatBot extends Context.Service<ChatBot, {
       })
 
       const answer = Effect.fn("ChatBot.answer")(function*(message: ChatMessageIn) {
+        yield* count(TelegramMessages, { direction: "in", kind: "text" })
         const thread = ChatThread.make(message.platform, message.threadId)
         const text = message.text.trim()
         if (text.length === 0) return

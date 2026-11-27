@@ -12,6 +12,7 @@ import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import type { Hex } from "viem"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count, Passkeys as PasskeysMetric } from "../../platform/telemetry/Metrics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Challenges } from "../auth/Challenges.ts"
 import { passkeyLabel } from "../auth/PasskeyLabel.ts"
@@ -91,7 +92,11 @@ export class Passkeys extends Context.Service<Passkeys, {
       // What a change that landed (or not) does to the passkey.
       const settle = Effect.fnUntraced(function*(row: PasskeyRow) {
         const userId = row.userId as UserId
-        const outcome = yield* operations.wait(yield* accounts.ownerPasskey(userId), row.userOpHash as Hex).pipe(
+        const outcome = yield* operations.wait(
+          yield* accounts.ownerPasskey(userId),
+          row.userOpHash as Hex,
+          "owner_change"
+        ).pipe(
           Effect.result
         )
         const landed = outcome._tag === "Success" && outcome.success.success
@@ -124,6 +129,7 @@ export class Passkeys extends Context.Service<Passkeys, {
           subjectId: row.id,
           data: { label: row.label }
         })
+        yield* count(PasskeysMetric, { change: adding ? "added" : "removed" })
         yield* notifications.add(userId, notificationOfPasskey(row, adding))
         yield* changed(userId)
       })

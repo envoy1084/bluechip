@@ -85,4 +85,4 @@ export const readBalances = (chain: ChainClient["Service"], accounts: ReadonlyAr
       all.slice(index * assetTokens.length, (index + 1) * assetTokens.length)
     ]))
     return { blockNumber, timestamp: new Date(Number(timestamp) * 1000), balances }
-  }).pipe(Effect.withSpan("chain.readBalances", { attributes: { accounts: accounts.length } }))
+  }).pipe(Effect.annotateSpans("chain.accounts", accounts.length))

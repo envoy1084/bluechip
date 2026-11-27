@@ -11,14 +11,17 @@ import { systemPrompt } from "@bluechip/domain/assistant/SystemPrompt"
 import { NotFound } from "@bluechip/domain/Errors"
 import type { AgentId, ConversationId } from "@bluechip/domain/Ids"
 import { Caller } from "@bluechip/domain/tools/Caller"
+import { riskOf } from "@bluechip/domain/tools/Risk"
 import * as AgUi from "effect/ai/AgUi"
 import type * as AgUiSchema from "effect/ai/AgUiSchema"
 import { defaultIdGenerator, IdGenerator } from "effect/ai/IdGenerator"
 import * as LanguageModel from "effect/ai/LanguageModel"
 import * as Prompt from "effect/ai/Prompt"
 import type * as Response from "effect/ai/Response"
+import type * as Tool from "effect/ai/Tool"
 import * as Arr from "effect/Array"
 import type * as Cause from "effect/Cause"
+import * as Clock from "effect/Clock"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Deferred from "effect/Deferred"
@@ -28,6 +31,15 @@ import * as Layer from "effect/Layer"
 import * as Queue from "effect/Queue"
 import * as Schema from "effect/Schema"
 import * as Stream from "effect/Stream"
+import {
+  AssistantToolCalls,
+  AssistantTurns,
+  count,
+  LlmDuration,
+  LlmErrors,
+  modelErrorKind,
+  record as recordMetric
+} from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
 import { ConversationMemory } from "../memory/ConversationMemory.ts"
 import { Memories } from "../memory/Memories.ts"
@@ -200,7 +212,11 @@ export class Assistant extends Context.Service<Assistant, {
 
         const round = (step: number, prompt: Prompt.Prompt): Stream.Stream<AgUiSchema.Event> =>
           Stream.unwrap(Effect.gen(function*() {
-            if (isSpent(yield* budgets.today(owner))) return stop("budget", BUDGET_SPENT)
+            if (isSpent(yield* budgets.today(owner))) {
+              yield* count(AssistantTurns, { surface: context.surface, outcome: "budget_spent" })
+              return stop("budget", BUDGET_SPENT)
+            }
+            const startedAt = yield* Clock.currentTimeMillis
 
             const parts: Array<Response.AnyPart> = []
             const shown = new Map<string, ReadonlyArray<Card>>()
@@ -247,7 +263,22 @@ export class Assistant extends Context.Service<Assistant, {
                 metadata.modelId :
                 models.conversationModel
               const usage = usageOf(parts)
-              if (parts.some((part) => part.type === "finish")) yield* budgets.record(owner, model, usage)
+              if (parts.some((part) => part.type === "finish")) yield* budgets.record(owner, model, usage, "chat")
+              const llm = { model, feature: "chat" }
+              yield* recordMetric(LlmDuration, (yield* Clock.currentTimeMillis) - startedAt, {
+                ...llm,
+                outcome: failure === undefined ? "ok" : "error"
+              })
+              if (failure !== undefined) yield* count(LlmErrors, { ...llm, kind: modelErrorKind(failure) })
+              for (const part of parts) {
+                if (part.type !== "tool-result" || part.providerExecuted === true) continue
+                const tool = (AssistantToolkit.tools as Record<string, Tool.Any | undefined>)[part.name]
+                yield* count(AssistantToolCalls, {
+                  tool: part.name,
+                  risk: tool === undefined ? "none" : riskOf(tool) ?? "none",
+                  outcome: part.isFailure ? "error" : "ok"
+                })
+              }
 
               const fromTools = toolCards(parts)
               // A later round only starts after tools ran, so nothing was changed only if this first round ran none.
@@ -295,6 +326,7 @@ export class Assistant extends Context.Service<Assistant, {
               const extraEvents = extras.map((card) => cardEvent(null, card))
 
               if (failure !== undefined) {
+                yield* count(AssistantTurns, { surface: context.surface, outcome: "error" })
                 yield* Effect.logWarning("The assistant's model failed", failure)
                 return Stream.fromIterable<AgUiSchema.Event>([
                   ...extraEvents,
@@ -316,7 +348,10 @@ export class Assistant extends Context.Service<Assistant, {
             }))))
           }))
 
-        const finishTurn = () => finish(true)
+        const finishTurn = () =>
+          Stream.unwrap(
+            Effect.as(count(AssistantTurns, { surface: context.surface, outcome: "answered" }), finish(true))
+          )
 
         return Stream.unwrap(Effect.gen(function*() {
           const [thread, owned, remembered, summary] = yield* Effect.all([
@@ -357,7 +392,10 @@ export class Assistant extends Context.Service<Assistant, {
             attributes: {
               "gen_ai.operation.name": "chat",
               "gen_ai.conversation.id": conversationId,
-              "gen_ai.request.model": models.conversationModel
+              "gen_ai.request.model": models.conversationModel,
+              "conversation.id": conversationId,
+              "user.id": owner.id,
+              "assistant.surface": context.surface
             }
           })
         )

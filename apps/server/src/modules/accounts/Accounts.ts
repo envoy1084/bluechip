@@ -14,6 +14,7 @@ import { typeid } from "typeid-js"
 import { toWebAuthnAccount } from "viem/account-abstraction"
 import { Database } from "../../platform/db/Database.ts"
 import { Namera } from "../../platform/namera/Namera.ts"
+import { count, UsersEligibility, UsersSignedUp } from "../../platform/telemetry/Metrics.ts"
 import type { NewPasskey } from "../auth/WebAuthn.ts"
 import { accounts, passkeys, users } from "./tables.ts"
 
@@ -139,6 +140,7 @@ export class Accounts extends Context.Service<Accounts, {
           user: toUser(user),
           account: new Account({ address: kernel.address as Address, deployed: false })
         })
+        yield* count(UsersSignedUp, {})
         return { me, passkeyId: passkeyId as PasskeyId }
       })
 
@@ -172,6 +174,7 @@ export class Accounts extends Context.Service<Accounts, {
           const [row] = yield* db.update(users).set({ eligibility }).where(eq(users.id, userId as `user_${string}`))
             .returning()
             .pipe(Effect.orDie)
+          yield* count(UsersEligibility, { answer: eligibility })
           return toUser(row!)
         }
       )

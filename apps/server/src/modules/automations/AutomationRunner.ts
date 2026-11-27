@@ -16,6 +16,7 @@ import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import type { Address } from "viem"
+import { AutomationsRuns, AutomationsSkipped, BatchesCreated, count } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
 import { Intents } from "../intents/Intents.ts"
@@ -28,6 +29,9 @@ import { AutomationRuns } from "./AutomationRuns.ts"
 import { type AutomationRow, Automations } from "./Automations.ts"
 import { Judgments } from "./Judgments.ts"
 import { NewsItems } from "./NewsItems.ts"
+
+// A plan's size as the batch metrics group it: 1, 2–3, 4–6, 7+.
+const sizeBucket = (size: number) => size <= 1 ? "1" : size <= 3 ? "2-3" : size <= 6 ? "4-6" : "7+"
 
 const SKIPPED: Readonly<Record<SkipReason, string>> = {
   inactive: "It isn't active.",
@@ -169,6 +173,9 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
 
         // Several legs are one plan (the run's), sent wave by wave: each wave in one operation, or one approval.
         const operations = waves(legs)
+        if (legs.length > 1) {
+          yield* count(BatchesCreated, { legs: sizeBucket(legs.length), waves: sizeBucket(operations.length) })
+        }
         const proposed: Array<Intent> = []
         for (const [wave, operation] of operations.entries()) {
           for (const leg of operation) {
@@ -201,8 +208,13 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
         windowKey: string,
         trigger: TriggerData
       ) {
+        yield* Effect.annotateCurrentSpan("automation.id", automationId)
         const row = yield* automations.get(automationId)
         if (row === undefined) return
+        yield* Effect.annotateCurrentSpan({
+          "user.id": row.userId,
+          ...(row.agentId === null ? {} : { "agent.id": row.agentId })
+        })
 
         const started = yield* runs.start({ automationId, userId: row.userId, windowKey, trigger })
         if (started.row.outcome !== "running") return
@@ -218,6 +230,9 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
           Effect.catchCause(failed("Something went wrong on bluechip's side, so nothing was traded."))
         )
         yield* runs.finish(started.row.id, result)
+        yield* count(AutomationsRuns, { trigger: row.trigger.type, action: row.action.type, outcome: result.outcome })
+        const stopped = result.conditions.find((condition) => !condition.pass)
+        if (stopped !== undefined) yield* count(AutomationsSkipped, { condition: stopped.type })
         if (result.outcome === "skipped" || result.outcome === "failed") return
 
         yield* automations.fired(row.id, yield* DateTime.now)

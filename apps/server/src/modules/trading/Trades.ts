@@ -144,7 +144,7 @@ export class Trades extends Context.Service<Trades, {
       // Follows sent trades (one operation) to its receipt in the background: how each ended, and its intent with it.
       const track = Effect.fnUntraced(
         function*(rows: ReadonlyArray<TradeRow>, owner: Owner, passkey: OwnerPasskey) {
-          const outcome = yield* operations.wait(passkey, rows[0]!.userOpHash as Hex).pipe(Effect.result)
+          const outcome = yield* operations.wait(passkey, rows[0]!.userOpHash as Hex, "trade").pipe(Effect.result)
           for (const [index, row] of rows.entries()) {
             const settled = yield* ledger.settle(
               row,

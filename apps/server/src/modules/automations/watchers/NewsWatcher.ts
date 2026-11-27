@@ -10,6 +10,12 @@ import * as Layer from "effect/Layer"
 import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 import * as WorkflowEngine from "effect/workflow/WorkflowEngine"
+import {
+  count,
+  MarketStreamReconnects,
+  NewsItems as NewsItemsMetric,
+  record
+} from "../../../platform/telemetry/Metrics.ts"
 import { Alpaca, type AlpacaError } from "../../market/alpaca/Alpaca.ts"
 import type { ShareNews } from "../../market/alpaca/NewsFrames.ts"
 import { Automations } from "../Automations.ts"
@@ -60,6 +66,7 @@ export class NewsWatcher extends Context.Service<NewsWatcher, {
       ) {
         const added = yield* news.ingest(stories)
         if (added.length === 0) return
+        yield* record(NewsItemsMetric, added.length, {})
 
         const watching = yield* automations.watched("news", options.userId)
         for (const item of added) {
@@ -126,7 +133,12 @@ export class NewsWatcher extends Context.Service<NewsWatcher, {
       })
 
       yield* follow.pipe(
-        Effect.tapError((error) => Effect.logWarning("Alpaca news stream dropped", error)),
+        Effect.tapError((error) =>
+          Effect.andThen(
+            Effect.logWarning("Alpaca news stream dropped", error),
+            count(MarketStreamReconnects, { stream: "news" })
+          )
+        ),
         Effect.retry({ while: (error) => error._tag === "AlpacaError", schedule: reconnect }),
         Effect.forever,
         Effect.catchTag("NewsStreamRefused", (refused) =>

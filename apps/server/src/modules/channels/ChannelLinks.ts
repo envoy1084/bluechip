@@ -16,6 +16,7 @@ import * as Layer from "effect/Layer"
 import { createHash, randomInt } from "node:crypto"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { ChannelsLinks as ChannelsLinksMetric, count } from "../../platform/telemetry/Metrics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Notifications } from "../notifications/Notifications.ts"
 import { channelLinkCodes, channelLinks } from "./tables.ts"
@@ -107,7 +108,7 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
             subjectType: "channelLink",
             subjectId: row.id,
             data: change === "blocked" ? { platform: row.platform, reason: "blocked" } : { platform: row.platform }
-          })
+          }).pipe(Effect.andThen(count(ChannelsLinksMetric, { platform: row.platform, change })))
         )
 
       const ofChat = Effect.fn("ChannelLinks.ofChat")(function*(platform: Platform, chatId: string) {

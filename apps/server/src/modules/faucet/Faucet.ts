@@ -16,6 +16,7 @@ import { typeid } from "typeid-js"
 import { parseEther } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { count, FaucetMints, FaucetValue, record as recordMetric, usd } from "../../platform/telemetry/Metrics.ts"
 import { users } from "../accounts/tables.ts"
 import { Operator } from "../paper/Operator.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
@@ -91,6 +92,7 @@ export class Faucet extends Context.Service<Faucet, {
           ).pipe(Effect.orDie)
 
           if (reserved.id === null) {
+            yield* count(FaucetMints, { outcome: "over_daily_limit" })
             return yield* new FaucetLimitReached({
               remaining: reserved.before.remaining,
               resetsAt: reserved.before.resetsAt
@@ -99,7 +101,12 @@ export class Faucet extends Context.Service<Faucet, {
           const grantId = reserved.id
 
           const txHash: TxHash | null = yield* send(user.account, amount).pipe(
-            Effect.tapError((error) => Effect.logWarning("Faucet: the test money wasn't sent", error)),
+            Effect.tapError((error) =>
+              Effect.andThen(
+                Effect.logWarning("Faucet: the test money wasn't sent", error),
+                count(FaucetMints, { outcome: "failed" })
+              )
+            ),
             Effect.catchTag("ChainError", () =>
               db.delete(faucetGrants).where(eq(faucetGrants.id, grantId)).pipe(
                 Effect.orDie,
@@ -110,6 +117,8 @@ export class Faucet extends Context.Service<Faucet, {
             yield* db.update(faucetGrants).set({ txHash }).where(eq(faucetGrants.id, grantId)).pipe(Effect.orDie)
           }
 
+          yield* count(FaucetMints, { outcome: "minted" })
+          yield* recordMetric(FaucetValue, usd(amount), {})
           yield* balances.invalidate(user.account)
           yield* live.publish(LiveEvent.cases.PortfolioChanged.make({}), user.id)
 

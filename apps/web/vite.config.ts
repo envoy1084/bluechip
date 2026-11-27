@@ -9,7 +9,11 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [tailwindcss(), tanstackStart(), viteReact()],
     // The release analytics and telemetry report, as the server's (`npm_package_version` when built by pnpm).
-    define: { "import.meta.env.VITE_APP_VERSION": JSON.stringify(process.env["npm_package_version"] ?? "0.0.0") },
-    server: { proxy: { "/api": server, "/auth": server } }
+    // The build's day dates the landing in the sitemap.
+    define: {
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(process.env["npm_package_version"] ?? "0.0.0"),
+      "import.meta.env.VITE_BUILD_DATE": JSON.stringify(new Date().toISOString().slice(0, 10))
+    },
+    server: { proxy: { "/api": server, "/auth": server, "/ingest": server } }
   }
 })

@@ -221,11 +221,11 @@ feature): a `Context.Service` is a port, a `Layer` its adapter.
 
 - `modules/<feature>/`: one folder per feature (`accounts`, `auth`, `agents`, `policies`, `intents`, `trading`,
   `portfolio`, `funding`, `faucet`, `paper`, `market`, `activity`, `audit`, `signing`, `notifications`, `push`, `channels`, `dev`, `events`,
-  `rpc`, `system`): its services
+  `rpc`, `system`, `telemetry`): its services
   (`Agents.ts`, `AgentSessions.ts`), its HTTP handlers (`http.ts`), its Drizzle tables (`tables.ts`) and its crons.
 - `platform/`: infrastructure the features share: `db/` (`Database`, columns, `schema.ts` gathering every table for
-  drizzle-kit), `engine/`, `http/` (middleware, health), `live/` (`LiveEvents`), `namera/`. `config/` holds
-  `AppConfig`, logging and the release.
+  drizzle-kit), `engine/`, `http/` (middleware, health), `live/` (`LiveEvents`), `namera/`, `telemetry/` (exporters,
+  tracer, metrics, the web app's telemetry proxy). `config/` holds `AppConfig`, logging and the release.
 - `Api.ts`, `Services.ts` (`ServicesLive`), `Server.ts` and `main.ts` are the composition root, the only place
   production layers are wired; `bin/` holds the CLI entrypoints.
 
@@ -399,6 +399,35 @@ To add a chat platform (Slack, Discord):
 3. **Tests.** Conversations on `ChatTest` with the platform's capabilities (as `TelegramTest` in `TestServer.ts`,
    through `TestTelegram`), and the transport against an in-process API (as `BotApiTest`). Tests never reach the
    platform; a live probe goes in `scratchpad/` and is deleted after.
+
+## Telemetry: traces, logs and metrics (Axiom)
+
+Telemetry leaves the server only when `DEPLOYMENT_ENVIRONMENT` is `paper` or `production` and the Axiom settings are
+set (`TelemetryConfig`); in development and tests nothing is exported. `TelemetryLive`
+(`apps/server/src/platform/telemetry/`) exports traces, logs (beside the console's) and metrics over OTLP to their
+Axiom datasets, flushed on shutdown. Spans go through `BluechipTracer`: fast `BEGIN`/`COMMIT` and statements under
+2 ms are dropped (their parent counts them in `db.statements` and `db.time_ms`), kept statements are named
+`select intents`, a `GET` is sampled at `TRACE_SAMPLE_READS` unless the browser's `traceparent` decides, and a tick
+in `TICKS` that sets `bluechip.idle` is dropped whole. Server spans are named by route (`POST /api/trades/:id/confirm`);
+`isUntraced` routes (`/health`, `/api/version`, `/api/events`, `/api/rpc`, `/ingest/*`, `/api/telemetry/*`) make no
+spans at all. Chain calls are `chain.<operation>` spans (`ChainClient.use`), bundler calls `bundler.<rpc method>`
+(`callBundler` in `packages/chain/src/ChainTelemetry.ts`).
+
+- **A span attribute**: `Effect.annotateCurrentSpan({ "intent.id": … })` where the value is known, from the names in
+  use (`user.id`, `agent.id`, `intent.id`, `intent.source`, `batch.id`, `automation.id`, `conversation.id`, `trade.id`,
+  `stock.symbol`, `trade.side`, `user_op.hash`). Every name is a column in Axiom (256 per dataset): reuse one before
+  adding one. Never amounts of money you can't show, addresses, keys, prompts or message text.
+- **A metric**: add it to the catalogue in `packages/domain/src/analytics/Metrics.ts` (name, kind, UCUM unit,
+  attributes; the Axiom dashboards read it), declare it in `apps/server/src/platform/telemetry/Metrics.ts` with the same
+  name and attributes (the conformance test compares them), and record it where the fact is known with `count` or
+  `record`, after the change commits. Attributes stay low cardinality: never an id. Gauges that need a query go in
+  `TelemetryGauges` (every minute, or hourly).
+- **The web app's telemetry** goes through the server, never traced or logged per request: `* /ingest/*` forwards to
+  PostHog (`/ingest/static/*` to its assets host; `404` outside paper and production) with the browser's address and
+  no cookies; `POST /api/telemetry/v1/{traces,logs,metrics}` takes OTLP (JSON or protobuf, gzip or not, 1 MiB),
+  stamps `deployment.environment` and `network` on resources without them and forwards it with the server's ingest
+  token (`204` when Axiom is off). Both answer `429` past their rate per address. The web app sends
+  `x-bluechip-replay-session` (its PostHog replay session), which lands on the request span as `posthog.session_id`.
 
 ## Tests
 

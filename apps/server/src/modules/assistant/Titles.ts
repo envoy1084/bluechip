@@ -37,7 +37,7 @@ export class Titles extends Context.Service<Titles, {
             { role: "user", content: `<user_message>\n${userText}\n</user_message>` }
           ]
         }))
-        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage))
+        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "title")
         yield* conversations.setTitle(conversationId, response.value.title.trim().slice(0, 80))
       }, (effect) =>
         // A conversation left untitled is named on its next turn.

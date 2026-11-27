@@ -1,9 +1,11 @@
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import { callBundler } from "@bluechip/chain/ChainTelemetry"
 import { Unavailable } from "@bluechip/domain/Errors"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import type * as KernelAccount from "@namera-ai/sdk/effect/accounts/KernelAccount"
 import { isoBase64URL } from "@simplewebauthn/server/helpers"
 import * as Context from "effect/Context"
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { type Hex, hexToBytes, type Log, zeroAddress } from "viem"
@@ -19,6 +21,7 @@ import {
 } from "viem/account-abstraction"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Namera } from "../../platform/namera/Namera.ts"
+import { recordUserOp, type UserOpKind } from "../../platform/telemetry/Metrics.ts"
 
 /** One of the passkeys that own an account, and the account's address. */
 export interface OwnerPasskey {
@@ -108,8 +111,8 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
     prepared: Record<string, unknown>,
     assertion: typeof AuthenticationCredential.Type
   ) => Effect.Effect<Hex, Unavailable>
-  /** Waits for the operation to land. */
-  readonly wait: (passkey: OwnerPasskey, hash: Hex) => Effect.Effect<Receipt, Unavailable>
+  /** Waits for the operation to land; `kind` says what it was for, in the user operations' metrics. */
+  readonly wait: (passkey: OwnerPasskey, hash: Hex, kind: UserOpKind) => Effect.Effect<Receipt, Unavailable>
 }>()("@bluechip/server/OwnerOperations") {
   static readonly layer = Layer.effect(
     OwnerOperations,
@@ -156,8 +159,11 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
         function*(passkey: OwnerPasskey, calls: ReadonlyArray<Call>, minCallGas?: bigint) {
           const account = yield* kernelAccount(passkey)
           const bundler = namera.bundlerClient(account)
-          const prepared = yield* Effect.tryPromise(() => bundler.prepareUserOperation({ account, calls: [...calls] }))
-            .pipe(Effect.catch(unavailable))
+          const prepared = yield* callBundler(
+            "prepareUserOperation",
+            namera.provider,
+            () => bundler.prepareUserOperation({ account, calls: [...calls] })
+          ).pipe(Effect.catch(unavailable))
           const estimated = prepared.callGasLimit + OTHER_SIGNER_CALL_GAS
           const userOperation = {
             ...prepared,
@@ -189,7 +195,7 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
         const userOperation = formatUserOperation(prepared as unknown as RpcUserOperation<"0.7">) as UserOperation<
           "0.7"
         >
-        return yield* Effect.tryPromise(async () => {
+        const hash = yield* callBundler("eth_sendUserOperation", namera.provider, async () => {
           const signature = await account.signUserOperation(userOperation)
           // Straight to the bundler: viem's `sendUserOperation` would prepare (and re-estimate) the operation again.
           return await bundler.request({
@@ -197,14 +203,29 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
             params: [formatUserOperationRequest({ ...userOperation, signature }), account.entryPoint.address]
           })
         }).pipe(Effect.catch(unavailable))
+        yield* Effect.annotateCurrentSpan("user_op.hash", hash)
+        return hash
       })
 
-      const wait = Effect.fn("OwnerOperations.wait")(function*(passkey: OwnerPasskey, hash: Hex) {
+      const wait = Effect.fn("OwnerOperations.wait")(function*(passkey: OwnerPasskey, hash: Hex, kind: UserOpKind) {
+        yield* Effect.annotateCurrentSpan("user_op.hash", hash)
         const account = yield* kernelAccount(passkey)
-        const receipt = yield* Effect.tryPromise(() =>
-          namera.bundlerClient(account).waitForUserOperationReceipt({ hash, timeout: 120_000 })
-        ).pipe(Effect.catch(unavailable))
-        return toReceipt(receipt)
+        const [took, landed] = yield* Effect.timed(
+          callBundler(
+            "eth_getUserOperationReceipt",
+            namera.provider,
+            () => namera.bundlerClient(account).waitForUserOperationReceipt({ hash, timeout: 120_000 })
+          ).pipe(Effect.map(toReceipt), Effect.result)
+        )
+        yield* recordUserOp({
+          kind,
+          executor: "owner",
+          provider: namera.provider,
+          seconds: Duration.toSeconds(took),
+          receipt: landed._tag === "Success" ? landed.success : undefined
+        })
+        if (landed._tag === "Failure") return yield* unavailable(landed.failure)
+        return landed.success
       })
 
       return OwnerOperations.of({ account: (passkey) => kernelAccount(passkey), prepare, send, wait })

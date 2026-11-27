@@ -11,6 +11,16 @@ import * as Schema from "effect/Schema"
 import * as Activity from "effect/workflow/Activity"
 import * as DurableClock from "effect/workflow/DurableClock"
 import { Database } from "../../platform/db/Database.ts"
+import { measuredWorkflow } from "../../platform/engine/Measured.ts"
+import {
+  count,
+  NotificationsDelay,
+  NotificationsDelivered,
+  NotifierErrors,
+  record as recordMetric,
+  secondsSince,
+  WorkflowRetries
+} from "../../platform/telemetry/Metrics.ts"
 import { users } from "../accounts/tables.ts"
 import { DeliverNotification } from "./DeliverNotification.ts"
 import { toNotification } from "./Notifications.ts"
@@ -68,21 +78,39 @@ export class Deliveries extends Context.Service<Deliveries, {
         const found = yield* find(deliveryId)
         if (found === undefined || found.delivery.status !== "pending") return
 
-        yield* notifiers.send(
-          found.delivery.channel,
+        const { channel } = found.delivery
+        const kind = found.notification.kind
+        const outcome = yield* notifiers.send(
+          channel,
           found.notification.userId as UserId,
           toNotification(found.notification)
-        ).pipe(
-          Effect.retry({ schedule: retries, times: 3, while: (error) => error.retryable }),
-          Effect.matchEffect({
-            onSuccess: (outcome) => save(deliveryId, outcome, null),
-            onFailure: (error) =>
-              Effect.andThen(
-                Effect.logWarning(`A ${error.channel} delivery failed: ${error.reason}`),
-                save(deliveryId, "failed", error.reason)
-              )
-          })
         )
+          .pipe(
+            Effect.tapError((error) =>
+              Effect.andThen(
+                count(NotifierErrors, { channel, retryable: String(error.retryable) }),
+                error.retryable ?
+                  Effect.andThen(
+                    count(NotificationsDelivered, { channel, kind, outcome: "retried" }),
+                    count(WorkflowRetries, { workflow: "DeliverNotification", activity: "send" })
+                  ) :
+                  Effect.void
+              )
+            ),
+            Effect.retry({ schedule: retries, times: 3, while: (error) => error.retryable }),
+            Effect.matchEffect({
+              onSuccess: (outcome) => Effect.as(save(deliveryId, outcome, null), outcome),
+              onFailure: (error) =>
+                Effect.andThen(
+                  Effect.logWarning(`A ${error.channel} delivery failed: ${error.reason}`),
+                  Effect.as(save(deliveryId, "failed", error.reason), "failed" as const)
+                )
+            })
+          )
+        yield* count(NotificationsDelivered, { channel, kind, outcome })
+        if (outcome === "sent") {
+          yield* recordMetric(NotificationsDelay, yield* secondsSince(found.notification.createdAt), { channel })
+        }
       })
 
       return Deliveries.of({ quietUntil: quietUntilOf, send })
@@ -104,5 +132,5 @@ export const DeliverNotificationLive = DeliverNotification.toLayer(
       yield* DurableClock.sleep({ name: "quietHours", duration: Duration.max(left, Duration.zero) })
     }
     yield* Activity.make({ name: "send", execute: deliveries.send(deliveryId) })
-  })
+  }, measuredWorkflow("DeliverNotification"))
 )

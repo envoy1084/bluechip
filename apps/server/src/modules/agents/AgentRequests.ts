@@ -175,7 +175,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         const row = yield* store.get(agentId)
         if (row === undefined) return
         const sending = yield* sessions.get(row.status === "removing" ? row.currentSessionId : row.pendingSessionId)
-        const outcome = yield* operations.wait(passkey, sending.userOpHash as Hex).pipe(Effect.result)
+        const outcome = yield* operations.wait(passkey, sending.userOpHash as Hex, "agent_install").pipe(Effect.result)
         // The wait takes up to 2 minutes, and every server follows every operation in flight when it starts: act only
         // if the agent is still where it was, or this would undo what another server (or a later change) did.
         const latest = yield* store.get(agentId)

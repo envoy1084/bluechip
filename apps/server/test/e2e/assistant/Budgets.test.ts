@@ -47,7 +47,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant budgets", (
           outputTokens: 100_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0
-        })
+        }, "chat")
         yield* recorded.record({ to: "Are you still there?", rounds: [[{ text: "Yes." }]] })
         const conversation = yield* assistant.start(user)
 
@@ -80,7 +80,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant budgets", (
           outputTokens: 100_000,
           cacheReadTokens: 0,
           cacheWriteTokens: 0
-        })
+        }, "chat")
 
         const applied = yield* user.api.assistant.confirmCard({ params: { id: run.cards[0]!.id } })
 
