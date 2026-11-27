@@ -156,7 +156,7 @@ class TrimmedSpan implements Tracer.Span {
         this.local.statementMs += ms
       }
       keep = failed || ms >= FAST_STATEMENT_MS || this.children > 0
-      if (table !== "unknown") name = `${operation} ${table}`
+      name = `${operation} ${table}`
     }
 
     if (!keep) return
