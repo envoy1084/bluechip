@@ -233,7 +233,8 @@ const amountOf = (transfer: Transfer, stock: (symbol: StockSymbol) => string) =>
     `${formatShareCount(Number(transfer.amount) / 1e8)} of ${stock(transfer.asset)}`
 
 /**
- * Money that arrived, or a withdrawal that landed or failed; `undefined` while a withdrawal is on its way.
+ * Money that arrived (test money on paper, `paper`), or a withdrawal that landed or failed; `undefined` while a
+ * withdrawal is on its way.
  *
  * @stability unstable
  * @category drafts
@@ -241,7 +242,8 @@ const amountOf = (transfer: Transfer, stock: (symbol: StockSymbol) => string) =>
  */
 export const notificationOfTransfer = (
   transfer: Transfer,
-  stock: (symbol: StockSymbol) => string
+  stock: (symbol: StockSymbol) => string,
+  options: { readonly paper?: boolean } = {}
 ): NotificationDraft | undefined => {
   if (transfer.status === "pending") return undefined
   const amount = amountOf(transfer, stock)
@@ -252,7 +254,10 @@ export const notificationOfTransfer = (
     dedupeKey: `${transfer.kind}:${transfer.id}:${transfer.status}`
   }
   if (transfer.kind === "deposit") {
-    return { ...base, kind: "deposit", title: `${amount} arrived`, body: "It's in your account, ready to trade." }
+    const body = options.paper === true ?
+      "It's test money on paper, in your account and ready to trade." :
+      "It's in your account, ready to trade."
+    return { ...base, kind: "deposit", title: `${amount} arrived`, body }
   }
   return transfer.status === "confirmed" ?
     { ...base, kind: "withdrawal", title: `${amount} withdrawn`, body: "It landed at the address you chose." } :

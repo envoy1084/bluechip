@@ -1,7 +1,7 @@
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { Platform } from "@bluechip/domain/channels/Channel"
 import { chatCard } from "@bluechip/domain/channels/ChatCards"
-import { HELP, NOT_LINKED, UNLINKED } from "@bluechip/domain/channels/ChatReplies"
+import { HELP, NOT_LINKED, PAPER_MONEY, UNLINKED } from "@bluechip/domain/channels/ChatReplies"
 import type { AgentId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import * as Chat from "effect/chat/Chat"
@@ -68,7 +68,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
   const cards = yield* Cards
   const agents = yield* Agents
   const links = yield* ChannelLinks
-  const { stocks } = yield* ChainDeployment
+  const { paper, stocks } = yield* ChainDeployment
   const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
   const recoveries = yield* Recoveries
   const { publicOrigin } = yield* AppConfig
@@ -90,6 +90,9 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
 
   const respond = (markdown: string, actions?: ReadonlyArray<ChatUi.Action>) =>
     ChatInteraction.respond({ markdown, visibility: "public", ...(actions === undefined ? {} : { actions }) })
+
+  // On paper money, /start says so first.
+  const started = (markdown: string) => respond(paper === null ? markdown : `${PAPER_MONEY}\n\n${markdown}`)
 
   const edit = (thread: ChatThread.ChatThread, messageId: string, markdown: string) =>
     chat.edit(thread, messageId, chatContent({ markdown, actions: [] }, publicOrigin)).pipe(
@@ -167,7 +170,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
           Effect.map((info) => info.kind),
           Effect.orElseSucceed(() => "channel" as const)
         )
-        return respond(
+        return started(
           yield* bot.link({
             platform: event.thread.platform,
             threadId: event.thread.id,
@@ -178,7 +181,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
         )
       }
       const who = yield* bot.ownerOf(event.thread, event.userId)
-      return respond(who === undefined ? NOT_LINKED : HELP)
+      return started(who === undefined ? NOT_LINKED : HELP)
     }),
     portfolio: (event) => linked(event, (who) => Effect.map(bot.portfolio(who.owner), (text) => respond(text))),
     agents: (event) => linked(event, (who) => Effect.map(bot.agents(who.owner), (text) => respond(text))),

@@ -5,6 +5,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { fetchedPortfolioAtom } from "../../../atoms/portfolio.ts"
+import { TestMoney } from "../../../components/TestMoney.tsx"
 import { usdcDollars } from "../../../lib/amounts.ts"
 import { network } from "../../../lib/network.ts"
 
@@ -14,7 +15,7 @@ const CHECK_EVERY_MS = 5000
 
 /**
  * The Add cash dialog's body: the account's address and QR code. While it's open, cash is checked every few seconds
- * and an arrival plays the "cash arrived" moment.
+ * and an arrival plays the "cash arrived" moment. On paper money, test money from the faucet is a tap away (the local chain keeps it in Settings).
  */
 export function AddCashPanel(
   { address, flat = false }: Readonly<{
@@ -42,13 +43,18 @@ export function AddCashPanel(
     return () => clearInterval(timer)
   }, [arrived, refresh])
 
-  return arrived === undefined ?
-    (
-      <DepositCard
-        address={address}
-        paymentRequest={usdcTransferRequest({ network, recipient: address })}
-        {...surface}
-      />
-    ) :
-    <DepositArrivedCard amount={usdcDollars(arrived)} celebrate {...surface} />
+  return (
+    <div className="grid gap-3">
+      {arrived === undefined ?
+        (
+          <DepositCard
+            address={address}
+            paymentRequest={usdcTransferRequest({ network, recipient: address })}
+            {...surface}
+          />
+        ) :
+        <DepositArrivedCard amount={usdcDollars(arrived)} celebrate {...surface} />}
+      {network === "sepolia" && <TestMoney />}
+    </div>
+  )
 }

@@ -20,6 +20,16 @@ export const NOT_LINKED = "This chat isn't linked to a bluechip account. In blue
   "Notifications, and choose Link Telegram: send me the code it shows."
 
 /**
+ * What `/start` adds on paper money, so nobody takes its test dollars for real ones.
+ *
+ * @stability unstable
+ * @category replies
+ * @since 0.0.0
+ */
+export const PAPER_MONEY = "Paper money: this is bluechip on Base Sepolia with test dollars at live prices. Nothing " +
+  "here is worth real money."
+
+/**
  * The reply to a code that's wrong, used or expired.
  *
  * @stability unstable

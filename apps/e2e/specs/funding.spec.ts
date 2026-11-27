@@ -50,7 +50,7 @@ test.describe("add cash", () => {
 
     await page.getByRole("button", { name: "Get $1,000 test money" }).click()
 
-    await expect(page.getByText("$1,000 of test USDC is in your account.")).toBeVisible()
+    await expect(page.getByText("$1,000 is on its way. You can get $9,000 more today.")).toBeVisible()
     await page.goto("/portfolio")
     await expect(page.getByRole("region", { name: "Holdings" })).toContainText("$1,000.00")
   })

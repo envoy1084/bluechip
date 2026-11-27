@@ -13,6 +13,7 @@ import { AutomationsHandlers } from "./modules/automations/http.ts"
 import { ChannelsHandlers } from "./modules/channels/http.ts"
 import { DevHandlers } from "./modules/dev/http.ts"
 import { EventsHandlers } from "./modules/events/http.ts"
+import { FaucetHandlers } from "./modules/faucet/http.ts"
 import { TransfersHandlers } from "./modules/funding/http.ts"
 import { IntentsHandlers } from "./modules/intents/http.ts"
 import { MarketHandlers } from "./modules/market/http.ts"
@@ -49,6 +50,7 @@ export const ApiHandlers = Layer.mergeAll(
   NotificationsHandlers,
   PushHandlers,
   ChannelsHandlers,
+  FaucetHandlers,
   DevHandlers,
   RpcHandlers
 )

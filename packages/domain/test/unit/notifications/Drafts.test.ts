@@ -258,6 +258,17 @@ describe("notificationOfTransfer", () => {
   it("a withdrawal on its way: nothing", () => {
     assert.strictEqual(notificationOfTransfer(transfer({ status: "pending" }), () => "NVIDIA"), undefined)
   })
+
+  it("a deposit on paper money says it's test money", () => {
+    const draft = notificationOfTransfer(transfer({ kind: "deposit", status: "confirmed" }), () => "NVIDIA", {
+      paper: true
+    })
+    assert.deepStrictEqual<ReadonlyArray<unknown>>([draft?.kind, draft?.title, draft?.body], [
+      "deposit",
+      "$25.50 of USDC arrived",
+      "It's test money on paper, in your account and ready to trade."
+    ])
+  })
 })
 
 describe("notificationOfRun", () => {

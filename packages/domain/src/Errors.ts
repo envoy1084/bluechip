@@ -6,6 +6,7 @@
  */
 import * as Schema from "effect/Schema"
 import { AutomationProblem } from "./automations/Automation.ts"
+import { Usdc } from "./market/Units.ts"
 import { PolicyProblem } from "./policies/AgentSpec.ts"
 
 /**
@@ -189,6 +190,22 @@ export class RateLimited extends Schema.TaggedError<RateLimited>("@bluechip/doma
   { retryAfterSeconds: Schema.Int },
   { httpApiStatus: 429 }
 ) {}
+
+/**
+ * The faucet's daily allowance can't cover the amount asked: `remaining` is what the account can still get until
+ * `resetsAt` (midnight UTC).
+ *
+ * @stability unstable
+ * @category errors
+ * @since 0.0.0
+ */
+export class FaucetLimitReached
+  extends Schema.TaggedError<FaucetLimitReached>("@bluechip/domain/Errors/FaucetLimitReached")(
+    "FaucetLimitReached",
+    { remaining: Usdc, resetsAt: Schema.DateTimeUtc },
+    { httpApiStatus: 429 }
+  )
+{}
 
 /**
  * An unexpected failure on the server. The request id finds its logs.

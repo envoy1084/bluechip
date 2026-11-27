@@ -42,7 +42,7 @@ export class NotificationFanout extends Context.Service<NotificationFanout, {
       const notifications = yield* Notifications
       const outbox = yield* NotificationOutbox
       const agents = yield* AgentStore
-      const { stocks } = yield* ChainDeployment
+      const { paper, stocks } = yield* ChainDeployment
       const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
       // `at` keys an agent's change: the outbox row's time, the same however often the row is handled.
@@ -61,7 +61,7 @@ export class NotificationFanout extends Context.Service<NotificationFanout, {
               undefined :
               notificationOfAgent(event.agent, event.change, DateTime.formatIso(at))
           case "TransferUpdated":
-            return notificationOfTransfer(event.transfer, stockName)
+            return notificationOfTransfer(event.transfer, stockName, { paper: paper !== null })
           case "AutomationRan":
             return notificationOfRun(event.run, event.automationName)
           default:

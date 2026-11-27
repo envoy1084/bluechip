@@ -48,7 +48,7 @@ const factsOf = (deployment: Deployment, stock: Stock) =>
     token: stock.token as Address,
     feed: stock.feed as Address,
     pool: stock.pool === null ? null : { address: stock.pool.address as Address, tickSpacing: stock.pool.tickSpacing },
-    facts: describeStockFacts(stock),
+    facts: describeStockFacts(stock, { paper: deployment.paper !== null }),
     url: `${deployment.explorerUrl}/token/${stock.token}`
   })
 

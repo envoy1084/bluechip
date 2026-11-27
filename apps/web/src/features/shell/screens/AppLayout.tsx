@@ -18,6 +18,7 @@ import { useAtomMount } from "@effect/atom-react/Hooks"
 import { Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { FrameActionsProvider } from "../../../components/layout/FrameActions.tsx"
+import { PaperBadge, PaperBanner } from "../../../components/layout/PaperBadge.tsx"
 import { SignedIn } from "../../../components/SignedIn.tsx"
 import { liveEventAtom } from "../../../lib/api/events.ts"
 
@@ -83,6 +84,7 @@ export function AppLayout(
                   <Link to="/home" aria-label="bluechip, home" className="rounded-sm outline-offset-2">
                     <Logo />
                   </Link>
+                  <PaperBadge className="ml-2 self-start group-data-[collapsible=icon]/sidebar-panel:hidden" />
                 </SidebarHeader>
                 <SidebarContent>
                   <SidebarGroup>
@@ -114,6 +116,7 @@ export function AppLayout(
                 <SidebarRail />
               </Sidebar>
               <SidebarInset>
+                <PaperBanner />
                 <FrameActionsProvider value={topBar}>
                   <Outlet />
                 </FrameActionsProvider>

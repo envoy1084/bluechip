@@ -79,6 +79,20 @@ parts. Fork money: `pnpm --filter @bluechip/server dev:fund <address> --usdc 100
 rebuilds the devnet's state from the fork block in the root `.env.local` (needs `BASE_FORK_RPC_URL`); run it when
 bluechip starts using a new contract.
 
+Paper money (`NETWORK=sepolia`, Base Sepolia, test dollars at live prices): its env files are
+`apps/server/.env.paper` and `apps/web/.env.paper` (git-ignored, never printed). `node scripts/bin.ts contracts deploy
+--network sepolia` deploys the paper contracts (`contracts/src/paper/`) and bluechip's policies with
+`OPERATOR_PRIVATE_KEY` and rewrites `packages/chain/src/deployments/Sepolia.ts`. The server on paper needs the
+operator's key (it refuses to start without it, or with another): `modules/paper/` writes the feeds from Alpaca's prices
+every 15 s while the market trades (0.1% moves or hourly; `PaperFeeds`, a cluster singleton, off with
+`SCHEDULES_ENABLED=false`) and mints the faucet's test USDC (`modules/faucet/`, `GET`/`POST /api/faucet`, $10,000 a
+day per account; on `local` it sends from the devnet, on Base it answers `Forbidden`), one operator transaction at a
+time. Gas is Alchemy's (`BUNDLER=alchemy`; its endpoints follow the chain, `base-sepolia` here) with bundler
+sponsorship (`GAS_SPONSORSHIP=alchemy-bso`, the Gas Manager policy's type). Run it on a database of its own
+(`node --env-file=apps/server/.env.paper apps/server/src/bin/migrate.ts`, then `src/main.ts` the same way) and the
+web app with `pnpm --filter @bluechip/web exec vite dev --mode paper --port 3000`. A local run against paper's env
+must not take over the paper bot's updates: leave `TELEGRAM_BOT_TOKEN` unset there.
+
 Preview mode, for reviewing the UI: `pnpm dev:preview` runs only the web app and opens `/home?preview=typical`. With
 `?preview` (or `?preview=newPerson`, `typical`, `heavy`; `?preview=off` leaves it) the app talks to a mock of
 `BluechipApi` served in the browser from a made-up world (`apps/web/src/preview/`: the cast of each scenario in
@@ -206,7 +220,7 @@ Import modules directly; no `index.ts` barrels.
 feature): a `Context.Service` is a port, a `Layer` its adapter.
 
 - `modules/<feature>/`: one folder per feature (`accounts`, `auth`, `agents`, `policies`, `intents`, `trading`,
-  `portfolio`, `funding`, `market`, `activity`, `audit`, `signing`, `notifications`, `push`, `channels`, `dev`, `events`,
+  `portfolio`, `funding`, `faucet`, `paper`, `market`, `activity`, `audit`, `signing`, `notifications`, `push`, `channels`, `dev`, `events`,
   `rpc`, `system`): its services
   (`Agents.ts`, `AgentSessions.ts`), its HTTP handlers (`http.ts`), its Drizzle tables (`tables.ts`) and its crons.
 - `platform/`: infrastructure the features share: `db/` (`Database`, columns, `schema.ts` gathering every table for

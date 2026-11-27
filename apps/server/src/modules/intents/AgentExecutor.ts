@@ -106,7 +106,11 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
       // Twice the latest base fee plus a small tip, as Base prices blocks. Namera's gas policy charges an operation's
       // maximum cost (gas × the most per gas) against the agent's daily gas budget, so a bundler's generous default
       // would spend it in one trade.
+      // Alchemy's bundler sponsorship refuses any fee but zero, and charges the agent's gas budget nothing.
       const agentFees = async () => {
+        if (namera.sponsorship === "alchemy-bso") {
+          return { maxFeePerGas: BigInt(0), maxPriorityFeePerGas: BigInt(0) }
+        }
         const block = await chain.client.getBlock()
         return {
           maxFeePerGas: (block.baseFeePerGas ?? BigInt(0)) * BigInt(2) + AGENT_TIP,
@@ -170,10 +174,13 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
           return waitFor("pricesPaused", DateTime.addDuration(now, RETRY.pricesPaused))
         }
 
-        const eth = yield* chain.use("balance", (client) => client.getBalance({ address: options.account })).pipe(
-          Effect.orElseSucceed(() => BigInt(1))
-        )
-        if (eth === BigInt(0)) return waitFor("noGas", DateTime.addDuration(now, RETRY.noGas))
+        // Without sponsorship, the account pays its own gas in ETH.
+        if (namera.sponsorship === "none") {
+          const eth = yield* chain.use("balance", (client) => client.getBalance({ address: options.account })).pipe(
+            Effect.orElseSucceed(() => BigInt(1))
+          )
+          if (eth === BigInt(0)) return waitFor("noGas", DateTime.addDuration(now, RETRY.noGas))
+        }
 
         const block = yield* chain.use("block", (client) => client.getBlock()).pipe(Effect.result)
         if (block._tag === "Failure") return waitFor("unavailable", DateTime.addDuration(now, RETRY.unavailable))

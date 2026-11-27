@@ -1,3 +1,4 @@
+import { ChainClient } from "@bluechip/chain/ChainClient"
 import { DevChain } from "@bluechip/chain/DevChain"
 import * as Config from "effect/Config"
 import * as Effect from "effect/Effect"
@@ -35,6 +36,7 @@ import { ChannelLinks } from "./modules/channels/ChannelLinks.ts"
 import { ChatBot } from "./modules/channels/ChatBot.ts"
 import { ChatNotifier } from "./modules/channels/ChatNotifier.ts"
 import { TelegramConfig } from "./modules/channels/telegram/TelegramConfig.ts"
+import { Faucet } from "./modules/faucet/Faucet.ts"
 import { Transfers } from "./modules/funding/Transfers.ts"
 import { Withdrawals } from "./modules/funding/Withdrawals.ts"
 import { AgentExecutor } from "./modules/intents/AgentExecutor.ts"
@@ -69,6 +71,8 @@ import { NotificationOutbox } from "./modules/notifications/Outbox.ts"
 import { OutboxCron } from "./modules/notifications/OutboxCron.ts"
 import { ReminderCron } from "./modules/notifications/ReminderCron.ts"
 import { Reminders } from "./modules/notifications/Reminders.ts"
+import { Operator } from "./modules/paper/Operator.ts"
+import { PaperFeeds } from "./modules/paper/PaperFeeds.ts"
 import { Drift } from "./modules/performance/Drift.ts"
 import { DriftCron } from "./modules/performance/DriftCron.ts"
 import { Performance } from "./modules/performance/Performance.ts"
@@ -99,6 +103,7 @@ import { Namera } from "./platform/namera/Namera.ts"
 const Schedules = Layer.unwrap(Effect.gen(function*() {
   const enabled = yield* Config.Boolean("SCHEDULES_ENABLED").pipe(Config.withDefault(true))
   if (!enabled) return Layer.empty
+  const chain = yield* ChainClient
 
   return Layer.mergeAll(
     ExpireIntentsCron,
@@ -116,13 +121,25 @@ const Schedules = Layer.unwrap(Effect.gen(function*() {
     NewsWatcher.watch,
     ReminderCron,
     DigestCron,
-    OutboxCron
+    OutboxCron,
+    chain.deployment.paper === null ? Layer.empty : PaperFeeds
   )
 }))
 
 /**
- * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (`DevChain`
- * only answers on a local chain; the dev endpoints check the network first). Each line
+ * What only some networks have, read with `Effect.serviceOption`: the local chain's controls (`DevChain`, on `local`)
+ * and paper money's operator (`Operator`, where the deployment has paper money). The dev endpoints and the faucet
+ * answer from whichever is there, or refuse.
+ */
+const NetworkLive: Layer.Layer<never, Config.ConfigError, ChainClient> = Layer.unwrap(Effect.gen(function*() {
+  const chain = yield* ChainClient
+  if (chain.network === "local") return DevChain.layer
+  return chain.deployment.paper === null ? Layer.empty : Operator.layer
+}))
+
+/**
+ * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (with
+ * `NetworkLive`'s services where the network has them). Each line
  * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient` and its
  * `ChainDeployment`, the
  * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`), the
@@ -201,7 +218,8 @@ export const ServicesLive = Layer.mergeAll(
       Activity.layer,
       AutomationRuns.layer,
       Recall.layer,
-      Knowledge.layer
+      Knowledge.layer,
+      Faucet.layer
     )
   ),
   Layer.provideMerge(Layer.mergeAll(AgentJournal.layer, Notifications.layer)),
@@ -210,13 +228,13 @@ export const ServicesLive = Layer.mergeAll(
       LiveEvents.layer,
       Namera.layer,
       AccountBalances.layer,
-      DevChain.layer,
       RecallIndex.layer,
       PushSubscriptions.layer,
       PushConfig.layer,
       TelegramConfig.layer,
       NotificationOutbox.layer,
-      RpcProxy.layer
+      RpcProxy.layer,
+      NetworkLive
     )
   )
 )

@@ -171,7 +171,10 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     if (sent._tag === "Failure") {
       // Refused at the door (nothing was spent): said as the policy that refused it when one did.
       const refusal = refusalFrom(deployment, sent.failure.cause)
-      yield* Effect.logWarning(`Intents ${rows.map((row) => row.id)}: the bundler refused the agent's operation`)
+      yield* Effect.logWarning(
+        `Intents ${rows.map((row) => row.id)}: the bundler refused the agent's operation`,
+        sent.failure
+      )
       for (const { row, trade } of recorded) {
         yield* ledger.settle(trade, context.address, undefined)
         yield* intents.advance(

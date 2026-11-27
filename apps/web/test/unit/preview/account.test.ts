@@ -1,4 +1,4 @@
-import { Conflict, InsufficientCash, SignatureRejected } from "@bluechip/domain/Errors"
+import { Conflict, FaucetLimitReached, InsufficientCash, SignatureRejected } from "@bluechip/domain/Errors"
 import { type Address, RequestId } from "@bluechip/domain/Ids"
 import { Usdc } from "@bluechip/domain/market/Units"
 import { KINDS } from "@bluechip/domain/notifications/Kinds"
@@ -406,6 +406,30 @@ describe("preview account API", () => {
         assert.deepStrictEqual(items.map((transfer) => [transfer.kind, transfer.amount, transfer.status]), [
           ["deposit", BigInt(1_000_000_000), "confirmed"]
         ])
+      }))
+
+    it.effect("test money from the faucet arrives as a deposit, from today's allowance", () =>
+      Effect.gen(function*() {
+        const { client } = yield* previewApi("newPerson")
+
+        const grant = yield* client.faucet.claim({ payload: { amount: Usdc.make(BigInt(1_000_000_000)) } })
+        const { items } = yield* client.transfers.list({ query: {} })
+
+        assert.strictEqual(grant.allowance.remaining, BigInt(9_000_000_000))
+        assert.deepStrictEqual(items.map((transfer) => [transfer.kind, transfer.amount, transfer.status]), [
+          ["deposit", BigInt(1_000_000_000), "confirmed"]
+        ])
+      }))
+
+    it.effect("FaucetLimitReached: more than today's allowance", () =>
+      Effect.gen(function*() {
+        const { client } = yield* previewApi("newPerson")
+
+        const error = yield* Effect.flip(
+          client.faucet.claim({ payload: { amount: Usdc.make(BigInt(10_000_000_001)) } })
+        )
+
+        assert.instanceOf(error, FaucetLimitReached)
       }))
   })
 

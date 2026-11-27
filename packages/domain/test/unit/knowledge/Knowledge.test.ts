@@ -59,4 +59,19 @@ describe("describeStockFacts", () => {
         "bluechip can't trade it."
     )
   })
+
+  it("a paper money stock is a test token on the paper exchange", () => {
+    assert.strictEqual(
+      describeStockFacts({
+        symbol: "COIN",
+        name: "Coinbase",
+        token: "0x01",
+        feed: "0x02",
+        pool: { address: "0x03", tickSpacing: 1 }
+      }, { paper: true }),
+      "Coinbase (COIN) is a paper money test token on Base Sepolia, standing in for Coinbase's tokenized stock; its " +
+        "token is 0x01. bluechip prices it with its paper feed at 0x02, written from the live market price, and " +
+        "checks every trade's price against it. It trades against test USDC in bluechip's paper exchange at 0x03."
+    )
+  })
 })

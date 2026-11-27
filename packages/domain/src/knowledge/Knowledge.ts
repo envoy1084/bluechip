@@ -125,7 +125,8 @@ export const anchorOf = (heading: string): string =>
   heading.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "")
 
 /**
- * A stock's facts in words, from bluechip's stock list.
+ * A stock's facts in words, from bluechip's stock list. On paper money (`paper`), the stock is a test token at live
+ * prices, priced by bluechip's paper feed and traded on its paper exchange.
  *
  * @stability unstable
  * @category formatting
@@ -137,12 +138,22 @@ export const describeStockFacts = (stock: {
   readonly token: string
   readonly feed: string
   readonly pool: { readonly address: string; readonly tickSpacing: number } | null
-}): string =>
-  [
-    `${stock.name} (${stock.symbol}) is one of Coinbase's tokenized stocks on Base; its token is ${stock.token}.`,
-    `bluechip prices it with Chainlink's NAV feed at ${stock.feed}, and checks every trade's price against it.`,
-    stock.pool === null ?
-      "It has no pool to trade in, so bluechip can't trade it." :
-      `It trades in its USDC pool on Aerodrome's Slipstream at ${stock.pool.address} (tick spacing ` +
-      `${stock.pool.tickSpacing}).`
-  ].join(" ")
+}, options: { readonly paper?: boolean } = {}): string =>
+  options.paper === true ?
+    [
+      `${stock.name} (${stock.symbol}) is a paper money test token on Base Sepolia, standing in for Coinbase's ` +
+      `tokenized stock; its token is ${stock.token}.`,
+      `bluechip prices it with its paper feed at ${stock.feed}, written from the live market price, and checks every ` +
+      `trade's price against it.`,
+      stock.pool === null ?
+        "It has no pool to trade in, so bluechip can't trade it." :
+        `It trades against test USDC in bluechip's paper exchange at ${stock.pool.address}.`
+    ].join(" ") :
+    [
+      `${stock.name} (${stock.symbol}) is one of Coinbase's tokenized stocks on Base; its token is ${stock.token}.`,
+      `bluechip prices it with Chainlink's NAV feed at ${stock.feed}, and checks every trade's price against it.`,
+      stock.pool === null ?
+        "It has no pool to trade in, so bluechip can't trade it." :
+        `It trades in its USDC pool on Aerodrome's Slipstream at ${stock.pool.address} (tick spacing ` +
+        `${stock.pool.tickSpacing}).`
+    ].join(" ")

@@ -22,9 +22,10 @@ import {
  * (`alchemy-bso`), or Alchemy's Gas Manager paymaster (`alchemy-paymaster`); both Alchemy options draw on the Gas
  * Manager policy's balance.
  */
-type GasSponsorship = "none" | "alchemy-bso" | "alchemy-paymaster"
+export type GasSponsorship = "none" | "alchemy-bso" | "alchemy-paymaster"
 
 interface Setup {
+  readonly gas: GasSponsorship
   readonly bundler: Bundler.Bundler
   readonly paymaster: Paymaster.Paymaster | undefined
 }
@@ -36,14 +37,14 @@ const setupFromConfig = Effect.gen(function*() {
   if (bundler === "local") {
     if (gas !== "none") return yield* Effect.die(new Error(`GAS_SPONSORSHIP=${gas} needs BUNDLER=alchemy`))
     const url = yield* Config.String("BUNDLER_URL").pipe(Config.withDefault("http://localhost:4337"))
-    return { bundler: Bundler.from({ url }), paymaster: undefined } satisfies Setup
+    return { gas, bundler: Bundler.from({ url }), paymaster: undefined } satisfies Setup
   }
   const apiKey = Redacted.value(yield* Config.Redacted("ALCHEMY_API_KEY"))
-  if (gas === "none") return { bundler: Bundler.alchemy({ apiKey }), paymaster: undefined } satisfies Setup
+  if (gas === "none") return { gas, bundler: Bundler.alchemy({ apiKey }), paymaster: undefined } satisfies Setup
   const policyId = yield* Config.String("ALCHEMY_GAS_POLICY_ID")
   return gas === "alchemy-bso"
-    ? { bundler: Bundler.alchemy({ apiKey, sponsorship: { policyId } }), paymaster: undefined } satisfies Setup
-    : { bundler: Bundler.alchemy({ apiKey }), paymaster: Paymaster.alchemy({ apiKey, policyId }) } satisfies Setup
+    ? { gas, bundler: Bundler.alchemy({ apiKey, sponsorship: { policyId } }), paymaster: undefined } satisfies Setup
+    : { gas, bundler: Bundler.alchemy({ apiKey }), paymaster: Paymaster.alchemy({ apiKey, policyId }) } satisfies Setup
 })
 
 /**
@@ -52,6 +53,11 @@ const setupFromConfig = Effect.gen(function*() {
  * the bundler and paymaster don't work together.
  */
 export class Namera extends Context.Service<Namera, {
+  /**
+   * Who pays gas (`GAS_SPONSORSHIP`): anything but `none` means an account needs no ETH to send; with `alchemy-bso`
+   * an operation's fees must be zero.
+   */
+  readonly sponsorship: GasSponsorship
   /**
    * The user's Kernel account owned by `owner`: at the address the sign-up passkey fixed (computed from `owner` when
    * no `address` is given), whether or not it is deployed yet. Any of the account's passkeys signs for it.
@@ -85,6 +91,7 @@ export class Namera extends Context.Service<Namera, {
         return yield* Effect.die(new Error(`Namera: ${compat.problems.map((problem) => problem.message).join("; ")}`))
       }
       return {
+        sponsorship: setup.gas,
         kernelAccount: (owner, address) =>
           KernelAccount.from({ client: chain.client, owner, ...(address === undefined ? {} : { address }) }),
         bundlerClient: (account, options) =>

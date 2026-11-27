@@ -12,6 +12,12 @@ export const network: Network = networks.find((candidate) => candidate === impor
 /** The network's addresses, stocks and explorer. */
 export const deployment: Deployment = deploymentOf(network)
 
+/** The chain's name as copy says it: "Base", or "Base Sepolia" on paper money. */
+export const chainName: string = network === "sepolia" ? "Base Sepolia" : "Base"
+
+/** What the account's cash is: USDC, or paper money's test USDC. */
+export const usdcName: string = network === "sepolia" ? "test USDC" : "USDC"
+
 /** A transaction on the network's block explorer. */
 export const explorerTxUrl = (hash: string): string => `${deployment.explorerUrl}/tx/${hash}`
 

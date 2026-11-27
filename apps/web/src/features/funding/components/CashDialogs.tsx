@@ -11,6 +11,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { meAtom } from "../../../atoms/account.ts"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
 import { portfolioAtom } from "../../../atoms/portfolio.ts"
+import { chainName, usdcName } from "../../../lib/network.ts"
 import { AddCashPanel } from "./AddCashPanel.tsx"
 import { WithdrawDialog } from "./WithdrawDialog.tsx"
 
@@ -28,7 +29,7 @@ export function CashDialogs() {
           <DialogHeader>
             <DialogTitle>Add cash</DialogTitle>
             <DialogDescription>
-              Send USDC on Base to your bluechip account. It shows up here as soon as it lands.
+              Send {usdcName} on {chainName} to your bluechip account. It shows up here as soon as it lands.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>

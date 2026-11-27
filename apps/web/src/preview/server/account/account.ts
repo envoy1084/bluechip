@@ -28,6 +28,7 @@ import {
   landLater,
   registrationCeremony
 } from "./ceremonies.ts"
+import { FaucetHandlers } from "./faucet.ts"
 
 /** You and your account, as `GET /api/account` and every sign-in answer. */
 export const meOf = (world: World): Me =>
@@ -293,4 +294,10 @@ const RpcHandlers = HttpApiBuilder.group(
   })
 )
 
-export const AccountAuthGroupsLive = Layer.mergeAll(AccountHandlers, AuthHandlers, DevHandlers, RpcHandlers)
+export const AccountAuthGroupsLive = Layer.mergeAll(
+  AccountHandlers,
+  AuthHandlers,
+  DevHandlers,
+  FaucetHandlers,
+  RpcHandlers
+)

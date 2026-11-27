@@ -15,6 +15,7 @@ import { AutomationsApi } from "./api/AutomationsApi.ts"
 import { ChannelsApi } from "./api/ChannelsApi.ts"
 import { DevApi } from "./api/DevApi.ts"
 import { EventsApi } from "./api/EventsApi.ts"
+import { FaucetApi } from "./api/FaucetApi.ts"
 import { IntentsApi } from "./api/IntentsApi.ts"
 import { MarketApi } from "./api/MarketApi.ts"
 import { NotificationsApi } from "./api/NotificationsApi.ts"
@@ -60,6 +61,7 @@ export class BluechipApi extends HttpApi.make("bluechip")
   .add(NotificationsApi)
   .add(PushApi)
   .add(ChannelsApi)
+  .add(FaucetApi)
   .add(DevApi)
   .add(RpcApi)
   .middleware(DefectReporting)
