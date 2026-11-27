@@ -31,7 +31,6 @@ import { Analytics } from "../analytics/Analytics.ts"
 import { transfers } from "../funding/tables.ts"
 import { toTransfer } from "../funding/Transfers.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
-import { Notifications } from "../notifications/Notifications.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { trades } from "../trading/tables.ts"
@@ -83,7 +82,6 @@ export class Reconciliation extends Context.Service<Reconciliation, {
       const analytics = yield* Analytics
       const live = yield* LiveEvents
       const outbox = yield* NotificationOutbox
-      const notifications = yield* Notifications
       const balances = yield* AccountBalances
 
       // USDC transfers into `owners` in blocks `from`..`to`, by recipient.
@@ -331,6 +329,11 @@ export class Reconciliation extends Context.Service<Reconciliation, {
                       }
                     })
                   ).returning()
+                for (const row of adjustmentRows) {
+                  const name = stocks.find((stock) => stock.symbol === row.asset)?.name ?? row.asset
+                  const draft = notificationOfAdjustment(row, name)
+                  if (draft !== undefined) yield* outbox.notify(draft, userId)
+                }
 
                 yield* tx.insert(reconciliationCursors).values({
                   userId: owner.userId,
@@ -362,11 +365,6 @@ export class Reconciliation extends Context.Service<Reconciliation, {
             yield* balances.invalidate(address)
             for (const row of transferRows) {
               yield* live.publish(LiveEvent.cases.TransferUpdated.make({ transfer: toTransfer(row) }), userId)
-            }
-            for (const row of adjustmentRows) {
-              const name = stocks.find((stock) => stock.symbol === row.asset)?.name ?? row.asset
-              const draft = notificationOfAdjustment(row, name)
-              if (draft !== undefined) yield* notifications.add(userId, draft)
             }
             yield* live.publish(LiveEvent.cases.PortfolioChanged.make({}), userId)
           }

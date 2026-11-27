@@ -24,6 +24,7 @@ import * as Option from "effect/Option"
 import type { Hex } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { AppConfig } from "../../config/AppConfig.ts"
+import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, Recovery as RecoveryMetric, UsersSignedIn } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
@@ -35,7 +36,7 @@ import { passkeyLabel } from "../auth/PasskeyLabel.ts"
 import { Sessions } from "../auth/Sessions.ts"
 import { deviceOf } from "../auth/UserAgents.ts"
 import { WebAuthn } from "../auth/WebAuthn.ts"
-import { Notifications } from "../notifications/Notifications.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { challengeOf, OwnerOperations } from "../signing/OwnerOperations.ts"
 import { RecoveryOperations } from "./RecoveryOperations.ts"
 import { type RecoveryRequestRow, RecoveryStore, type StoredKey } from "./RecoveryStore.ts"
@@ -84,7 +85,10 @@ export class Recoveries extends Context.Service<Recoveries, {
   ) => Effect.Effect<Recovering, NotFound | Conflict | SignatureRejected | Unavailable>
   /** Cancels the recovery waiting out its delay, with the guard key; waits until the cancel landed. */
   readonly cancel: (userId: UserId, from: CancelledFrom) => Effect.Effect<RecoveryRequestRow, Conflict | Unavailable>
-  /** Marks an open recovery cancelled without sending anything (its recovery key's sessions were revoked). */
+  /**
+   * Marks an open recovery cancelled without sending anything (its recovery key's sessions were revoked); call it in
+   * the transaction of the key's removal, which its notification joins.
+   */
   readonly abandon: (userId: UserId) => Effect.Effect<void>
   /**
    * Signs the device that made the recovery in with its new passkey, once the recovery landed, and ends its recovery
@@ -108,7 +112,8 @@ export class Recoveries extends Context.Service<Recoveries, {
       const owners = yield* OwnerOperations
       const operations = yield* RecoveryOperations
       const store = yield* RecoveryStore
-      const notifications = yield* Notifications
+      const db = yield* Database
+      const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const live = yield* LiveEvents
       const scope = yield* Effect.scope
@@ -189,9 +194,13 @@ export class Recoveries extends Context.Service<Recoveries, {
             at === undefined ? now : DateTime.makeUnsafe(at * 1000),
             { seconds: RECOVERY_DELAY_SECONDS }
           )
-          const saved = yield* store.saveRequest(row.id, { status: "waiting", executableAt, userOpHash: null })
-          yield* recordAudit(saved, "requested", "owner", { executableAt: DateTime.formatIso(executableAt) })
-          yield* notifications.add(userId, notificationOfRecovery(saved, { _tag: "Requested" }))
+          yield* db.transaction(() =>
+            Effect.gen(function*() {
+              const saved = yield* store.saveRequest(row.id, { status: "waiting", executableAt, userOpHash: null })
+              yield* recordAudit(saved, "requested", "owner", { executableAt: DateTime.formatIso(executableAt) })
+              yield* outbox.notify(notificationOfRecovery(saved, { _tag: "Requested" }), userId)
+            })
+          ).pipe(Effect.orDie)
           return yield* changed(userId)
         }
 
@@ -205,15 +214,19 @@ export class Recoveries extends Context.Service<Recoveries, {
           yield* store.saveRequest(row.id, { status: "failed", userOpHash: null })
           return yield* changed(userId)
         }
-        for (const old of yield* accounts.owners(userId)) {
-          yield* accounts.savePasskey(old.id, { status: "removed", removedAt: now })
-        }
-        yield* accounts.savePasskey(row.newPasskeyId, { status: "active" })
-        const saved = yield* store.saveRequest(row.id, { status: "completed", executedAt: now, userOpHash: null })
-        // Every device is signed out but the one that made it, which signs in with its new passkey next.
-        yield* sessions.signOutAll(userId, row.executedBy === null ? undefined : row.executedBy as SessionId)
-        yield* recordAudit(saved, "completed", "owner")
-        yield* notifications.add(userId, notificationOfRecovery(saved, { _tag: "Completed" }))
+        yield* db.transaction(() =>
+          Effect.gen(function*() {
+            for (const old of yield* accounts.owners(userId)) {
+              yield* accounts.savePasskey(old.id, { status: "removed", removedAt: now })
+            }
+            yield* accounts.savePasskey(row.newPasskeyId, { status: "active" })
+            const saved = yield* store.saveRequest(row.id, { status: "completed", executedAt: now, userOpHash: null })
+            // Every device is signed out but the one that made it, which signs in with its new passkey next.
+            yield* sessions.signOutAll(userId, row.executedBy === null ? undefined : row.executedBy as SessionId)
+            yield* recordAudit(saved, "completed", "owner")
+            yield* outbox.notify(notificationOfRecovery(saved, { _tag: "Completed" }), userId)
+          })
+        ).pipe(Effect.orDie)
         yield* changed(userId)
       })
 
@@ -331,7 +344,11 @@ export class Recoveries extends Context.Service<Recoveries, {
         }
         const newOwner = yield* accounts.insertPasskey(user.id, {
           passkey,
-          label: passkeyLabel({ aaguid: passkey.aaguid, userAgent: input.userAgent }),
+          label: passkeyLabel({
+            aaguid: passkey.aaguid,
+            userAgent: input.userAgent,
+            taken: (yield* accounts.owners(user.id)).flatMap((owner) => owner.label ?? [])
+          }),
           role: "owner"
         })
         const calls = recoveryCalls({
@@ -415,10 +432,19 @@ export class Recoveries extends Context.Service<Recoveries, {
         if (!receipt.success) return yield* new Conflict({ reason: "noRecoveryRequest" })
 
         const now = yield* DateTime.now
-        const saved = yield* store.saveRequest(row.id, { status: "cancelled", cancelledAt: now, cancelledFrom: from })
-        yield* accounts.savePasskey(row.newPasskeyId, { status: "removed", removedAt: now })
-        yield* recordAudit(saved, "cancelled", "owner", { from })
-        yield* notifications.add(userId, notificationOfRecovery(saved, { _tag: "Cancelled", from }))
+        const saved = yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const saved = yield* store.saveRequest(row.id, {
+              status: "cancelled",
+              cancelledAt: now,
+              cancelledFrom: from
+            })
+            yield* accounts.savePasskey(row.newPasskeyId, { status: "removed", removedAt: now })
+            yield* recordAudit(saved, "cancelled", "owner", { from })
+            yield* outbox.notify(notificationOfRecovery(saved, { _tag: "Cancelled", from }), userId)
+            return saved
+          })
+        ).pipe(Effect.orDie)
         yield* changed(userId)
         return saved
       })
@@ -434,7 +460,7 @@ export class Recoveries extends Context.Service<Recoveries, {
         })
         yield* accounts.savePasskey(saved.newPasskeyId, { status: "removed", removedAt: now })
         yield* recordAudit(saved, "cancelled", "owner", { from: "app", keyRemoved: true })
-        yield* notifications.add(userId, notificationOfRecovery(saved, { _tag: "Cancelled", from: "app" }))
+        yield* outbox.notify(notificationOfRecovery(saved, { _tag: "Cancelled", from: "app" }), userId)
       })
 
       const signInRecovered = Effect.fn("Recoveries.signInRecovered")(

@@ -1,3 +1,4 @@
+import { RunResult, runResultOf } from "@bluechip/domain/automations/Run"
 import { NotFound } from "@bluechip/domain/Errors"
 import type { AgentId, AutomationId, UserId } from "@bluechip/domain/Ids"
 import { dayOf, series } from "@bluechip/domain/ledger/Daily"
@@ -256,9 +257,23 @@ export class Performance extends Context.Service<Performance, {
         const closed = filled.length === 0 ? [] : yield* db.select({ realised: lotClosings.realised }).from(lotClosings)
           .where(inArray(lotClosings.tradeId, filled.map((trade) => trade.id))).pipe(Effect.orDie)
 
-        const outcomes = (["proposed", "asked", "notified", "skipped", "failed"] as const)
-          .map((outcome) => new RunCount({ outcome, count: runs.filter((run) => run.outcome === outcome).length }))
-          .filter((outcome) => outcome.count > 0)
+        const proposed = runs.length === 0 ? [] : yield* db.select({
+          sourceId: intents.sourceId,
+          status: intents.status,
+          decision: intents.decision
+        }).from(intents).where(and(
+          eq(intents.source, "automation"),
+          inArray(intents.sourceId, runs.map((run) => run.id))
+        )).pipe(Effect.orDie)
+        const results = runs.map((run) =>
+          runResultOf(
+            run.outcome === "running" ? "proposed" : run.outcome,
+            proposed.filter((intent) => intent.sourceId === run.id)
+          ).result
+        )
+        const outcomes = RunResult.literals
+          .map((result) => new RunCount({ result, count: results.filter((each) => each === result).length }))
+          .filter((row) => row.count > 0)
 
         return new AutomationPerformance({
           automationId,

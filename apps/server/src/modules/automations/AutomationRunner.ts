@@ -249,11 +249,8 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
             _tag: "automation_fired",
             trigger: row.trigger.type,
             action: row.action.type,
-            outcome: result.outcome === "proposed"
-              ? "traded"
-              : result.outcome === "asked"
-              ? "proposed"
-              : result.outcome,
+            // At its fire the trades are only proposed: what they came to is told by each trade's own events.
+            outcome: result.outcome,
             legs: result.intentIds.length
           }, fact)
         }

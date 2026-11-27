@@ -2,7 +2,6 @@ import { BluechipApi } from "@bluechip/domain/Api"
 import { sessionCookie } from "@bluechip/domain/Auth"
 import { SignatureRejected } from "@bluechip/domain/Errors"
 import type { PasskeyId, UserId } from "@bluechip/domain/Ids"
-import { notificationOfDevice } from "@bluechip/domain/notifications/SecurityDrafts"
 import { Ceremony } from "@bluechip/domain/WebAuthn"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -16,7 +15,6 @@ import { count, UsersSignedIn } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
-import { Notifications } from "../notifications/Notifications.ts"
 import { Challenges } from "./Challenges.ts"
 import { passkeyLabel } from "./PasskeyLabel.ts"
 import { Sessions } from "./Sessions.ts"
@@ -35,7 +33,6 @@ export const AuthHandlers = HttpApiBuilder.group(
     const challenges = yield* Challenges
     const sessions = yield* Sessions
     const webAuthn = yield* WebAuthn
-    const notifications = yield* Notifications
     const audit = yield* AuditLog
     const analytics = yield* Analytics
 
@@ -44,7 +41,7 @@ export const AuthHandlers = HttpApiBuilder.group(
     const signIn = Effect.fn("Auth.signIn")(function*(userId: UserId, passkeyId: PasskeyId, firstSession: boolean) {
       const request = yield* HttpServerRequest.HttpServerRequest
       const device = deviceOf(request.headers["user-agent"])
-      const session = yield* sessions.create({ userId, passkeyId, device })
+      const session = yield* sessions.create({ userId, passkeyId, device, tellNewDevice: !firstSession })
       yield* audit.record({
         userId,
         actor: "owner",
@@ -53,9 +50,6 @@ export const AuthHandlers = HttpApiBuilder.group(
         subjectId: session.id,
         data: { device }
       })
-      if (session.newDevice && !firstSession) {
-        yield* notifications.add(userId, notificationOfDevice({ id: session.id, device }))
-      }
       yield* HttpApiBuilder.securitySetCookie(sessionCookie, session.token, {
         path: "/",
         sameSite: "lax",

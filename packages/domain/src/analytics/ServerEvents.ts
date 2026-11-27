@@ -140,7 +140,7 @@ export const SERVER_EVENTS = [
   Schema.TaggedStruct("automation_fired", {
     trigger: Schema.String,
     action: Schema.String,
-    outcome: Schema.Literals(["traded", "proposed", "notified", "failed"]),
+    outcome: Schema.Literals(["proposed", "asked", "notified", "failed"]),
     legs: Count
   }),
   Schema.TaggedStruct("automation_skipped", { trigger: Schema.String, condition: Schema.String }),

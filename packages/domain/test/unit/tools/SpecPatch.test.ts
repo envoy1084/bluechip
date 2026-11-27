@@ -1,6 +1,7 @@
 import { SavedTemplateId } from "@bluechip/domain/Ids"
 import { PolicyProblem } from "@bluechip/domain/policies/AgentSpec"
 import { fairPrice } from "@bluechip/domain/policies/FairPrice"
+import { gasBudget } from "@bluechip/domain/policies/GasBudget"
 import { configOf } from "@bluechip/domain/policies/Policy"
 import { rebalance } from "@bluechip/domain/policies/Rebalance"
 import { stockCap } from "@bluechip/domain/policies/StockCap"
@@ -44,6 +45,12 @@ describe("applyPatch", () => {
     const { spec } = applyPatch(PICKER, { settings: [{ policy: "tradesPerDay", field: "count", value: 3.4 }] })
 
     assert.strictEqual(configOf(spec.policies, tradesPerDay)?.count, 3)
+  })
+
+  it("a gas budget is given in ether and written in wei", () => {
+    const { spec } = applyPatch(PICKER, { settings: [{ policy: "gasBudget", field: "weiPerDay", value: 0.0125 }] })
+
+    assert.strictEqual(configOf(spec.policies, gasBudget)?.weiPerDay, 12_500_000_000_000_000n)
   })
 
   it("a toggle takes true or false", () => {

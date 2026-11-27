@@ -164,7 +164,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("performance", (it) => {
   })
 
   describe("GET /api/performance/automations/:id", () => {
-    it.effect("an agent's weekly buy fired and filled: one run proposed, one $50 trade bought, its costs", () =>
+    it.effect("an agent's weekly buy fired and filled: one run traded, one $50 trade bought, its costs", () =>
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked
         const saved = yield* user.api.automations.create({
@@ -186,10 +186,39 @@ layer(TestAgents.layer, { excludeTestServices: true })("performance", (it) => {
 
         assert.deepStrictEqual(
           [results.runs, results.outcomes, results.trades, results.bought, results.sold, results.realised],
-          [1, [new RunCount({ outcome: "proposed", count: 1 })], 1, 50_000_000n, 0n, 0n]
+          [1, [new RunCount({ result: "traded", count: 1 })], 1, 50_000_000n, 0n, 0n]
         )
         // The pool's fee and the gas are what the chain charged.
         assert.deepStrictEqual([results.costs.fees > 0n, results.costs.gasWei > 0n], [true, true])
+      }))
+
+    it.effect("an agent's weekly buy past its cap in NVIDIA: one run blocked by that policy, nothing bought", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        // $1,000 of cash and about $500 of NVIDIA: another $50 keeps NVIDIA past 30%.
+        yield* (yield* Devnet).mintShares(user.account, "NVDA", BigInt(300_000_000))
+        const saved = yield* user.api.automations.create({
+          payload: {
+            requestId: RequestId.make(randomUUID()),
+            draft: new AutomationDraft({
+              ...weeklyBuy(agent.id),
+              settings: { ...DEFAULT_SETTINGS, ...AROUND_THE_CLOCK }
+            })
+          }
+        })
+
+        yield* (yield* ScheduleWatcher).runDue(DateTime.add(saved.nextRunAt!, { seconds: 1 }), { userId: user.id })
+        yield* user.events.next(
+          "IntentChanged",
+          ({ intent }) => intent.source === "automation" && intent.status === "blocked"
+        )
+        const results = yield* user.api.performance.automation({ params: { id: saved.id } })
+        const detail = yield* user.api.automations.automation({ params: { id: saved.id } })
+
+        assert.deepStrictEqual(
+          [results.outcomes, results.trades, detail.runs.map((run) => [run.outcome, run.result, run.blockedBy])],
+          [[new RunCount({ result: "blocked", count: 1 })], 0, [["proposed", "blocked", ["stockCap"]]]]
+        )
       }))
 
     it.effect("404: an automation that doesn't exist", () =>

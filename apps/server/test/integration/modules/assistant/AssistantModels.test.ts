@@ -1,12 +1,19 @@
+import { Message } from "@bluechip/domain/assistant/Conversation"
+import { MessageId } from "@bluechip/domain/Ids"
 import { assert, describe, layer } from "@effect/vitest"
 import * as LanguageModel from "effect/ai/LanguageModel"
+import * as Prompt from "effect/ai/Prompt"
 import * as ConfigProvider from "effect/ConfigProvider"
+import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Fiber from "effect/Fiber"
 import * as Layer from "effect/Layer"
 import * as TestClock from "effect/testing/TestClock"
 import { AssistantModels } from "../../../../src/modules/assistant/AssistantModels.ts"
+import { promptOf } from "../../../../src/modules/assistant/Transcript.ts"
 import { AnthropicTest } from "../../../utils/AnthropicTest.ts"
+
+const AT = DateTime.makeUnsafe("2026-11-26T10:00:00Z")
 
 // A reply of Anthropic's Messages API, as it comes back.
 const reply = (fields: Record<string, unknown>) => ({
@@ -63,6 +70,80 @@ layer(models)("AssistantModels", (it) => {
         ).pipe(Effect.flip)
 
         assert.deepStrictEqual([error.reason._tag, (yield* anthropic.requests) - before], ["InvalidResponseError", 1])
+      }))
+  })
+
+  describe("a conversation's next turn, as Anthropic receives it", () => {
+    it.effect("the instructions alone as the cached system prompt, each turn's context after its message, and the first turn's thinking with its signature", () =>
+      Effect.gen(function*() {
+        const anthropic = yield* AnthropicTest
+        const before = (yield* anthropic.bodies).length
+        yield* anthropic.answer(reply({ content: [{ type: "text", text: "Any time." }], stop_reason: "end_turn" }))
+        const prompt = Prompt.concat(
+          Prompt.make([{
+            role: "system",
+            content: "You are bluechip's assistant.",
+            options: { anthropic: { cacheControl: { type: "ephemeral" } } }
+          }]),
+          promptOf([
+            new Message({
+              id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
+              role: "user",
+              parts: [{ type: "text", text: "Which agents do I have?" }],
+              model: null,
+              createdAt: AT
+            }),
+            new Message({
+              id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3x"),
+              role: "assistant",
+              parts: [
+                {
+                  type: "reasoning",
+                  text: "None yet.",
+                  options: { anthropic: { info: { type: "thinking", signature: "sig-1" } } }
+                },
+                { type: "text", text: "None yet." }
+              ],
+              model: "claude-sonnet-5-5",
+              createdAt: AT
+            }),
+            new Message({
+              id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3y"),
+              role: "user",
+              parts: [{ type: "text", text: "Thanks" }],
+              model: null,
+              createdAt: AT
+            })
+          ], {
+            contexts: new Map([
+              ["message_01jd8v4t5m6n7a8q9r0s1t2v3w", "## Today\n2026-11-25 (UTC)"],
+              ["message_01jd8v4t5m6n7a8q9r0s1t2v3y", "## Today\n2026-11-26 (UTC)"]
+            ])
+          })
+        )
+
+        yield* (yield* AssistantModels).onConversation(LanguageModel.generateText({ prompt }))
+        const [body] = (yield* anthropic.bodies).slice(before) as ReadonlyArray<{
+          readonly system: unknown
+          readonly messages: unknown
+        }>
+
+        assert.deepStrictEqual([body!.system, body!.messages], [
+          [{ type: "text", text: "You are bluechip's assistant.", cache_control: { type: "ephemeral" } }],
+          [
+            { role: "user", content: [{ type: "text", text: "Which agents do I have?", cache_control: null }] },
+            { role: "system", content: [{ type: "text", text: "## Today\n2026-11-25 (UTC)", cache_control: null }] },
+            {
+              role: "assistant",
+              content: [
+                { type: "thinking", thinking: "None yet.", signature: "sig-1" },
+                { type: "text", text: "None yet." }
+              ]
+            },
+            { role: "user", content: [{ type: "text", text: "Thanks", cache_control: null }] },
+            { role: "system", content: [{ type: "text", text: "## Today\n2026-11-26 (UTC)", cache_control: null }] }
+          ]
+        ])
       }))
   })
 })

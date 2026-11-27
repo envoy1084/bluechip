@@ -33,7 +33,7 @@ export interface BotMessage {
 export class TestTelegram extends Context.Service<TestTelegram, {
   /** A new chat with the bot: private (`direct`) unless a group (`channel`) is asked for. */
   readonly chat: (kind?: "direct" | "channel") => Effect.Effect<TestChat>
-  /** A new private chat, linked to `user` with a code from the app. */
+  /** A new private chat, linked to `user` with a code from the app, once the link's notification is in their center. */
   readonly linked: (user: TestUser) => Effect.Effect<TestChat>
   /** The person writes `text`; the bot's messages posted in answer. */
   readonly say: (chat: TestChat, text: string) => Effect.Effect<ReadonlyArray<BotMessage>>
@@ -88,6 +88,7 @@ export class TestTelegram extends Context.Service<TestTelegram, {
         const linking = yield* chat("direct")
         const { code } = yield* Effect.orDie(user.api.channels.linkCode({ params: { platform: "telegram" } }))
         yield* say(linking, code)
+        yield* user.events.next("NotificationAdded", ({ notification }) => notification.kind === "chatLinked")
         return linking
       })
 

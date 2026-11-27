@@ -14,6 +14,7 @@ import * as Option from "effect/Option"
 import type { Hex } from "viem"
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts"
 import { AppConfig } from "../../config/AppConfig.ts"
+import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, Recovery as RecoveryMetric } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
@@ -23,7 +24,7 @@ import { AuditLog } from "../audit/AuditLog.ts"
 import { Challenges } from "../auth/Challenges.ts"
 import { passkeyLabel } from "../auth/PasskeyLabel.ts"
 import { WebAuthn } from "../auth/WebAuthn.ts"
-import { Notifications } from "../notifications/Notifications.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { OwnerOperations } from "../signing/OwnerOperations.ts"
 import { type Owner, type SigningRequestRow, SigningRequests } from "../signing/SigningRequests.ts"
 import { Recoveries } from "./Recoveries.ts"
@@ -67,7 +68,8 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
       const operations = yield* RecoveryOperations
       const recoveries = yield* Recoveries
       const store = yield* RecoveryStore
-      const notifications = yield* Notifications
+      const db = yield* Database
+      const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const analytics = yield* Analytics
       const live = yield* LiveEvents
@@ -133,26 +135,32 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
           return yield* changed(userId)
         }
 
-        yield* store.saveKey(
-          row.id,
-          locking ?
-            { status: "active", lockedAt: now, userOpHash: null } :
-            { status: "removed", removedAt: now, userOpHash: null }
-        )
-        const passkey = yield* accounts.savePasskey(
-          row.passkeyId,
-          locking ? { status: "active" } : { status: "removed", removedAt: now }
-        )
-        // A recovery under way can't be made without its key's session.
-        if (!locking) yield* recoveries.abandon(userId)
-        yield* audit.record({
-          userId,
-          actor: "owner",
-          action: locking ? "recovery.keySet" : "recovery.keyRemoved",
-          subjectType: "recoveryKey",
-          subjectId: row.id,
-          data: { label: passkey.label }
-        })
+        // The key's change and its notification, in one transaction.
+        yield* db.transaction(() =>
+          Effect.gen(function*() {
+            yield* store.saveKey(
+              row.id,
+              locking ?
+                { status: "active", lockedAt: now, userOpHash: null } :
+                { status: "removed", removedAt: now, userOpHash: null }
+            )
+            const passkey = yield* accounts.savePasskey(
+              row.passkeyId,
+              locking ? { status: "active" } : { status: "removed", removedAt: now }
+            )
+            // A recovery under way can't be made without its key's session.
+            if (!locking) yield* recoveries.abandon(userId)
+            yield* audit.record({
+              userId,
+              actor: "owner",
+              action: locking ? "recovery.keySet" : "recovery.keyRemoved",
+              subjectType: "recoveryKey",
+              subjectId: row.id,
+              data: { label: passkey.label }
+            })
+            yield* outbox.notify(notificationOfRecoveryKey({ id: row.id, label: passkey.label }, locking), userId)
+          })
+        ).pipe(Effect.orDie)
         yield* count(RecoveryMetric, { change: locking ? "key_added" : "key_removed" })
         if (locking) {
           yield* analytics.capture(userId, { _tag: "recovery_key_added", by: "device" }, {
@@ -163,7 +171,6 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
         } else {
           yield* analytics.identify(userId, { id: `${row.id}:removed`, at: now, set: { has_recovery_passkey: false } })
         }
-        yield* notifications.add(userId, notificationOfRecoveryKey({ id: row.id, label: passkey.label }, locking))
         yield* changed(userId)
       })
 

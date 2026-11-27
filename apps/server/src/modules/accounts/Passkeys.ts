@@ -11,6 +11,7 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
 import type { Hex } from "viem"
+import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, Passkeys as PasskeysMetric } from "../../platform/telemetry/Metrics.ts"
 import { Analytics } from "../analytics/Analytics.ts"
@@ -19,7 +20,7 @@ import { Challenges } from "../auth/Challenges.ts"
 import { passkeyLabel } from "../auth/PasskeyLabel.ts"
 import { Sessions } from "../auth/Sessions.ts"
 import { WebAuthn } from "../auth/WebAuthn.ts"
-import { Notifications } from "../notifications/Notifications.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { OwnerOperations } from "../signing/OwnerOperations.ts"
 import { type Owner, type SigningRequestRow, SigningRequests } from "../signing/SigningRequests.ts"
 import { Accounts, type PasskeyRow, toPasskey } from "./Accounts.ts"
@@ -66,7 +67,8 @@ export class Passkeys extends Context.Service<Passkeys, {
       const signing = yield* SigningRequests
       const operations = yield* OwnerOperations
       const sessions = yield* Sessions
-      const notifications = yield* Notifications
+      const db = yield* Database
+      const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const live = yield* LiveEvents
       const scope = yield* Effect.scope
@@ -118,19 +120,25 @@ export class Passkeys extends Context.Service<Passkeys, {
           return yield* changed(userId)
         }
 
-        yield* accounts.savePasskey(
-          row.id,
-          adding ? { status: "active", userOpHash: null } : { status: "removed", removedAt: now, userOpHash: null }
-        )
-        if (!adding) yield* sessions.signOutPasskey(row.id)
-        yield* audit.record({
-          userId,
-          actor: "owner",
-          action: adding ? "passkey.added" : "passkey.removed",
-          subjectType: "passkey",
-          subjectId: row.id,
-          data: { label: row.label }
-        })
+        // The owner change and its notification, in one transaction.
+        yield* db.transaction(() =>
+          Effect.gen(function*() {
+            yield* accounts.savePasskey(
+              row.id,
+              adding ? { status: "active", userOpHash: null } : { status: "removed", removedAt: now, userOpHash: null }
+            )
+            if (!adding) yield* sessions.signOutPasskey(row.id)
+            yield* audit.record({
+              userId,
+              actor: "owner",
+              action: adding ? "passkey.added" : "passkey.removed",
+              subjectType: "passkey",
+              subjectId: row.id,
+              data: { label: row.label }
+            })
+            yield* outbox.notify(notificationOfPasskey(row, adding), userId)
+          })
+        ).pipe(Effect.orDie)
         yield* count(PasskeysMetric, { change: adding ? "added" : "removed" })
         const owners = (yield* accounts.owners(userId)).length
         yield* analytics.capture(userId, { _tag: adding ? "passkey_added" : "passkey_removed", count_after: owners }, {
@@ -138,7 +146,6 @@ export class Passkeys extends Context.Service<Passkeys, {
           at: now,
           set: { passkeys_count: owners }
         })
-        yield* notifications.add(userId, notificationOfPasskey(row, adding))
         yield* changed(userId)
       })
 
@@ -177,7 +184,11 @@ export class Passkeys extends Context.Service<Passkeys, {
 
         const row = yield* accounts.insertPasskey(owner.id, {
           passkey,
-          label: passkeyLabel({ aaguid: passkey.aaguid, userAgent: input.userAgent }),
+          label: passkeyLabel({
+            aaguid: passkey.aaguid,
+            userAgent: input.userAgent,
+            taken: (yield* accounts.owners(owner.id)).flatMap((known) => known.label ?? [])
+          }),
           role: "owner"
         })
         const request = yield* signing.create(owner, {

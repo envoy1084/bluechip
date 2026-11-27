@@ -8,7 +8,7 @@ import {
 } from "@bluechip/domain/assistant/Conversation"
 import { NotFound } from "@bluechip/domain/Errors"
 import { type AgentId, ConversationId, type MessageId } from "@bluechip/domain/Ids"
-import { and, asc, count as countRows, desc, eq, lt } from "drizzle-orm"
+import { and, asc, count as countRows, desc, eq, isNotNull, lt } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -77,6 +77,10 @@ export class Conversations extends Context.Service<Conversations, {
     readonly model?: string | undefined
     readonly usage?: MessageUsage | undefined
   }) => Effect.Effect<Message>
+  /** Keeps the context a user message's turn gave the model, so later turns replay it as it was. */
+  readonly setContext: (messageId: MessageId, context: string) => Effect.Effect<void>
+  /** The contexts the conversation's turns gave the model, by their user message. */
+  readonly contexts: (conversationId: ConversationId) => Effect.Effect<ReadonlyMap<string, string>>
   readonly setTitle: (id: ConversationId, title: string) => Effect.Effect<void>
   /**
    * Deletes one of the owner's conversations with what belongs only to it: messages, cards, summary and recall entries
@@ -179,6 +183,20 @@ export class Conversations extends Context.Service<Conversations, {
         return toMessage(row!, new Map())
       })
 
+      const setContext = Effect.fn("Conversations.setContext")(function*(messageId: MessageId, context: string) {
+        yield* db.update(messages).set({ context }).where(eq(messages.id, messageId as `message_${string}`))
+          .pipe(Effect.orDie)
+      })
+
+      const contexts = Effect.fn("Conversations.contexts")(function*(conversationId: ConversationId) {
+        const rows = yield* db.select({ id: messages.id, context: messages.context }).from(messages)
+          .where(and(
+            eq(messages.conversationId, conversationId as `conversation_${string}`),
+            isNotNull(messages.context)
+          )).pipe(Effect.orDie)
+        return new Map(rows.map((row) => [row.id as string, row.context!]))
+      })
+
       const setTitle = Effect.fn("Conversations.setTitle")(function*(id: ConversationId, title: string) {
         yield* db.update(conversations).set({ title })
           .where(eq(conversations.id, id as `conversation_${string}`)).pipe(Effect.orDie)
@@ -197,6 +215,8 @@ export class Conversations extends Context.Service<Conversations, {
         }),
         thread,
         append,
+        setContext,
+        contexts,
         setTitle,
         remove
       })

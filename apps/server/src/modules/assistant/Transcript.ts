@@ -1,11 +1,12 @@
 // Conversions between what the model streams, what bluechip stores, and what the model reads back: a stored
 // conversation is the only history a run sends, so these decide what the model remembers of earlier turns.
 import type { TokenUsage } from "@bluechip/domain/assistant/Budget"
-import { Card, type Citation, describeCard } from "@bluechip/domain/assistant/Card"
+import { Card, type Citation } from "@bluechip/domain/assistant/Card"
 import type { Message, MessagePart } from "@bluechip/domain/assistant/Conversation"
 import { RESEARCH_TOOL } from "@bluechip/domain/tools/Toolkit"
 import * as Prompt from "effect/ai/Prompt"
 import * as Response from "effect/ai/Response"
+import * as DateTime from "effect/DateTime"
 import * as Predicate from "effect/Predicate"
 import * as Schema from "effect/Schema"
 
@@ -121,26 +122,35 @@ export const usageOf = (parts: ReadonlyArray<Response.AnyPart>): TokenUsage => {
 }
 
 /**
- * A stored conversation as the model reads it. Each tool result is given as the model was first given it, except
- * that a card's words are written again from the card as it stands now, so the model knows what the user did with
- * it (confirmed, dismissed). Cards and errors themselves are the user's view and are left out, and so is thinking,
- * which the provider takes back only under the system prompt it was made with.
+ * A stored conversation as the model reads it, append-only: every earlier turn exactly as the model was first given
+ * it, so the thinking that followed stays valid (the provider binds each thinking block to everything before it) and
+ * the prompt cache keeps the history. A user message is followed by the context its turn gave the model (`contexts`,
+ * by message id), as a system message; tool results are the words the model was first given (what the user did with
+ * a card later is in a later turn's context). Thinking is sent back with its signature, except thinking written at
+ * or before `thinkingAfter` (the summary the prompt now starts with was written after it). Cards and errors are the
+ * user's view and are left out.
  */
-export const promptOf = (messages: ReadonlyArray<Message>): Prompt.Prompt => {
+export const promptOf = (
+  messages: ReadonlyArray<Message>,
+  options: {
+    readonly contexts?: ReadonlyMap<string, string> | undefined
+    readonly thinkingAfter?: DateTime.Utc | undefined
+  } = {}
+): Prompt.Prompt => {
   const encoded: Array<Prompt.MessageEncoded> = []
 
   for (const message of messages) {
     if (message.role === "user") {
       const text = message.parts.flatMap((part) => part.type === "text" ? [part.text] : []).join("\n")
-      if (text.length > 0) encoded.push({ role: "user", content: text })
+      if (text.length === 0) continue
+      encoded.push({ role: "user", content: text })
+      const context = options.contexts?.get(message.id)
+      if (context !== undefined) encoded.push({ role: "system", content: context })
       continue
     }
 
-    const cards = new Map<string, Card>()
-    for (const part of message.parts) {
-      if (part.type === "card" && part.toolCallId !== null) cards.set(part.toolCallId, part.card)
-    }
-
+    const thinks = options.thinkingAfter === undefined ||
+      DateTime.isGreaterThan(message.createdAt, options.thinkingAfter)
     const assistant: Array<Prompt.AssistantMessagePartEncoded> = []
     const results: Array<Prompt.ToolResultPartEncoded> = []
     for (const part of message.parts) {
@@ -149,8 +159,13 @@ export const promptOf = (messages: ReadonlyArray<Message>): Prompt.Prompt => {
           assistant.push({ type: "text", text: part.text })
           break
         case "reasoning":
-          // Earlier turns' thinking is left out: the provider binds it to the system prompt it was made under, and
-          // ours changes between turns (memories, agents), so sending it back fails the whole turn.
+          if (thinks) {
+            assistant.push({
+              type: "reasoning",
+              text: part.text,
+              options: part.options as Prompt.ReasoningPartEncoded["options"]
+            })
+          }
           break
         case "toolCall":
           assistant.push({
@@ -162,8 +177,6 @@ export const promptOf = (messages: ReadonlyArray<Message>): Prompt.Prompt => {
           })
           break
         case "toolResult": {
-          const card = cards.get(part.id)
-          const text = card === undefined ? part.modelOutput : describeCard(card)
           const result: Prompt.ToolResultPartEncoded = {
             type: "tool-result",
             id: part.id,
@@ -171,7 +184,7 @@ export const promptOf = (messages: ReadonlyArray<Message>): Prompt.Prompt => {
             result: part.result,
             isFailure: part.isFailure,
             providerExecuted: part.providerExecuted,
-            ...(text === null ? {} : { modelOutput: [{ type: "text", text }] })
+            ...(part.modelOutput === null ? {} : { modelOutput: [{ type: "text", text: part.modelOutput }] })
           }
           if (part.providerExecuted) assistant.push(result)
           else results.push(result)

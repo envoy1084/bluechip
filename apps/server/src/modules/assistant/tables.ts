@@ -29,6 +29,11 @@ export const messages = pgTable("messages", {
   role: text("role", { enum: ["user", "assistant"] }).notNull(),
   parts: jsonbSchema(Schema.Array(MessagePart))("parts").notNull(),
   model: text("model"),
+  /**
+   * A user message's context as its turn gave it to the model (today, the agents, memories, recalled notes, the cards
+   * so far), replayed as it was on later turns: changing an earlier turn would void the thinking that followed it.
+   */
+  context: text("context"),
   inputTokens: integer("input_tokens").notNull().default(0),
   outputTokens: integer("output_tokens").notNull().default(0),
   cacheReadTokens: integer("cache_read_tokens").notNull().default(0),

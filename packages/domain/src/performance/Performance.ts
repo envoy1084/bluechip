@@ -6,6 +6,7 @@
  * @since 0.0.0
  */
 import * as Schema from "effect/Schema"
+import { RunResult } from "../automations/Run.ts"
 import { AgentId, AutomationId } from "../Ids.ts"
 import { StockSymbol } from "../market/Market.ts"
 import { Shares, Usdc } from "../market/Units.ts"
@@ -191,19 +192,19 @@ export class AgentPerformance
 {}
 
 /**
- * How many of an automation's runs ended one way.
+ * How many of an automation's runs came to one result.
  *
  * @stability unstable
  * @category models
  * @since 0.0.0
  */
 export class RunCount extends Schema.Class<RunCount>("@bluechip/domain/performance/Performance/RunCount")({
-  outcome: Schema.Literals(["proposed", "asked", "notified", "skipped", "failed"]),
+  result: RunResult,
   count: Schema.Int
 }) {}
 
 /**
- * One automation's results: its runs by outcome, the trades its intents filled, what they bought and sold, the profit
+ * One automation's results: its runs by result, the trades its intents filled, what they bought and sold, the profit
  * its sales realised and what they cost.
  *
  * @stability unstable

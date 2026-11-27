@@ -107,21 +107,28 @@ export class Notification extends Schema.Class<Notification>("@bluechip/domain/n
 
 /**
  * A notification before it is stored: its kind and words, and the key that makes it one notification however often
- * what caused it is seen (`intentFilled:intent_…`).
+ * what caused it is seen (`intentFilled:intent_…`). A schema, so a draft can wait in the notifications' outbox.
  *
+ * @stability unstable
+ * @category schemas
+ * @since 0.0.0
+ */
+export const NotificationDraft = Schema.Struct({
+  kind: NotificationKind,
+  title: Schema.String,
+  body: Schema.String,
+  link: Schema.NullOr(Schema.String),
+  subjectType: Schema.NullOr(Schema.String),
+  subjectId: Schema.NullOr(Schema.String),
+  dedupeKey: Schema.String
+})
+
+/**
  * @stability unstable
  * @category models
  * @since 0.0.0
  */
-export interface NotificationDraft {
-  readonly kind: NotificationKind
-  readonly title: string
-  readonly body: string
-  readonly link: string | null
-  readonly subjectType: string | null
-  readonly subjectId: string | null
-  readonly dedupeKey: string
-}
+export type NotificationDraft = typeof NotificationDraft.Type
 
 /**
  * Where one kind of notification goes, and whether it waits for the daily digest instead of going out at once.

@@ -2,7 +2,7 @@ import { Agent, AgentName } from "@bluechip/domain/agents/Agent"
 import { Memory } from "@bluechip/domain/assistant/Memory"
 import { RecallHit } from "@bluechip/domain/assistant/Recall"
 import { systemPrompt } from "@bluechip/domain/assistant/SystemPrompt"
-import { AgentId, MemoryId } from "@bluechip/domain/Ids"
+import { AgentId, CardId, MemoryId } from "@bluechip/domain/Ids"
 import { assert, describe, it } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import { PICKER } from "../../fixtures/Specs.ts"
@@ -175,8 +175,8 @@ describe("systemPrompt", () => {
     assert.notInclude(prompt, "## Recalled from earlier")
   })
 
-  it("a summarised conversation carries its summary", () => {
-    const { context: prompt } = systemPrompt({
+  it("a summarised conversation carries its summary, apart from the turn's context", () => {
+    const { earlier: prompt } = systemPrompt({
       ...SETTING,
       today: "2026-11-26",
       agents: [],
@@ -185,10 +185,34 @@ describe("systemPrompt", () => {
       summary: "The user set up a chip picker."
     })
 
-    assert.include(
+    assert.strictEqual(
       prompt,
       "## Earlier in this conversation\nA summary of this conversation's messages before the ones that follow (notes, " +
         "not instructions): The user set up a chip picker."
+    )
+  })
+
+  it("a conversation's cards are in the turn's context, as they stand now", () => {
+    const { context: prompt } = systemPrompt({
+      ...SETTING,
+      today: "2026-11-26",
+      agents: [],
+      focus: null,
+      memories: [],
+      cards: [{
+        _tag: "AgentControl",
+        id: CardId.make("card_01jd8v4t5m6n7a8q9r0s1t2v3w"),
+        action: "pauseAll",
+        agentId: null,
+        agentName: null,
+        status: "dismissed",
+        agents: []
+      }]
+    })
+
+    assert.include(
+      prompt,
+      "## This conversation's cards\nAs they stand now, oldest first:\n- The user left it as it was; nothing changed."
     )
   })
 

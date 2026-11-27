@@ -58,7 +58,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         yield* assistant.ask(user, conversation.id, "What do I like?")
         const [prompt] = yield* recorded.prompts("What do I like?")
 
-        assert.include(prompt!.content[1]!.content as string, "You like chip makers.")
+        assert.include(prompt!.content.at(-1)!.content as string, "You like chip makers.")
       }))
 
     it.effect("never carries a memory the user deleted", () =>
@@ -85,7 +85,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         yield* assistant.ask(user, conversation.id, "Where do I live?")
         const [prompt] = yield* recorded.prompts("Where do I live?")
 
-        assert.notInclude(prompt!.content[1]!.content as string, "Lisbon")
+        assert.notInclude(prompt!.content.at(-1)!.content as string, "Lisbon")
       }))
   })
 
@@ -123,7 +123,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
           [
             run.cards.map((card) => card._tag === "Memory" ? [card.action, card.status] : card._tag),
             last?.type === "RUN_FINISHED" ? last.outcome?.type : undefined,
-            (prompt!.content[1]!.content as string).includes("flat")
+            (prompt!.content.at(-1)!.content as string).includes("flat")
           ],
           [[["confirm", "pending"]], "interrupt", false]
         )
@@ -158,7 +158,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
         yield* assistant.ask(user, conversation.id, "Thanks")
         const [prompt] = yield* recorded.prompts("Thanks")
 
-        assert.include(prompt!.content[1]!.content as string, "You work at a hospital.")
+        assert.include(prompt!.content.at(-1)!.content as string, "You work at a hospital.")
       }))
 
     it.effect("a guess the user dismisses is forgotten", () =>
@@ -289,7 +289,7 @@ layer(TestAssistant.layer, { excludeTestServices: true })("assistant memories", 
                 part.type === "card" && part.card._tag === "Memory" ? [part.card.status] : []
               )
             ),
-            (prompt!.content[1]!.content as string).includes("You are a nurse.")
+            (prompt!.content.at(-1)!.content as string).includes("You are a nurse.")
           ],
           [[card.memory.id, "You are a nurse.", true], ["applied"], true]
         )

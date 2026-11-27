@@ -24,9 +24,12 @@ const find = (list: ReadonlyArray<readonly [RegExp, string]>, userAgent: string 
 /** The kind of device: "iPhone", "Mac", "Windows"; `undefined` when the user agent doesn't say. */
 export const systemOf = (userAgent: string | undefined): string | undefined => find(systems, userAgent)
 
+/** The browser: "Chrome", "Safari"; `undefined` when the user agent doesn't say. */
+export const browserOf = (userAgent: string | undefined): string | undefined => find(browsers, userAgent)
+
 /** A browser on a device: "Chrome on Mac", "Safari on iPhone", or "A browser" when the user agent says nothing. */
 export const deviceOf = (userAgent: string | undefined): string => {
-  const browser = find(browsers, userAgent)
+  const browser = browserOf(userAgent)
   const system = systemOf(userAgent)
   if (browser !== undefined && system !== undefined) return `${browser} on ${system}`
   return browser ?? system ?? "A browser"

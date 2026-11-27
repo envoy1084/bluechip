@@ -7,6 +7,7 @@ import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import { randomUUID } from "node:crypto"
 import { typeid } from "typeid-js"
+import { weeklyBuy } from "../../fixtures/Automations.ts"
 import { changed, PICKER } from "../../fixtures/Specs.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 import { TestUsers } from "../../utils/TestUsers.ts"
@@ -32,7 +33,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("agents", (it) => {
         )
       }))
 
-    it.effect("an agent built from scratch, without bluechip's hidden policies: they are added", () =>
+    it.effect("an agent built from scratch, without its gas budget or bluechip's hidden policies: they are added", () =>
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).funded
         const required = ["trade", "tradeSize", "fairPrice", "tradesPerDay"]
@@ -281,6 +282,28 @@ layer(TestAgents.layer, { excludeTestServices: true })("agents", (it) => {
         const sessions = yield* user.api.agents.sessions({ params: { id: agent.id } })
 
         assert.deepStrictEqual([listed, sessions.map((session) => session.status)], [[], ["revoked"]])
+      }))
+
+    it.effect("a signed removal deletes the agent's automations, and leaves yours", () =>
+      Effect.gen(function*() {
+        const agents = yield* TestAgents
+        const { agent, user } = yield* agents.locked
+        yield* user.api.automations.create({
+          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyBuy(agent.id) }
+        })
+        const yours = yield* user.api.automations.create({
+          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyBuy(null) }
+        })
+
+        const prepared = yield* user.api.agents.remove({
+          params: { id: agent.id },
+          payload: { requestId: RequestId.make(randomUUID()) }
+        })
+        assert.instanceOf(prepared, AgentRequest)
+        yield* agents.sign(user, prepared, "removed")
+        const left = yield* user.api.automations.list({ query: {} })
+
+        assert.deepStrictEqual(left.map((automation) => [automation.id, automation.status]), [[yours.id, "active"]])
       }))
   })
 

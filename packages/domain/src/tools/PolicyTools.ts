@@ -8,7 +8,7 @@ import * as Tool from "effect/ai/Tool"
 import * as Schema from "effect/Schema"
 import { Card, describeCard } from "../assistant/Card.ts"
 import { PolicyInfo, SpecCheck } from "../policies/Catalog.ts"
-import { formatDollars, formatPercent } from "../policies/Format.ts"
+import { formatDollars, formatEther, formatPercent } from "../policies/Format.ts"
 import type { Field } from "../policies/Policy.ts"
 import { SavedTemplate, TemplateInfo, TemplateName } from "../policies/Templates.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
@@ -24,12 +24,14 @@ const range = (field: Field): string => {
       return ` from ${formatDollars(field.min)} to ${formatDollars(field.max)}`
     case "bps":
       return ` from ${formatPercent(field.min)} to ${formatPercent(field.max)}`
+    case "wei":
+      return ` from ${formatEther(field.min)} to ${formatEther(field.max)}`
     default:
       return ` from ${field.min} to ${field.max}`
   }
 }
 
-const settable: ReadonlyArray<string> = ["usd", "bps", "count", "toggle"]
+const settable: ReadonlyArray<string> = ["usd", "bps", "count", "toggle", "wei"]
 
 /**
  * @stability unstable

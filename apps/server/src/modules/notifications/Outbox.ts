@@ -1,5 +1,5 @@
-import type { LiveEvent } from "@bluechip/domain/Events"
 import type { UserId } from "@bluechip/domain/Ids"
+import type { NotificationDraft } from "@bluechip/domain/notifications/Notification"
 import { and, asc, eq, inArray, isNull, lt, or } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -11,6 +11,8 @@ import { notificationOutbox } from "./tables.ts"
 
 export type OutboxRow = typeof notificationOutbox.$inferSelect
 
+export type OutboxEvent = OutboxRow["event"]
+
 // How long a claimed row is left to the process that claimed it before another takes it.
 const CLAIM_MINUTES = 1
 
@@ -19,8 +21,13 @@ const CLAIM_MINUTES = 1
  * change (a query on `Database` inside `db.transaction` joins it), and the fan-out claims, handles and deletes them.
  */
 export class NotificationOutbox extends Context.Service<NotificationOutbox, {
-  /** Writes `event` for `userId`; call it inside the transaction of the change it tells. */
-  readonly write: (event: LiveEvent, userId: UserId) => Effect.Effect<void>
+  /**
+   * Writes `event` for `userId`: a live event, or a draft as it is (`notify`). Call it inside the transaction of the
+   * change it tells.
+   */
+  readonly write: (event: OutboxEvent, userId: UserId) => Effect.Effect<void>
+  /** Writes `draft` for `userId`, made into a notification as it is; call it inside the change's transaction. */
+  readonly notify: (draft: NotificationDraft, userId: UserId) => Effect.Effect<void>
   /**
    * Claims up to 100 rows nobody holds, oldest first: one user's, or everyone's written before `before` (a sweep
    * leaves fresh rows to the process that wrote them).
@@ -37,7 +44,7 @@ export class NotificationOutbox extends Context.Service<NotificationOutbox, {
     Effect.gen(function*() {
       const db = yield* Database
 
-      const write = Effect.fn("NotificationOutbox.write")(function*(event: LiveEvent, userId: UserId) {
+      const write = Effect.fn("NotificationOutbox.write")(function*(event: OutboxEvent, userId: UserId) {
         yield* db.insert(notificationOutbox).values({
           id: typeid("outbox").toString() as `outbox_${string}`,
           userId: userId as `user_${string}`,
@@ -46,6 +53,8 @@ export class NotificationOutbox extends Context.Service<NotificationOutbox, {
           claimedAt: null
         }).pipe(Effect.orDie)
       })
+
+      const notify = (draft: NotificationDraft, userId: UserId) => write({ _tag: "NotificationDrafted", draft }, userId)
 
       const claim = Effect.fn("NotificationOutbox.claim")(function*(options: {
         readonly userId?: UserId | undefined
@@ -69,7 +78,7 @@ export class NotificationOutbox extends Context.Service<NotificationOutbox, {
       const done = (id: OutboxRow["id"]) =>
         db.delete(notificationOutbox).where(eq(notificationOutbox.id, id)).pipe(Effect.orDie, Effect.asVoid)
 
-      return NotificationOutbox.of({ write, claim, done })
+      return NotificationOutbox.of({ write, notify, claim, done })
     })
   )
 }

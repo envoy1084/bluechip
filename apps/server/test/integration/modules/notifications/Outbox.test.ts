@@ -1,3 +1,4 @@
+import { notificationOfChatLink } from "@bluechip/domain/notifications/Drafts"
 import { assert, describe, layer } from "@effect/vitest"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -27,6 +28,25 @@ layer(TestUsers.layer, { excludeTestServices: true })("NotificationFanout", (it)
         assert.deepStrictEqual(
           [drained, again, page.items.map((item) => [item.kind, item.title])],
           [1, 0, [["deposit", "$25.00 of USDC arrived"]]]
+        )
+      }))
+
+    it.effect("a draft written as it is (a chat linked), then the process stopped: drained, it is one notification", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const db = yield* Database
+        const outbox = yield* NotificationOutbox
+        const fanout = yield* NotificationFanout
+        const draft = notificationOfChatLink({ id: "channellink_01", platform: "telegram", name: "Ana" }, "linked")
+        yield* db.transaction(() => outbox.notify(draft, user.id)).pipe(Effect.orDie)
+
+        const drained = yield* fanout.drain({ userId: user.id })
+        const again = yield* fanout.drain({ userId: user.id })
+        const page = yield* user.api.notifications.list({ query: {} })
+
+        assert.deepStrictEqual(
+          [drained, again, page.items.map((item) => [item.kind, item.title, item.subjectId])],
+          [1, 0, [["chatLinked", "Telegram is linked", "channellink_01"]]]
         )
       }))
 

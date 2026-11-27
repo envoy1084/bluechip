@@ -3,7 +3,7 @@
 # (/app/packages/*, /app/apps/server) and its pnpm symlinks, whose real paths stay outside node_modules (Node refuses
 # to strip types there, which rules out `pnpm deploy`). Build from the repository root:
 #
-#   docker build -f apps/server/Dockerfile -t bluechip-server .
+#   docker build -f apps/server/Dockerfile --build-arg APP_VERSION=$(git rev-parse --short HEAD) -t bluechip-server .
 #
 # Run it with the server's environment (apps/server/.env.example, deploy/README.md). It applies pending migrations,
 # then serves on PORT (8080).
@@ -61,6 +61,11 @@ COPY packages/chain/src packages/chain/src
 COPY content content
 COPY apps/server/drizzle apps/server/drizzle
 COPY apps/server/src apps/server/src
+
+# The release `/health` and `/api/version` report (deploy/README.md): the commit deployed. Last, so a new one rebuilds
+# no layer above.
+ARG APP_VERSION=
+ENV APP_VERSION=${APP_VERSION}
 
 USER node
 WORKDIR /app/apps/server

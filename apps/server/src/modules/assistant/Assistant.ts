@@ -442,8 +442,9 @@ export class Assistant extends Context.Service<Assistant, {
           )
 
         return Stream.unwrap(Effect.gen(function*() {
-          const [thread, owned, remembered, summary] = yield* Effect.all([
+          const [thread, contexts, owned, remembered, summary] = yield* Effect.all([
             conversations.thread(owner, conversationId).pipe(Effect.orDie),
+            conversations.contexts(conversationId),
             agents.list(owner),
             memories.forPrompt(owner, {
               text: context.userText,
@@ -452,7 +453,7 @@ export class Assistant extends Context.Service<Assistant, {
               messageId: context.userMessage.id
             }),
             conversationMemory.summary(conversationId)
-          ], { concurrency: 4 })
+          ], { concurrency: 5 })
           traced.startedAt = yield* Clock.currentTimeMillis
           yield* analytics.capture(owner.id, {
             _tag: "message_sent",
@@ -461,6 +462,11 @@ export class Assistant extends Context.Service<Assistant, {
             turn_index: thread.messages.filter((message) => message.role === "user").length
           }, { id: context.userMessage.id })
           const focus = owned.find((agent) => agent.id === thread.conversation.agentId) ?? null
+          // A summarised conversation sends only the messages after its summary.
+          const after = summary === undefined ?
+            -1 :
+            thread.messages.findIndex((message) => message.id === summary.throughMessageId)
+          const sent = thread.messages.slice(after + 1)
           const system = systemPrompt({
             surface: context.surface,
             money,
@@ -469,24 +475,30 @@ export class Assistant extends Context.Service<Assistant, {
             memories: remembered.memories,
             recalled: remembered.recalled,
             summary: summary?.text ?? null,
+            cards: sent.flatMap((message) =>
+              message.parts.flatMap((part) => part.type === "card" && part.toolCallId !== null ? [part.card] : [])
+            ),
             focus
           })
-          // A summarised conversation sends only the messages after its summary.
-          const after = summary === undefined ?
-            -1 :
-            thread.messages.findIndex((message) => message.id === summary.throughMessageId)
+          // The turn's context is kept with its message: later turns give it again as it was.
+          yield* conversations.setContext(context.userMessage.id, system.context)
           const prompt = Prompt.concat(
             // The instructions are the same for every user on a surface, so the cache keeps them (with the tools) across
-            // turns and users; the user's context, which changes every turn, comes after them.
+            // turns and users. The history after them only grows (each turn's context follows its message, as a system
+            // message), so earlier turns' thinking stays valid and the history's cache (the request's last breakpoint)
+            // carries over to the next turn; only a new summary changes what comes first.
             Prompt.make([
               {
                 role: "system",
                 content: system.instructions,
                 options: { anthropic: { cacheControl: { type: "ephemeral" } } }
               },
-              { role: "system", content: system.context }
+              ...(system.earlier === null ? [] : [{ role: "system" as const, content: system.earlier }])
             ]),
-            promptOf(thread.messages.slice(after + 1))
+            promptOf(sent, {
+              contexts: new Map([...contexts, [context.userMessage.id, system.context]]),
+              thinkingAfter: summary?.updatedAt
+            })
           )
           return round(1, prompt)
         })).pipe(

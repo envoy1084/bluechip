@@ -3,6 +3,7 @@ import type { CurrentUser, RecoveringUser } from "@bluechip/domain/Auth"
 import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { Address, PasskeyId, SessionId, UserId } from "@bluechip/domain/Ids"
+import { notificationOfDevice } from "@bluechip/domain/notifications/SecurityDrafts"
 import { and, desc, eq, gt, isNotNull, isNull, ne } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -17,6 +18,7 @@ import { count, DevicesSignedOut } from "../../platform/telemetry/Metrics.ts"
 import { accounts, passkeys } from "../accounts/tables.ts"
 import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { sessions } from "./tables.ts"
 
 /** How long a session lasts; signing in again starts a new one. */
@@ -43,6 +45,8 @@ export class Sessions extends Context.Service<Sessions, {
     readonly passkeyId: PasskeyId
     readonly device: string
     readonly scope?: Scope | undefined
+    /** Notify the user when this is a device they never signed in on (`newDevice`), with the session. */
+    readonly tellNewDevice?: boolean | undefined
   }) => Effect.Effect<{
     readonly id: SessionId
     readonly token: string
@@ -67,6 +71,7 @@ export class Sessions extends Context.Service<Sessions, {
     Sessions,
     Effect.gen(function*() {
       const db = yield* Database
+      const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const live = yield* LiveEvents
       const analytics = yield* Analytics
@@ -82,6 +87,7 @@ export class Sessions extends Context.Service<Sessions, {
         readonly passkeyId: PasskeyId
         readonly device: string
         readonly scope?: Scope | undefined
+        readonly tellNewDevice?: boolean | undefined
       }) {
         const scope = input.scope ?? "account"
         const token = randomBytes(32).toString("base64url")
@@ -89,25 +95,38 @@ export class Sessions extends Context.Service<Sessions, {
         const expiresAt = scope === "recovery" ?
           DateTime.add(createdAt, { minutes: RECOVERY_MINUTES }) :
           DateTime.add(createdAt, { days: SESSION_DAYS })
-        const [seen] = yield* db.select({ id: sessions.id }).from(sessions).where(and(
-          eq(sessions.userId, input.userId as `user_${string}`),
-          eq(sessions.device, input.device),
-          eq(sessions.scope, "account")
-        )).limit(1).pipe(Effect.orDie)
         const id = typeid("session").toString() as `session_${string}`
 
-        yield* db.insert(sessions).values({
-          id,
-          userId: input.userId as `user_${string}`,
-          passkeyId: input.passkeyId as `passkey_${string}`,
-          tokenHash: hash(token),
-          scope,
-          device: input.device,
-          createdAt,
-          lastSeenAt: createdAt,
-          expiresAt
-        }).pipe(Effect.orDie)
-        return { id: id as SessionId, token, expiresAt, newDevice: scope === "account" && seen === undefined }
+        // The session and the new device's notification, in one transaction.
+        const newDevice = yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const [seen] = yield* db.select({ id: sessions.id }).from(sessions).where(and(
+              eq(sessions.userId, input.userId as `user_${string}`),
+              eq(sessions.device, input.device),
+              eq(sessions.scope, "account")
+            )).limit(1)
+            yield* db.insert(sessions).values({
+              id,
+              userId: input.userId as `user_${string}`,
+              passkeyId: input.passkeyId as `passkey_${string}`,
+              tokenHash: hash(token),
+              scope,
+              device: input.device,
+              createdAt,
+              lastSeenAt: createdAt,
+              expiresAt
+            })
+            const newDevice = scope === "account" && seen === undefined
+            if (newDevice && input.tellNewDevice === true) {
+              yield* outbox.notify(notificationOfDevice({ id, device: input.device }), input.userId)
+            }
+            return newDevice
+          })
+        ).pipe(Effect.orDie)
+        if (newDevice && input.tellNewDevice === true) {
+          yield* live.publish(LiveEvent.cases.AccountChanged.make({}), input.userId)
+        }
+        return { id: id as SessionId, token, expiresAt, newDevice }
       })
 
       const liveSession = (token: string, scope: Scope, now: DateTime.Utc) =>

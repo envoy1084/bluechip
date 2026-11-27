@@ -14,11 +14,13 @@ import * as Stream from "effect/Stream"
 import { AssistantModels } from "../../src/modules/assistant/AssistantModels.ts"
 
 /**
- * One thing the model does in a round: write text (`partial`: a text block it is still writing), call a tool, search
- * the web (run by Anthropic), or go quiet as a model still answering (`hang`, the round's last step: it streams nothing
- * more until the run stops it, see `RecordedModel.cutOff`).
+ * One thing the model does in a round: think (a thinking block signed `signature:<its text>`, as Anthropic signs one),
+ * write text (`partial`: a text block it is still writing), call a tool, search the web (run by Anthropic), or go quiet
+ * as a model still answering (`hang`, the round's last step: it streams nothing more until the run stops it, see
+ * `RecordedModel.cutOff`).
  */
 export type Step =
+  | { readonly think: string }
   | { readonly text: string; readonly partial?: boolean }
   | { readonly hang: true }
   | { readonly call: string; readonly params: object }
@@ -110,6 +112,19 @@ export class RecordedModel extends Context.Service<RecordedModel, {
       for (const step of steps) {
         if ("hang" in step) {
           return parts
+        } else if ("think" in step) {
+          const id = nextId("thinking")
+          parts.push(
+            { type: "reasoning-start", id },
+            { type: "reasoning-delta", id, delta: step.think },
+            {
+              type: "reasoning-delta",
+              id,
+              delta: "",
+              metadata: { anthropic: { info: { type: "thinking", signature: `signature:${step.think}` } } }
+            },
+            { type: "reasoning-end", id }
+          )
         } else if ("text" in step) {
           const id = nextId("text")
           parts.push({ type: "text-start", id }, { type: "text-delta", id, delta: step.text })

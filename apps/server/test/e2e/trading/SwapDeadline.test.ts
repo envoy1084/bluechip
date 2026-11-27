@@ -1,4 +1,4 @@
-import { DevChain } from "@bluechip/chain/DevChain"
+import { DevnetClock } from "@bluechip/devnet/Devnet"
 import { RequestId } from "@bluechip/domain/Ids"
 import { Intent, IntentRequest } from "@bluechip/domain/intents/Intent"
 import { assert, describe, layer } from "@effect/vitest"
@@ -8,18 +8,18 @@ import { buy } from "../../fixtures/Legs.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 
 // A swap's deadline is checked against `block.timestamp`, so it must count from the chain's clock, not the server's:
-// each test runs the chain an hour ahead of the server (as a chain behind on its clock, or a fork moved forward, would
-// be). On Base's hardfork Anvil never moves its clock back, so these tests run on a devnet of their own. Feeds updated
-// at the real time are still fresh an hour later.
+// each test runs the chain (and its bundler) an hour ahead of the server (as a chain behind on its clock, or a fork moved
+// forward, would be). On Base's hardfork Anvil never moves its clock back, so these tests run on a devnet of their own.
+// Feeds updated at the real time are still fresh an hour later.
 // The server runs on the real clock (see `TestServer`).
-const AHEAD_MS = 60 * 60 * 1000
+const AHEAD_SECONDS = 60 * 60
 
 layer(TestAgents.layerIsolated, { excludeTestServices: true })("swap deadlines", (it) => {
   describe("with the chain's clock an hour ahead of the server's", () => {
     it.effect("an agent's buy is sent and filled", () =>
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked
-        yield* Effect.orDie((yield* DevChain).setTime(new Date(Date.now() + AHEAD_MS)))
+        yield* (yield* DevnetClock).moveAhead(AHEAD_SECONDS)
 
         const created = yield* user.api.intents.create({
           payload: { requestId: RequestId.make(randomUUID()), agentId: agent.id, leg: buy("AAPL", 20) }
@@ -36,7 +36,7 @@ layer(TestAgents.layerIsolated, { excludeTestServices: true })("swap deadlines",
     it.effect("your own buy signed with your passkey is filled", () =>
       Effect.gen(function*() {
         const { user } = yield* (yield* TestAgents).locked
-        yield* Effect.orDie((yield* DevChain).setTime(new Date(Date.now() + AHEAD_MS)))
+        yield* (yield* DevnetClock).moveAhead(AHEAD_SECONDS)
 
         const request = yield* user.api.intents.create({
           payload: { requestId: RequestId.make(randomUUID()), agentId: null, leg: buy("AAPL", 20) }

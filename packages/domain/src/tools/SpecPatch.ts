@@ -26,7 +26,7 @@ import { SavedTemplateIdParam } from "./Params.ts"
 
 /**
  * One policy setting, in the unit its field shows: dollars for `usd` fields, percent for `bps` fields, a whole number
- * for `count` fields, true or false for `toggle` fields.
+ * for `count` fields, ether for `wei` fields, true or false for `toggle` fields.
  *
  * @stability unstable
  * @category schemas
@@ -37,7 +37,7 @@ export const Setting = Schema.Struct({
   field: Schema.String.annotate({ description: "The field's name, as listPolicies shows it (e.g. maxPerTrade)." }),
   value: Schema.Union([Schema.Finite, Schema.Boolean]).annotate({
     description: "Dollars for usd fields, percent for bps fields (2.5 means 2.5%), a whole number for count fields, " +
-      "true or false for toggle fields."
+      "ether for wei fields (0.01 means 0.01 ETH), true or false for toggle fields."
   })
 })
 
@@ -129,6 +129,9 @@ const settingValue = (field: Field, value: number | boolean): bigint | number | 
       return typeof value === "number" ? Math.round(value) : undefined
     case "toggle":
       return typeof value === "boolean" ? value : undefined
+    // Ether to a millionth, then wei: a float of wei would lose its last digits.
+    case "wei":
+      return typeof value === "number" ? BigInt(Math.round(value * 1e6)) * BigInt(1e12) : undefined
     default:
       return undefined
   }

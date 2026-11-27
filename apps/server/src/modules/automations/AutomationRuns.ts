@@ -1,6 +1,6 @@
 import type { JudgmentAnswer, JudgmentPreset } from "@bluechip/domain/automations/conditions/Judgment"
 import type { ConditionRecord, RunOutcome, TriggerData } from "@bluechip/domain/automations/Run"
-import { AutomationRun, Judgment } from "@bluechip/domain/automations/Run"
+import { AutomationRun, Judgment, runResultOf } from "@bluechip/domain/automations/Run"
 import { LiveEvent } from "@bluechip/domain/Events"
 import {
   type AgentId,
@@ -20,25 +20,34 @@ import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
+import { intents } from "../intents/tables.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { automationRuns, automations, judgments } from "./tables.ts"
 
 export type RunRow = typeof automationRuns.$inferSelect
 
-const toRun = (row: RunRow): AutomationRun =>
-  new AutomationRun({
+type ProposedTrade = Pick<typeof intents.$inferSelect, "sourceId" | "status" | "decision">
+
+// `trades` are the intents it proposed, as they stand now.
+const toRun = (row: RunRow, trades: ReadonlyArray<ProposedTrade>): AutomationRun => {
+  // A run still going reads as proposed: its intents are on their way.
+  const outcome = row.outcome === "running" ? "proposed" : row.outcome
+  const { blockedBy, result } = runResultOf(outcome, trades.filter((trade) => trade.sourceId === row.id))
+  return new AutomationRun({
     id: row.id as AutomationRunId,
     automationId: row.automationId as AutomationId,
     windowKey: row.windowKey,
     firedAt: row.firedAt,
     trigger: row.triggerData,
     conditions: row.conditions,
-    // A run still going reads as proposed: its intents are on their way.
-    outcome: row.outcome === "running" ? "proposed" : row.outcome,
+    outcome,
     reason: row.reason,
-    intentIds: row.intentIds.map((id) => IntentId.make(id))
+    intentIds: row.intentIds.map((id) => IntentId.make(id)),
+    result,
+    blockedBy
   })
+}
 
 const toJudgment = (row: typeof judgments.$inferSelect): Judgment =>
   new Judgment({
@@ -110,6 +119,14 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
         return found?.agentId === null ? undefined : found
       })
 
+      const tradesOf = (runIds: ReadonlyArray<RunRow["id"]>) =>
+        runIds.length === 0 ? Effect.succeed([]) : db.select({
+          sourceId: intents.sourceId,
+          status: intents.status,
+          decision: intents.decision
+        }).from(intents).where(and(eq(intents.source, "automation"), inArray(intents.sourceId, [...runIds])))
+          .pipe(Effect.orDie)
+
       const start = Effect.fn("AutomationRuns.start")(function*(input: {
         readonly automationId: string
         readonly userId: string
@@ -161,7 +178,7 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
             const [owned] = yield* db.select({ name: automations.name }).from(automations)
               .where(eq(automations.id, row!.automationId))
             const event = LiveEvent.cases.AutomationRan.make({
-              run: toRun(row!),
+              run: toRun(row!, yield* tradesOf([row!.id])),
               automationName: owned?.name ?? "An automation"
             })
             yield* outbox.write(event, row!.userId as UserId)
@@ -230,7 +247,8 @@ export class AutomationRuns extends Context.Service<AutomationRuns, {
           .orderBy(desc(automationRuns.id)).limit(LATEST_RUNS).pipe(Effect.orDie)
         const answered = rows.length === 0 ? [] : yield* db.select().from(judgments)
           .where(inArray(judgments.runId, rows.map((row) => row.id))).orderBy(desc(judgments.id)).pipe(Effect.orDie)
-        return { runs: rows.map(toRun), judgments: answered.map(toJudgment) }
+        const trades = yield* tradesOf(rows.map((row) => row.id))
+        return { runs: rows.map((row) => toRun(row, trades)), judgments: answered.map(toJudgment) }
       })
 
       return AutomationRuns.of({ start, get, finish, judged, ofAutomation })

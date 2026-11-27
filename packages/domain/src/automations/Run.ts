@@ -4,10 +4,13 @@
  *
  * @since 0.0.0
  */
+import * as Effect from "effect/Effect"
 import * as Schema from "effect/Schema"
 import { AutomationId, AutomationRunId, IntentId, JudgmentId, NewsItemId } from "../Ids.ts"
+import { type Intent, isEnded } from "../intents/Intent.ts"
 import { StockSymbol } from "../market/Market.ts"
 import { Price } from "../market/Units.ts"
+import { PolicyId } from "../policies/AgentSpec.ts"
 import { Automation } from "./Automation.ts"
 import { JudgmentAnswer, JudgmentPreset } from "./conditions/Judgment.ts"
 
@@ -72,6 +75,73 @@ export const RunOutcome = Schema.Literals(["proposed", "asked", "notified", "ski
 export type RunOutcome = typeof RunOutcome.Type
 
 /**
+ * What a run came to once its trades were decided: every trade filled (`traded`), some filled and some not
+ * (`partlyTraded`), none filled because a policy blocked them (`blocked`) or for another reason (`notTraded`: failed
+ * onchain, declined, expired, cancelled), trades still on their way (`working`), or waiting for your Face ID
+ * (`asked`); a run that proposed nothing keeps its outcome (`notified`, `skipped`, `failed`).
+ *
+ * @stability unstable
+ * @category schemas
+ * @since 0.0.0
+ */
+export const RunResult = Schema.Literals([
+  "traded",
+  "partlyTraded",
+  "blocked",
+  "notTraded",
+  "working",
+  "asked",
+  "notified",
+  "skipped",
+  "failed"
+])
+
+/**
+ * @stability unstable
+ * @category models
+ * @since 0.0.0
+ */
+export type RunResult = typeof RunResult.Type
+
+/**
+ * What a run came to from its outcome and where its trades are now, with the policies that blocked any of them.
+ *
+ * **Example** (A run whose two trades a policy blocked)
+ *
+ * ```ts import.meta.vitest
+ * import { runResultOf } from "@bluechip/domain/automations/Run"
+ *
+ * const refused = { _tag: "Refused", policy: "tradeSize", error: null, stock: null, message: "Over budget" } as const
+ * runResultOf("proposed", [{ status: "blocked", decision: refused }, { status: "blocked", decision: refused }])
+ * // => { result: "blocked", blockedBy: ["tradeSize"] }
+ * ```
+ *
+ * @stability unstable
+ * @category results
+ * @since 0.0.0
+ */
+export const runResultOf = (
+  outcome: RunOutcome,
+  trades: ReadonlyArray<Pick<Intent, "status" | "decision">>
+): { readonly result: RunResult; readonly blockedBy: ReadonlyArray<PolicyId> } => {
+  const blockedBy = [
+    ...new Set(trades.flatMap((trade) => trade.decision?._tag === "Refused" ? [trade.decision.policy] : []))
+  ]
+  if (outcome === "notified" || outcome === "skipped" || outcome === "failed") return { result: outcome, blockedBy }
+  if (trades.some((trade) => trade.status === "needsApproval" || trade.status === "awaitingSignature")) {
+    return { result: "asked", blockedBy }
+  }
+  if (trades.length === 0 || trades.some((trade) => !isEnded(trade.status))) {
+    return { result: outcome === "asked" ? "asked" : "working", blockedBy }
+  }
+
+  const filled = trades.filter((trade) => trade.status === "filled").length
+  if (filled === trades.length) return { result: "traded", blockedBy }
+  if (filled > 0) return { result: "partlyTraded", blockedBy }
+  return { result: trades.some((trade) => trade.status === "blocked") ? "blocked" : "notTraded", blockedBy }
+}
+
+/**
  * One fire of an automation.
  *
  * @stability unstable
@@ -89,7 +159,12 @@ export class AutomationRun extends Schema.Class<AutomationRun>("@bluechip/domain
   outcome: RunOutcome,
   /** Why it ended as it did, in a sentence. */
   reason: Schema.String,
-  intentIds: Schema.Array(IntentId)
+  intentIds: Schema.Array(IntentId),
+  // Defaults read the runs the notifications' outbox stored before runs carried their result: drafts read `outcome`.
+  /** What its trades came to, as they stand now (`runResultOf`). */
+  result: RunResult.pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed("working" as const))),
+  /** The policies that blocked any of its trades. */
+  blockedBy: Schema.Array(PolicyId).pipe(Schema.withDecodingDefaultTypeKey(Effect.succeed([])))
 }) {}
 
 /**

@@ -17,15 +17,23 @@ import * as Stream from "effect/Stream"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
 import { Notifications } from "./Notifications.ts"
-import { NotificationOutbox } from "./Outbox.ts"
+import { NotificationOutbox, type OutboxEvent } from "./Outbox.ts"
 
-// The events whose outbox rows are worth draining as soon as they are heard.
-const TOLD = new Set<LiveEvent["_tag"]>(["IntentChanged", "AgentChanged", "TransferUpdated", "AutomationRan"])
+// The events whose outbox rows are worth draining as soon as they are heard: those the outbox holds, and those
+// published after a draft was written as it is (account safety, chats, the balances' reconciliation).
+const TOLD = new Set<LiveEvent["_tag"]>([
+  "IntentChanged",
+  "AgentChanged",
+  "TransferUpdated",
+  "AutomationRan",
+  "AccountChanged",
+  "PortfolioChanged"
+])
 
 /**
  * Notifications from what happens, at least once: producers write each event that tells a change to the outbox in
  * the change's transaction (intents reaching a step worth telling, agents paused or renewed, money moving,
- * automations' runs), and the fan-out turns the outbox's rows into notifications through the domain's drafts, then
+ * automations' runs, or a draft as it is), and the fan-out turns the outbox's rows into notifications through the domain's drafts, then
  * deletes them. Hearing the event live drains its user's rows at once; the sweep (`OutboxCron`) takes what a stopped
  * process left. A row handled twice makes one notification (`dedupe_key`); one that fails stays for the sweep.
  */
@@ -47,7 +55,7 @@ export class NotificationFanout extends Context.Service<NotificationFanout, {
 
       // `at` keys an agent's change: the outbox row's time, the same however often the row is handled.
       const draftOf = Effect.fnUntraced(function*(
-        event: LiveEvent,
+        event: OutboxEvent,
         at: DateTime.Utc
       ): Effect.fn.Return<NotificationDraft | undefined> {
         switch (event._tag) {
@@ -64,6 +72,8 @@ export class NotificationFanout extends Context.Service<NotificationFanout, {
             return notificationOfTransfer(event.transfer, stockName, { paper: paper !== null })
           case "AutomationRan":
             return notificationOfRun(event.run, event.automationName)
+          case "NotificationDrafted":
+            return event.draft
           default:
             return undefined
         }

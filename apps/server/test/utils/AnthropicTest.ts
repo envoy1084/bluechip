@@ -1,5 +1,6 @@
 // Anthropic's Messages API at the edge, in process: answers each request with the next body a test queued (as JSON,
-// 200 OK) and counts the requests, so the real Anthropic client and language model run against known responses.
+// 200 OK), and counts and keeps the requests' bodies, so the real Anthropic client and language model run against
+// known responses.
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
 import * as HttpClient from "effect/http/HttpClient"
@@ -11,15 +12,19 @@ export class AnthropicTest extends Context.Service<AnthropicTest, {
   readonly answer: (...bodies: ReadonlyArray<unknown>) => Effect.Effect<void>
   /** How many requests reached Anthropic. */
   readonly requests: Effect.Effect<number>
+  /** The JSON bodies of the requests that reached Anthropic, in order. */
+  readonly bodies: Effect.Effect<ReadonlyArray<unknown>>
 }>()("@bluechip/server/test/AnthropicTest") {
   /** The queue and the `HttpClient` the Anthropic client sends with. */
   static readonly layer = Layer.unwrap(Effect.sync(() => {
     const bodies: Array<unknown> = []
+    const sent: Array<unknown> = []
     let requests = 0
 
     const client = HttpClient.make((request) =>
       Effect.sync(() => {
         requests++
+        if (request.body._tag === "Uint8Array") sent.push(JSON.parse(new TextDecoder().decode(request.body.body)))
         const body = bodies.shift()
         return HttpClientResponse.fromWeb(
           request,
@@ -33,7 +38,8 @@ export class AnthropicTest extends Context.Service<AnthropicTest, {
     return Layer.merge(
       Layer.succeed(AnthropicTest, {
         answer: (...next) => Effect.sync(() => void bodies.push(...next)),
-        requests: Effect.sync(() => requests)
+        requests: Effect.sync(() => requests),
+        bodies: Effect.sync(() => [...sent])
       }),
       Layer.succeed(HttpClient.HttpClient, client)
     )

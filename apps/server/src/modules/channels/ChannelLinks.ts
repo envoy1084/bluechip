@@ -6,6 +6,7 @@ import {
   type Platform
 } from "@bluechip/domain/channels/Channel"
 import { NotFound } from "@bluechip/domain/Errors"
+import { LiveEvent } from "@bluechip/domain/Events"
 import type { ChannelLinkId, ConversationId, UserId } from "@bluechip/domain/Ids"
 import { notificationOfChatLink } from "@bluechip/domain/notifications/Drafts"
 import { and, asc, eq, gt, isNull } from "drizzle-orm"
@@ -16,10 +17,11 @@ import * as Layer from "effect/Layer"
 import { createHash, randomInt } from "node:crypto"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { ChannelsLinks as ChannelsLinksMetric, count } from "../../platform/telemetry/Metrics.ts"
 import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
-import { Notifications } from "../notifications/Notifications.ts"
+import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { channelLinkCodes, channelLinks } from "./tables.ts"
 import { TelegramConfig } from "./telegram/TelegramConfig.ts"
 
@@ -65,7 +67,8 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
     ChannelLinks,
     Effect.gen(function*() {
       const db = yield* Database
-      const notifications = yield* Notifications
+      const outbox = yield* NotificationOutbox
+      const live = yield* LiveEvents
       const audit = yield* AuditLog
       const analytics = yield* Analytics
       const telegram = yield* TelegramConfig
@@ -100,9 +103,13 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
         })
       })
 
+      // The notification goes to the outbox in the change's transaction; the rest is told once it's committed.
       const notify = (row: ChannelLinkRow, change: "linked" | "unlinked" | "blocked") =>
+        outbox.notify(notificationOfChatLink(row, change), row.userId as UserId)
+
+      const told = (row: ChannelLinkRow, change: "linked" | "unlinked" | "blocked") =>
         Effect.andThen(
-          notifications.add(row.userId as UserId, notificationOfChatLink(row, change)),
+          live.publish(LiveEvent.cases.AccountChanged.make({}), row.userId as UserId),
           audit.record({
             userId: row.userId as UserId,
             actor: change === "blocked" ? "system" : "owner",
@@ -134,35 +141,42 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
 
       const redeem = Effect.fn("ChannelLinks.redeem")(function*(code: string, origin: ChatOrigin) {
         const now = yield* DateTime.now
-        const [used] = yield* db.update(channelLinkCodes).set({ usedAt: now }).where(and(
-          eq(channelLinkCodes.codeHash, hashOf(code)),
-          eq(channelLinkCodes.platform, origin.platform),
-          isNull(channelLinkCodes.usedAt),
-          gt(channelLinkCodes.expiresAt, now)
-        )).returning().pipe(Effect.orDie)
-        if (used === undefined) return undefined
+        const linked = yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const [used] = yield* db.update(channelLinkCodes).set({ usedAt: now }).where(and(
+              eq(channelLinkCodes.codeHash, hashOf(code)),
+              eq(channelLinkCodes.platform, origin.platform),
+              isNull(channelLinkCodes.usedAt),
+              gt(channelLinkCodes.expiresAt, now)
+            )).returning()
+            if (used === undefined) return undefined
 
-        // A chat is linked to one account at a time: a new code moves it.
-        const before = yield* ofChat(origin.platform, origin.chatId)
-        if (before !== undefined) {
-          yield* db.update(channelLinks).set({ unlinkedAt: now }).where(eq(channelLinks.id, before.id)).pipe(
-            Effect.orDie
-          )
-          yield* notify(before, "unlinked")
-        }
-        const [row] = yield* db.insert(channelLinks).values({
-          id: typeid("channellink").toString() as `channellink_${string}`,
-          userId: used.userId,
-          platform: origin.platform,
-          externalUserId: origin.externalUserId,
-          chatId: origin.chatId,
-          name: origin.name,
-          conversationId: null,
-          linkedAt: now,
-          unlinkedAt: null
-        }).returning().pipe(Effect.orDie)
-        yield* notify(row!, "linked")
-        return row!
+            // A chat is linked to one account at a time: a new code moves it.
+            const before = yield* ofChat(origin.platform, origin.chatId)
+            if (before !== undefined) {
+              yield* db.update(channelLinks).set({ unlinkedAt: now }).where(eq(channelLinks.id, before.id))
+              yield* notify(before, "unlinked")
+            }
+            const [row] = yield* db.insert(channelLinks).values({
+              id: typeid("channellink").toString() as `channellink_${string}`,
+              userId: used.userId,
+              platform: origin.platform,
+              externalUserId: origin.externalUserId,
+              chatId: origin.chatId,
+              name: origin.name,
+              conversationId: null,
+              linkedAt: now,
+              unlinkedAt: null
+            }).returning()
+            yield* notify(row!, "linked")
+            return { before, row: row! }
+          })
+        ).pipe(Effect.orDie)
+        if (linked === undefined) return undefined
+
+        if (linked.before !== undefined) yield* told(linked.before, "unlinked")
+        yield* told(linked.row, "linked")
+        return linked.row
       })
 
       const ofUser = Effect.fn("ChannelLinks.ofUser")(function*(userId: UserId, platform?: Platform | undefined) {
@@ -174,9 +188,16 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
       })
 
       const close = Effect.fnUntraced(function*(row: ChannelLinkRow, change: "unlinked" | "blocked" = "unlinked") {
-        const [closed] = yield* db.update(channelLinks).set({ unlinkedAt: yield* DateTime.now })
-          .where(and(eq(channelLinks.id, row.id), isNull(channelLinks.unlinkedAt))).returning().pipe(Effect.orDie)
-        if (closed !== undefined) yield* notify(closed, change)
+        const now = yield* DateTime.now
+        const closed = yield* db.transaction(() =>
+          Effect.gen(function*() {
+            const [closed] = yield* db.update(channelLinks).set({ unlinkedAt: now })
+              .where(and(eq(channelLinks.id, row.id), isNull(channelLinks.unlinkedAt))).returning()
+            if (closed !== undefined) yield* notify(closed, change)
+            return closed
+          })
+        ).pipe(Effect.orDie)
+        if (closed !== undefined) yield* told(closed, change)
         return closed
       })
 

@@ -70,7 +70,7 @@ describe("storedParts", () => {
 })
 
 describe("promptOf", () => {
-  it("gives tool results after the call that asked for them, and leaves the user's cards out", () => {
+  it("gives tool results as first given, after the call that asked for them, and leaves the user's cards out", () => {
     const prompt = promptOf([
       new Message({
         id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
@@ -125,11 +125,14 @@ describe("promptOf", () => {
               : part.type
           )
       ]),
-      [["user", ["text"]], ["assistant", ["tool-call"]], ["tool", [["The user left it as it was; nothing changed."]]]]
+      [["user", ["text"]], ["assistant", ["tool-call"]], [
+        "tool",
+        [["Waiting for the user to confirm pausing every agent: trading stops at once, and nothing is sold."]]
+      ]]
     )
   })
 
-  it("leaves an earlier turn's thinking out, since it's bound to the system prompt of its turn", () => {
+  it("sends an earlier turn's thinking back with its signature", () => {
     const prompt = promptOf([
       new Message({
         id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
@@ -146,9 +149,79 @@ describe("promptOf", () => {
     assert.deepStrictEqual(
       prompt.content.map((message) => [
         message.role,
+        typeof message.content === "string" ?
+          message.content :
+          message.content.map((part) => part.type === "reasoning" ? [part.type, part.options] : part.type)
+      ]),
+      [["assistant", [["reasoning", { anthropic: { info: { type: "thinking", signature: "sig" } } }], "text"]]]
+    )
+  })
+
+  it("leaves out thinking written before the summary the prompt starts with", () => {
+    const prompt = promptOf([
+      new Message({
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
+        role: "assistant",
+        parts: [
+          { type: "reasoning", text: "", options: { anthropic: { info: { type: "thinking", signature: "sig" } } } },
+          { type: "text", text: "Your picker is paused." }
+        ],
+        model: "claude-sonnet-5-5",
+        createdAt: AT
+      })
+    ], { thinkingAfter: AT })
+
+    assert.deepStrictEqual(
+      prompt.content.map((message) => [
+        message.role,
         typeof message.content === "string" ? message.content : message.content.map((part) => part.type)
       ]),
       [["assistant", ["text"]]]
+    )
+  })
+
+  it("follows each user message with the context its turn gave, as a system message", () => {
+    const prompt = promptOf([
+      new Message({
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3w"),
+        role: "user",
+        parts: [{ type: "text", text: "Hi" }],
+        model: null,
+        createdAt: AT
+      }),
+      new Message({
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3x"),
+        role: "assistant",
+        parts: [{ type: "text", text: "Hello!" }],
+        model: "claude-sonnet-5-5",
+        createdAt: AT
+      }),
+      new Message({
+        id: MessageId.make("message_01jd8v4t5m6n7a8q9r0s1t2v3y"),
+        role: "user",
+        parts: [{ type: "text", text: "Again" }],
+        model: null,
+        createdAt: AT
+      })
+    ], {
+      contexts: new Map([
+        ["message_01jd8v4t5m6n7a8q9r0s1t2v3w", "## Today\n2026-11-25 (UTC)"],
+        ["message_01jd8v4t5m6n7a8q9r0s1t2v3y", "## Today\n2026-11-26 (UTC)"]
+      ])
+    })
+
+    assert.deepStrictEqual(
+      prompt.content.map((message) => [
+        message.role,
+        typeof message.content === "string" ? message.content : message.content.map((part) => part.type)
+      ]),
+      [
+        ["user", ["text"]],
+        ["system", "## Today\n2026-11-25 (UTC)"],
+        ["assistant", ["text"]],
+        ["user", ["text"]],
+        ["system", "## Today\n2026-11-26 (UTC)"]
+      ]
     )
   })
 

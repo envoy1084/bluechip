@@ -142,6 +142,7 @@ layer(
           const [link] = yield* user.api.channels.links()
 
           yield* user.api.channels.unlink({ params: { id: link!.id } })
+          yield* user.events.next("NotificationAdded", ({ notification }) => notification.kind === "chatUnlinked")
           const replies = yield* telegram.say(chat, "What's my balance?")
           const page = yield* user.api.notifications.list({ query: {} })
 

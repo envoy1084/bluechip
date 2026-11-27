@@ -132,7 +132,7 @@ export const GetAutomationPerformance = Tool.make("getAutomationPerformance", {
       `${automation.runs} runs` +
       (automation.outcomes.length === 0 ?
         "" :
-        ` (${automation.outcomes.map((row) => `${row.count} ${row.outcome}`).join(", ")})`) +
+        ` (${automation.outcomes.map((row) => `${row.count} ${row.result}`).join(", ")})`) +
       `, ${automation.trades} trades: bought ${usd(automation.bought)}, sold ${usd(automation.sold)}, realised ` +
       `${signed(automation.realised)}.`,
       costLine(automation.costs)

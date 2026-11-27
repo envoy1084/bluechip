@@ -12,7 +12,7 @@ import { Card, describeCard } from "../assistant/Card.ts"
 import { Intent } from "../intents/Intent.ts"
 import { JournalEntry } from "../journal/Journal.ts"
 import { SpecDescription } from "../policies/Catalog.ts"
-import { listNames } from "../policies/Format.ts"
+import { formatEther, listNames } from "../policies/Format.ts"
 import { Caller, ToolProblem } from "./Caller.ts"
 import { AgentIdParam, IntentIdParam } from "./Params.ts"
 import { Risk } from "./Risk.ts"
@@ -89,7 +89,8 @@ export const GetAgentUsage = Tool.make("getAgentUsage", {
   dependencies: [Caller],
   toModelOutput: (usage) =>
     say(usage.policies.map((policy) => {
-      const amount = (value: bigint) => policy.unit === "usd" ? usd(value) : String(value)
+      const amount = (value: bigint) =>
+        policy.unit === "usd" ? usd(value) : policy.unit === "wei" ? formatEther(value) : String(value)
       return `${policy.policy}: ${amount(policy.used)} used` +
         (policy.limit === null ? "" : ` of ${amount(policy.limit)} (${policy.unit})`)
     }))

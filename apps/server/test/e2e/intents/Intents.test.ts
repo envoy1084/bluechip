@@ -135,7 +135,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("intents", (it) => {
       Effect.gen(function*() {
         const { agent, user } = yield* (yield* TestAgents).locked
         const chain = yield* ChainClient
-        // 20 gwei: about 1.9M gas then costs ~7.6e16 wei, over the agent's 5e16 a day. Base's fee comes back afterwards.
+        // 20 gwei: about 1.9M gas then costs ~7.6e16 wei, over the agent's 3.8e16 a day. Base's fee comes back afterwards.
         const baseFee = (wei: bigint) =>
           chain.use("set base fee", async (client) => {
             await client.request({

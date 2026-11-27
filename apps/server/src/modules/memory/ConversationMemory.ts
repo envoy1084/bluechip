@@ -52,9 +52,9 @@ export class ConversationMemory extends Context.Service<ConversationMemory, {
     readonly agentId: AgentId | null
     readonly from: MessageId
   }) => Effect.Effect<void>
-  /** The conversation's summary and the last message it covers, if it has one. */
+  /** The conversation's summary, the last message it covers and when it was last written, if it has one. */
   readonly summary: (conversationId: ConversationId) => Effect.Effect<
-    { readonly text: string; readonly throughMessageId: MessageId } | undefined
+    { readonly text: string; readonly throughMessageId: MessageId; readonly updatedAt: DateTime.Utc } | undefined
   >
 }>()("@bluechip/server/ConversationMemory") {
   static readonly layer = Layer.effect(
@@ -168,7 +168,11 @@ export class ConversationMemory extends Context.Service<ConversationMemory, {
         afterTurn,
         summary: Effect.fn("ConversationMemory.summary")(function*(conversationId: ConversationId) {
           const row = yield* current(conversationId)
-          return row === undefined ? undefined : { text: row.text, throughMessageId: row.throughMessageId as MessageId }
+          return row === undefined ? undefined : {
+            text: row.text,
+            throughMessageId: row.throughMessageId as MessageId,
+            updatedAt: row.updatedAt
+          }
         })
       })
     })

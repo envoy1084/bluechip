@@ -61,6 +61,16 @@ layer(TestUsers.layer, { excludeTestServices: true })("the account's passkeys", 
         assert.strictEqual(owners.credentialIds.length, 2)
       }))
 
+    it.effect("a second passkey from the same browser is numbered", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).funded
+
+        yield* addSecond(user)
+        const passkeys = yield* user.api.account.passkeys()
+
+        assert.deepStrictEqual(passkeys.map((passkey) => passkey.label), ["Passkey", "Passkey (2)"])
+      }))
+
     it.effect("the second passkey signs in on its own", () =>
       Effect.gen(function*() {
         const users = yield* TestUsers

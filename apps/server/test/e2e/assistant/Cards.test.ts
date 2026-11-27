@@ -135,7 +135,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
     })
 
     describe("POST /api/assistant/run with resume", () => {
-      it.effect("a resolved answer confirms the card before the turn, and the model reads it as applied", () =>
+      it.effect("a resolved answer confirms the card before the turn, and the turn's context says it was applied", () =>
         Effect.gen(function*() {
           const { agent, user } = yield* (yield* TestAgents).locked
           const assistant = yield* TestAssistant
@@ -165,7 +165,14 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
               []
           )
 
-          assert.deepStrictEqual([now.paused, toolResults], [true, ["Tech picker is paused."]])
+          assert.deepStrictEqual(
+            [now.paused, toolResults, (prompt!.content.at(-1)!.content as string).split("\n").at(-1)],
+            [
+              true,
+              ["Waiting for the user to confirm pausing Tech picker: trading stops at once, and nothing is sold."],
+              "- Tech picker is paused."
+            ]
+          )
         }))
     })
   }

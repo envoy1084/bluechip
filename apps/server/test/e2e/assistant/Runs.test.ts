@@ -1,6 +1,7 @@
 import { NotFound } from "@bluechip/domain/Errors"
 import { ConversationId, RunId } from "@bluechip/domain/Ids"
 import { assert, describe, layer } from "@effect/vitest"
+import * as Prompt from "effect/ai/Prompt"
 import * as Effect from "effect/Effect"
 import * as HttpApiError from "effect/http-api/HttpApiError"
 import * as Layer from "effect/Layer"
@@ -82,11 +83,40 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
 
         assert.deepStrictEqual(prompt!.content.map((message) => message.role), [
           "system",
-          "system",
           "user",
+          "system",
           "assistant",
-          "user"
+          "user",
+          "system"
         ])
+      }))
+
+    it.effect("the next turn sends the first turn's thinking back with its signature, after its context as it was", () =>
+      Effect.gen(function*() {
+        const user = yield* (yield* TestUsers).signUp
+        const assistant = yield* TestAssistant
+        const recorded = yield* RecordedModel
+        yield* recorded.record(
+          { to: "Which agents do I have?", rounds: [[{ think: "None yet, so say so." }, { text: "None yet." }]] },
+          { to: "Thanks", rounds: [[{ text: "Any time." }]] }
+        )
+        const conversation = yield* assistant.start(user)
+        yield* assistant.ask(user, conversation.id, "Which agents do I have?")
+        const [first] = yield* recorded.prompts("Which agents do I have?")
+
+        yield* assistant.ask(user, conversation.id, "Thanks")
+        const [second] = yield* recorded.prompts("Thanks")
+
+        assert.deepStrictEqual(
+          [second!.content.slice(0, first!.content.length), second!.content[first!.content.length]!.content],
+          [first!.content, [
+            Prompt.makePart("reasoning", {
+              text: "None yet, so say so.",
+              options: { anthropic: { info: { type: "thinking", signature: "signature:None yet, so say so." } } }
+            }),
+            Prompt.makePart("text", { text: "None yet." })
+          ]]
+        )
       }))
 
     it.effect("a rate-limited conversation model is tried again, and answers", () =>
@@ -220,7 +250,7 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
               ["user", ["Go on"]],
               ["assistant", ["You have no money in bluechip yet."]]
             ],
-            ["system", "system", "user", "assistant", "tool", "assistant", "user"]
+            ["system", "user", "system", "assistant", "tool", "assistant", "user", "system"]
           ]
         )
       }))

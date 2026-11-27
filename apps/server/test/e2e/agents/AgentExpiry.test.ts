@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect"
 import * as TestClock from "effect/testing/TestClock"
 import { randomUUID } from "node:crypto"
 import { Agents } from "../../../src/modules/agents/Agents.ts"
+import { weeklyBuy } from "../../fixtures/Automations.ts"
 import { buy } from "../../fixtures/Legs.ts"
 import { TestAgents } from "../../utils/TestAgents.ts"
 
@@ -34,6 +35,23 @@ layer(TestAgents.layer, { excludeTestServices: true })("agent expiry", (it) => {
           [expired.status, sessions.map((session) => session.status), { ...error }],
           ["expired", ["expired"], { ...new Conflict({ reason: "agentBusy" }) }]
         )
+      }))
+
+    it.effect("an expired agent's automations are paused", () =>
+      Effect.gen(function*() {
+        const { agent, user } = yield* (yield* TestAgents).locked
+        const { user: me } = yield* user.api.account.me()
+        const saved = yield* user.api.automations.create({
+          payload: { requestId: RequestId.make(randomUUID()), draft: weeklyBuy(agent.id) }
+        })
+
+        yield* Effect.gen(function*() {
+          yield* TestClock.setTime(DateTime.toEpochMillis(agent.lockedUntil!) + 1)
+          yield* (yield* Agents).expire({ userId: me.id })
+        }).pipe(Effect.provide(TestClock.layer()))
+        const paused = yield* user.api.automations.list({ query: {} })
+
+        assert.deepStrictEqual(paused.map((automation) => [automation.id, automation.status]), [[saved.id, "paused"]])
       }))
 
     it.effect("an agent at its session's last moment stays active", () =>

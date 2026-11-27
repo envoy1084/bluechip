@@ -138,7 +138,7 @@ layer(TestAutomations.layer, { excludeTestServices: true })("analytics: agents, 
             properties: {
               trigger: automation.trigger.type,
               action: automation.action.type,
-              outcome: "traded",
+              outcome: "proposed",
               legs: 2,
               $set: { network: "local" }
             }
