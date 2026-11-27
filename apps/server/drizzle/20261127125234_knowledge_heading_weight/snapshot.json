@@ -1,0 +1,62 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "c1d31545-a887-4df2-86d9-28fd656a3e34",
+  "prevIds": [
+    "6414912f-9c61-4efe-9e55-606a1dbfd01d"
+  ],
+  "footprints": [
+    {
+      "statementType": "recreate_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "chunks",
+        "text_search"
+      ],
+      "writes": [
+        "s|col|public.chunks.text_search",
+        "n|col|public.chunks.text_search",
+        "e|col|public.chunks.text_search"
+      ],
+      "reads": [
+        "n|tbl|public.chunks",
+        "n|sch|public"
+      ],
+      "sqlHash": "343086639c7fe33e"
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "chunks",
+        "chunks_text_search_idx"
+      ],
+      "writes": [
+        "s|idx|public.chunks_text_search_idx",
+        "n|idx|public.chunks_text_search_idx",
+        "e|idx|public.chunks_text_search_idx",
+        "n|rel|public.chunks_text_search_idx"
+      ],
+      "reads": [
+        "n|tbl|public.chunks",
+        "n|sch|public",
+        "n|col|public.chunks.text_search"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"chunks\",\"text_search\"]",
+      "set": {
+        "generated": {
+          "as": "setweight(to_tsvector('english', coalesce(section, '')), 'A') || to_tsvector('english', text)",
+          "type": "stored"
+        }
+      }
+    }
+  ]
+}
