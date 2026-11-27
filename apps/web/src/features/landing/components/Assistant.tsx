@@ -1,13 +1,13 @@
 import { LogoMark } from "@bluechip/ui/bluechip/logo"
-import { Icon, type IconName } from "@bluechip/ui/icons/icon"
+import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import { ChatDemo } from "./ChatDemo.tsx"
 import { Reveal } from "./Reveal.tsx"
 import { SectionIntro } from "./SectionIntro.tsx"
 
-const POINTS: ReadonlyArray<{ readonly icon: IconName; readonly text: string }> = [
-  { icon: "chat", text: "Drafts agents, automations and trades from what you say, for you to review" },
-  { icon: "book", text: "Remembers what you tell it, and you can see, export and delete every memory" },
-  { icon: "face-id", text: "Nothing is signed in a chat: anything that moves money comes back to the app for Face ID" }
+const POINTS: ReadonlyArray<{ readonly art: IllustrationName; readonly text: string }> = [
+  { art: "chat", text: "Drafts agents, automations and trades for you to review" },
+  { art: "notebook", text: "Remembers what you tell it. You can delete any memory" },
+  { art: "passkey", text: "Nothing is signed in a chat. Money moves only with Face ID" }
 ]
 
 /** The assistant: a chat that plays out, and the same bluechip in Telegram with its notifications. */
@@ -24,16 +24,15 @@ export function Assistant() {
             kicker="Assistant"
             title={<span id="landing-assistant">Say what you want, in plain words</span>}
           >
-            Chat with bluechip in the app or in Telegram. It reads your portfolio and the market, explains what it finds
-            and sets things up for you.
+            In the app or in Telegram.
           </SectionIntro>
           <ul className="grid gap-3.5">
             {POINTS.map((point, index) => (
-              <Reveal as="li" key={point.text} delay={index * 90} className="flex items-start gap-3">
-                <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]">
-                  <Icon name={point.icon} size={16} />
+              <Reveal as="li" key={point.text} delay={index * 90} className="flex items-start gap-3.5">
+                <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[linear-gradient(180deg,#fff,var(--color-blue-50))] shadow-[inset_0_0_0_1px_var(--color-info-line)]">
+                  <Illustration name={point.art} size={28} aria-hidden />
                 </span>
-                <span className="pt-1 text-body text-g-700">{point.text}</span>
+                <span className="pt-2.5 text-body text-g-700">{point.text}</span>
               </Reveal>
             ))}
           </ul>

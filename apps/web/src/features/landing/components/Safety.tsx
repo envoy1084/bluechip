@@ -1,14 +1,18 @@
-import { Icon, type IconName } from "@bluechip/ui/icons/icon"
-import { Illustration } from "@bluechip/ui/illustrations/illustration"
+import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import { cn } from "@bluechip/ui/lib/cn"
+import { Seal } from "@bluechip/ui/motion/seal"
 import type { ReactNode } from "react"
 import { Reveal } from "./Reveal.tsx"
 import { FairPriceChart, RecoveryTrack } from "./SafetyVisuals.tsx"
 import { SectionIntro } from "./SectionIntro.tsx"
 
+/**
+ * One claim: its object (pixel art, or a larger visual that grows into the room the row gives it), its title and a
+ * line. Cards in a row share its height, so the visual takes what the text leaves.
+ */
 function SafetyCard(
-  { icon, title, children, visual, delay, className }: Readonly<{
-    icon: IconName
+  { art, title, children, visual, delay, className }: Readonly<{
+    art?: IllustrationName
     title: string
     children: ReactNode
     visual?: ReactNode
@@ -22,19 +26,23 @@ function SafetyCard(
       delay={delay}
       className={cn("flex flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6 shadow-e2", className)}
     >
-      <span className="grid size-10 place-items-center rounded-[12px] bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]">
-        <Icon name={icon} size={19} />
-      </span>
+      {art === undefined ?
+        null :
+        (
+          <span className="grid size-14 place-items-center rounded-[16px] bg-[linear-gradient(180deg,#fff,var(--color-blue-50))] shadow-[inset_0_0_0_1px_var(--color-info-line)]">
+            <Illustration name={art} size={40} aria-hidden />
+          </span>
+        )}
       <div className="grid gap-1.5">
         <h3 className="text-title-3 font-semibold">{title}</h3>
-        <p className="max-w-[52ch] text-body-sm text-g-600">{children}</p>
+        <p className="max-w-[48ch] text-body-sm text-g-600">{children}</p>
       </div>
-      {visual === undefined ? null : <div className="mt-auto pt-2">{visual}</div>}
+      {visual === undefined ? null : <div className="mt-auto grid flex-1 content-end pt-2">{visual}</div>}
     </Reveal>
   )
 }
 
-/** Why it's safe, each claim one thing the app or the chain does today. */
+/** Why it's safe, each claim one thing the app or the chain does today, in three even rows. */
 export function Safety() {
   return (
     <section
@@ -43,56 +51,58 @@ export function Safety() {
       className="scroll-mt-20 bg-[linear-gradient(180deg,var(--color-g-50),#fff)] px-4 py-24 sm:px-6 sm:py-32"
     >
       <div className="mx-auto grid max-w-[1200px] gap-12">
-        <SectionIntro kicker="Safety" title={<span id="landing-safety">Safe by how it's built, not by a promise</span>}>
-          Your account is a smart account on Base that only your passkeys own. Here is what that means day to day.
-        </SectionIntro>
+        <SectionIntro kicker="Safety" title={<span id="landing-safety">Safe by how it's built</span>} />
 
-        <ul className="grid gap-4 lg:grid-cols-3">
+        <ul className="grid gap-4 md:grid-flow-dense md:grid-cols-2 lg:grid-cols-3">
           <SafetyCard
-            icon="scales"
             title="Every trade checked against Chainlink"
             delay={0}
-            className="lg:col-span-2"
+            className="md:col-span-2"
             visual={<FairPriceChart />}
           >
-            Each stock is priced by Chainlink's feed for it. A trade that would fill too far from that price doesn't
-            happen, and nothing is traded.
+            A trade that would fill too far from Chainlink's price doesn't happen.
           </SafetyCard>
           <SafetyCard
-            icon="face-id"
             title="Face ID, not passwords"
             delay={100}
-            className="lg:row-span-2"
             visual={
-              <div className="grid place-items-center rounded-xl bg-[radial-gradient(circle_at_50%_40%,var(--color-blue-50),transparent_70%)] py-4">
-                <Illustration name="passkey" variant="halftone" size={200} animate aria-hidden />
+              <div className="grid h-full min-h-[180px] place-items-center rounded-xl bg-[radial-gradient(circle_at_50%_50%,var(--color-blue-50),transparent_70%)]">
+                <Illustration name="passkey" variant="halftone" size={170} animate aria-hidden />
               </div>
             }
           >
-            Your passkeys own your account. Your own trades, withdrawals and every change to an agent's limits are
-            signed with Face ID or your fingerprint. There's no seed phrase to write down or lose.
+            Your passkeys own your account. No seed phrase to lose.
           </SafetyCard>
+
           <SafetyCard
-            icon="key"
-            title="Recovery that waits 48 hours"
-            delay={150}
-            className="lg:col-span-2"
+            title="Recovery waits 48 hours"
+            delay={0}
+            className="md:col-span-2"
             visual={<RecoveryTrack />}
           >
-            Lost every passkey? A recovery key can only ask to recover, and the request waits 48 hours onchain. You're
-            told on every channel, and any signed-in device or Telegram can cancel it.
+            A recovery key can only ask. You're told everywhere, and can cancel it from any device or Telegram.
           </SafetyCard>
-          <SafetyCard icon="hand" title="You approve the big ones" delay={0}>
-            A trade over an agent's largest trade waits for your Face ID. Left unanswered, it expires after 6 hours and
-            nothing is sent.
+          <SafetyCard
+            title="You approve the big ones"
+            delay={100}
+            visual={<Seal label="Approved with Face ID" className="size-24" />}
+          >
+            Over an agent's largest trade, it waits for your Face ID.
           </SafetyCard>
-          <SafetyCard icon="pause" title="Pause everything at once" delay={100}>
-            Pause one agent or all of them in a tap. A paused agent sends nothing, and its trades not yet sent are
-            cancelled.
+
+          <SafetyCard art="emergency-stop" title="Pause everything" delay={0}>
+            One tap pauses every agent. Nothing more is sent.
           </SafetyCard>
-          <SafetyCard icon="wallet" title="Withdraw anytime" delay={200}>
-            Your cash is USDC in your own account. Send it to any address on Base whenever you like, signed with your
-            passkey.
+          <SafetyCard art="paper-plane" title="Withdraw anytime" delay={100}>
+            Your cash is USDC in your own account. Send it anywhere on Base.
+          </SafetyCard>
+          <SafetyCard
+            art="receipt"
+            title="Every trade, accounted for"
+            delay={200}
+            className="md:col-span-2 lg:col-span-1"
+          >
+            Each fill is a transaction on Base, with its price and costs in your activity.
           </SafetyCard>
         </ul>
       </div>

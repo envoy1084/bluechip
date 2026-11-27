@@ -4,10 +4,7 @@ import { TICKERS } from "@bluechip/ui/lib/tickers"
 /** Every stock bluechip trades, drifting past under the hero. Hovering holds it; reduced motion keeps it still. */
 export function TickerBand() {
   return (
-    <section aria-labelledby="landing-stocks" className="border-y border-g-100 bg-white py-5">
-      <h2 id="landing-stocks" className="mb-4 px-4 text-center text-label text-g-500">
-        Coinbase's tokenized US stocks, priced by Chainlink, held in your own account on Base
-      </h2>
+    <section aria-label="The stocks you can trade" className="border-y border-g-100 bg-white py-4">
       <div className="group relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)] motion-reduce:overflow-x-auto">
         <div className="flex w-max animate-[landing-marquee_60s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
           {[false, true].map((copy) => (

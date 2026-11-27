@@ -1,63 +1,37 @@
-import { type TemplateId, TEMPLATES } from "@bluechip/domain/policies/Templates"
-import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
+import { AGENT_TEMPLATES } from "@bluechip/ui/bluechip/template-picker"
+import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { ActivityFeed } from "./ActivityFeed.tsx"
-import { AutomationStory } from "./AutomationStory.tsx"
 import { Reveal } from "./Reveal.tsx"
 import { SectionIntro } from "./SectionIntro.tsx"
 
-/** What someone might say in chat to start each template. */
-const ASKS: Readonly<Record<TemplateId, string>> = {
-  stockPicker: "Trade Nvidia and Apple for me, up to $100 a day",
-  weeklyBuyer: "Buy $50 of Microsoft every Monday",
-  rebalancer: "Keep my money split evenly across four big tech stocks",
-  stopLossGuard: "Sell my Tesla if it falls under a price I pick"
-}
-
-const ORDER: ReadonlyArray<TemplateId> = ["stockPicker", "weeklyBuyer", "rebalancer", "stopLossGuard"]
-
-/** The agents: four templates to start from, a feed of them at work, and automations as sentences. */
+/** The agents: the four kinds bluechip makes, each with its object in halftone, and a feed of them at work. */
 export function AgentsShowcase() {
   return (
     <section id="agents" aria-labelledby="landing-agents" className="scroll-mt-20 bg-white px-4 py-24 sm:px-6 sm:py-32">
       <div className="mx-auto grid max-w-[1200px] gap-12">
-        <SectionIntro kicker="Agents" title={<span id="landing-agents">Agents that work while you don't</span>}>
-          Start from one of four agents or describe your own. Each gets its own pixel butterfly, its own limits and a
-          journal of what it did and why.
-        </SectionIntro>
-
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {ORDER.map((id, index) => {
-            const template = TEMPLATES[id]
-            return (
-              <Reveal
-                as="li"
-                key={id}
-                delay={index * 110}
-                className="grid"
-              >
-                <div className="group grid content-start gap-3 rounded-2xl bg-[linear-gradient(180deg,#fff,var(--color-g-50))] p-5 shadow-e2 transition-[translate,box-shadow] duration-slow ease-brand hover:-translate-y-1 hover:shadow-e3">
-                  <AgentAvatar
-                    agentId={template.title}
-                    size="xl"
-                    className="transition-transform duration-slow ease-spring group-hover:-rotate-3 group-hover:scale-105"
-                  />
-                  <b className="mt-1 text-title-3 font-semibold">{template.title}</b>
-                  <p className="text-body-sm text-g-600">{template.summary}</p>
-                  <q className="mt-1 rounded-[12px_12px_12px_4px] bg-white px-3 py-2 text-label text-g-700 shadow-hair">
-                    {ASKS[id]}
-                  </q>
-                </div>
-              </Reveal>
-            )
-          })}
-        </ul>
+        <SectionIntro kicker="Agents" title={<span id="landing-agents">Four agents to start from</span>} />
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-          <Reveal>
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {AGENT_TEMPLATES.map((template, index) => (
+              <Reveal as="li" key={template.name} delay={index * 100} className="grid">
+                <div className="group grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 rounded-2xl bg-white p-4 shadow-e2 transition-[translate,box-shadow] duration-slow ease-brand hover:-translate-y-1 hover:shadow-e3">
+                  <span className="grid size-24 place-items-center rounded-[20px] bg-[radial-gradient(circle_at_50%_55%,var(--color-blue-50),var(--color-g-50))]">
+                    <Illustration name={template.illustration} variant="halftone" size={84} animate aria-hidden />
+                  </span>
+                  <span className="grid content-center justify-items-start gap-1.5">
+                    <b className="text-body font-semibold">{template.label}</b>
+                    <span className="text-label text-g-600">{template.promise}</span>
+                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-caption font-semibold text-blue">
+                      {template.rule}
+                    </span>
+                  </span>
+                </div>
+              </Reveal>
+            ))}
+          </ul>
+          <Reveal delay={150}>
             <ActivityFeed />
-          </Reveal>
-          <Reveal delay={120}>
-            <AutomationStory />
           </Reveal>
         </div>
       </div>

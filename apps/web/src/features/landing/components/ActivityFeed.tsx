@@ -45,7 +45,7 @@ const HAPPENINGS: ReadonlyArray<Happening> = [
   }
 ]
 
-const TIMES = ["Just now", "4 min ago", "26 min ago", "1 hr ago", "3 hr ago"] as const
+const TIMES = ["Just now", "4 min ago", "26 min ago", "1 hr ago"] as const
 const EVERY_MS = 2800
 
 /**
@@ -56,7 +56,7 @@ export function ActivityFeed() {
   const root = useRef<HTMLDivElement>(null)
   const visible = useInView(root, { once: false, margin: "0px" })
   const reduced = useReducedMotion()
-  // How many lines have arrived; the newest five show.
+  // How many lines have arrived; the newest four show.
   const [arrived, setArrived] = useState<number>(TIMES.length)
 
   useEffect(() => {

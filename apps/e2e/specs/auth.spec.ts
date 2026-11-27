@@ -5,7 +5,8 @@ test.describe("landing and legal", () => {
   test("the landing page leads to sign-up", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.getByRole("heading", { name: "Your money. Your agents. Your limits.", level: 1 })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Hire an agent. Set its limits. Let it trade.", level: 1 }))
+      .toBeVisible()
     await page.getByRole("link", { name: "Create an account" }).first().click()
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
   })

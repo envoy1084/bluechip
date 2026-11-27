@@ -13,6 +13,7 @@ export const LANDING_SECTIONS = [
   { id: "how", label: "How it works" },
   { id: "limits", label: "Limits" },
   { id: "agents", label: "Agents" },
+  { id: "automations", label: "Automations" },
   { id: "safety", label: "Safety" },
   { id: "faq", label: "FAQ" }
 ] as const

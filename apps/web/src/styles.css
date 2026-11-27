@@ -65,9 +65,9 @@ html:active-view-transition-type(agent-tab)::view-transition-new(page) {
 }
 
 /*
- * The landing page (features/landing): its hero entrances, the cards that fly out of the warp, their float and the
- * stocks' marquee. Every use is off under reduced motion (`motion-reduce:animate-none`), and anchors scroll smoothly
- * only when motion is welcome.
+ * The landing page (features/landing): its hero entrances, the cards that fly out of the warp, their float, the
+ * stocks' marquee and the automation sentence's words and highlights. Every use is off under reduced motion
+ * (`motion-reduce:animate-none`), and anchors scroll smoothly only when motion is welcome.
  */
 @keyframes landing-rise {
   from { opacity: 0; translate: 0 28px; scale: .97 }
@@ -90,4 +90,12 @@ html:active-view-transition-type(agent-tab)::view-transition-new(page) {
   html:has([data-page="landing"]) {
     scroll-behavior: smooth;
   }
+}
+
+@keyframes landing-word {
+  from { opacity: 0 }
+}
+
+@keyframes landing-mark {
+  from { background-size: 0% 100% }
 }
