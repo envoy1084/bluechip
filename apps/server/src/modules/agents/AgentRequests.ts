@@ -1,4 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import {
   changeCalls,
   changedGrant,
@@ -99,6 +100,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
     Effect.gen(function*() {
       const db = yield* Database
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
       const owners = yield* Accounts
       const store = yield* AgentStore
       const sessions = yield* AgentSessions
@@ -163,7 +165,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
       const prepareLock = Effect.fnUntraced(function*(owner: Owner, row: AgentRow, requestId: string) {
         const draft = yield* sessions.get(row.pendingSessionId)
         const validUntil = DateTime.add(yield* DateTime.now, { days: SESSION_DAYS })
-        const session = nameraSession({ ...draft, validUntil })
+        const session = nameraSession(deployment, { ...draft, validUntil })
         yield* sessions.save(draft.id, { validUntil, permissionId: Session.getPermissionId(session) })
         return yield* prepare(owner, row, { requestId, action: "lock", sessionId: draft.id, calls: lockCalls(session) })
       })
@@ -214,9 +216,9 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         const grant = current !== undefined && current.sessionKey === sending.sessionKey ?
           changedGrant(
             Grant.parse(current.grant!),
-            changeCalls(Grant.parse(current.grant!), current.spec, sending.spec).session
+            changeCalls(deployment, Grant.parse(current.grant!), current.spec, sending.spec).session
           ) :
-          yield* lockedGrant(yield* operations.account(passkey), nameraSession(sending)).pipe(
+          yield* lockedGrant(yield* operations.account(passkey), nameraSession(deployment, sending)).pipe(
             Effect.provideService(ChainClient, chain)
           )
         yield* sessions.save(sending.id, {
@@ -296,7 +298,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
             now
           })
         ).pipe(Effect.orDie)
-        const { calls } = changeCalls(Grant.parse(current.grant!), current.spec, spec)
+        const { calls } = changeCalls(deployment, Grant.parse(current.grant!), current.spec, spec)
         return yield* prepare(owner, row, {
           requestId: input.requestId,
           action: "update",
@@ -327,7 +329,7 @@ export class AgentRequests extends Context.Service<AgentRequests, {
             })
           })
         ).pipe(Effect.orDie)
-        const locked = nameraSession(session)
+        const locked = nameraSession(deployment, session)
         yield* sessions.save(session.id, { permissionId: Session.getPermissionId(locked) })
         return yield* prepare(owner, row, {
           requestId,

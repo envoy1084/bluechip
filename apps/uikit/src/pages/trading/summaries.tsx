@@ -165,7 +165,7 @@ export function ReceiptSection() {
             total={50}
             by="You"
             when="Today at 09:41"
-            txHash="0x5f1c2a7e4b9d03f6a1e8c2b7d4f9a0e3c6b1d8f2a5e7c9b3d0f4a6e8c1b2d3e4"
+            txUrl="https://basescan.org/tx/0x5f1c2a7e4b9d03f6a1e8c2b7d4f9a0e3c6b1d8f2a5e7c9b3d0f4a6e8c1b2d3e4"
             className="w-full"
           />
         </Demo>

@@ -16,7 +16,6 @@ import {
   type SmartAccount,
   type WebAuthnAccount
 } from "viem/account-abstraction"
-import { base } from "viem/chains"
 
 /**
  * Who pays gas: the account itself in ETH (`none`, the only option on the local fork), Alchemy's bundler
@@ -76,7 +75,11 @@ export class Namera extends Context.Service<Namera, {
     Effect.gen(function*() {
       const chain = yield* ChainClient
       const setup = yield* setupFromConfig
-      const compat = Compat.check({ bundler: setup.bundler, paymaster: setup.paymaster, chainId: base.id })
+      const compat = Compat.check({
+        bundler: setup.bundler,
+        paymaster: setup.paymaster,
+        chainId: chain.deployment.chainId
+      })
       for (const warning of compat.warnings) yield* Effect.logWarning(`Namera: ${warning.message}`)
       if (!compat.ok) {
         return yield* Effect.die(new Error(`Namera: ${compat.problems.map((problem) => problem.message).join("; ")}`))

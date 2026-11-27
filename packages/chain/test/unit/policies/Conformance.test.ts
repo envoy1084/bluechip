@@ -1,5 +1,6 @@
 // What every policy's onchain binding must satisfy, so a new one is checked by being registered.
-import { tradeGuard, tradeGuardAbi } from "@bluechip/chain/policies/Deployed"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
+import { tradeGuardAbi } from "@bluechip/chain/policies/Deployed"
 import { refusalOf } from "@bluechip/chain/policies/Refusals"
 import { RULES } from "@bluechip/chain/policies/Rules"
 import { placements } from "@bluechip/chain/policies/Session"
@@ -35,12 +36,12 @@ describe("rule bindings", () => {
     const violation = `${toFunctionSelector("ExecutionPolicyViolation(bytes32,address,bytes)")}${
       encodeAbiParameters([{ type: "bytes32" }, { type: "address" }, { type: "bytes" }], [
         `0x${"00".repeat(32)}`,
-        tradeGuard,
+        localDeployment.policies.tradeGuard,
         reason
       ]).slice(2)
     }` as Hex
 
-    const refusal = refusalOf(violation)
+    const refusal = refusalOf(localDeployment, violation)
 
     assert.deepStrictEqual(
       { policy: refusal?.policy, error: refusal?.error, said: (refusal?.message.length ?? 0) > 0 },
@@ -61,12 +62,12 @@ describe("rule bindings", () => {
     const violation = `${toFunctionSelector("ExecutionPolicyViolation(bytes32,address,bytes)")}${
       encodeAbiParameters([{ type: "bytes32" }, { type: "address" }, { type: "bytes" }], [
         `0x${"00".repeat(32)}`,
-        tradeGuard,
+        localDeployment.policies.tradeGuard,
         reason
       ]).slice(2)
     }` as Hex
 
-    const refusal = refusalOf(violation)
+    const refusal = refusalOf(localDeployment, violation)
 
     assert.isTrue(refusal !== undefined && refusal.message.length > 0)
   })
@@ -78,6 +79,9 @@ describe("placements", () => {
       policies: POLICIES.map((policy) => ({ id: policy.id, config: policy.defaults }) as AgentSpec["policies"][number])
     })
 
-    assert.deepStrictEqual(placements(spec).map((placement) => placement.policy), POLICIES.map((policy) => policy.id))
+    assert.deepStrictEqual(
+      placements(localDeployment, spec).map((placement) => placement.policy),
+      POLICIES.map((policy) => policy.id)
+    )
   })
 })

@@ -1,4 +1,5 @@
-import { rebalanceRuleAbi, tradeGuard } from "@bluechip/chain/policies/Deployed"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
+import { rebalanceRuleAbi } from "@bluechip/chain/policies/Deployed"
 import { refusalOf } from "@bluechip/chain/policies/Refusals"
 import { assert, describe, it } from "@effect/vitest"
 import { encodeAbiParameters, encodeErrorResult, type Hex, toFunctionSelector, zeroAddress } from "viem"
@@ -9,14 +10,14 @@ const overshoots = (asset: Hex): Hex =>
   `${toFunctionSelector("ExecutionPolicyViolation(bytes32,address,bytes)")}${
     encodeAbiParameters([{ type: "bytes32" }, { type: "address" }, { type: "bytes" }], [
       `0x${"00".repeat(32)}`,
-      tradeGuard,
+      localDeployment.policies.tradeGuard,
       encodeErrorResult({ abi: rebalanceRuleAbi, errorName: "Overshoots", args: [asset] })
     ]).slice(2)
   }` as Hex
 
 describe("refusalOf", () => {
   it("a rule naming a stock", () => {
-    assert.deepStrictEqual(refusalOf(overshoots(nvda.token)), {
+    assert.deepStrictEqual(refusalOf(localDeployment, overshoots(nvda.token)), {
       policy: "rebalance",
       error: "Overshoots",
       stock: "NVDA",
@@ -25,7 +26,7 @@ describe("refusalOf", () => {
   })
 
   it("a rule naming cash, the zero address", () => {
-    assert.deepStrictEqual(refusalOf(overshoots(zeroAddress)), {
+    assert.deepStrictEqual(refusalOf(localDeployment, overshoots(zeroAddress)), {
       policy: "rebalance",
       error: "Overshoots",
       stock: null,

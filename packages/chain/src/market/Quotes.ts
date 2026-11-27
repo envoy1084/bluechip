@@ -6,10 +6,10 @@
 import * as Effect from "effect/Effect"
 import type { Address } from "viem"
 import type { ChainClient } from "../ChainClient.ts"
-import { metaquoter, metaquoterAbi } from "./Aerodrome.ts"
+import { metaquoterAbi } from "./Aerodrome.ts"
 
 /**
- * The amount out of swapping `amountIn` of `tokenIn` in `pool`, simulated by Aerodrome's quoter at the latest block.
+ * The amount out of swapping `amountIn` of `tokenIn` in `pool`, simulated by the exchange's quoter at the latest block.
  * Fails with a `ChainError` when the pool can't fill it.
  *
  * @stability unstable
@@ -22,7 +22,7 @@ export const quoteExactIn = (
 ) =>
   chain.use("quote", async (client) => {
     const { result } = await client.simulateContract({
-      address: metaquoter,
+      address: chain.deployment.exchange.quoter,
       abi: metaquoterAbi,
       functionName: "quoteExactInputSingleV3",
       args: [input.pool, input.tokenIn, input.amountIn, BigInt(0)]

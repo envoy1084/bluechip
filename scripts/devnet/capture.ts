@@ -2,8 +2,7 @@
 // address, copied from a fork of Base (the code, and the storage each call reads), plus real B20 stock tokens, the
 // Slipstream pools with liquidity, and settable price feeds. The result is Anvil's own state dump, which each test
 // worker's Anvil loads in one call.
-import { entryPoint07, stocks, usdc } from "@bluechip/chain/Contracts"
-import { factory, metaquoter, swapRouter } from "@bluechip/chain/market/Aerodrome"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DEVNET_ADMIN } from "@bluechip/devnet/Controls"
 import { liquidityFor, rangeAround, sqrtPriceX96Of, tickOf } from "@bluechip/devnet/Pools"
 import * as Namera from "@namera-ai/contracts"
@@ -25,6 +24,13 @@ import { CREATE2_DEPLOYER, SEQUENCER_FEED } from "../contracts/artifacts.ts"
 
 /** Where the devnet keeps the contract that seeds its pools. */
 export const POOL_SEEDER: Address = "0x00000000000000000000000000000000005eed00"
+
+const {
+  entryPoint: entryPoint07,
+  exchange: { factory, quoter: metaquoter, router: swapRouter },
+  stocks,
+  usdc
+} = localDeployment
 
 const multicall3: Address = "0xcA11bde05977b3631167028862bE2a173976CA11"
 const b20Factory: Address = "0xB20f000000000000000000000000000000000000"

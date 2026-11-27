@@ -46,7 +46,11 @@ export class PortfolioSnapshots extends Context.Service<PortfolioSnapshots, {
           if (owners.length > 0) {
             const { balances } = yield* readBalances(chain, owners.map((owner) => owner.address as Address))
             const rows = owners.map((owner) => {
-              const portfolio = valueHoldings(holdingsFrom(balances.get(owner.address as Address)!), prices, at)
+              const portfolio = valueHoldings(
+                holdingsFrom(chain.deployment, balances.get(owner.address as Address)!),
+                prices,
+                at
+              )
               return { userId: owner.userId, at, value: portfolio.value, cash: portfolio.cash }
             })
             yield* db.insert(portfolioSnapshots).values(rows).onConflictDoNothing().pipe(Effect.orDie)

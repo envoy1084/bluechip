@@ -1,5 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { usdc } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { softwarePasskey } from "@bluechip/devnet/Passkeys"
@@ -41,7 +41,7 @@ layer(Namera.layer.pipe(Layer.provide(TestConfig), Layer.provideMerge(DevnetTest
         const receipt = yield* Effect.promise(async () => {
           const hash = await bundler.sendUserOperation({
             calls: [{
-              to: usdc,
+              to: localDeployment.usdc,
               data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [recipient, 4_000_000n] })
             }]
           })
@@ -49,7 +49,12 @@ layer(Namera.layer.pipe(Layer.provide(TestConfig), Layer.provideMerge(DevnetTest
         })
         assert.isTrue(receipt.success)
         const left = yield* chain.use("read USDC", (client) =>
-          client.readContract({ address: usdc, abi: erc20Abi, functionName: "balanceOf", args: [account.address] }))
+          client.readContract({
+            address: localDeployment.usdc,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [account.address]
+          }))
         assert.strictEqual(left, 6_000_000n)
         const detected = yield* SmartAccount.detect(chain.client, { address: account.address })
         assert.strictEqual(detected.type, "kernel")

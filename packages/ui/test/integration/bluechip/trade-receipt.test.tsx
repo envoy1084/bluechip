@@ -20,7 +20,9 @@ describe("TradeFill", () => {
 
   it("links its transaction on BaseScan", async () => {
     const tx = `0x${"ab".repeat(32)}`
-    const screen = await render(<TradeFill side="buy" total={50} shares={1} price={50} txHash={tx} />)
+    const screen = await render(
+      <TradeFill side="buy" total={50} shares={1} price={50} txUrl={`https://basescan.org/tx/${tx}`} />
+    )
 
     await expect.element(screen.getByRole("link", { name: "View on BaseScan" })).toHaveAttribute(
       "href",

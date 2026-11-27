@@ -1,6 +1,6 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks, usdc } from "@bluechip/chain/Contracts"
-import { assets, readBalances } from "@bluechip/chain/funding/Balances"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import { assetsOf, readBalances } from "@bluechip/chain/funding/Balances"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { UserId } from "@bluechip/domain/Ids"
 import { reconcile } from "@bluechip/domain/ledger/Reconcile"
@@ -65,6 +65,9 @@ export class Reconciliation extends Context.Service<Reconciliation, {
     Effect.gen(function*() {
       const db = yield* Database
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
+      const { stocks, usdc } = deployment
+      const assets = assetsOf(deployment)
       const market = yield* MarketPrices
       const ledger = yield* Ledger
       const live = yield* LiveEvents

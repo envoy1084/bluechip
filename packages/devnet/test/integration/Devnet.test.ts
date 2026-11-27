@@ -1,8 +1,8 @@
 import { aggregatorAbi } from "@bluechip/chain/Abis"
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks, usdc } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
-import { metaquoter, metaquoterAbi } from "@bluechip/chain/market/Aerodrome"
+import { metaquoterAbi } from "@bluechip/chain/market/Aerodrome"
 import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
 import { DEVNET_ADMIN } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
@@ -12,6 +12,7 @@ import * as Effect from "effect/Effect"
 import { createWalletClient, erc20Abi, http } from "viem"
 import { base } from "viem/chains"
 
+const { exchange: { quoter: metaquoter }, stocks, usdc } = localDeployment
 const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
 
 layer(DevnetTest.layer)("Devnet", (it) => {
@@ -54,7 +55,7 @@ layer(DevnetTest.layer)("Devnet", (it) => {
         const chain = yield* ChainClient
         yield* (yield* DevChain).setUsdcBalance(DEVNET_ADMIN, BigInt(1_000_000_000))
         const wallet = createWalletClient({ chain: base, account: DEVNET_ADMIN, transport: http(chain.rpcUrl) })
-        const [approve, swap] = swapCalls({
+        const [approve, swap] = swapCalls(localDeployment, {
           stock: nvda,
           side: "buy",
           amountIn: BigInt(10_000_000),

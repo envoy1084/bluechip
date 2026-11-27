@@ -101,7 +101,7 @@ describe("importProblems", () => {
     {
       name: "a package import",
       path: "apps/web/src/hooks/useStocks.ts",
-      source: `import { stocks } from "@bluechip/chain/Contracts"`,
+      source: `import { deploymentOf } from "@bluechip/chain/ChainDeployment"`,
       expected: []
     }
   ])("$name", ({ expected, path, source }) => {

@@ -8,19 +8,19 @@ import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { fairPrice, LIVE_PRICE_SECONDS, PAUSED_PRICE_SECONDS } from "@bluechip/domain/policies/FairPrice"
 import { trade } from "@bluechip/domain/policies/Trade"
 import { type Address, encodeAbiParameters, type Hex } from "viem"
-import { stocks } from "../Contracts.ts"
+import type { Deployment, Stock } from "../Deployment.ts"
 import { required, RULES } from "./Rules.ts"
 import { MODES } from "./Trade.ts"
 
 /**
- * `TradeGuard.packMarkets` for every stock: two words each, the token (with whether the agent may trade it at bit
- * 160), then its feed.
+ * `TradeGuard.packMarkets` for every stock of a deployment: two words each, the token (with whether the agent may
+ * trade it at bit 160), then its feed.
  *
  * @stability unstable
  * @category encoding
  * @since 0.0.0
  */
-export const packMarkets = (allowed: ReadonlyArray<string>): ReadonlyArray<bigint> =>
+export const packMarkets = (stocks: ReadonlyArray<Stock>, allowed: ReadonlyArray<string>): ReadonlyArray<bigint> =>
   stocks.flatMap((stock) => [
     BigInt(stock.token) | (allowed.includes(stock.symbol) ? BigInt(1) << BigInt(160) : BigInt(0)),
     BigInt(stock.feed)
@@ -41,13 +41,13 @@ export interface GuardConfig {
 }
 
 /**
- * `TradeGuard`'s configuration for `spec`.
+ * `TradeGuard`'s configuration for `spec` on `deployment`.
  *
  * @stability unstable
  * @category constructors
  * @since 0.0.0
  */
-export const guardConfig = (spec: AgentSpec): GuardConfig => {
+export const guardConfig = (deployment: Deployment, spec: AgentSpec): GuardConfig => {
   const config = required(spec, trade)
   const carried = spec.policies.map((entry) => entry.id)
   return {
@@ -57,10 +57,10 @@ export const guardConfig = (spec: AgentSpec): GuardConfig => {
       liveAge: LIVE_PRICE_SECONDS,
       pausedAge: PAUSED_PRICE_SECONDS
     },
-    markets: packMarkets(config.stocks),
+    markets: packMarkets(deployment.stocks, config.stocks),
     rules: RULES.filter((rule) => carried.includes(rule.policy)).map((rule) => ({
-      rule: rule.address,
-      config: rule.config(spec)
+      rule: deployment.policies[rule.contract],
+      config: rule.config(spec, deployment.stocks)
     }))
   }
 }

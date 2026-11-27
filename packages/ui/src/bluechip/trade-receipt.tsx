@@ -17,8 +17,8 @@ export interface TradeReceiptProps {
   readonly by: string
   /** When it filled: "Today at 09:41". */
   readonly when: string
-  /** The transaction on Base, for the BaseScan link. */
-  readonly txHash?: string
+  /** The transaction on the network's explorer (BaseScan), for the link under it. */
+  readonly txUrl?: string
   /** Its own heading (what moved, who and when). Off where the page around it already says so, as a sheet's title. */
   readonly header?: boolean
   readonly className?: string
@@ -29,7 +29,7 @@ export interface TradeReceiptProps {
  * activity's detail; the moment a trade fills is an `Outcome`.
  */
 export function TradeReceipt(
-  { side, symbol, name, shares, price, total, by, when, txHash, header = true, className }: TradeReceiptProps
+  { side, symbol, name, shares, price, total, by, when, txUrl, header = true, className }: TradeReceiptProps
 ) {
   const buying = side === "buy"
 
@@ -59,9 +59,9 @@ export function TradeReceipt(
         <OrderPreviewRow label="Price">{formatMoney(price)} a share</OrderPreviewRow>
         <OrderPreviewRow label={buying ? "You paid" : "You got"}>{formatMoney(total)}</OrderPreviewRow>
       </OrderPreview>
-      {txHash === undefined
+      {txUrl === undefined
         ? null
-        : <OutcomeLink href={`https://basescan.org/tx/${txHash}`}>View on BaseScan</OutcomeLink>}
+        : <OutcomeLink href={txUrl}>View on BaseScan</OutcomeLink>}
     </section>
   )
 }
@@ -73,8 +73,8 @@ export interface TradeFillProps {
   readonly shares: number
   /** The price it filled at, for one share. */
   readonly price: number
-  /** The transaction on Base, for the BaseScan link under the facts. */
-  readonly txHash?: string
+  /** The transaction on the network's explorer (BaseScan), for the link under the facts. */
+  readonly txUrl?: string
   readonly className?: string
 }
 
@@ -82,7 +82,7 @@ export interface TradeFillProps {
  * What a filled trade moved, compact for a card or a row: paid or got, shares and the price they make, side by side on
  * a recessed panel, with the transaction on Base.
  */
-export function TradeFill({ side, total, shares, price, txHash, className }: TradeFillProps) {
+export function TradeFill({ side, total, shares, price, txUrl, className }: TradeFillProps) {
   const facts = [
     { label: side === "buy" ? "Paid" : "Got", value: formatMoney(total) },
     { label: side === "buy" ? "Shares bought" : "Shares sold", value: formatShareCount(shares) },
@@ -99,10 +99,10 @@ export function TradeFill({ side, total, shares, price, txHash, className }: Tra
           </div>
         ))}
       </dl>
-      {txHash === undefined ?
+      {txUrl === undefined ?
         null :
         (
-          <OutcomeLink href={`https://basescan.org/tx/${txHash}`} className="justify-self-end">
+          <OutcomeLink href={txUrl} className="justify-self-end">
             View on BaseScan
           </OutcomeLink>
         )}

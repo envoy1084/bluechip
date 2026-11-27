@@ -7,31 +7,25 @@ import * as Arr from "effect/Array"
 import * as Effect from "effect/Effect"
 import { type Address, type ContractFunctionParameters, erc20Abi, parseAbi } from "viem"
 import type { ChainClient } from "../ChainClient.ts"
-import { stocks, usdc } from "../Contracts.ts"
+import type { Deployment } from "../Deployment.ts"
 
 /**
- * What an account can hold: USDC, then every stock, each with its token.
+ * What an account can hold on `deployment`: USDC, then every stock, each with its token.
  *
  * @stability unstable
  * @category addresses
  * @since 0.0.0
  */
-export const assets: ReadonlyArray<{ readonly symbol: string; readonly token: Address }> = [
-  { symbol: "USDC", token: usdc },
-  ...stocks.map((stock) => ({ symbol: stock.symbol, token: stock.token }))
+export const assetsOf = (
+  deployment: Deployment
+): ReadonlyArray<{ readonly symbol: string; readonly token: Address }> => [
+  { symbol: "USDC", token: deployment.usdc },
+  ...deployment.stocks.map((stock) => ({ symbol: stock.symbol, token: stock.token }))
 ]
 
 /**
- * The tokens of {@link assets}, in the same order.
- *
- * @stability unstable
- * @category addresses
- * @since 0.0.0
- */
-export const assetTokens: ReadonlyArray<Address> = assets.map((asset) => asset.token)
-
-/**
- * Balances at one block: `balances.get(account)` lists each of {@link assetTokens}' balance in the same order.
+ * Balances at one block: `balances.get(account)` lists the balance of each of the chain's {@link assetsOf}, in the
+ * same order.
  *
  * @stability unstable
  * @category models
@@ -59,6 +53,7 @@ const multicall3Abi = parseAbi([
 export const readBalances = (chain: ChainClient["Service"], accounts: ReadonlyArray<Address>) =>
   chain.use("read balances", async (client): Promise<Balances> => {
     const multicall3 = client.chain.contracts.multicall3.address
+    const assetTokens = assetsOf(chain.deployment).map((asset) => asset.token)
     const balanceCalls = (owners: ReadonlyArray<Address>): Array<ContractFunctionParameters> =>
       owners.flatMap((owner) =>
         assetTokens.map((token) => ({

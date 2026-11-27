@@ -1,6 +1,9 @@
-import { type Stock, stocks } from "@bluechip/chain/Contracts"
+import type { Stock } from "@bluechip/chain/Deployment"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { swapCalls } from "@bluechip/chain/market/Swaps"
 import type { Address } from "viem"
+
+const { stocks } = localDeployment
 
 export const nvda = stocks.find((stock) => stock.symbol === "NVDA")!
 export const aapl = stocks.find((stock) => stock.symbol === "AAPL")!
@@ -14,7 +17,7 @@ export const tradeCalls = (
   recipient: Address,
   minimumOut = BigInt(1)
 ) =>
-  swapCalls({
+  swapCalls(localDeployment, {
     stock,
     side,
     amountIn,

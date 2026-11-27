@@ -3,6 +3,7 @@ import { TradeFill } from "@bluechip/ui/bluechip/trade-receipt"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
+import { explorerTxUrl } from "../../../lib/network.ts"
 import { tradeAtom } from "../atoms/intents.ts"
 
 /**
@@ -22,7 +23,7 @@ export function FilledTrade(
       total={usdcDollars(usdc)}
       shares={shareCount(shares)}
       price={priceDollars(price)}
-      {...(withTx && txHash !== null ? { txHash } : {})}
+      {...(withTx && txHash !== null ? { txUrl: explorerTxUrl(txHash) } : {})}
       {...(className === undefined ? {} : { className })}
     />
   )

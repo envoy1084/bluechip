@@ -18,10 +18,8 @@ import {
   numberToHex,
   type TestClient
 } from "viem"
-import { base } from "viem/chains"
 import { ChainClient } from "./ChainClient.ts"
 import { ChainError } from "./ChainError.ts"
-import { usdc } from "./Contracts.ts"
 
 // Where test USDC comes from: an address with no code, whose balance is minted on the spot and sent on.
 const faucet: Address = "0x0000000000000000000000000000000000fa0ce7"
@@ -57,7 +55,12 @@ export class DevChain extends Context.Service<DevChain, {
       if (chain.network !== "local") {
         return yield* Effect.die(new Error(`DevChain needs NETWORK=local, not ${chain.network}`))
       }
-      const anvil: TestClient = createTestClient({ chain: base, mode: "anvil", transport: http(chain.rpcUrl) })
+      const anvil: TestClient = createTestClient({
+        chain: chain.deployment.chain,
+        mode: "anvil",
+        transport: http(chain.rpcUrl)
+      })
+      const { usdc } = chain.deployment
       const use = (operation: string, f: () => Promise<unknown>) =>
         Effect.tryPromise({ try: f, catch: (cause) => new ChainError({ operation, cause }) }).pipe(Effect.asVoid)
       const setUsdcBalance = (account: Address, units: bigint) =>
@@ -81,7 +84,11 @@ export class DevChain extends Context.Service<DevChain, {
 
         yield* use("send USDC", async () => {
           await anvil.impersonateAccount({ address: faucet })
-          const wallet = createWalletClient({ chain: base, account: faucet, transport: http(chain.rpcUrl) })
+          const wallet = createWalletClient({
+            chain: chain.deployment.chain,
+            account: faucet,
+            transport: http(chain.rpcUrl)
+          })
           const hash = await wallet.writeContract({
             address: usdc,
             abi: erc20Abi,

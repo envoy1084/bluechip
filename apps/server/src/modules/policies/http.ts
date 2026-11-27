@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { BluechipApi } from "@bluechip/domain/Api"
 import { CurrentUser } from "@bluechip/domain/Auth"
 import {
@@ -18,6 +18,7 @@ export const PoliciesHandlers = HttpApiBuilder.group(
   "policies",
   Effect.fn(function*(handlers) {
     const templates = yield* SavedTemplates
+    const { stocks } = yield* ChainDeployment
 
     return handlers.handleAll({
       catalog: () => Effect.succeed(catalogInfo()),

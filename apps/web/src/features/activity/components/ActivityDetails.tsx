@@ -22,6 +22,7 @@ import { CopyButton } from "../../../components/CopyButton.tsx"
 import { activityAt, activityStatus, activityTitle, fairPriceText } from "../../../lib/activityText.ts"
 import { priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
+import { explorerTxUrl } from "../../../lib/network.ts"
 import { receiptWhen } from "../model/receipt.ts"
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
@@ -30,7 +31,7 @@ function Transaction({ txHash }: Readonly<{ txHash: string | null }>) {
   if (txHash === null) return <>Not on Base yet</>
   return (
     <a
-      href={`https://basescan.org/tx/${txHash}`}
+      href={explorerTxUrl(txHash)}
       target="_blank"
       rel="noreferrer"
       className="font-mono text-blue hover:underline"

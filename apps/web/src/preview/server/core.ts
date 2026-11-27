@@ -14,6 +14,7 @@ import * as HttpApiBuilder from "effect/http-api/HttpApiBuilder"
 import * as Layer from "effect/Layer"
 import * as Queue from "effect/Queue"
 import * as Stream from "effect/Stream"
+import { network } from "../../lib/network.ts"
 import { ACCOUNT_ADDRESS, USER_ID } from "../world/cast.ts"
 import { previewId } from "../world/ids.ts"
 import { Preview } from "./Preview.ts"
@@ -66,7 +67,7 @@ export const SystemHandlers = HttpApiBuilder.group(
       version: () =>
         Effect.map(
           DateTime.now,
-          (serverTime) => new ServerVersion({ version: "preview", contract: ContractVersion, serverTime })
+          (serverTime) => new ServerVersion({ version: "preview", contract: ContractVersion, network, serverTime })
         )
     })
   })

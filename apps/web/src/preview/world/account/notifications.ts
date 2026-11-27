@@ -1,6 +1,6 @@
 // Made-up notifications in the domain's own words: a draft of every kind, built with the drafts the server uses from
 // records named after the cast (its agents, automations and stocks), and the list each scenario starts with.
-import { stocks } from "@bluechip/chain/Contracts"
+import { baseDeployment } from "@bluechip/chain/deployments/Base"
 import { Agent } from "@bluechip/domain/agents/Agent"
 import { AutomationRun } from "@bluechip/domain/automations/Run"
 import type {
@@ -47,7 +47,7 @@ import { minutesAgo } from "./security.ts"
 
 /** A stock's company name, as the app shows it. */
 export const stockName = (symbol: StockSymbol): string =>
-  stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
+  baseDeployment.stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
 /** Where money comes from and goes to in the preview: a wallet of the person's own. */
 export const OWN_WALLET = "0x71c7656ec7ab88b098defb751b7401b5f6d8976f"

@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import {
   Automation,
   type AutomationDraft,
@@ -32,28 +32,6 @@ import { AutomationRuns } from "./AutomationRuns.ts"
 import { automations, automationState } from "./tables.ts"
 
 export type AutomationRow = typeof automations.$inferSelect
-
-const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
-
-const toAutomation = (row: AutomationRow): Automation =>
-  new Automation({
-    id: row.id as AutomationId,
-    name: row.name,
-    agentId: row.agentId as AgentId | null,
-    trigger: row.trigger,
-    conditions: row.conditions,
-    action: row.action,
-    settings: row.settings,
-    status: row.status,
-    fires: row.fires,
-    lastFiredAt: row.lastFiredAt,
-    nextRunAt: row.nextRunAt,
-    createdBy: row.createdBy,
-    createdFrom: row.createdFrom as MessageId | null,
-    description: describeAutomation(row, nameOf),
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt
-  })
 
 /** Where an automation came from: you, the assistant's card (and its message), or a template with its agent. */
 export interface Origin {
@@ -114,6 +92,28 @@ export class Automations extends Context.Service<Automations, {
       const agents = yield* Agents
       const runs = yield* AutomationRuns
       const audit = yield* AuditLog
+      const { stocks } = yield* ChainDeployment
+      const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
+
+      const toAutomation = (row: AutomationRow): Automation =>
+        new Automation({
+          id: row.id as AutomationId,
+          name: row.name,
+          agentId: row.agentId as AgentId | null,
+          trigger: row.trigger,
+          conditions: row.conditions,
+          action: row.action,
+          settings: row.settings,
+          status: row.status,
+          fires: row.fires,
+          lastFiredAt: row.lastFiredAt,
+          nextRunAt: row.nextRunAt,
+          createdBy: row.createdBy,
+          createdFrom: row.createdFrom as MessageId | null,
+          description: describeAutomation(row, nameOf),
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt
+        })
 
       // The policies the automation is checked against: the agent's in force, or the change on its way.
       const specOf = Effect.fnUntraced(function*(owner: Owner, agentId: AgentId | null) {

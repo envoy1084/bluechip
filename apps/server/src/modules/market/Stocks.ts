@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { Address } from "@bluechip/domain/Ids"
 import { Stock, type StockSymbol } from "@bluechip/domain/market/Market"
 import { bpsBetween } from "@bluechip/domain/market/Units"
@@ -17,6 +17,7 @@ export class Stocks extends Context.Service<Stocks, {
     Effect.gen(function*() {
       const market = yield* MarketPrices
       const references = yield* ReferencePrices
+      const { stocks } = yield* ChainDeployment
 
       const list = Effect.gen(function*() {
         const prices = yield* market.prices

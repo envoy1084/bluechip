@@ -1,5 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks, usdc } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
 import { NotTradable, QuoteUnavailable } from "@bluechip/domain/Errors"
 import type { Address } from "@bluechip/domain/Ids"
@@ -30,6 +30,7 @@ export class Quoter extends Context.Service<Quoter, {
     Quoter,
     Effect.gen(function*() {
       const chain = yield* ChainClient
+      const { stocks, usdc } = yield* ChainDeployment
       const references = yield* ReferencePrices
 
       const quote = Effect.fn("Quoter.quote")(function*(request: QuoteRequest) {

@@ -1,5 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { poolAbi } from "@bluechip/chain/market/Aerodrome"
 import type { AgentId, UserId } from "@bluechip/domain/Ids"
 import { poolFee, slippage } from "@bluechip/domain/ledger/Costs"
@@ -54,6 +54,7 @@ export class Ledger extends Context.Service<Ledger, {
     Effect.gen(function*() {
       const db = yield* Database
       const chain = yield* ChainClient
+      const { stocks } = yield* ChainDeployment
 
       // The pool's fee now, in pips; `undefined` when it can't be read (the fill keeps no fee until a repair).
       const feePips = (symbol: string) => {

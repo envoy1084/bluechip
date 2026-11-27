@@ -1,4 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import * as NodeHttpServer from "@effect/platform-node/NodeHttpServer"
 import * as Chat from "effect/chat/Chat"
 import * as Config from "effect/Config"
@@ -47,7 +48,7 @@ export const makeServer = <Out, E, RA = never, R = never>(
     Layer.provide(Layer.merge(Chat.layer, FetchHttpClient.layer)),
     Layer.provide(EngineLive),
     Layer.provide(Database.layer),
-    Layer.provide(ChainClient.layer),
+    Layer.provide(Layer.merge(ChainClient.layer, ChainDeployment.layer)),
     Layer.provide(AppConfig.layer),
     Layer.provide(LoggingLive)
   )

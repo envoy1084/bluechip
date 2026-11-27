@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@blue
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { erc20Abi, formatUnits } from "viem"
 import { useAccount, useBlockNumber, useChainId, useConnect, useDisconnect, useReadContract } from "wagmi"
-
-const usdc = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+import { deployment } from "../../../lib/network.ts"
 
 export function ChainScreen() {
   const chainId = useChainId()
@@ -45,7 +44,7 @@ function Wallet() {
   const { connectors, connect, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const { data: balance } = useReadContract({
-    address: usdc,
+    address: deployment.usdc,
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address === undefined ? undefined : [address],

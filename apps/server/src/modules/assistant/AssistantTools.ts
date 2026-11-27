@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { AgentRequest } from "@bluechip/domain/agents/Agent"
 import type { Card } from "@bluechip/domain/assistant/Card"
 import { AutomationDraft, describeAutomation } from "@bluechip/domain/automations/Automation"
@@ -104,8 +104,6 @@ const problemOf = (failure: Failure): ToolProblem => {
 
 const problem = (text: string) => new ToolProblem({ problem: text })
 
-const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
-
 const legOf = (input: {
   readonly symbol: StockSymbol
   readonly side: "buy" | "sell"
@@ -153,6 +151,8 @@ export const CoreToolsLive = CoreToolkit.toLayer(Effect.gen(function*() {
   const cards = yield* Cards
   const live = yield* LiveEvents
   const automations = yield* Automations
+  const { stocks } = yield* ChainDeployment
+  const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
   const card = (input: Parameters<typeof cards.create>[2]) =>
     Effect.flatMap(Caller, (caller) => cards.create(caller, caller.conversationId, input))

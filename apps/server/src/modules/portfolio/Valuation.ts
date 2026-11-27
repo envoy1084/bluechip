@@ -1,5 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
-import type { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
+import { type MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
 import { Bps, bpsBetween, Shares, Usdc, valueOf } from "@bluechip/domain/market/Units"
 import { Holding, Portfolio } from "@bluechip/domain/portfolio/Portfolio"
 import type * as DateTime from "effect/DateTime"
@@ -18,8 +17,7 @@ export const valueHoldings = (
 ): Portfolio => {
   const cash = Usdc.make(holdings.get("USDC") ?? zero)
 
-  const held = stocks.flatMap((stock) => {
-    const symbol = stock.symbol as StockSymbol
+  const held = StockSymbol.literals.flatMap((symbol) => {
     const shares = Shares.make(holdings.get(symbol) ?? zero)
     if (shares === zero) return []
 

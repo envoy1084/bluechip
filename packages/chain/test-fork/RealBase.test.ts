@@ -2,12 +2,14 @@
 // chain up -d` runs it). Run with `pnpm test:fork`; not part of `pnpm check`.
 import { aggregatorAbi, b20Abi } from "@bluechip/chain/Abis"
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks, usdc } from "@bluechip/chain/Contracts"
-import { factory, factoryAbi } from "@bluechip/chain/market/Aerodrome"
+import { baseDeployment } from "@bluechip/chain/deployments/Base"
+import { factoryAbi } from "@bluechip/chain/market/Aerodrome"
 import { assert, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { erc20Abi } from "viem"
+
+const { stocks, usdc } = baseDeployment
 
 // The fork fetches each contract from Base on its first read; fetching them all once as the layer builds keeps each
 // check below to local reads.
@@ -60,7 +62,7 @@ layer(ForkChainClient, { timeout: "60 seconds" })("Base", (it) => {
       const found = yield* (yield* ChainClient).use("getPool", (client) =>
         Promise.all(tradable.map((stock) =>
           client.readContract({
-            address: factory,
+            address: baseDeployment.exchange.factory,
             abi: factoryAbi,
             functionName: "getPool",
             args: [usdc, stock.token, stock.pool!.tickSpacing]

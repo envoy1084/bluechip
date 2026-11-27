@@ -1,4 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import {
   agentSession,
   changeCalls,
@@ -76,9 +77,10 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       const { address, agentFor, grant, send } = yield* (yield* TestAgents).lock()
       const sellOnly = changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: BigInt(0) } })
 
-      const change = changeCalls(grant, PICKER, sellOnly)
+      const change = changeCalls(localDeployment, grant, PICKER, sellOnly)
       const landed = yield* send(change.calls)
       const decision = yield* simulateAsAgent(
+        localDeployment,
         yield* agentFor(changedGrant(grant, change.session)),
         tradeCalls(nvda, "buy", BigInt(20_000_000), address)
       )
@@ -93,7 +95,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       yield* trade(tradeCalls(nvda, "buy", BigInt(50_000_000), address), guardedTradeCallGas)
       const capped = changed(PICKER, { id: "stockCap", config: { maxBps: 2000 } })
 
-      const change = changeCalls(grant, PICKER, capped)
+      const change = changeCalls(localDeployment, grant, PICKER, capped)
       yield* send(change.calls)
       const [spent] = yield* readUsage({
         spec: capped,
@@ -114,6 +116,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
         (client) => KernelAccount.from({ client, address, owner: privateKeyToAccount(generatePrivateKey()) })
       )
       const session = agentSession({
+        deployment: localDeployment,
         spec: PICKER,
         signer: privateKeyToAccount(generatePrivateKey()).address,
         validUntil: Session.expiresIn({ days: 90 })
@@ -146,6 +149,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       const chain = yield* ChainClient
       const { account, grant, send } = yield* (yield* TestAgents).lock()
       const second = agentSession({
+        deployment: localDeployment,
         spec: PICKER,
         signer: privateKeyToAccount(generatePrivateKey()).address,
         validUntil: Session.expiresIn({ days: 90 })

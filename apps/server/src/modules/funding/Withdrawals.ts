@@ -1,6 +1,6 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { usdc } from "@bluechip/chain/Contracts"
-import { assetTokens } from "@bluechip/chain/funding/Balances"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import { assetsOf } from "@bluechip/chain/funding/Balances"
 import {
   type Conflict,
   InsufficientCash,
@@ -53,6 +53,8 @@ export class Withdrawals extends Context.Service<Withdrawals, {
     Effect.gen(function*() {
       const db = yield* Database
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
+      const { usdc } = deployment
       const live = yield* LiveEvents
       const outbox = yield* NotificationOutbox
       const balances = yield* AccountBalances
@@ -122,7 +124,11 @@ export class Withdrawals extends Context.Service<Withdrawals, {
           return yield* new InvalidRequest({ field: "to", problem: "invalid" })
         }
         const to = getAddress(input.to)
-        const refused = [zeroAddress, getAddress(owner.account), ...assetTokens.map((token) => getAddress(token))]
+        const refused = [
+          zeroAddress,
+          getAddress(owner.account),
+          ...assetsOf(deployment).map((asset) => getAddress(asset.token))
+        ]
         if (refused.includes(to)) return yield* new InvalidRequest({ field: "to", problem: "notAllowed" })
         if (input.amount <= BigInt(0)) return yield* new InvalidRequest({ field: "amount", problem: "outOfRange" })
 

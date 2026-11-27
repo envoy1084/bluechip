@@ -79,7 +79,15 @@ export function TradeApprovalSection() {
                   undefined}
               />
               {signed === "filled" ?
-                <TradeFill side="buy" total={50} shares={0.2623} price={190.62} txHash={`0x${"5e".repeat(32)}`} /> :
+                (
+                  <TradeFill
+                    side="buy"
+                    total={50}
+                    shares={0.2623}
+                    price={190.62}
+                    txUrl={`https://basescan.org/tx/0x${"5e".repeat(32)}`}
+                  />
+                ) :
                 null}
             </ChatCard>
           )}

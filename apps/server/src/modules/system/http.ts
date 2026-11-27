@@ -1,3 +1,4 @@
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { BluechipApi } from "@bluechip/domain/Api"
 import { ServerVersion } from "@bluechip/domain/api/SystemApi"
 import { ContractVersion } from "@bluechip/domain/Contract"
@@ -10,11 +11,12 @@ export const SystemHandlers = HttpApiBuilder.group(
   BluechipApi,
   "system",
   Effect.fn(function*(handlers) {
+    const { network } = yield* ChainDeployment
     return handlers.handleAll({
       version: () =>
         Effect.map(
           DateTime.now,
-          (serverTime) => new ServerVersion({ version: release, contract: ContractVersion, serverTime })
+          (serverTime) => new ServerVersion({ version: release, contract: ContractVersion, network, serverTime })
         )
     })
   })

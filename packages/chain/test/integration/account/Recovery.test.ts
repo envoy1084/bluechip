@@ -10,6 +10,7 @@ import {
   setupCalls
 } from "@bluechip/chain/account/Recovery"
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { lockedGrant } from "@bluechip/chain/policies/Session"
 import { BASE_FEES } from "@bluechip/devnet/Controls"
 import { Devnet, handleOpsCall } from "@bluechip/devnet/Devnet"
@@ -44,8 +45,12 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
     const guardKey = privateKeyToAccount(generatePrivateKey())
     const newOwner = softwarePasskey()
 
-    const recovery = recoverySession({ publicKey: recoveryKey.publicKey, id: "recovery_test" })
-    const guard = guardSession({ signer: guardKey.address, id: "recovery_test" })
+    const recovery = recoverySession({
+      deployment: localDeployment,
+      publicKey: recoveryKey.publicKey,
+      id: "recovery_test"
+    })
+    const guard = guardSession({ deployment: localDeployment, signer: guardKey.address, id: "recovery_test" })
     const setup = yield* agent.send(setupCalls(recovery, guard))
     const recoveryGrant = yield* lockedGrant(agent.account, recovery)
     const asRecovery = yield* agents.sessionFor(recoveryGrant, recoveryKey)
@@ -94,7 +99,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
     Effect.gen(function*() {
       const { agent, asRecovery, calls, send } = yield* setUp
 
-      const requested = yield* send(asRecovery, [requestCall(calls)])
+      const requested = yield* send(asRecovery, [requestCall(localDeployment, calls)])
       const at = yield* requestedAt(agent.address, calls[0]!)
 
       assert.isTrue(requested.success)
@@ -104,7 +109,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
   it.effect("before 48 hours the EntryPoint refuses the recovery", () =>
     Effect.gen(function*() {
       const { agent, asRecovery, calls, recoverAt, send } = yield* setUp
-      yield* send(asRecovery, [requestCall(calls)])
+      yield* send(asRecovery, [requestCall(localDeployment, calls)])
 
       const early = yield* recoverAt(RECOVERY_DELAY_SECONDS - 600)
 
@@ -114,7 +119,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
   it.effect("the bundler refuses a recovery that isn't due yet", () =>
     Effect.gen(function*() {
       const { asRecovery, calls, send } = yield* setUp
-      yield* send(asRecovery, [requestCall(calls)])
+      yield* send(asRecovery, [requestCall(localDeployment, calls)])
 
       const sent = yield* Effect.result(send(asRecovery, calls))
 
@@ -124,7 +129,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
   it.effect("after 48 hours the new passkey replaces the old owner", () =>
     Effect.gen(function*() {
       const { asRecovery, calls, newOwner, recoverAt, send } = yield* setUp
-      yield* send(asRecovery, [requestCall(calls)])
+      yield* send(asRecovery, [requestCall(localDeployment, calls)])
 
       const later = yield* recoverAt(RECOVERY_DELAY_SECONDS + 60)
 
@@ -143,9 +148,9 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
   it.effect("the guard's cancel stops the recovery for good", () =>
     Effect.gen(function*() {
       const { agent, asGuard, asRecovery, calls, recoverAt, send } = yield* setUp
-      yield* send(asRecovery, [requestCall(calls)])
+      yield* send(asRecovery, [requestCall(localDeployment, calls)])
 
-      const cancelled = yield* send(asGuard, [cancelCall(calls)])
+      const cancelled = yield* send(asGuard, [cancelCall(localDeployment, calls)])
       const later = yield* recoverAt(RECOVERY_DELAY_SECONDS + 60)
 
       assert.isTrue(cancelled.success)
@@ -156,9 +161,9 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
   it.effect("an owner's cancel stops the recovery", () =>
     Effect.gen(function*() {
       const { agent, asRecovery, calls, send } = yield* setUp
-      yield* send(asRecovery, [requestCall(calls)])
+      yield* send(asRecovery, [requestCall(localDeployment, calls)])
 
-      const cancelled = yield* agent.send([cancelCall(calls)])
+      const cancelled = yield* agent.send([cancelCall(localDeployment, calls)])
 
       assert.isTrue(cancelled.success)
       assert.isUndefined(yield* requestedAt(agent.address, calls[0]!))
@@ -168,7 +173,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("recovery with a r
     Effect.gen(function*() {
       const { asGuard, calls, send } = yield* setUp
 
-      const asked = yield* Effect.result(send(asGuard, [requestCall(calls)]))
+      const asked = yield* Effect.result(send(asGuard, [requestCall(localDeployment, calls)]))
 
       assert.strictEqual(asked._tag, "Failure")
     }))

@@ -1,6 +1,7 @@
 import type { Call } from "@bluechip/chain/account/Owners"
 import { guardSession, recoverySession } from "@bluechip/chain/account/Recovery"
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { lockedGrant } from "@bluechip/chain/policies/Session"
 import { Unavailable } from "@bluechip/domain/Errors"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
@@ -20,7 +21,6 @@ import {
   toWebAuthnAccount,
   type UserOperation
 } from "viem/account-abstraction"
-import { base } from "viem/chains"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Namera } from "../../platform/namera/Namera.ts"
 import { OwnerOperations, type OwnerPasskey } from "../signing/OwnerOperations.ts"
@@ -73,6 +73,7 @@ export class RecoveryOperations extends Context.Service<RecoveryOperations, {
     Effect.gen(function*() {
       const config = yield* AppConfig
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
       const namera = yield* Namera
       const owners = yield* OwnerOperations
 
@@ -133,7 +134,7 @@ export class RecoveryOperations extends Context.Service<RecoveryOperations, {
             userOperation,
             entryPointAddress: account.entryPoint.address,
             entryPointVersion: "0.7",
-            chainId: base.id
+            chainId: deployment.chainId
           })
           const challenge = keccak256(
             encodeAbiParameters([{ type: "bytes32" }, { type: "bytes32" }], [
@@ -179,8 +180,8 @@ export class RecoveryOperations extends Context.Service<RecoveryOperations, {
 
       return RecoveryOperations.of({
         sessions: ({ guard, id, recoveryKey }) => ({
-          recovery: recoverySession({ publicKey: recoveryKey, id }),
-          guard: guardSession({ signer: guard, id })
+          recovery: recoverySession({ deployment, publicKey: recoveryKey, id }),
+          guard: guardSession({ deployment, signer: guard, id })
         }),
         grant,
         prepare,

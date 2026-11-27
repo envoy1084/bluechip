@@ -1,6 +1,7 @@
 // Agents locked onto new accounts as bluechip locks them, on the devnet or a fork of Base.
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import type { ChainError } from "@bluechip/chain/ChainError"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import { compileSession, lockCalls, lockedGrant } from "@bluechip/chain/policies/Session"
 import { BASE_FEES } from "@bluechip/devnet/Controls"
@@ -121,7 +122,7 @@ export class TestAgents extends Context.Service<TestAgents, {
       const session = Session.from({
         signer: SessionKey.ecdsa(key.address),
         validUntil: Session.expiresIn({ days: 90 }),
-        policies: lockOptions.policies ?? compileSession(lockOptions.spec ?? PICKER)
+        policies: lockOptions.policies ?? compileSession(localDeployment, lockOptions.spec ?? PICKER)
       })
 
       // The owner deploys the account and locks the session in one operation, as bluechip does; the agent's trades

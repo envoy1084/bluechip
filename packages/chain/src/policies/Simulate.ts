@@ -8,6 +8,7 @@
 import * as Effect from "effect/Effect"
 import type { Address, Chain, Hex, Transport } from "viem"
 import type { BundlerClient, SmartAccount } from "viem/account-abstraction"
+import type { Deployment } from "../Deployment.ts"
 import { type Refusal, refusalFrom } from "./Refusals.ts"
 import { guardedCallGas } from "./Session.ts"
 
@@ -39,6 +40,7 @@ export type Decision =
  * @since 0.0.0
  */
 export const simulateAsAgent = (
+  deployment: Deployment,
   agent: BundlerClient<Transport, Chain | undefined, SmartAccount>,
   calls: ReadonlyArray<{ readonly to: Address; readonly data?: Hex | undefined; readonly value?: bigint | undefined }>
 ): Effect.Effect<Decision> => {
@@ -53,7 +55,7 @@ export const simulateAsAgent = (
         preVerificationGas: estimate.preVerificationGas
       })),
       Effect.catch((failure) => {
-        const refusal = refusalFrom(failure.cause)
+        const refusal = refusalFrom(deployment, failure.cause)
         return Effect.succeed<Decision>(
           refusal === undefined ?
             { _tag: "Retry", reason: failure.cause instanceof Error ? failure.cause.message : String(failure.cause) } :

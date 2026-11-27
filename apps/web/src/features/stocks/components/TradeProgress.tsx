@@ -4,6 +4,7 @@ import { Outcome, OutcomeLink } from "@bluechip/ui/bluechip/outcome"
 import { Button } from "@bluechip/ui/components/button"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
+import { explorerTxUrl } from "../../../lib/network.ts"
 import { describeTrade, tradeOutcome } from "../../../lib/tradeOutcome.ts"
 
 /**
@@ -44,7 +45,7 @@ export function TradeProgress(
         undefined}
       {trade.txHash === null ?
         undefined :
-        <OutcomeLink href={`https://basescan.org/tx/${trade.txHash}`}>View on BaseScan</OutcomeLink>}
+        <OutcomeLink href={explorerTxUrl(trade.txHash)}>View on BaseScan</OutcomeLink>}
     </Outcome>
   )
 }

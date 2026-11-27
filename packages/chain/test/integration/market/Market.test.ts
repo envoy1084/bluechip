@@ -1,5 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks, usdc } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import { readPrices } from "@bluechip/chain/market/Prices"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
@@ -11,6 +11,8 @@ import * as Effect from "effect/Effect"
 import { createTestClient, createWalletClient, http, parseEther } from "viem"
 import { base } from "viem/chains"
 import { aapl, nvda } from "../../fixtures/Market.ts"
+
+const { stocks, usdc } = localDeployment
 
 layer(DevnetTest.layer)("readPrices", (it) => {
   it.effect("a stock's price and when its feed last updated", () =>
@@ -59,14 +61,14 @@ layer(DevnetTest.layer)("quoteExactIn", (it) => {
         const wallet = createWalletClient({ chain: base, account: trader, transport: http(chain.rpcUrl) })
         await anvil.impersonateAccount({ address: trader })
         const found = []
-        for (const call of swapCalls(swap)) {
+        for (const call of swapCalls(localDeployment, swap)) {
           const hash = await wallet.sendTransaction({ to: call.to, data: call.data, gas: swapCallGas })
           found.push(...(await client.waitForTransactionReceipt({ hash })).logs)
         }
         return found
       })
 
-      assert.deepStrictEqual(fillOf(logs, swap, trader), { amountIn, amountOut: quoted })
+      assert.deepStrictEqual(fillOf(localDeployment, logs, swap, trader), { amountIn, amountOut: quoted })
     }))
 
   it.effect("two swaps in one receipt: each reads only its own pool", () =>
@@ -104,13 +106,16 @@ layer(DevnetTest.layer)("quoteExactIn", (it) => {
         const wallet = createWalletClient({ chain: base, account: trader, transport: http(chain.rpcUrl) })
         await anvil.impersonateAccount({ address: trader })
         const found = []
-        for (const call of [...swapCalls(nvdaBuy), ...swapCalls(aaplBuy)]) {
+        for (const call of [...swapCalls(localDeployment, nvdaBuy), ...swapCalls(localDeployment, aaplBuy)]) {
           const hash = await wallet.sendTransaction({ to: call.to, data: call.data, gas: swapCallGas })
           found.push(...(await client.waitForTransactionReceipt({ hash })).logs)
         }
         return found
       })
 
-      assert.deepStrictEqual(fillOf(logs, nvdaBuy, trader), { amountIn: nvdaBuy.amountIn, amountOut: nvdaQuote })
+      assert.deepStrictEqual(fillOf(localDeployment, logs, nvdaBuy, trader), {
+        amountIn: nvdaBuy.amountIn,
+        amountOut: nvdaQuote
+      })
     }))
 })

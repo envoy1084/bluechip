@@ -1,15 +1,15 @@
+import type { Network } from "@bluechip/chain/Network"
 import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
 import { SettingsRow as Row } from "../../../components/layout/SettingsSection.tsx"
 import { portfolioReactivityKey } from "../../../lib/api/client.ts"
-import { network } from "../../../lib/wallet.ts"
+import { network } from "../../../lib/network.ts"
 import { testMoneyAtom } from "../atoms/settings.ts"
 
-// The networks whose money is pretend: the local devnet, and `sepolia`, the paper network a later phase adds (not a
-// `Network` yet, hence the plain strings).
-const PLAY_MONEY_NETWORKS: ReadonlyArray<string> = ["local", "sepolia"]
+// The networks whose money is pretend: the local devnet and paper money on Base Sepolia.
+const PLAY_MONEY_NETWORKS: ReadonlyArray<Network> = ["local", "sepolia"]
 
 /** $1,000 of test USDC, only where money is pretend. */
 export function TestMoneyRow() {

@@ -1,5 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
 import {
   Conflict,
@@ -108,6 +108,7 @@ export class Trades extends Context.Service<Trades, {
       const market = yield* MarketPrices
       const quoter = yield* Quoter
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
       const ledger = yield* TradeLedger
       const intents = yield* IntentStore
       const operations = yield* OwnerOperations
@@ -183,7 +184,7 @@ export class Trades extends Context.Service<Trades, {
             ...legs.filter(({ leg }) => leg.side === "buy")
           ]
           for (const { leg } of ordered) {
-            const stock = stocks.find((candidate) => candidate.symbol === leg.symbol)
+            const stock = deployment.stocks.find((candidate) => candidate.symbol === leg.symbol)
             if (stock?.pool == null) return yield* new NotTradable({ symbol: leg.symbol })
             if ("usdc" in leg.amount && leg.amount.usdc < MINIMUM_BUY) {
               return yield* new QuoteUnavailable({ symbol: leg.symbol, reason: "belowMinimum" })
@@ -269,8 +270,8 @@ export class Trades extends Context.Service<Trades, {
               warnings: [...warnings].join(",")
             },
             calls: ordered.flatMap(({ leg }, index) =>
-              swapCalls({
-                stock: stocks.find((candidate) => candidate.symbol === leg.symbol)!,
+              swapCalls(deployment, {
+                stock: deployment.stocks.find((candidate) => candidate.symbol === leg.symbol)!,
                 side: leg.side,
                 amountIn: "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares,
                 minimumOut: quotes[index]!.minimumOut,

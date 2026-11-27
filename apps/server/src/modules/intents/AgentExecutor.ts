@@ -1,6 +1,6 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { ChainError } from "@bluechip/chain/ChainError"
-import { stocks } from "@bluechip/chain/Contracts"
 import { swapCalls } from "@bluechip/chain/market/Swaps"
 import { simulateAsAgent } from "@bluechip/chain/policies/Simulate"
 import type { Decision, Leg } from "@bluechip/domain/intents/Intent"
@@ -97,6 +97,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
     AgentExecutor,
     Effect.gen(function*() {
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
       const namera = yield* Namera
       const quoter = yield* Quoter
       const sessions = yield* AgentSessions
@@ -178,8 +179,8 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         if (block._tag === "Failure") return waitFor("unavailable", DateTime.addDuration(now, RETRY.unavailable))
 
         const calls = options.legs.flatMap((leg, index) =>
-          swapCalls({
-            stock: stocks.find((candidate) => candidate.symbol === leg.symbol)!,
+          swapCalls(deployment, {
+            stock: deployment.stocks.find((candidate) => candidate.symbol === leg.symbol)!,
             side: leg.side,
             amountIn: "usdc" in leg.amount ? leg.amount.usdc : leg.amount.shares,
             minimumOut: quotes[index]!.minimumOut,
@@ -189,7 +190,7 @@ export class AgentExecutor extends Context.Service<AgentExecutor, {
         )
 
         const client = yield* agentClient(options.agentId, options.session)
-        const simulated = yield* simulateAsAgent(client as never, calls)
+        const simulated = yield* simulateAsAgent(deployment, client as never, calls)
         switch (simulated._tag) {
           case "Passes": {
             const gas = {

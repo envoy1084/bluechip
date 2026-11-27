@@ -5,9 +5,9 @@ import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { versionAtom } from "../../../atoms/system.ts"
 import { ConnectionBanner } from "../../../components/layout/ConnectionBanner.tsx"
 import { type Connection, connectionAtom, heartbeatAtom } from "../../../lib/api/events.ts"
-import { versionAtom } from "../atoms/system.ts"
 
 const connectionBadge: Record<
   Connection,
@@ -72,6 +72,8 @@ function ServerVersionDetails({ version }: Readonly<{ version: AsyncResult.Async
       <dd>{value.version}</dd>
       <dt className="text-g-500">Contract</dt>
       <dd>v{value.contract}</dd>
+      <dt className="text-g-500">Network</dt>
+      <dd>{value.network}</dd>
       <dt className="text-g-500">Server time</dt>
       <dd>{DateTime.formatIso(value.serverTime)}</dd>
     </dl>

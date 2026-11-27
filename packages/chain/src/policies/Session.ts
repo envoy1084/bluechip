@@ -20,8 +20,8 @@ import * as Session from "@namera-ai/sdk/Session"
 import * as Effect from "effect/Effect"
 import { type Address, encodeFunctionData, type Hex } from "viem"
 import { ChainClient } from "../ChainClient.ts"
+import type { Deployment } from "../Deployment.ts"
 import { swapCallGas } from "../market/Swaps.ts"
-import { aerodromeTradePolicy, tradeGuard } from "./Deployed.ts"
 import { encodeGuardConfig, guardConfig } from "./Guard.ts"
 import { required, RULES } from "./Rules.ts"
 import { tradePolicyInitData } from "./Trade.ts"
@@ -60,19 +60,19 @@ export interface Placement {
 }
 
 /**
- * Where each policy of `spec` is enforced, in the spec's order.
+ * Where each policy of `spec` is enforced on `deployment`, in the spec's order.
  *
  * @stability unstable
  * @category getters
  * @since 0.0.0
  */
-export const placements = (spec: AgentSpec): ReadonlyArray<Placement> =>
+export const placements = (deployment: Deployment, spec: AgentSpec): ReadonlyArray<Placement> =>
   spec.policies.map((entry): Placement => {
     const rule = RULES.find((candidate) => candidate.policy === entry.id)
-    if (rule !== undefined) return { policy: entry.id, kind: "rule", contract: rule.address }
+    if (rule !== undefined) return { policy: entry.id, kind: "rule", contract: deployment.policies[rule.contract] }
     switch (entry.id) {
       case "trade":
-        return { policy: entry.id, kind: "userOp", contract: aerodromeTradePolicy }
+        return { policy: entry.id, kind: "userOp", contract: deployment.policies.aerodromeTradePolicy }
       case "tradesPerDay":
         return { policy: entry.id, kind: "userOp", contract: RateLimitPolicy.addressV1 }
       case "gasBudget":
@@ -92,10 +92,17 @@ export const placements = (spec: AgentSpec): ReadonlyArray<Placement> =>
  * @category constructors
  * @since 0.0.0
  */
-export const compileSession = (spec: AgentSpec): ReadonlyArray<Policy.Policy> => [
+export const compileSession = (deployment: Deployment, spec: AgentSpec): ReadonlyArray<Policy.Policy> => [
   Policy.anyCall({ unsafe: true }),
-  Policy.custom({ kind: "limit", address: aerodromeTradePolicy, initData: tradePolicyInitData(spec) }),
-  Policy.execution({ address: tradeGuard, initData: encodeGuardConfig(guardConfig(spec)) }),
+  Policy.custom({
+    kind: "limit",
+    address: deployment.policies.aerodromeTradePolicy,
+    initData: tradePolicyInitData(deployment, spec)
+  }),
+  Policy.execution({
+    address: deployment.policies.tradeGuard,
+    initData: encodeGuardConfig(guardConfig(deployment, spec))
+  }),
   Policy.rateLimit({ count: required(spec, tradesPerDay).count, period: "day" }),
   Policy.gas({ maxCost: required(spec, gasBudget).weiPerDay, period: "day" })
 ]
@@ -111,12 +118,12 @@ const keyOf = (policy: Policy.Policy) =>
  * @category constructors
  * @since 0.0.0
  */
-export const diffSessions = (before: AgentSpec, after: AgentSpec): {
+export const diffSessions = (deployment: Deployment, before: AgentSpec, after: AgentSpec): {
   readonly remove: ReadonlyArray<Policy.Policy>
   readonly add: ReadonlyArray<Policy.Policy>
 } => {
-  const old = compileSession(before)
-  const next = compileSession(after)
+  const old = compileSession(deployment, before)
+  const next = compileSession(deployment, after)
   const oldKeys = old.map(keyOf)
   const nextKeys = next.map(keyOf)
   return {
@@ -134,6 +141,7 @@ export const diffSessions = (before: AgentSpec, after: AgentSpec): {
  * @since 0.0.0
  */
 export const agentSession = (options: {
+  readonly deployment: Deployment
   readonly spec: AgentSpec
   readonly signer: Address
   readonly validUntil: number
@@ -142,7 +150,7 @@ export const agentSession = (options: {
   Session.from({
     signer: SessionKey.ecdsa(options.signer),
     validUntil: options.validUntil,
-    policies: compileSession(options.spec),
+    policies: compileSession(options.deployment, options.spec),
     ...(options.salt === undefined ? {} : { salt: options.salt })
   })
 
@@ -171,8 +179,8 @@ export const lockCalls = (session: Session.Session): ReadonlyArray<{ readonly to
  * @category encoding
  * @since 0.0.0
  */
-export const changeCalls = (grant: Grant.Grant, before: AgentSpec, after: AgentSpec) => {
-  const update = Grant.updateCalls(grant, diffSessions(before, after))
+export const changeCalls = (deployment: Deployment, grant: Grant.Grant, before: AgentSpec, after: AgentSpec) => {
+  const update = Grant.updateCalls(grant, diffSessions(deployment, before, after))
   return { calls: ownerCalls(update.calls), session: update.session }
 }
 

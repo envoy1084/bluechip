@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { Platform } from "@bluechip/domain/channels/Channel"
 import { chatCard } from "@bluechip/domain/channels/ChatCards"
 import { HELP, NOT_LINKED, UNLINKED } from "@bluechip/domain/channels/ChatReplies"
@@ -21,8 +21,6 @@ import { ChannelLinks } from "./ChannelLinks.ts"
 import { ChatBot, ChatMessageIn, type ChatOwner } from "./ChatBot.ts"
 import { chatContent } from "./ChatContent.ts"
 import { BotInteractions, PauseAgent } from "./Interactions.ts"
-
-const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
 /**
  * One message to the bot, answered once: chat platforms deliver a message again until it is accepted, and a turn of
@@ -70,6 +68,8 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
   const cards = yield* Cards
   const agents = yield* Agents
   const links = yield* ChannelLinks
+  const { stocks } = yield* ChainDeployment
+  const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
   const recoveries = yield* Recoveries
   const { publicOrigin } = yield* AppConfig
 

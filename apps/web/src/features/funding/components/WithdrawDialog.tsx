@@ -22,6 +22,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { withdrawalsAtom } from "../../../atoms/portfolio.ts"
 import { parseUsdc, usdcDollars } from "../../../lib/amounts.ts"
+import { explorerTxUrl } from "../../../lib/network.ts"
 import { type PasskeyProblem, passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { confirmWithdrawalAtom, prepareWithdrawalAtom } from "../atoms/funding.ts"
 import { withdrawalOutcome } from "../model/withdrawalOutcome.ts"
@@ -233,7 +234,7 @@ function WithdrawProgress({ transfer, onDone }: Readonly<{ transfer: Transfer; o
     >
       {latest.txHash === null ?
         undefined :
-        <OutcomeLink href={`https://basescan.org/tx/${latest.txHash}`}>View on BaseScan</OutcomeLink>}
+        <OutcomeLink href={explorerTxUrl(latest.txHash)}>View on BaseScan</OutcomeLink>}
     </Outcome>
   )
 }

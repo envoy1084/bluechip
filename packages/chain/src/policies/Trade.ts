@@ -8,7 +8,7 @@ import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { type Direction, trade } from "@bluechip/domain/policies/Trade"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import { encodeAbiParameters, type Hex } from "viem"
-import { type Stock, stocks } from "../Contracts.ts"
+import type { Deployment, Stock } from "../Deployment.ts"
 import { required } from "./Rules.ts"
 
 /**
@@ -21,26 +21,26 @@ import { required } from "./Rules.ts"
 export const MODES: Readonly<Record<Direction, number>> = { buy: 0, sell: 1, both: 2, rebalance: 3 }
 
 /**
- * The stock with this symbol.
+ * The stock of `deployment` with this symbol.
  *
  * @stability unstable
  * @category getters
  * @since 0.0.0
  */
-export const stockOf = (symbol: string): Stock => {
-  const stock = stocks.find((candidate) => candidate.symbol === symbol)
+export const stockOf = (deployment: Deployment, symbol: string): Stock => {
+  const stock = deployment.stocks.find((candidate) => candidate.symbol === symbol)
   if (stock === undefined) throw new Error(`no stock ${symbol}`)
   return stock
 }
 
 /**
- * `AerodromeTradePolicy`'s init data for `spec`.
+ * `AerodromeTradePolicy`'s init data for `spec` on `deployment`.
  *
  * @stability unstable
  * @category encoding
  * @since 0.0.0
  */
-export const tradePolicyInitData = (spec: AgentSpec): Hex => {
+export const tradePolicyInitData = (deployment: Deployment, spec: AgentSpec): Hex => {
   const config = required(spec, trade)
   return encodeAbiParameters([{
     type: "tuple",
@@ -59,8 +59,8 @@ export const tradePolicyInitData = (spec: AgentSpec): Hex => {
     maxUsdcIn: required(spec, tradeSize).maxPerTrade,
     dailyBudget: config.dailyBudget,
     markets: config.stocks.map((symbol) => ({
-      token: stockOf(symbol).token,
-      tickSpacing: stockOf(symbol).pool?.tickSpacing ?? 0
+      token: stockOf(deployment, symbol).token,
+      tickSpacing: stockOf(deployment, symbol).pool?.tickSpacing ?? 0
     }))
   }])
 }

@@ -5,9 +5,8 @@
  * @since 0.0.0
  */
 import { type Address, decodeEventLog, encodeFunctionData, erc20Abi, type Hex, isAddressEqual, type Log } from "viem"
-import { usdc } from "../Contracts.ts"
-import type { Stock } from "../Contracts.ts"
-import { swapRouter, swapRouterAbi } from "./Aerodrome.ts"
+import type { Deployment, Stock } from "../Deployment.ts"
+import { swapRouterAbi } from "./Aerodrome.ts"
 
 /**
  * Gas estimates come in short for a swap: Aerodrome's swap hook on Base records each swap only when enough gas is left,
@@ -37,18 +36,23 @@ export interface Swap {
   readonly deadline: bigint
 }
 
-const tokensOf = ({ side, stock }: Pick<Swap, "stock" | "side">) =>
+const tokensOf = ({ usdc }: Deployment, { side, stock }: Pick<Swap, "stock" | "side">) =>
   side === "buy" ? { tokenIn: usdc, tokenOut: stock.token } : { tokenIn: stock.token, tokenOut: usdc }
 
 /**
- * The account's calls for a swap: approve the router for exactly `amountIn`, then swap in the stock's pinned pool.
+ * The account's calls for a swap on `deployment`: approve its router for exactly `amountIn`, then swap in the stock's
+ * pinned pool.
  *
  * @stability unstable
  * @category calls
  * @since 0.0.0
  */
-export const swapCalls = (swap: Swap): ReadonlyArray<{ readonly to: Address; readonly data: Hex }> => {
-  const { tokenIn, tokenOut } = tokensOf(swap)
+export const swapCalls = (
+  deployment: Deployment,
+  swap: Swap
+): ReadonlyArray<{ readonly to: Address; readonly data: Hex }> => {
+  const { tokenIn, tokenOut } = tokensOf(deployment, swap)
+  const swapRouter = deployment.exchange.router
 
   return [
     {
@@ -85,11 +89,12 @@ export const swapCalls = (swap: Swap): ReadonlyArray<{ readonly to: Address; rea
  * @since 0.0.0
  */
 export const fillOf = (
+  deployment: Deployment,
   logs: ReadonlyArray<Log>,
   swap: Pick<Swap, "stock" | "side">,
   account: Address
 ): { readonly amountIn: bigint; readonly amountOut: bigint } | undefined => {
-  const { tokenIn, tokenOut } = tokensOf(swap)
+  const { tokenIn, tokenOut } = tokensOf(deployment, swap)
   const pool = swap.stock.pool?.address
   if (pool === undefined) return undefined
   let amountIn = BigInt(0)

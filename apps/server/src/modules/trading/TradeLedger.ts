@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { fillOf } from "@bluechip/chain/market/Swaps"
 import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
@@ -65,6 +65,7 @@ export class TradeLedger extends Context.Service<TradeLedger, {
       const live = yield* LiveEvents
       const balances = yield* AccountBalances
       const ledger = yield* Ledger
+      const deployment = yield* ChainDeployment
 
       const record = Effect.fn("TradeLedger.record")(function*(trade: typeof trades.$inferInsert) {
         const [row] = yield* db.insert(trades).values(trade).returning().pipe(Effect.orDie)
@@ -86,8 +87,10 @@ export class TradeLedger extends Context.Service<TradeLedger, {
 
       const settle = Effect.fn("TradeLedger.settle")(
         function*(row: TradeRow, account: Hex, receipt: Receipt | undefined) {
-          const stock = stocks.find((candidate) => candidate.symbol === row.symbol)!
-          const fill = receipt?.success === true ? fillOf(receipt.logs, { stock, side: row.side }, account) : undefined
+          const stock = deployment.stocks.find((candidate) => candidate.symbol === row.symbol)!
+          const fill = receipt?.success === true
+            ? fillOf(deployment, receipt.logs, { stock, side: row.side }, account)
+            : undefined
           const next = transition(row.status, { _tag: fill === undefined ? "Failed" : "Filled" })
           if (Result.isFailure(next)) {
             yield* Effect.logWarning(`Trade ${row.id}: ${next.failure}`)

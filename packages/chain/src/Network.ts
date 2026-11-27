@@ -1,21 +1,28 @@
 /**
- * Which Base bluechip runs against.
+ * Which chain bluechip runs against.
  *
  * @since 0.0.0
  */
 import * as Config from "effect/Config"
-import type { Address } from "viem"
-import { usdc } from "./Contracts.ts"
 
 /**
- * `local` is the Anvil fork of Base mainnet from `docker compose --profile chain up -d` (same chain id, fake money);
- * `base` is Base mainnet.
+ * `local` is the devnet (or an Anvil fork) copying Base mainnet (same chain id and contracts, fake money); `sepolia`
+ * is paper money on Base Sepolia (bluechip's own test USDC, stocks, feeds and exchange); `base` is Base mainnet.
  *
  * @stability unstable
  * @category models
  * @since 0.0.0
  */
-export type Network = "local" | "base"
+export type Network = "local" | "sepolia" | "base"
+
+/**
+ * Every {@link Network}.
+ *
+ * @stability unstable
+ * @category constants
+ * @since 0.0.0
+ */
+export const networks: ReadonlyArray<Network> = ["local", "sepolia", "base"]
 
 /**
  * `NETWORK` from the environment, `local` by default.
@@ -24,31 +31,6 @@ export type Network = "local" | "base"
  * @category config
  * @since 0.0.0
  */
-export const NetworkConfig: Config.Config<Network> = Config.Literals(["local", "base"], "NETWORK").pipe(
+export const NetworkConfig: Config.Config<Network> = Config.Literals(networks, "NETWORK").pipe(
   Config.withDefault("local")
 )
-
-/**
- * What a wallet needs to pay into a network: its chain id and the USDC contract there. The local chain is a copy of
- * Base, so it has Base's chain id and contracts.
- *
- * @stability unstable
- * @category models
- * @since 0.0.0
- */
-export interface NetworkChain {
-  readonly chainId: number
-  readonly usdc: Address
-}
-
-/**
- * Each {@link Network}'s chain.
- *
- * @stability unstable
- * @category config
- * @since 0.0.0
- */
-export const networkChains: { readonly [N in Network]: NetworkChain } = {
-  local: { chainId: 8453, usdc },
-  base: { chainId: 8453, usdc }
-}

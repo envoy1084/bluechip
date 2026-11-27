@@ -4,8 +4,8 @@
  *
  * @since 0.0.0
  */
-import { type Stock, usdc } from "@bluechip/chain/Contracts"
-import { swapRouter } from "@bluechip/chain/market/Aerodrome"
+import type { Stock } from "@bluechip/chain/Deployment"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import {
   type Address,
   decodeAbiParameters,
@@ -20,6 +20,8 @@ import {
 } from "viem"
 import { mnemonicToAccount } from "viem/accounts"
 import { sqrtPriceX96Of } from "./Pools.ts"
+
+const { exchange: { router: swapRouter }, usdc } = localDeployment
 
 /**
  * Anvil's first development account: the admin, minter and operator of the devnet's stock tokens, and the trader

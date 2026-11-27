@@ -64,8 +64,8 @@ account's desk.
 - Sessions (`src/modules/market/Calendar.ts`): regular, pre-market, after-hours and overnight while prices move
   (Sunday 8 pm to Friday 8 pm New York), paused on weekends and NYSE holidays (2026-2028 from NYSE's release; add 2029
   when it's published). The stock tokens trade around the clock either way.
-- Quotes come from each stock's Aerodrome pool (pinned in `@bluechip/chain`'s `Contracts.ts`) via the MetaDEX
-  quoter.
+- Quotes come from each stock's pool (pinned in the network's deployment, `@bluechip/chain`'s `deployments/`) via
+  the exchange's quoter (Aerodrome's MetaDEX on Base).
 
 ## Funding and portfolio
 

@@ -1,9 +1,8 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import type { ChainError } from "@bluechip/chain/ChainError"
-import { stocks } from "@bluechip/chain/Contracts"
 import { multiplierScale, readMultipliers } from "@bluechip/chain/market/Multipliers"
 import { LiveEvent } from "@bluechip/domain/Events"
-import { MarketPrice, type StockSymbol } from "@bluechip/domain/market/Market"
+import { MarketPrice, StockSymbol } from "@bluechip/domain/market/Market"
 import { Price } from "@bluechip/domain/market/Units"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
@@ -15,8 +14,6 @@ import * as Schedule from "effect/Schedule"
 import * as Stream from "effect/Stream"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { Alpaca, type AlpacaError } from "./alpaca/Alpaca.ts"
-
-const symbols = stocks.map((stock) => stock.symbol)
 
 /** A share's price in dollars as a token's price (USD × 1e8): the share price times the token's multiplier. */
 export const toTokenPrice = (dollars: number, multiplier: bigint): Price =>
@@ -49,7 +46,7 @@ export class MarketPrices extends Context.Service<MarketPrices, {
 
       // Every stock's latest market price from one Alpaca snapshot request, converted with the given multipliers.
       const readWith = Effect.fnUntraced(function*(known: ReadonlyMap<string, bigint>) {
-        const snapshots = yield* alpaca.snapshots(symbols)
+        const snapshots = yield* alpaca.snapshots(StockSymbol.literals)
         return new Map([...snapshots].map(([symbol, snapshot]) => {
           const multiplier = known.get(symbol) ?? multiplierScale
           return [
@@ -84,7 +81,7 @@ export class MarketPrices extends Context.Service<MarketPrices, {
         Effect.catch((error) => Effect.logWarning("Could not read Alpaca snapshots", error))
       )
 
-      const followTrades = alpaca.trades(symbols).pipe(
+      const followTrades = alpaca.trades(StockSymbol.literals).pipe(
         Stream.runForEach((trade) =>
           Effect.gen(function*() {
             const current = (yield* Ref.get(prices)).get(trade.symbol as StockSymbol)

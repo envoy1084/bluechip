@@ -123,7 +123,8 @@ const Schedules = Layer.unwrap(Effect.gen(function*() {
 /**
  * Every service of the app, wired to each other: what the HTTP handlers, the desk and the crons run on (`DevChain`
  * only answers on a local chain; the dev endpoints check the network first). Each line
- * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient`, the
+ * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient` and its
+ * `ChainDeployment`, the
  * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`), the
  * embedder (`Embeddings`), the chat router (`Chat`, with Telegram's adapter or `ChatTest`'s), the `HttpClient` push
  * services are reached with, and the durable engine.

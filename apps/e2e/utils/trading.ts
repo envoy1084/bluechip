@@ -1,13 +1,13 @@
 // Money moved the way a person moves it: a buy on the stock's page and a withdrawal from Portfolio, each signed with the
 // page's passkey. Holdings a screen needs without a trade come from the devnet's controls, for the test's own account.
-import { stocks } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { mintShares, rpc } from "@bluechip/devnet/Controls"
 import { expect, type Page } from "@playwright/test"
 import type { User } from "../fixtures/users.ts"
 import { urls } from "../stack/Stack.ts"
 
 const stock = (symbol: string) => {
-  const found = stocks.find((candidate) => candidate.symbol === symbol)
+  const found = localDeployment.stocks.find((candidate) => candidate.symbol === symbol)
   if (found === undefined) throw new Error(`e2e: bluechip doesn't trade ${symbol}`)
   return found
 }

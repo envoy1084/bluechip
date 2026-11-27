@@ -9,9 +9,11 @@ that match the task.
 - `packages/*`: publishable packages, each with its own public boundary.
   - `packages/domain` (`@bluechip/domain`, private): shared ids, errors, live events and the HTTP API contract
     (`BluechipApi`, Effect `HttpApi`); the server implements it, the web app calls it. Depends only on `effect`.
-  - `packages/chain` (`@bluechip/chain`, private): Base from Effect: `ChainClient` (viem), contract addresses (USDC,
-    EntryPoint, every Coinbase stock with a Chainlink feed), ABIs, the account's owners and recovery sessions
-    (`account/`), and `DevChain` cheatcodes for the local fork.
+  - `packages/chain` (`@bluechip/chain`, private): Base from Effect: `ChainClient` (viem), each network's
+    `Deployment` (`deployments/`: USDC, EntryPoint, the exchange, every stock with its feed and pool, bluechip's
+    policies, the explorer; `local` is Base's, `sepolia` paper's), read through `ChainDeployment` (from `NETWORK`),
+    never module constants; shared ABIs, the account's owners and recovery sessions (`account/`), and `DevChain`
+    cheatcodes for the local fork.
   - `packages/devnet` (`@bluechip/devnet`, private): a local Base for tests, Anvil and Alto per Vitest worker,
     started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), with
     every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`), software

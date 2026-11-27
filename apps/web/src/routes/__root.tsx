@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+import { NetworkCheck } from "../components/layout/NetworkCheck.tsx"
 import { AtomProvider } from "../providers/AtomProvider.tsx"
 import { WalletProvider } from "../providers/WalletProvider.tsx"
 import styles from "../styles.css?url"
@@ -23,6 +24,7 @@ function RootComponent() {
       <AtomProvider>
         <WalletProvider>
           <Outlet />
+          <NetworkCheck />
         </WalletProvider>
       </AtomProvider>
     </RootDocument>

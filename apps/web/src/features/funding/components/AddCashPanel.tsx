@@ -6,7 +6,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { fetchedPortfolioAtom } from "../../../atoms/portfolio.ts"
 import { usdcDollars } from "../../../lib/amounts.ts"
-import { network } from "../../../lib/wallet.ts"
+import { network } from "../../../lib/network.ts"
 
 // While this dialog is open, balances are read this often: deposits aren't watched in the background, so the
 // "cash arrived" moment only plays for someone who is looking.

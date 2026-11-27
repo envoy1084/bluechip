@@ -1,3 +1,4 @@
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { compileSession, diffSessions, placements } from "@bluechip/chain/policies/Session"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { assert, describe, it } from "@effect/vitest"
@@ -27,7 +28,7 @@ describe("diffSessions", () => {
       expected: { remove: ["rateLimit"], add: ["rateLimit"] }
     }
   ])("$name", ({ after, expected }) => {
-    const { add, remove } = diffSessions(PICKER, after)
+    const { add, remove } = diffSessions(localDeployment, PICKER, after)
 
     assert.deepStrictEqual(
       { remove: remove.map((policy) => policy.type), add: add.map((policy) => policy.type) },
@@ -38,7 +39,7 @@ describe("diffSessions", () => {
 
 describe("placements", () => {
   it("a Stock picker's policies, where each is enforced", () => {
-    assert.deepStrictEqual(placements(PICKER).map(({ kind, policy }) => [policy, kind]), [
+    assert.deepStrictEqual(placements(localDeployment, PICKER).map(({ kind, policy }) => [policy, kind]), [
       ["trade", "userOp"],
       ["tradeSize", "rule"],
       ["fairPrice", "rule"],
@@ -54,7 +55,7 @@ describe("placements", () => {
 
 describe("compileSession", () => {
   it("compiles every spec to the same five Namera policies", () => {
-    assert.deepStrictEqual(compileSession(PICKER).map((policy) => policy.type), [
+    assert.deepStrictEqual(compileSession(localDeployment, PICKER).map((policy) => policy.type), [
       "anyCall",
       "custom",
       "execution",

@@ -1,5 +1,6 @@
 import { aggregatorAbi } from "@bluechip/chain/Abis"
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { simulateAsAgent } from "@bluechip/chain/policies/Simulate"
 import { BASE_FEES } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
@@ -21,7 +22,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
       Effect.gen(function*() {
         const { address, agent } = yield* (yield* TestAgents).lock()
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(50), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(50), address))
 
         assert.strictEqual(decision._tag, "Passes")
       }))
@@ -32,7 +33,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           spec: without(PICKER, "stockCap", "cashReserve", "slippageBudget")
         })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(50), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(50), address))
 
         assert.strictEqual(decision._tag, "Passes")
       }))
@@ -44,7 +45,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent } = yield* (yield* TestAgents).lock()
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(20_000_000))
 
-        const decision = yield* simulateAsAgent(agent, [
+        const decision = yield* simulateAsAgent(localDeployment, agent, [
           ...tradeCalls(nvda, "sell", BigInt(20_000_000), address),
           ...tradeCalls(aapl, "buy", dollars(50), address)
         ])
@@ -57,7 +58,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent } = yield* (yield* TestAgents).lock()
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(20_000_000))
 
-        const decision = yield* simulateAsAgent(agent, [
+        const decision = yield* simulateAsAgent(localDeployment, agent, [
           ...tradeCalls(nvda, "sell", BigInt(20_000_000), address),
           ...tradeCalls(aapl, "buy", dollars(150), address)
         ])
@@ -69,7 +70,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
       Effect.gen(function*() {
         const { address, agent } = yield* (yield* TestAgents).lock()
 
-        const decision = yield* simulateAsAgent(agent, [
+        const decision = yield* simulateAsAgent(localDeployment, agent, [
           ...tradeCalls(nvda, "buy", dollars(60), address),
           ...tradeCalls(nvda, "buy", dollars(60), address)
         ])
@@ -86,7 +87,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
       Effect.gen(function*() {
         const { address, agent } = yield* (yield* TestAgents).lock()
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(tsla, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(tsla, "buy", dollars(20), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -105,7 +106,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           spec: changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: BigInt(0) } })
         })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.strictEqual(decision._tag === "Refused" ? decision.refusal.policy : decision._tag, "trade")
       }))
@@ -117,7 +118,11 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent } = yield* (yield* TestAgents).lock()
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(200_000_000))
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "sell", BigInt(150_000_000), address))
+        const decision = yield* simulateAsAgent(
+          localDeployment,
+          agent,
+          tradeCalls(nvda, "sell", BigInt(150_000_000), address)
+        )
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -134,7 +139,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
       Effect.gen(function*() {
         const { address, agent } = yield* (yield* TestAgents).lock()
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(2), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(2), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -162,7 +167,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         )
         const { address, agent } = yield* (yield* TestAgents).lock()
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(aapl, "buy", dollars(50), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(aapl, "buy", dollars(50), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -190,7 +195,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           spec: changed(PICKER, { id: "fairPrice", config: { collarBps: 1000 } })
         })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(aapl, "buy", dollars(50), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(aapl, "buy", dollars(50), address))
 
         assert.strictEqual(decision._tag, "Passes")
       }))
@@ -209,7 +214,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent } = yield* (yield* TestAgents).lock()
         yield* (yield* Devnet).mintShares(address, "NVDA", held)
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(100), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(100), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -230,7 +235,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           spec: changed(without(PICKER, "stockCap"), { id: "cashReserve", config: { minBps: 9500 } })
         })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(100), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(100), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -260,7 +265,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
 
         const { address, agent } = yield* (yield* TestAgents).lock({ spec })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(50), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(50), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -282,7 +287,11 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent } = yield* (yield* TestAgents).lock({ spec: guard(BigInt(1)) })
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(100_000_000))
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "sell", BigInt(10_000_000), address))
+        const decision = yield* simulateAsAgent(
+          localDeployment,
+          agent,
+          tradeCalls(nvda, "sell", BigInt(10_000_000), address)
+        )
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -300,7 +309,11 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent } = yield* (yield* TestAgents).lock({ spec: guard(BigInt(1_000_000_000_000)) })
         yield* (yield* Devnet).mintShares(address, "NVDA", BigInt(100_000_000))
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "sell", BigInt(10_000_000), address))
+        const decision = yield* simulateAsAgent(
+          localDeployment,
+          agent,
+          tradeCalls(nvda, "sell", BigInt(10_000_000), address)
+        )
 
         assert.strictEqual(decision._tag, "Passes")
       }))
@@ -322,7 +335,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           spec: changed(PICKER, { id: "slippageBudget", config: { weeklyBps: 1 } })
         })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(100), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(100), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -342,13 +355,13 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
         const { address, agent, trade } = yield* (yield* TestAgents).lock({
           spec: changed(PICKER, { id: "tradesPerDay", config: { count: 1 } })
         })
-        const first = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
+        const first = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(20), address))
         yield* trade(
           tradeCalls(nvda, "buy", dollars(20), address),
           first._tag === "Passes" ? first.callGasLimit : undefined
         )
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -364,7 +377,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           spec: changed(PICKER, { id: "gasBudget", config: { weiPerDay: BigInt(1) } })
         })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(localDeployment, agent, tradeCalls(nvda, "buy", dollars(20), address))
 
         assert.deepStrictEqual(decision, {
           _tag: "Refused",
@@ -385,7 +398,11 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("simulateAsAgent",
           userOperation: { estimateFeesPerGas: async () => BASE_FEES }
         })
 
-        const decision = yield* simulateAsAgent(unreachable, tradeCalls(nvda, "buy", dollars(20), address))
+        const decision = yield* simulateAsAgent(
+          localDeployment,
+          unreachable,
+          tradeCalls(nvda, "buy", dollars(20), address)
+        )
 
         assert.match(decision._tag === "Retry" ? decision.reason : decision._tag, /HTTP request failed/)
       }))

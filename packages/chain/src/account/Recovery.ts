@@ -22,7 +22,8 @@ import {
   toFunctionSelector
 } from "viem"
 import { ChainClient } from "../ChainClient.ts"
-import { recoveryDelayPolicy, recoveryDelayPolicyAbi } from "../policies/Deployed.ts"
+import type { Deployment } from "../Deployment.ts"
+import { recoveryDelayPolicyAbi } from "../policies/Deployed.ts"
 import { lockCalls } from "../policies/Session.ts"
 import { addOwnerCall, type Call, removeOwnerCall } from "./Owners.ts"
 
@@ -57,8 +58,8 @@ export const recoveryCalls = (options: {
   readonly oldOwners: ReadonlyArray<Hex>
 }): ReadonlyArray<Call> => [addOwnerCall(options.newOwner), ...options.oldOwners.map(removeOwnerCall)]
 
-const delayCall = (functionName: "request" | "cancel", calls: ReadonlyArray<Call>): Call => ({
-  to: recoveryDelayPolicy,
+const delayCall = (deployment: Deployment, functionName: "request" | "cancel", calls: ReadonlyArray<Call>): Call => ({
+  to: deployment.policies.recoveryDelayPolicy,
   data: encodeFunctionData({ abi: recoveryDelayPolicyAbi, functionName, args: [calls.map(callHashOf)] })
 })
 
@@ -69,7 +70,8 @@ const delayCall = (functionName: "request" | "cancel", calls: ReadonlyArray<Call
  * @category encoding
  * @since 0.0.0
  */
-export const requestCall = (calls: ReadonlyArray<Call>): Call => delayCall("request", calls)
+export const requestCall = (deployment: Deployment, calls: ReadonlyArray<Call>): Call =>
+  delayCall(deployment, "request", calls)
 
 /**
  * The account's call that cancels the request for `calls`.
@@ -78,7 +80,8 @@ export const requestCall = (calls: ReadonlyArray<Call>): Call => delayCall("requ
  * @category encoding
  * @since 0.0.0
  */
-export const cancelCall = (calls: ReadonlyArray<Call>): Call => delayCall("cancel", calls)
+export const cancelCall = (deployment: Deployment, calls: ReadonlyArray<Call>): Call =>
+  delayCall(deployment, "cancel", calls)
 
 const selectorOf = (name: "addPasskey" | "removePasskey") => {
   const entry = WebAuthnValidator.abiV1.find((item) => item.type === "function" && item.name === name)!
@@ -91,10 +94,10 @@ const delaySelector = (name: "request" | "cancel") =>
 // The gas either session may spend in a day, paid by the account: a few operations at Base's prices, never more.
 const dailyGas = Policy.gas({ maxCost: parseEther("0.002"), period: "day" })
 
-const delayed = (name: "addPasskey" | "removePasskey") =>
+const delayed = (deployment: Deployment, name: "addPasskey" | "removePasskey") =>
   Policy.custom({
     kind: "call",
-    address: recoveryDelayPolicy,
+    address: deployment.policies.recoveryDelayPolicy,
     initData: encodeAbiParameters([{ type: "uint256" }], [BigInt(RECOVERY_DELAY_SECONDS)]),
     to: WebAuthnValidator.addressV1,
     selector: selectorOf(name)
@@ -109,16 +112,18 @@ const delayed = (name: "addPasskey" | "removePasskey") =>
  * @category constructors
  * @since 0.0.0
  */
-export const recoverySession = (options: { readonly publicKey: Hex; readonly id: string }): Session.Session =>
+export const recoverySession = (
+  options: { readonly deployment: Deployment; readonly publicKey: Hex; readonly id: string }
+): Session.Session =>
   Session.from({
     signer: SessionKey.passkey({ publicKey: options.publicKey }),
     validUntil: "never",
     unsafe: true,
     salt: keccak256(stringToHex(`recovery:${options.id}`)),
     policies: [
-      Policy.call({ to: recoveryDelayPolicy, selector: delaySelector("request") }),
-      delayed("addPasskey"),
-      delayed("removePasskey"),
+      Policy.call({ to: options.deployment.policies.recoveryDelayPolicy, selector: delaySelector("request") }),
+      delayed(options.deployment, "addPasskey"),
+      delayed(options.deployment, "removePasskey"),
       dailyGas
     ]
   })
@@ -130,13 +135,18 @@ export const recoverySession = (options: { readonly publicKey: Hex; readonly id:
  * @category constructors
  * @since 0.0.0
  */
-export const guardSession = (options: { readonly signer: Address; readonly id: string }): Session.Session =>
+export const guardSession = (
+  options: { readonly deployment: Deployment; readonly signer: Address; readonly id: string }
+): Session.Session =>
   Session.from({
     signer: SessionKey.ecdsa(options.signer),
     validUntil: "never",
     unsafe: true,
     salt: keccak256(stringToHex(`guard:${options.id}`)),
-    policies: [Policy.call({ to: recoveryDelayPolicy, selector: delaySelector("cancel") }), dailyGas]
+    policies: [
+      Policy.call({ to: options.deployment.policies.recoveryDelayPolicy, selector: delaySelector("cancel") }),
+      dailyGas
+    ]
   })
 
 /**
@@ -163,7 +173,7 @@ export const requestedAt = Effect.fnUntraced(function*(account: Address, call: C
   const chain = yield* ChainClient
   const at = yield* chain.use("read a recovery request", (client) =>
     client.readContract({
-      address: recoveryDelayPolicy,
+      address: chain.deployment.policies.recoveryDelayPolicy,
       abi: recoveryDelayPolicyAbi,
       functionName: "requestedAt",
       args: [account, callHashOf(call)]

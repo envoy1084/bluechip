@@ -1,3 +1,4 @@
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { RULES } from "@bluechip/chain/policies/Rules"
 import { assert, describe, it } from "@effect/vitest"
 import { decodeAbiParameters } from "viem"
@@ -15,7 +16,7 @@ describe("RULES", () => {
 
     const [config] = decodeAbiParameters(
       [{ type: "tuple", components: [{ type: "uint256[]", name: "floors" }] }],
-      binding.config(spec)
+      binding.config(spec, localDeployment.stocks)
     )
 
     // AAPL, AMZN, ANT, CRCL, GOOGL, INTC, META, MSFT, MSTR, NVDA, SNDK, SPCX, TSLA.

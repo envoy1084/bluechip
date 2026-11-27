@@ -1,3 +1,4 @@
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { Unavailable } from "@bluechip/domain/Errors"
 import type { AuthenticationCredential } from "@bluechip/domain/WebAuthn"
 import type * as KernelAccount from "@namera-ai/sdk/effect/accounts/KernelAccount"
@@ -16,7 +17,6 @@ import {
   type UserOperation,
   type UserOperationReceipt
 } from "viem/account-abstraction"
-import { base } from "viem/chains"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { Namera } from "../../platform/namera/Namera.ts"
 
@@ -116,6 +116,7 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
     Effect.gen(function*() {
       const config = yield* AppConfig
       const namera = yield* Namera
+      const deployment = yield* ChainDeployment
 
       const unavailable = (cause: unknown) =>
         Effect.logWarning("Owner operation failed", cause).pipe(
@@ -168,7 +169,7 @@ export class OwnerOperations extends Context.Service<OwnerOperations, {
             userOperation,
             entryPointAddress: account.entryPoint.address,
             entryPointVersion: "0.7",
-            chainId: base.id
+            chainId: deployment.chainId
           })
           return {
             userOperation: formatUserOperationRequest(userOperation) as Record<string, unknown>,

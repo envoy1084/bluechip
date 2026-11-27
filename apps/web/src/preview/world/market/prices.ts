@@ -1,6 +1,6 @@
 // The made-up market: every stock bluechip lists with a plausible price, today's move, Chainlink's reference and a
 // smooth history, generated the same way on every load (seeded by the stock), so a chart doesn't change on reload.
-import { stocks } from "@bluechip/chain/Contracts"
+import { baseDeployment } from "@bluechip/chain/deployments/Base"
 import type { HistoryRange, StockSymbol } from "@bluechip/domain/market/Market"
 import { Price } from "@bluechip/domain/market/Units"
 import type { Cast } from "../cast.ts"
@@ -50,7 +50,7 @@ export interface Listing {
   readonly logoUrl: string | null
 }
 
-export const LISTINGS: ReadonlyArray<Listing> = stocks.map((stock) => ({
+export const LISTINGS: ReadonlyArray<Listing> = baseDeployment.stocks.map((stock) => ({
   symbol: stock.symbol as StockSymbol,
   name: stock.name,
   token: stock.token,

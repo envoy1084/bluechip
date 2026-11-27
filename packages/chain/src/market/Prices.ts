@@ -6,7 +6,7 @@
 import * as Effect from "effect/Effect"
 import { aggregatorAbi } from "../Abis.ts"
 import type { ChainClient } from "../ChainClient.ts"
-import { type Stock, stocks } from "../Contracts.ts"
+import type { Stock } from "../Deployment.ts"
 
 /**
  * A feed's latest answer: USD × 1e8 per share-token, already adjusted for the token's multiplier.
@@ -32,6 +32,7 @@ export interface FeedPrice {
  */
 export const readPrices = (chain: ChainClient["Service"]) =>
   chain.use("read prices", async (client) => {
+    const { stocks } = chain.deployment
     const [block, results] = await Promise.all([
       client.getBlock({ blockTag: "latest" }),
       client.multicall({

@@ -1,5 +1,5 @@
 /**
- * The devnet in a test file: this worker's `Devnet`, with the chain client and `DevChain` on it. The project's
+ * The devnet in a test file: this worker's `Devnet`, with the chain client, its deployment and `DevChain` on it. The project's
  * Vitest `globalSetup` must serve the devnet (`globalSetup.ts`).
  *
  * @since 0.0.0
@@ -17,7 +17,7 @@ declare module "vitest" {
 }
 
 /**
- * This worker's devnet with `ChainClient` and `DevChain`, for `layer(...)` in a test file.
+ * This worker's devnet with `ChainClient`, `ChainDeployment` and `DevChain`, for `layer(...)` in a test file.
  *
  * @stability unstable
  * @category layers
@@ -26,7 +26,7 @@ declare module "vitest" {
 export const layer = Layer.provideMerge(Devnet.layerChain, Devnet.layer(inject(contextKey)))
 
 /**
- * A devnet of the file's own (`Devnet.layerIsolated`) with `ChainClient` and `DevChain`, for tests that move the
+ * A devnet of the file's own (`Devnet.layerIsolated`) with `ChainClient`, `ChainDeployment` and `DevChain`, for tests that move the
  * chain's clock, which must never move on the worker's shared chain.
  *
  * @stability unstable

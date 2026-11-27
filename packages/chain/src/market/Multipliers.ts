@@ -7,7 +7,6 @@
 import * as Effect from "effect/Effect"
 import { b20Abi } from "../Abis.ts"
 import type { ChainClient } from "../ChainClient.ts"
-import { stocks } from "../Contracts.ts"
 
 /**
  * The multiplier's precision: `1e18` is one share per token.
@@ -27,6 +26,7 @@ export const multiplierScale = BigInt(10) ** BigInt(18)
  */
 export const readMultipliers = (chain: ChainClient["Service"]) =>
   chain.use("read multipliers", async (client) => {
+    const { stocks } = chain.deployment
     const multipliers = await client.multicall({
       contracts: stocks.map((stock) => ({ address: stock.token, abi: b20Abi, functionName: "multiplier" as const })),
       allowFailure: false

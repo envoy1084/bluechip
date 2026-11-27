@@ -1,4 +1,5 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import type { Deployment, Stock } from "@bluechip/chain/Deployment"
 import { fuseRanks } from "@bluechip/domain/assistant/Recall"
 import type { Address, DocumentId } from "@bluechip/domain/Ids"
 import {
@@ -40,7 +41,7 @@ interface Source {
 // How many each search (words, meaning) brings before they are fused.
 const CANDIDATES = 16
 
-const factsOf = (stock: (typeof stocks)[number]) =>
+const factsOf = (deployment: Deployment, stock: Stock) =>
   new StockFacts({
     symbol: stock.symbol as StockSymbol,
     name: stock.name,
@@ -48,7 +49,7 @@ const factsOf = (stock: (typeof stocks)[number]) =>
     feed: stock.feed as Address,
     pool: stock.pool === null ? null : { address: stock.pool.address as Address, tickSpacing: stock.pool.tickSpacing },
     facts: describeStockFacts(stock),
-    url: `https://basescan.org/token/${stock.token}`
+    url: `${deployment.explorerUrl}/token/${stock.token}`
   })
 
 /**
@@ -72,6 +73,7 @@ export class Knowledge extends Context.Service<Knowledge, {
       const db = yield* Database
       const embeddings = yield* Embeddings
       const fs = yield* FileSystem.FileSystem
+      const deployment = yield* ChainDeployment
 
       const sources = Effect.gen(function*() {
         const files = (yield* fs.readDirectory(HELP_FOLDER)).filter((file) => file.endsWith(".md")).sort()
@@ -93,8 +95,8 @@ export class Knowledge extends Context.Service<Knowledge, {
               }
             })
         )
-        const facts = stocks.map((stock): Source => {
-          const stockFacts = factsOf(stock)
+        const facts = deployment.stocks.map((stock): Source => {
+          const stockFacts = factsOf(deployment, stock)
           return {
             kind: "stock",
             slug: `stock-${stock.symbol.toLowerCase()}`,
@@ -229,8 +231,8 @@ export class Knowledge extends Context.Service<Knowledge, {
         refresh,
         search,
         stockFacts: (symbol) => {
-          const stock = stocks.find((candidate) => candidate.symbol === symbol)
-          return stock === undefined ? undefined : factsOf(stock)
+          const stock = deployment.stocks.find((candidate) => candidate.symbol === symbol)
+          return stock === undefined ? undefined : factsOf(deployment, stock)
         }
       })
     })

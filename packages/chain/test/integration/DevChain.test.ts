@@ -1,10 +1,12 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { usdc } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import { assert, describe, layer } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import { erc20Abi } from "viem"
+
+const { usdc } = localDeployment
 
 layer(DevnetTest.layer)("DevChain", (it) => {
   describe("setUsdcBalance", () => {

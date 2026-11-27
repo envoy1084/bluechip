@@ -1,6 +1,7 @@
 // The read tools about your money, with results built from the cast: the portfolio, prices, a stock, activity, a
 // stock's facts and how you, a stock, an agent or an automation did. Each tool row sums its result up ("$4,212",
 // "+$412 in all", "3 trades"), or says it's empty, as the real one would.
+import { baseDeployment } from "@bluechip/chain/deployments/Base"
 import type { Address, AgentId, AutomationId, TradeId } from "@bluechip/domain/Ids"
 import { StockFacts } from "@bluechip/domain/knowledge/Knowledge"
 import { MarketPrice, ReferencePrice, Stock, type StockSymbol } from "@bluechip/domain/market/Market"
@@ -267,6 +268,6 @@ export const getStockFacts = (mint: Mint, symbol: StockSymbol): Beat =>
       feed: FEED,
       pool: { address: TOKEN, tickSpacing: 100 },
       facts: `${nameOf(symbol)} on Base is a token backed one for one by the share, priced by Chainlink.`,
-      url: `https://basescan.org/token/${TOKEN}`
+      url: `${baseDeployment.explorerUrl}/token/${TOKEN}`
     })
   )

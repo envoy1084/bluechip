@@ -6,7 +6,8 @@
  * @since 0.0.0
  */
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
@@ -22,6 +23,8 @@ import {
 } from "viem/account-abstraction"
 import * as Controls from "./Controls.ts"
 import * as Instances from "./internal/instances.ts"
+
+const { stocks } = localDeployment
 
 /**
  * The URLs `globalSetup` provides to test workers, under `contextKey`.
@@ -216,14 +219,18 @@ export class Devnet extends Context.Service<Devnet, {
     )
 
   /**
-   * The chain client (network `local`) and `DevChain`'s controls, on the devnet.
+   * The chain client (network `local`), its deployment (`ChainDeployment`, Base's) and `DevChain`'s controls, on the
+   * devnet.
    *
    * @since 0.0.0
    */
   static readonly layerChain = Layer.unwrap(
     Effect.gen(function*() {
       const devnet = yield* Devnet
-      return Layer.provideMerge(DevChain.layer, Layer.succeed(ChainClient, ChainClient.make("local", devnet.rpcUrl)))
+      return Layer.mergeAll(
+        Layer.provideMerge(DevChain.layer, Layer.succeed(ChainClient, ChainClient.make("local", devnet.rpcUrl))),
+        ChainDeployment.layerFor("local")
+      )
     })
   )
 }

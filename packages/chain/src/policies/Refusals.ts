@@ -9,8 +9,8 @@ import type { PolicyId } from "@bluechip/domain/policies/AgentSpec"
 import * as GasPolicy from "@namera-ai/contracts/GasPolicy"
 import * as RateLimitPolicy from "@namera-ai/contracts/RateLimitPolicy"
 import { type Abi, type Address, decodeErrorResult, type Hex, isAddressEqual, parseAbi, zeroAddress } from "viem"
-import { stocks } from "../Contracts.ts"
-import { aerodromeTradePolicy, tradeGuard, tradeGuardAbi } from "./Deployed.ts"
+import type { Deployment } from "../Deployment.ts"
+import { tradeGuardAbi } from "./Deployed.ts"
 import { RULES } from "./Rules.ts"
 
 /**
@@ -49,17 +49,18 @@ const decode = (abi: Abi, data: Hex) => {
   }
 }
 
-const stockNamed = (value: unknown) =>
-  stocks.find((stock) => typeof value === "string" && isAddressEqual(stock.token, value as Address))?.symbol ?? null
+const stockNamed = (deployment: Deployment, value: unknown) =>
+  deployment.stocks.find((stock) => typeof value === "string" && isAddressEqual(stock.token, value as Address))
+    ?.symbol ?? null
 
 /**
- * Why a policy refused an operation, from revert data; `undefined` when something else reverted.
+ * Why a policy of `deployment` refused an operation, from revert data; `undefined` when something else reverted.
  *
  * @stability unstable
  * @category decoding
  * @since 0.0.0
  */
-export const refusalOf = (data: Hex): Refusal | undefined => {
+export const refusalOf = (deployment: Deployment, data: Hex): Refusal | undefined => {
   // Smart Sessions refusing a session's policy, and SessionHook wrapping an execution policy's revert.
   const session = decode(
     parseAbi([
@@ -76,7 +77,7 @@ export const refusalOf = (data: Hex): Refusal | undefined => {
       { readonly address: Address; readonly policy: PolicyId; readonly message: string }
     > = [
       {
-        address: aerodromeTradePolicy,
+        address: deployment.policies.aerodromeTradePolicy,
         policy: "trade",
         message: "Not a trade it may make: another stock, the other direction, or over its budget or largest buy."
       },
@@ -88,11 +89,11 @@ export const refusalOf = (data: Hex): Refusal | undefined => {
       ? undefined
       : { policy: refused.policy, error: null, stock: null, message: refused.message }
   }
-  if (!isAddressEqual(policy, tradeGuard) || reason === undefined) return undefined
+  if (!isAddressEqual(policy, deployment.policies.tradeGuard) || reason === undefined) return undefined
 
   const host = decode(tradeGuardAbi, reason)
   if (host !== undefined && HOST[host.errorName] !== undefined) {
-    const stock = stockNamed(host.args?.[0])
+    const stock = stockNamed(deployment, host.args?.[0])
     const { message, policy } = HOST[host.errorName]!
     return { policy, error: host.errorName, stock, message: message(stock ?? "a stock") }
   }
@@ -102,7 +103,7 @@ export const refusalOf = (data: Hex): Refusal | undefined => {
     const message = found === undefined ? undefined : rule.errors[found.errorName]
     if (found === undefined || message === undefined) continue
     const asset = found.args?.[0]
-    const stock = stockNamed(asset)
+    const stock = stockNamed(deployment, asset)
     // The rebalance rule names cash as the zero address.
     const cash = typeof asset === "string" && isAddressEqual(asset as Address, zeroAddress)
     return {
@@ -123,12 +124,12 @@ export const refusalOf = (data: Hex): Refusal | undefined => {
  * @category decoding
  * @since 0.0.0
  */
-export const refusalFrom = (failure: unknown): Refusal | undefined => {
+export const refusalFrom = (deployment: Deployment, failure: unknown): Refusal | undefined => {
   for (let at: unknown = failure; at !== undefined && at !== null; at = (at as { cause?: unknown }).cause) {
     const text = typeof at === "string" ? at : String((at as { message?: unknown }).message ?? "")
     // `PolicyViolation` and `ExecutionPolicyViolation`'s selectors, with their arguments.
     const found = /0x(?:3b577361|ee276506)[0-9a-fA-F]*/.exec(text)?.[0]
-    if (found !== undefined) return refusalOf(found as Hex)
+    if (found !== undefined) return refusalOf(deployment, found as Hex)
     if (typeof at === "string") return undefined
   }
   return undefined

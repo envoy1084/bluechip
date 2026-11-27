@@ -1,8 +1,7 @@
 // What `contracts build` hands the TypeScript side: each contract's ABI, its constructor arguments and init code,
 // and its deterministic address (CREATE2 through the Arachnid deployer, salt `keccak256("bluechip.<name>")`), the
 // same on every chain where the constructor arguments match (all of Base's).
-import { usdc } from "@bluechip/chain/Contracts"
-import { swapRouter } from "@bluechip/chain/market/Aerodrome"
+import { baseDeployment } from "@bluechip/chain/deployments/Base"
 import { type Abi, type Address, encodeAbiParameters, getContractAddress, type Hex, keccak256, toHex } from "viem"
 
 /** The deterministic deployment proxy every chain (and Anvil) has, which Namera deploys through too. */
@@ -38,13 +37,13 @@ export const CONTRACTS: ReadonlyArray<ContractSpec> = [
     name: "AerodromeTradePolicy",
     label: "bluechip.aerodrome-trade-policy",
     constructorTypes: [{ type: "address" }, { type: "address" }],
-    constructorArgs: [usdc, swapRouter]
+    constructorArgs: [baseDeployment.usdc, baseDeployment.exchange.router]
   },
   {
     name: "TradeGuard",
     label: "bluechip.trade-guard",
     constructorTypes: [{ type: "address" }, { type: "address" }, { type: "uint256" }],
-    constructorArgs: [usdc, SEQUENCER_FEED, BigInt(SEQUENCER_GRACE_SECONDS)]
+    constructorArgs: [baseDeployment.usdc, SEQUENCER_FEED, BigInt(SEQUENCER_GRACE_SECONDS)]
   },
   {
     name: "RecoveryDelayPolicy",

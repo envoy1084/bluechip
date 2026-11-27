@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { CARD_EVENT, CardEvent } from "@bluechip/domain/assistant/RunEvents"
 import { linkCodeIn, type Platform } from "@bluechip/domain/channels/Channel"
 import { chatCard, type ChatReply } from "@bluechip/domain/channels/ChatCards"
@@ -34,8 +34,6 @@ import { valueHoldings } from "../portfolio/Valuation.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { type ChannelLinkRow, ChannelLinks } from "./ChannelLinks.ts"
 import { chatContent } from "./ChatContent.ts"
-
-const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
 /** A message someone sent the bot: where, who, and what it said. */
 export const ChatMessageIn = Schema.Struct({
@@ -88,6 +86,8 @@ export class ChatBot extends Context.Service<ChatBot, {
       const conversations = yield* Conversations
       const agents = yield* Agents
       const balances = yield* AccountBalances
+      const { stocks } = yield* ChainDeployment
+      const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
       const market = yield* MarketPrices
       const { publicOrigin } = yield* AppConfig
 

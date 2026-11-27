@@ -7,6 +7,7 @@ import {
   requestedAt
 } from "@bluechip/chain/account/Recovery"
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { Me } from "@bluechip/domain/Account"
 import type { RecoveringUser } from "@bluechip/domain/Auth"
 import { Conflict, NotFound, SignatureRejected, type Unavailable } from "@bluechip/domain/Errors"
@@ -97,6 +98,7 @@ export class Recoveries extends Context.Service<Recoveries, {
     Effect.gen(function*() {
       const config = yield* AppConfig
       const chain = yield* ChainClient
+      const deployment = yield* ChainDeployment
       const accounts = yield* Accounts
       const challenges = yield* Challenges
       const webAuthn = yield* WebAuthn
@@ -324,7 +326,7 @@ export class Recoveries extends Context.Service<Recoveries, {
           newPasskeyId: newOwner.id,
           calls
         })
-        return yield* prepareSigning(row, stored, "request", [requestCall(calls)])
+        return yield* prepareSigning(row, stored, "request", [requestCall(deployment, calls)])
       })
 
       const execute = Effect.fn("Recoveries.execute")(function*(user: RecoveringUser["Service"]) {
@@ -388,7 +390,9 @@ export class Recoveries extends Context.Service<Recoveries, {
         const { guard } = yield* grantsOf(stored)
         const key = privateKeyToAccount(decryptKey(config.agentKeyEncryptionKey, stored.key.id, stored.key.guardKey))
 
-        const hash = yield* operations.sendAsGuard(guard, key, [cancelCall(row.calls as ReadonlyArray<Call>)])
+        const hash = yield* operations.sendAsGuard(guard, key, [
+          cancelCall(deployment, row.calls as ReadonlyArray<Call>)
+        ])
         const receipt = yield* owners.wait(yield* accounts.ownerPasskey(userId), hash)
         if (!receipt.success) return yield* new Conflict({ reason: "noRecoveryRequest" })
 

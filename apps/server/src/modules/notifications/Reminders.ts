@@ -1,4 +1,6 @@
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { AgentId, UserId } from "@bluechip/domain/Ids"
+import type { StockSymbol } from "@bluechip/domain/market/Market"
 import {
   digestOf,
   notificationOfExpiring,
@@ -16,7 +18,6 @@ import { users } from "../accounts/tables.ts"
 import { agents, agentSessions } from "../agents/tables.ts"
 import { toIntent } from "../intents/IntentStore.ts"
 import { intents } from "../intents/tables.ts"
-import { stockName } from "./Fanout.ts"
 import { Notifications } from "./Notifications.ts"
 import { notifications as notificationsTable } from "./tables.ts"
 
@@ -43,6 +44,8 @@ export class Reminders extends Context.Service<Reminders, {
     Effect.gen(function*() {
       const db = yield* Database
       const notifications = yield* Notifications
+      const { stocks } = yield* ChainDeployment
+      const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
       const agentName = Effect.fnUntraced(function*(agentId: string | null) {
         if (agentId === null) return null

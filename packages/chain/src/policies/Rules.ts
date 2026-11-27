@@ -14,28 +14,22 @@ import { stockCap } from "@bluechip/domain/policies/StockCap"
 import { stopLossFloor } from "@bluechip/domain/policies/StopLossFloor"
 import { tradeSize } from "@bluechip/domain/policies/TradeSize"
 import type * as Schema from "effect/Schema"
-import { type Abi, type Address, encodeAbiParameters, type Hex } from "viem"
-import { stocks } from "../Contracts.ts"
+import { type Abi, encodeAbiParameters, type Hex } from "viem"
+import type { Policies, Stock } from "../Deployment.ts"
 import {
-  cashReserveRule,
   cashReserveRuleAbi,
-  fairPriceRule,
   fairPriceRuleAbi,
-  rebalanceRule,
   rebalanceRuleAbi,
-  slippageBudgetRule,
   slippageBudgetRuleAbi,
-  stockCapRule,
   stockCapRuleAbi,
-  stopLossFloorRule,
   stopLossFloorRuleAbi,
-  tradeSizeRule,
   tradeSizeRuleAbi
 } from "./Deployed.ts"
 
 /**
- * A rule policy onchain: its contract, its configuration for `TradeGuard`, and what each of its errors means (`stock`
- * is the stock's name, when the error names one).
+ * A rule policy onchain: its contract (by its name in a deployment's `policies`), its configuration for `TradeGuard`
+ * (rules that list every stock list them in the guard's market order, `stocks`), and what each of its errors means
+ * (`stock` is the stock's name, when the error names one).
  *
  * @stability unstable
  * @category models
@@ -43,9 +37,9 @@ import {
  */
 export interface RuleBinding {
   readonly policy: PolicyId
-  readonly address: Address
+  readonly contract: keyof Policies
   readonly abi: Abi
-  readonly config: (spec: AgentSpec) => Hex
+  readonly config: (spec: AgentSpec, stocks: ReadonlyArray<Stock>) => Hex
   readonly errors: Readonly<Record<string, (stock: string) => string>>
 }
 
@@ -76,7 +70,7 @@ export const required = <S extends Schema.Top>(spec: AgentSpec, policy: PolicyTy
 export const RULES: ReadonlyArray<RuleBinding> = [
   {
     policy: "tradeSize",
-    address: tradeSizeRule,
+    contract: "tradeSizeRule",
     abi: tradeSizeRuleAbi,
     config: (spec) => {
       const config = required(spec, tradeSize)
@@ -92,7 +86,7 @@ export const RULES: ReadonlyArray<RuleBinding> = [
   },
   {
     policy: "fairPrice",
-    address: fairPriceRule,
+    contract: "fairPriceRule",
     abi: fairPriceRuleAbi,
     config: (spec) => {
       const config = required(spec, fairPrice)
@@ -105,23 +99,23 @@ export const RULES: ReadonlyArray<RuleBinding> = [
   },
   {
     policy: "stockCap",
-    address: stockCapRule,
+    contract: "stockCapRule",
     abi: stockCapRuleAbi,
     config: (spec) => encode([{ type: "uint16", name: "maxBps" }], { maxBps: required(spec, stockCap).maxBps }),
     errors: { OverStockCap: (stock) => `Would put too much of your money in ${stock}.` }
   },
   {
     policy: "cashReserve",
-    address: cashReserveRule,
+    contract: "cashReserveRule",
     abi: cashReserveRuleAbi,
     config: (spec) => encode([{ type: "uint16", name: "minBps" }], { minBps: required(spec, cashReserve).minBps }),
     errors: { UnderCashReserve: () => "Would leave too little in cash." }
   },
   {
     policy: "rebalance",
-    address: rebalanceRule,
+    contract: "rebalanceRule",
     abi: rebalanceRuleAbi,
-    config: (spec) => {
+    config: (spec, stocks) => {
       const config = required(spec, rebalance)
       const weight = (asset: string) => config.targets.find((target) => target.asset === asset)?.weight ?? 0
       return encode([
@@ -152,9 +146,9 @@ export const RULES: ReadonlyArray<RuleBinding> = [
   },
   {
     policy: "stopLossFloor",
-    address: stopLossFloorRule,
+    contract: "stopLossFloorRule",
     abi: stopLossFloorRuleAbi,
-    config: (spec) => {
+    config: (spec, stocks) => {
       const { floors } = required(spec, stopLossFloor)
       return encode([{ type: "uint256[]", name: "floors" }], {
         // By the guard's market index: a stock without a floor (0) is never sold.
@@ -168,7 +162,7 @@ export const RULES: ReadonlyArray<RuleBinding> = [
   },
   {
     policy: "slippageBudget",
-    address: slippageBudgetRule,
+    contract: "slippageBudgetRule",
     abi: slippageBudgetRuleAbi,
     config: (spec) =>
       encode([{ type: "uint16", name: "budgetBps" }, { type: "uint32", name: "window" }], {

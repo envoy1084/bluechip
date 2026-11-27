@@ -1,3 +1,5 @@
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import type { Deployment } from "@bluechip/chain/Deployment"
 import { agentSession, placements } from "@bluechip/chain/policies/Session"
 import { AgentSession, type SessionAuthor } from "@bluechip/domain/agents/Agent"
 import type { AgentSessionId } from "@bluechip/domain/Ids"
@@ -38,8 +40,9 @@ export const toSession = (row: SessionRow): AgentSession =>
  * The Namera session a session row locks: its spec's policies, signed by its key, until its end. The salt comes from
  * the row, so building it again (to read its grant once locked) gives the same permission id.
  */
-export const nameraSession = (row: SessionRow): Session.Session =>
+export const nameraSession = (deployment: Deployment, row: SessionRow): Session.Session =>
   agentSession({
+    deployment,
     spec: row.spec,
     signer: row.sessionKey as Address,
     validUntil: Math.floor(DateTime.toEpochMillis(row.validUntil!) / 1000),
@@ -77,6 +80,7 @@ export class AgentSessions extends Context.Service<AgentSessions, {
     Effect.gen(function*() {
       const db = yield* Database
       const config = yield* AppConfig
+      const deployment = yield* ChainDeployment
 
       const insert = Effect.fn("AgentSessions.insert")(function*(tx: Transaction, session: {
         readonly agentId: `agent_${string}`
@@ -101,7 +105,7 @@ export class AgentSessions extends Context.Service<AgentSessions, {
         }).returning()
 
         yield* tx.insert(sessionPolicies).values(
-          placements(session.spec).map((placement, position) => ({
+          placements(deployment, session.spec).map((placement, position) => ({
             sessionId: id,
             position,
             policy: placement.policy,

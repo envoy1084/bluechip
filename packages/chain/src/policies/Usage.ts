@@ -16,13 +16,7 @@ import * as Grant from "@namera-ai/sdk/Grant"
 import * as Effect from "effect/Effect"
 import { type Address, encodeAbiParameters, encodePacked, keccak256 } from "viem"
 import { ChainClient } from "../ChainClient.ts"
-import {
-  aerodromeTradePolicy,
-  aerodromeTradePolicyAbi,
-  slippageBudgetRule,
-  slippageBudgetRuleAbi,
-  tradeGuard
-} from "./Deployed.ts"
+import { aerodromeTradePolicyAbi, slippageBudgetRuleAbi } from "./Deployed.ts"
 import { required } from "./Rules.ts"
 
 /**
@@ -39,6 +33,7 @@ export const readUsage = Effect.fnUntraced(function*(options: {
   readonly now: number
 }) {
   const chain = yield* ChainClient
+  const { aerodromeTradePolicy, slippageBudgetRule, tradeGuard } = chain.deployment.policies
 
   // Policies are keyed by the account's id of the session's policies (Smart Sessions' and SessionHook's `configId`);
   // TradeGuard, the session's first execution policy, keys its rules' state by its own config id under SessionHook.

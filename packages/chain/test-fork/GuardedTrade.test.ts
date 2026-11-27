@@ -2,10 +2,9 @@
 // with bluechip's policies deployed by `pnpm test:fork` (`contracts deploy`). Needs the fork and its bundler
 // (`docker compose --profile chain up -d`); not part of `pnpm check`.
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { usdc } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
-import { tradeGuard } from "@bluechip/chain/policies/Deployed"
 import { encodeGuardConfig, guardConfig } from "@bluechip/chain/policies/Guard"
 import { compileSession, guardedTradeCallGas } from "@bluechip/chain/policies/Session"
 import { rpc } from "@bluechip/devnet/Controls"
@@ -27,9 +26,10 @@ const ForkChain = Layer.provideMerge(
 // The fork is pinned inside market hours on a past day, and Alto checks an operation's validity (the daily budget's
 // day) against the wall clock: the fork moves to now, so Chainlink's prices are as old as the fork, and the agent
 // trades on paused prices of any age.
-const defaults = guardConfig(PICKER)
+const { policies: { tradeGuard }, usdc } = localDeployment
+const defaults = guardConfig(localDeployment, PICKER)
 const guard = encodeGuardConfig({ ...defaults, prices: { ...defaults.prices, pausedAge: 2 ** 32 - 1 } })
-const policies = compileSession(PICKER).map((policy) =>
+const policies = compileSession(localDeployment, PICKER).map((policy) =>
   policy.type === "execution" ? Policy.execution({ address: tradeGuard, initData: guard }) : policy
 )
 

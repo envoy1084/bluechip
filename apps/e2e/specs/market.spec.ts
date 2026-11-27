@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
 
@@ -9,8 +9,8 @@ test.describe("stocks list", () => {
   test.fixme("every stock bluechip trades is listed with its price and day", async ({ page, user: _user }) => {
     await page.goto("/stocks")
 
-    await expect(list(page).getByRole("link")).toHaveCount(stocks.length)
-    for (const stock of stocks) {
+    await expect(list(page).getByRole("link")).toHaveCount(localDeployment.stocks.length)
+    for (const stock of localDeployment.stocks) {
       await expect(list(page).getByRole("link", { name: new RegExp(`^${stock.symbol} ${stock.name}`) })).toBeVisible()
     }
     await expect(list(page).getByRole("link", { name: /^TSLA Tesla/ })).toContainText("+2.04%")

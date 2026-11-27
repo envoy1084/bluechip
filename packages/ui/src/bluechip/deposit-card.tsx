@@ -54,7 +54,7 @@ export interface DepositCardProps {
   readonly address: string
   /**
    * What the QR code holds: an EIP-681 request for a USDC transfer to `address` on Base
-   * (`ethereum:<USDC>@8453/transfer?address=<address>`), so a wallet that scans it opens the transfer on the right
+   * (`ethereum:<USDC>@<chain id>/transfer?address=<address>`), so a wallet that scans it opens the transfer on the right
    * network with the recipient filled in.
    */
   readonly paymentRequest: string

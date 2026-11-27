@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { LiveEvent } from "@bluechip/domain/Events"
 import type { UserId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
@@ -18,8 +18,6 @@ import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
 import { Notifications } from "./Notifications.ts"
 import { NotificationOutbox } from "./Outbox.ts"
-
-export const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
 // The events whose outbox rows are worth draining as soon as they are heard.
 const TOLD = new Set<LiveEvent["_tag"]>(["IntentChanged", "AgentChanged", "TransferUpdated", "AutomationRan"])
@@ -44,6 +42,8 @@ export class NotificationFanout extends Context.Service<NotificationFanout, {
       const notifications = yield* Notifications
       const outbox = yield* NotificationOutbox
       const agents = yield* AgentStore
+      const { stocks } = yield* ChainDeployment
+      const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
       // `at` keys an agent's change: the outbox row's time, the same however often the row is handled.
       const draftOf = Effect.fnUntraced(function*(

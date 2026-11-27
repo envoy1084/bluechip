@@ -1,6 +1,6 @@
 // `pnpm dev` on the devnet: the server's market prices (from Alpaca) copied into the devnet's Chainlink feeds and
 // pools, so quotes, the fair-price check and the reference line behave as they would on Base, with no RPC.
-import { stocks } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { movePool, rpc, setFeed } from "@bluechip/devnet/Controls"
 
 /** A stock as `GET /api/market/stocks` answers it: its symbol and the market's token price, if there is one. */
@@ -45,7 +45,7 @@ export const syncPrices = async (options: { readonly apiUrl: string; readonly rp
   const node = rpc(options.rpcUrl)
 
   for (const update of feedUpdates(listed, status.session, Math.floor(Date.now() / 1000))) {
-    const stock = stocks.find((candidate) => candidate.symbol === update.symbol)
+    const stock = localDeployment.stocks.find((candidate) => candidate.symbol === update.symbol)
     if (stock === undefined) continue
     await setFeed(node, stock.feed, update.price, update.updatedAt)
     await movePool(node, stock, update.price)

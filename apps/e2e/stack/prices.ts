@@ -1,7 +1,7 @@
 // The devnet's prices for a run: each feed keeps the captured answer, marked as updated at the chain's time, and each
 // pool sits at its feed's price. The pools' liquidity is seeded around the captured prices, so moving a pool far from
 // them (to the market data's $100, say) leaves it without liquidity and every quote misses the fair price.
-import { stocks } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { movePool, type Rpc, setFeedTime } from "@bluechip/devnet/Controls"
 import { decodeAbiParameters, encodeFunctionData, type Hex, parseAbi } from "viem"
 
@@ -36,7 +36,7 @@ const poolPrice = async (node: Rpc, pool: Hex) => {
 export const alignPrices = async (node: Rpc, at: number) => {
   const gaps: Array<string> = []
 
-  for (const stock of stocks) {
+  for (const stock of localDeployment.stocks) {
     await setFeedTime(node, stock.feed, at)
     if (stock.pool === null) continue
 

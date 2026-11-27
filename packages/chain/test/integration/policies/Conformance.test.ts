@@ -1,4 +1,5 @@
 // Each optional rule alone with the required policies: the session locks and a fair $20 buy passes.
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { simulateAsAgent } from "@bluechip/chain/policies/Simulate"
 import * as DevnetTest from "@bluechip/devnet/DevnetTest"
 import type { AgentSpec, PolicyId } from "@bluechip/domain/policies/AgentSpec"
@@ -29,7 +30,11 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("each optional rul
     Effect.gen(function*() {
       const { address, agent } = yield* (yield* TestAgents).lock({ spec })
 
-      const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", BigInt(20_000_000), address))
+      const decision = yield* simulateAsAgent(
+        localDeployment,
+        agent,
+        tradeCalls(nvda, "buy", BigInt(20_000_000), address)
+      )
 
       assert.strictEqual(decision._tag, "Passes")
     }))
@@ -44,7 +49,11 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("each optional rul
         })
         const { address, agent } = yield* (yield* TestAgents).lock({ spec })
 
-        const decision = yield* simulateAsAgent(agent, tradeCalls(nvda, "buy", BigInt(20_000_000), address))
+        const decision = yield* simulateAsAgent(
+          localDeployment,
+          agent,
+          tradeCalls(nvda, "buy", BigInt(20_000_000), address)
+        )
 
         assert.strictEqual(decision._tag, "Passes")
       })

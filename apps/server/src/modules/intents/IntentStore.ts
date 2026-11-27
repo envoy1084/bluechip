@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { Conflict, NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, IntentId, TradeId, UserId } from "@bluechip/domain/Ids"
@@ -28,8 +28,6 @@ import { AgentJournal } from "../journal/AgentJournal.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { intents } from "./tables.ts"
-
-const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
 export type IntentRow = typeof intents.$inferSelect
 
@@ -130,6 +128,8 @@ export class IntentStore extends Context.Service<IntentStore, {
       const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const journal = yield* AgentJournal
+      const { stocks } = yield* ChainDeployment
+      const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
       const find = Effect.fn("IntentStore.find")(function*(id: string) {
         const [row] = yield* db.select().from(intents).where(eq(intents.id, id as `intent_${string}`)).pipe(

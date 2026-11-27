@@ -1,5 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
-import { usdc } from "@bluechip/chain/Contracts"
+import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { InsufficientCash, InvalidRequest, SignatureRejected } from "@bluechip/domain/Errors"
 import { Address, RequestId } from "@bluechip/domain/Ids"
 import { Usdc } from "@bluechip/domain/market/Units"
@@ -90,7 +90,7 @@ layer(TestUsers.layer, { excludeTestServices: true })("funding", (it) => {
           "balanceOf",
           (client) =>
             client.readContract({
-              address: usdc,
+              address: localDeployment.usdc,
               abi: erc20Abi,
               functionName: "balanceOf",
               args: [recipient as `0x${string}`]

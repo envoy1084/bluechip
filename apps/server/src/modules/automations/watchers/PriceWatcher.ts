@@ -1,4 +1,4 @@
-import { stocks } from "@bluechip/chain/Contracts"
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { formatPrice } from "@bluechip/domain/automations/Format"
 import type { TriggerData } from "@bluechip/domain/automations/Run"
 import type { PriceTick, Step } from "@bluechip/domain/automations/Trigger"
@@ -41,6 +41,7 @@ export class PriceWatcher extends Context.Service<PriceWatcher, {
     PriceWatcher,
     Effect.gen(function*() {
       const automations = yield* Automations
+      const { stocks } = yield* ChainDeployment
       const engine = yield* WorkflowEngine.WorkflowEngine
 
       const observe = Effect.fn("PriceWatcher.observe")(function*(

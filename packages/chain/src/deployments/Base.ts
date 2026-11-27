@@ -1,63 +1,36 @@
 /**
- * Contract addresses on Base mainnet; the local fork has the same ones. Sources: `research/reports/02` and `07`
- * (onchain reads, 2026-11-23).
+ * Base mainnet's deployment; the local chain (the devnet, or an Anvil fork) has the same addresses. Sources:
+ * `research/reports/02` and `07` (onchain reads, 2026-11-23); Aerodrome Slipstream's MetaDEX deployment from Dromos
+ * Labs' deployment file (https://github.com/dromos-labs/metadex-slipstream-public, `deployment-addresses/cl-base.json`,
+ * checked on a Base fork on 2026-11-25: the router's `factory()` is this factory, and the stock pools are its pools);
+ * bluechip's policies from `contracts build` (`policies/Deployed.ts`).
  *
  * @since 0.0.0
  */
-import type { Address } from "viem"
-
-/**
- * Circle's USDC (6 decimals).
- *
- * @stability unstable
- * @category addresses
- * @since 0.0.0
- */
-export const usdc: Address = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-
-/**
- * ERC-4337 EntryPoint v0.7, the one Kernel 3.3 and Namera use.
- *
- * @stability unstable
- * @category addresses
- * @since 0.0.0
- */
-export const entryPoint07: Address = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
-
-/**
- * A stock bluechip trades: its B20 token (8 decimals) and its Chainlink total-return price feed (8 decimals, US
- * equity hours 24/5, 0.5% deviation or 24 h heartbeat).
- *
- * @stability unstable
- * @category models
- * @since 0.0.0
- */
-export interface Stock {
-  readonly symbol: string
-  readonly name: string
-  readonly token: Address
-  readonly feed: Address
-  /**
-   * Its deepest USDC pool in Aerodrome's Slipstream (MetaDEX factory), all at tick spacing 10; `null` when it has
-   * none to trade in. Found by scanning the factory's tick spacings on 2026-11-25; a fork test re-checks each.
-   */
-  readonly pool: { readonly address: Address; readonly tickSpacing: number } | null
-  /** The company's logo as Coinbase publishes it for the token (its tokenized-stocks API); `null` when it has none. */
-  readonly logoUrl: string | null
-}
+import { base } from "viem/chains"
+import type { Deployment, Stock } from "../Deployment.ts"
+import {
+  aerodromeTradePolicy,
+  cashReserveRule,
+  fairPriceRule,
+  rebalanceRule,
+  recoveryDelayPolicy,
+  slippageBudgetRule,
+  stockCapRule,
+  stopLossFloorRule,
+  tradeGuard,
+  tradeSizeRule
+} from "../policies/Deployed.ts"
 
 /**
  * Every Coinbase tokenized stock on Base with a Chainlink NAV feed: Coinbase's NAV feed list
  * (`GET https://api.coinbase.com/v1/tokenized-stocks/nav-feeds`) joined with its token list
  * (`GET https://api.coinbase.com/v1/tokenized-stocks`), checked against Chainlink's Base feed directory on
- * 2026-11-25. Of 415 listed tokens, these 13 have a feed and a pool to trade in. (COINc also has a feed, but no
- * supply and no pool, so bluechip leaves it out.)
- *
- * @stability unstable
- * @category addresses
- * @since 0.0.0
+ * 2026-11-25. Of 415 listed tokens, these 13 have a feed and a pool to trade in (their deepest USDC pool in the MetaDEX
+ * factory, all at tick spacing 10; a fork test re-checks each). COINc also has a feed, but no supply and no pool, so
+ * bluechip leaves it out.
  */
-export const stocks: ReadonlyArray<Stock> = [
+const stocks: ReadonlyArray<Stock> = [
   {
     symbol: "AAPL",
     name: "Apple",
@@ -176,3 +149,48 @@ export const stocks: ReadonlyArray<Stock> = [
       "https://metadata.coinbase.com/equity_icons/a3b67028295d0e9fa3182c867b8a9afed5ebcbd8c012de3a46e160ae5e490980.png"
   }
 ]
+
+/**
+ * Base mainnet.
+ *
+ * @stability unstable
+ * @category deployments
+ * @since 0.0.0
+ */
+export const baseDeployment: Deployment = {
+  network: "base",
+  chain: base,
+  chainId: base.id,
+  usdc: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  entryPoint: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+  sequencerFeed: "0xBCF85224fc0756B9Fa45aA7892530B47e10b6433",
+  exchange: {
+    factory: "0x9CB220581b91b0C83223012FE69688b92aD07a76",
+    router: "0x9Ee35Bf1bd69a03c6F0393582030fCe8Bb93D418",
+    quoter: "0x1dDfeC5058180C207F55BB77D95AcDd0d8227868"
+  },
+  stocks,
+  policies: {
+    aerodromeTradePolicy,
+    tradeGuard,
+    recoveryDelayPolicy,
+    tradeSizeRule,
+    fairPriceRule,
+    stockCapRule,
+    cashReserveRule,
+    rebalanceRule,
+    stopLossFloorRule,
+    slippageBudgetRule
+  },
+  explorerUrl: "https://basescan.org",
+  paper: null
+}
+
+/**
+ * The local chain: Base's deployment on the devnet (or an Anvil fork of Base), with Base's chain id.
+ *
+ * @stability unstable
+ * @category deployments
+ * @since 0.0.0
+ */
+export const localDeployment: Deployment = { ...baseDeployment, network: "local" }

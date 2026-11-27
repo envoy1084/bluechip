@@ -1,3 +1,4 @@
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { ChainError } from "@bluechip/chain/ChainError"
 import { refusalFrom } from "@bluechip/chain/policies/Refusals"
 import { Conflict, NotFound, SignatureRejected, Unavailable } from "@bluechip/domain/Errors"
@@ -77,6 +78,7 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
   const executor = yield* AgentExecutor
   const ledger = yield* TradeLedger
   const trades = yield* Trades
+  const deployment = yield* ChainDeployment
   const done: StepResult = StepResult.cases.Done.make({})
   const waitUntil = (until: DateTime.Utc): StepResult => StepResult.cases.WaitUntil.make({ until })
   const earliest = (results: ReadonlyArray<StepResult>): StepResult =>
@@ -168,7 +170,7 @@ export const AccountDeskLive = AccountDesk.toLayer(Effect.gen(function*() {
     const sent = yield* signed.send.pipe(Effect.result)
     if (sent._tag === "Failure") {
       // Refused at the door (nothing was spent): said as the policy that refused it when one did.
-      const refusal = refusalFrom(sent.failure.cause)
+      const refusal = refusalFrom(deployment, sent.failure.cause)
       yield* Effect.logWarning(`Intents ${rows.map((row) => row.id)}: the bundler refused the agent's operation`)
       for (const { row, trade } of recorded) {
         yield* ledger.settle(trade, context.address, undefined)

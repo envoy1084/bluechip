@@ -16,6 +16,7 @@ import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { transferStatus } from "../../../lib/activityText.ts"
 import { usdcDollars } from "../../../lib/amounts.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
+import { explorerTxUrl } from "../../../lib/network.ts"
 
 const SHOWN = 3
 
@@ -102,7 +103,7 @@ function WithdrawalRow({ transfer }: Readonly<{ transfer: Transfer }>) {
         <span aria-hidden className="size-7 shrink-0" /> :
         (
           <a
-            href={`https://basescan.org/tx/${transfer.txHash}`}
+            href={explorerTxUrl(transfer.txHash)}
             target="_blank"
             rel="noreferrer"
             aria-label="View on BaseScan"

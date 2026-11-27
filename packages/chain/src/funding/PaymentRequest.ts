@@ -4,7 +4,8 @@
  * @since 0.0.0
  */
 import type { Address } from "viem"
-import { type Network, networkChains } from "../Network.ts"
+import { deploymentOf } from "../ChainDeployment.ts"
+import type { Network } from "../Network.ts"
 
 /**
  * An EIP-681 request to send USDC to `recipient` on `network`:
@@ -33,7 +34,7 @@ export const usdcTransferRequest = (
     readonly amount?: bigint
   }
 ): string => {
-  const { chainId, usdc } = networkChains[network]
+  const { chainId, usdc } = deploymentOf(network)
   const request = `ethereum:${usdc}@${chainId}/transfer?address=${recipient}`
   return amount === undefined ? request : `${request}&uint256=${amount}`
 }
