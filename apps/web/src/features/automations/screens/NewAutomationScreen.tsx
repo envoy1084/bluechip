@@ -111,6 +111,7 @@ function NewAutomation(
           </Select>
         }
         saveLabel="Save automation"
+        starters
         footer={<ButtonLink variant="ghost" size="lg" render={<Link to="/automations" />}>Cancel</ButtonLink>}
         onSave={async (draft) => {
           const saved = await create({ payload: { requestId, draft }, reactivityKeys: changedKeys })

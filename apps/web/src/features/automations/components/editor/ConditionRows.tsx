@@ -3,17 +3,18 @@ import { Button } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useState } from "react"
 import { catalogEntry, freshEntry, offered } from "../../model/drafts.ts"
+import { CheckMenu } from "./CheckMenu.tsx"
+import { CheckRow } from "./CheckRow.tsx"
 import type { EditorContext } from "./editorContext.ts"
-import { EntryEditor, EntryTypeSelect } from "./EntryEditor.tsx"
+import { EntryEditor } from "./EntryEditor.tsx"
 import { ENTRY_ICONS } from "./entryIcons.ts"
-import { PartProblem } from "./PartProblem.tsx"
 
-// The checks most automations want, offered in one click while there are none.
+// The checks most automations want, offered a click away while there are none.
 const SUGGESTED = ["marketOpen", "holdingAtLeast", "priceBelow", "timeWindow"]
 
 /**
- * The checks that must hold for it to act, each a row with its kind, its fields and Remove; with none, Add a check
- * and the usual ones a click away.
+ * The checks that must all hold for it to act, each a row read as it holds, joined by "and"; Add a check offers
+ * every check it can take, grouped. With none, the usual ones are a click away, and it acts every time.
  */
 export function ConditionRows(
   { conditions, context, problemOf, idOf, onChange }: Readonly<{
@@ -33,8 +34,6 @@ export function ConditionRows(
     setKeys([...keys, crypto.randomUUID()])
     onChange([...conditions, freshEntry("condition", type, stock) as Condition])
   }
-  const addUnused = () =>
-    add(entries.find((entry) => !conditions.some((each) => each.type === entry.type))?.type ?? "holdingAtLeast")
   const remove = (index: number) => {
     setKeys(keys.filter((_, at) => at !== index))
     onChange(conditions.filter((_, at) => at !== index))
@@ -42,92 +41,100 @@ export function ConditionRows(
   const set = (index: number, condition: Condition) =>
     onChange(conditions.map((each, at) => at === index ? condition : each))
 
+  const addMenu = (label: string) => (
+    <CheckMenu
+      entries={entries}
+      trigger={<Button variant="secondary" size="sm" className="justify-self-start" />}
+      onPick={add}
+    >
+      <Icon name="plus" size={14} />
+      {label}
+    </CheckMenu>
+  )
+
   if (conditions.length === 0) {
     const suggested = SUGGESTED.filter((type) => entries.some((entry) => entry.type === type))
     return (
       <div className="grid gap-3">
-        <button
-          type="button"
-          onClick={addUnused}
-          className="flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-dashed border-g-300 px-3.5 py-3 text-left text-label text-g-600 outline-none hover:border-g-500 hover:text-ink focus-visible:border-blue focus-visible:text-ink"
-        >
-          <Icon name="plus" size={15} />
-          <span>
-            <b className="font-semibold">Add a check</b>, or leave it empty to act every time.
-          </span>
-        </button>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-label-sm text-g-500">Often used</span>
+        <p className="text-label text-g-500">None yet, so it acts every time it starts. Add a check to narrow it.</p>
+        <div className="grid grid-cols-1 gap-2 min-[440px]:grid-cols-2">
           {suggested.map((type) => {
-            const { title } = catalogEntry("condition", type)
+            const { title, summary } = catalogEntry("condition", type)
             return (
-              <Button
+              <button
                 key={type}
-                variant="secondary"
-                size="sm"
+                type="button"
                 aria-label={`Add the check ${title}`}
                 onClick={() => add(type)}
+                className="group/add flex cursor-pointer items-start gap-2.5 rounded-lg bg-white p-3 text-left surface-field outline-none transition-shadow duration-fast ease-brand hover:shadow-[0_0_0_1px_var(--color-blue),0_2px_6px_-3px_rgba(42,91,255,.2)] focus-visible:shadow-[0_0_0_1px_var(--color-blue),0_0_0_4px_rgba(42,91,255,.14)]"
               >
-                <Icon name={ENTRY_ICONS[type as Condition["type"]]} size={14} />
-                {title}
-              </Button>
+                <span
+                  aria-hidden
+                  className="grid size-8 shrink-0 place-items-center rounded-md bg-g-100 text-g-600 shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)] transition-colors duration-fast ease-brand group-hover/add:bg-blue-50 group-hover/add:text-blue"
+                >
+                  <Icon name={ENTRY_ICONS[type as Condition["type"]]} size={15} />
+                </span>
+                <span className="grid min-w-0 flex-1 gap-0.5">
+                  <span className="text-body-sm font-semibold text-ink">{title}</span>
+                  <span className="text-label-sm leading-snug text-g-500">{summary}</span>
+                </span>
+                <Icon
+                  name="plus"
+                  size={15}
+                  className="mt-0.5 shrink-0 text-g-400 group-hover/add:text-blue"
+                />
+              </button>
             )
           })}
         </div>
+        {addMenu("More checks")}
       </div>
     )
   }
 
   return (
-    <div className="grid gap-2.5">
+    <div className="grid gap-4">
       {conditions.map((condition, index) => {
         const problemAt = problemOf(index)
         return (
-          <section
-            key={`${keys[index]}-${condition.type}`}
-            id={idOf(index)}
-            tabIndex={-1}
-            aria-label={`Condition ${index + 1}`}
-            className="grid scroll-mt-[84px] gap-3 rounded-[12px] p-3 outline-none surface-well focus-visible:shadow-[0_0_0_1.5px_var(--color-blue)]"
-          >
-            <div className="flex items-start gap-2.5">
-              <span
-                aria-hidden
-                className="grid size-9 shrink-0 place-items-center rounded-md bg-white text-g-600 shadow-[0_0_0_1px_rgba(10,11,13,.08)]"
-              >
-                <Icon name={ENTRY_ICONS[condition.type]} size={16} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <EntryTypeSelect
-                  label={`Condition ${index + 1}`}
-                  value={condition.type}
-                  entries={entries}
-                  onChange={(type) => set(index, freshEntry("condition", type, stock) as Condition)}
-                />
+          <div key={`${keys[index]}-${condition.type}`} className="grid gap-4">
+            {index === 0 ? null : (
+              <div aria-hidden className="flex items-center gap-2.5">
+                <span className="h-px flex-1 bg-g-100" />
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-caption font-semibold text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]">
+                  and
+                </span>
+                <span className="h-px flex-1 bg-g-100" />
               </div>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Remove condition ${index + 1}`}
-                onClick={() => remove(index)}
+            )}
+            <section
+              id={idOf(index)}
+              tabIndex={-1}
+              aria-label={`Condition ${index + 1}`}
+              className="scroll-mt-[84px] rounded-md outline-none focus-visible:shadow-[0_0_0_2px_var(--color-blue)]"
+            >
+              <CheckRow
+                label={`condition ${index + 1}`}
+                value={condition}
+                entries={entries}
+                context={context}
+                problem={problemAt(null)}
+                onChange={(type) => set(index, freshEntry("condition", type, stock) as Condition)}
+                onRemove={() => remove(index)}
               >
-                <Icon name="close" size={15} />
-              </Button>
-            </div>
-            <PartProblem message={problemAt(null)} />
-            <EntryEditor
-              kind="condition"
-              value={condition}
-              context={context}
-              problemOf={problemAt}
-              onChange={(next) => set(index, next as Condition)}
-            />
-          </section>
+                <EntryEditor
+                  kind="condition"
+                  value={condition}
+                  context={context}
+                  problemOf={problemAt}
+                  onChange={(next) => set(index, next as Condition)}
+                />
+              </CheckRow>
+            </section>
+          </div>
         )
       })}
-      <Button variant="ghost" size="sm" className="justify-self-start" onClick={addUnused}>
-        <Icon name="plus" size={14} />Add a check
-      </Button>
+      <div className="border-t border-g-100 pt-4">{addMenu("Add a check")}</div>
     </div>
   )
 }

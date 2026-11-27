@@ -81,7 +81,7 @@ test.describe("automation editor", () => {
   test("a condition joins the sentence, and goes with Remove", async ({ page, user: _user }) => {
     await page.goto("/automations/new")
 
-    await page.getByRole("button", { name: /^Add a check/ }).click()
+    await page.getByRole("button", { name: "Add the check Market open" }).click()
     await expect(sentence(page)).toHaveText(/^Every Monday at 10:00 New York time, while the market is open, buy/)
     await page.getByRole("button", { name: "Remove condition 1" }).click()
 
@@ -98,6 +98,26 @@ test.describe("automation editor", () => {
       "Then: Pick at least one stock."
     )
     await expect(page.getByRole("button", { name: "Save automation" })).toBeDisabled()
+  })
+
+  test("an idea fills in every step", async ({ page, user: _user }) => {
+    await page.goto("/automations/new")
+
+    await page.getByRole("radiogroup", { name: "Start from an idea" }).getByRole("radio", { name: /^Stop-loss/ })
+      .click()
+
+    await expect(sentence(page)).toHaveText(/^When .+ falls 10% from its high, sell all your .+\.$/)
+    await expect(page.getByRole("radiogroup", { name: "Trigger" }).getByRole("radio", { name: /^Price move/ }))
+      .toBeChecked()
+  })
+
+  test("a check is added from the menu, grouped by what it reads", async ({ page, user: _user }) => {
+    await page.goto("/automations/new")
+
+    await page.getByRole("button", { name: "More checks" }).click()
+    await page.getByRole("menuitem", { name: /^Time window/ }).click()
+
+    await expect(page.getByRole("region", { name: "Condition 1" })).toContainText("Time window")
   })
 
   test("a message with nothing to say can't be saved", async ({ page, user: _user }) => {

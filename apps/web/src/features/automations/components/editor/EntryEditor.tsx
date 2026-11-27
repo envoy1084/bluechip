@@ -1,9 +1,8 @@
 import { SIMPLE_CONDITIONS } from "@bluechip/domain/automations/conditions/Logic"
 import type { Field } from "@bluechip/domain/automations/Entry"
 import { Button } from "@bluechip/ui/components/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@bluechip/ui/components/select"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { useId, useState } from "react"
+import { useState } from "react"
 import {
   type CatalogEntry,
   catalogEntry,
@@ -14,86 +13,23 @@ import {
   type Kind,
   offeredTrades
 } from "../../model/drafts.ts"
+import { CheckMenu } from "./CheckMenu.tsx"
+import { CheckRow } from "./CheckRow.tsx"
 import type { EditorContext } from "./editorContext.ts"
+import { EntryChoice } from "./EntryChoice.tsx"
 import { EntryField } from "./EntryField.tsx"
-
-/** Picks which trigger, condition or action an entry is, with what the picked one does under it. */
-export function EntryTypeSelect(
-  { label, value, entries, onChange }: Readonly<{
-    label: string
-    value: string
-    entries: ReadonlyArray<CatalogEntry>
-    onChange: (type: string) => void
-  }>
-) {
-  const id = useId()
-  const items = entries.map((entry) => ({ value: entry.type, label: entry.title }))
-  const picked = entries.find((entry) => entry.type === value)
-
-  return (
-    <div className="grid gap-1.5">
-      <span id={id} className="sr-only">{label}</span>
-      <Select items={items} value={value} onValueChange={(type) => type !== null && onChange(type)}>
-        <SelectTrigger aria-labelledby={id} className="w-full sm:w-[280px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {entries.map((entry) => (
-            <SelectItem key={entry.type} value={entry.type} className="items-start">
-              <span className="grid min-w-0 gap-0.5">
-                <span>{entry.title}</span>
-                <span className="text-label-sm font-normal text-g-500">{entry.summary}</span>
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {picked === undefined ? null : <p className="text-label text-g-500">{picked.summary}</p>}
-    </div>
-  )
-}
 
 const SIMPLE = SIMPLE_CONDITIONS as unknown as ReadonlyArray<CatalogEntry>
 
-/** One condition inside `all`, `any` or `not`: which one, its fields, and Remove when there may be fewer. */
-function NestedCondition(
-  { value, context, onChange, onRemove }: Readonly<{
-    value: Entry
-    context: EditorContext
-    onChange: (entry: Entry) => void
-    onRemove?: (() => void) | undefined
-  }>
-) {
-  const stock = context.stocks[0]!.symbol
-
-  return (
-    <div className="grid gap-3 rounded-[12px] p-3 surface-well">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <EntryTypeSelect
-            label="Condition"
-            value={value.type}
-            entries={SIMPLE}
-            onChange={(type) => onChange(freshEntry("condition", type, stock))}
-          />
-        </div>
-        {onRemove === undefined ?
-          null :
-          (
-            <Button variant="ghost" size="icon-sm" aria-label="Remove this condition" onClick={onRemove}>
-              <Icon name="close" size={14} />
-            </Button>
-          )}
-      </div>
-      <EntryEditor kind="condition" value={value} context={context} problemOf={() => undefined} onChange={onChange} />
-    </div>
-  )
-}
-
-/** The conditions of `all` or `any`: at least one, each removable while others are left. */
+/**
+ * The checks of `all` or `any`: at least one, each removable while others are left, joined by "and" or "or" down a
+ * line that shows they belong together.
+ */
 function NestedConditions(
-  { value, context, problem, onChange }: Readonly<{
+  { value, joiner, context, problem, onChange }: Readonly<{
     value: ReadonlyArray<Entry>
+    /** "and" for `all`, "or" for `any`. */
+    joiner: string
     context: EditorContext
     problem: string | undefined
     onChange: (conditions: ReadonlyArray<Entry>) => void
@@ -102,34 +38,48 @@ function NestedConditions(
   // Conditions have no ids of their own; these keep each one's fields in place as others come and go.
   const [keys, setKeys] = useState(() => value.map(() => crypto.randomUUID()))
   const stock = context.stocks[0]!.symbol
+  const change = (index: number, next: Entry) => onChange(value.map((each, at) => at === index ? next : each))
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-3 border-l-2 border-blue-100 pl-3.5">
       {value.map((condition, index) => (
-        <NestedCondition
-          key={`${keys[index]}-${condition.type}`}
-          value={condition}
-          context={context}
-          onChange={(next) => onChange(value.map((each, at) => at === index ? next : each))}
-          onRemove={value.length > 1 ?
-            () => {
-              setKeys(keys.filter((_, at) => at !== index))
-              onChange(value.filter((_, at) => at !== index))
-            } :
-            undefined}
-        />
+        <div key={`${keys[index]}-${condition.type}`} className="grid gap-3">
+          {index === 0 ?
+            null :
+            <span className="text-caption font-semibold tracking-[.06em] text-blue uppercase">{joiner}</span>}
+          <CheckRow
+            label={`check ${index + 1} of this group`}
+            value={condition}
+            entries={SIMPLE}
+            context={context}
+            onChange={(type) => change(index, freshEntry("condition", type, stock))}
+            onRemove={value.length > 1 ?
+              () => {
+                setKeys(keys.filter((_, at) => at !== index))
+                onChange(value.filter((_, at) => at !== index))
+              } :
+              undefined}
+          >
+            <EntryEditor
+              kind="condition"
+              value={condition}
+              context={context}
+              problemOf={() => undefined}
+              onChange={(next) => change(index, next)}
+            />
+          </CheckRow>
+        </div>
       ))}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="justify-self-start"
-        onClick={() => {
+      <CheckMenu
+        entries={SIMPLE}
+        trigger={<Button variant="ghost" size="sm" className="justify-self-start text-blue" />}
+        onPick={(type) => {
           setKeys([...keys, crypto.randomUUID()])
-          onChange([...value, freshEntry("condition", "marketOpen", stock)])
+          onChange([...value, freshEntry("condition", type, stock)])
         }}
       >
-        <Icon name="plus" size={14} />Add another
-      </Button>
+        <Icon name="plus" size={14} />Add another check
+      </CheckMenu>
       {problem === undefined ? null : <p className="text-label-sm font-medium text-loss">{problem}</p>}
     </div>
   )
@@ -140,7 +90,7 @@ const HALF = new Set(["time", "timeZone", "stock"])
 
 /**
  * The fields of a trigger, condition or action, one after another from the catalog's hints, short ones side by side
- * where there is room; the conditions of `all`, `any` and `not`, and the trade `ask` proposes, are edited in place.
+ * where there is room; the checks of `all`, `any` and `not`, and the trade `ask` proposes, are edited in place.
  */
 export function EntryEditor(
   { kind, value, context, problemOf, onChange }: Readonly<{
@@ -162,12 +112,14 @@ export function EntryEditor(
     if (field.unit === "action") {
       const trade = config[name] as Entry
       return (
-        <div className="grid gap-3 rounded-[12px] p-3 surface-well">
+        <div className="grid gap-3">
           <span className="text-[13.5px] font-medium text-g-700">{field.label}</span>
-          <EntryTypeSelect
+          <EntryChoice
             label={field.label}
             value={trade.type}
             entries={offeredTrades(context.check)}
+            context={{ ...context.check, asking: true }}
+            size="sm"
             onChange={(type) => set(name, freshEntry("action", type, stock))}
           />
           <EntryEditor
@@ -182,13 +134,32 @@ export function EntryEditor(
     }
 
     if (field.unit === "conditions") {
-      // `not` holds one condition; `all` and `any` a list of at least one.
+      // `not` holds one check; `all` and `any` a list of at least one.
       if (!Array.isArray(config[name])) {
-        return <NestedCondition value={config[name] as Entry} context={context} onChange={(next) => set(name, next)} />
+        return (
+          <div className="border-l-2 border-blue-100 pl-3.5">
+            <CheckRow
+              label="the check it turns around"
+              value={config[name] as Entry}
+              entries={SIMPLE}
+              context={context}
+              onChange={(type) => set(name, freshEntry("condition", type, stock))}
+            >
+              <EntryEditor
+                kind="condition"
+                value={config[name] as Entry}
+                context={context}
+                problemOf={() => undefined}
+                onChange={(next) => set(name, next)}
+              />
+            </CheckRow>
+          </div>
+        )
       }
       return (
         <NestedConditions
           value={config[name] as ReadonlyArray<Entry>}
+          joiner={value.type === "any" ? "or" : "and"}
           context={context}
           problem={problemOf(name)}
           onChange={(next) => set(name, next)}

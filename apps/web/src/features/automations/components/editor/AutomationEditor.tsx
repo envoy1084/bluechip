@@ -12,10 +12,12 @@ import { useAutomationCheck } from "../../hooks/useAutomationCheck.ts"
 import { saveProblem } from "../../model/automationText.ts"
 import { type DraftFields, suggestedName, toDraft } from "../../model/drafts.ts"
 import { changedPhrases, type Phrase, phrasesOf } from "../../model/phrases.ts"
+import { offeredStarters, starterOf, starterRecipe } from "../../model/starters.ts"
 import { AutomationForm } from "./AutomationForm.tsx"
 import type { EditorContext } from "./editorContext.ts"
 import { EditorSummary } from "./EditorSummary.tsx"
 import { type Reading, SaveBar, SaveProblems } from "./SaveBar.tsx"
+import { StarterPicker } from "./StarterPicker.tsx"
 
 // The keyboard's platform never changes while the page is open.
 const keepsStill = () => () => {}
@@ -24,27 +26,31 @@ const keepsStill = () => () => {}
 const MARKED_MS = 1600
 
 /**
- * The editor of one automation: its parts (When, Only if, Then, More settings) and, beside them on a page or above
- * them in a sheet, what it will do in a sentence that follows every edit, its name and who trades; then Save, always
- * in reach, with what stops it. Saving goes through `onSave`, which fails with the API's error when bluechip refuses.
+ * The editor of one automation: ideas to start from (with `starters`, on a page), its parts (When, Only if, Then,
+ * More settings) and, beside them on a page or above them in a sheet, what it will do in a sentence that follows
+ * every edit, its name and who trades; then Save, always in reach, with what stops it. Saving goes through `onSave`,
+ * which fails with the API's error when bluechip refuses.
  */
 export function AutomationEditor(
-  { initial, context, spec, whoTrades, unsaved, saveLabel, footer, onSave, compact = false }: Readonly<{
-    initial: DraftFields
-    context: Omit<EditorContext, "check">
-    /** The policies of the agent it trades through; `null` for your own trades. */
-    spec: AgentSpec | null
-    /** Who trades, in words or as a picker. */
-    whoTrades: ReactNode
-    /** Read here, not by bluechip: for an agent that isn't saved yet. */
-    unsaved?: { readonly spec: AgentSpec; readonly nameOf: (symbol: StockSymbol) => string } | undefined
-    saveLabel: string
-    /** Beside Save: Cancel. */
-    footer?: ReactNode
-    onSave: (draft: AutomationDraft) => Promise<unknown>
-    /** In a sheet: one column whatever the window's width, Save at the bottom. */
-    compact?: boolean
-  }>
+  { initial, context, spec, whoTrades, unsaved, saveLabel, footer, onSave, starters = false, compact = false }:
+    Readonly<{
+      initial: DraftFields
+      context: Omit<EditorContext, "check">
+      /** The policies of the agent it trades through; `null` for your own trades. */
+      spec: AgentSpec | null
+      /** Who trades, in words or as a picker. */
+      whoTrades: ReactNode
+      /** Read here, not by bluechip: for an agent that isn't saved yet. */
+      unsaved?: { readonly spec: AgentSpec; readonly nameOf: (symbol: StockSymbol) => string } | undefined
+      saveLabel: string
+      /** Beside Save: Cancel. */
+      footer?: ReactNode
+      onSave: (draft: AutomationDraft) => Promise<unknown>
+      /** Offers ideas to start from, above the steps: for a new automation. */
+      starters?: boolean
+      /** In a sheet: one column whatever the window's width, Save at the bottom. */
+      compact?: boolean
+    }>
 ) {
   const id = useId()
   const [fields, setFields] = useState(initial)
@@ -56,6 +62,8 @@ export function AutomationEditor(
     () => "Ctrl"
   )
   const root = useRef<HTMLDivElement>(null)
+  // Each idea picked starts the form again, so its checks take new places.
+  const [revision, setRevision] = useState(0)
 
   // Read here as you type, so the sentence never waits for bluechip; bluechip's check says what can't run.
   const description = describeAutomation(fields, context.nameOf)
@@ -148,6 +156,7 @@ export function AutomationEditor(
 
   const form = (
     <AutomationForm
+      key={revision}
       draft={fields}
       context={editor}
       problems={problems}
@@ -159,6 +168,28 @@ export function AutomationEditor(
       }}
     />
   )
+
+  const ideas = starters && !compact ?
+    (
+      <StarterPicker
+        value={starterOf(fields)}
+        starters={offeredStarters({ spec })}
+        onPick={(picked) => {
+          const stock = context.stocks[0]!
+          setFields({
+            ...fields,
+            ...starterRecipe(picked, {
+              symbol: stock.symbol,
+              name: stock.name,
+              price: stock.reference?.price ?? stock.price?.price ?? null
+            })
+          })
+          setRevision(revision + 1)
+          setProblem(null)
+        }}
+      />
+    ) :
+    null
 
   const saveProblems = (
     <SaveProblems
@@ -206,7 +237,10 @@ export function AutomationEditor(
         <div className="grid gap-3 empty:hidden max-lg:hidden">{saveProblems}</div>
         {bar(true, "z-[5] max-lg:hidden")}
       </div>
-      <div className="lg:col-start-1 lg:row-start-1">{form}</div>
+      <div className="grid min-w-0 gap-[18px] lg:col-start-1 lg:row-start-1">
+        {ideas}
+        {form}
+      </div>
       <div className="grid gap-3 empty:hidden lg:hidden">{saveProblems}</div>
       {bar(true, "sticky bottom-3 z-[5] lg:hidden")}
     </div>

@@ -2,18 +2,18 @@ import type { Allocation } from "@bluechip/domain/automations/actions/Buy"
 import type { Field } from "@bluechip/domain/automations/Entry"
 import type { Weekday } from "@bluechip/domain/automations/Time"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
-import { Price, Shares, Usdc } from "@bluechip/domain/market/Units"
-import { formatPercent } from "@bluechip/domain/policies/Format"
+import { Shares, Usdc } from "@bluechip/domain/market/Units"
+import { formatDollars, formatPercent } from "@bluechip/domain/policies/Format"
 import { ChoiceField } from "../../../../components/fields/ChoiceField.tsx"
 import { NumberField } from "../../../../components/fields/NumberField.tsx"
-import { PriceField } from "../../../../components/fields/PriceField.tsx"
 import { StockField } from "../../../../components/fields/StockField.tsx"
 import { TimeField } from "../../../../components/fields/TimeField.tsx"
 import { ToggleField } from "../../../../components/fields/ToggleField.tsx"
 import { ZoneField } from "../../../../components/fields/ZoneField.tsx"
 import { choiceLabel } from "../../model/automationText.ts"
-import { type CatalogEntry, choicesOf, evenSplit } from "../../model/drafts.ts"
+import { type CatalogEntry, choicesOf, evenSplit, fieldsOf } from "../../model/drafts.ts"
 import type { EditorContext } from "./editorContext.ts"
+import { PriceLevelField } from "./fields/PriceLevelField.tsx"
 import { StockPicker } from "./fields/StockPicker.tsx"
 import { TextField } from "./fields/TextField.tsx"
 import { WeekdaysField } from "./fields/WeekdaysField.tsx"
@@ -123,7 +123,9 @@ export function EntryField(
           onChange={onChange}
         />
       )
-    case "split":
+    case "split": {
+      const parts = (value as ReadonlyArray<Allocation>).length
+      const amount = (config as { readonly amount?: unknown }).amount
       return (
         <div className="grid gap-1">
           <StockField
@@ -132,19 +134,31 @@ export function EntryField(
             stocks={context.stocks}
             onChange={(symbols) => onChange(evenSplit(symbols))}
           />
-          {(value as ReadonlyArray<Allocation>).length > 1 ?
-            <p className="text-label-sm text-g-500">Split evenly across them.</p> :
+          {parts > 1 ?
+            (
+              <p className="text-label-sm text-g-500">
+                {typeof amount === "bigint" ?
+                  `Split evenly, about ${formatDollars(amount / BigInt(parts))} each.` :
+                  "Split evenly across them."}
+              </p>
+            ) :
             null}
         </div>
       )
-    case "price":
+    }
+    case "price": {
+      // The price is about the entry's own stock, when it has one.
+      const stockField = fieldsOf(entry).find(([, hint]) => hint.unit === "stock")
+      const symbol = stockField === undefined ? undefined : (config as Record<string, unknown>)[stockField[0]]
       return (
-        <PriceField
+        <PriceLevelField
           {...common}
           value={value as bigint}
-          onChange={(price) => onChange(price ?? Price.make(BigInt(0)))}
+          stock={context.stocks.find((stock) => stock.symbol === symbol)}
+          onChange={onChange}
         />
       )
+    }
     case "time":
       return <TimeField {...common} value={value as string} onChange={onChange} />
     case "weekdays":

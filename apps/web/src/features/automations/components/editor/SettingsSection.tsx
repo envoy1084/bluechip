@@ -3,6 +3,7 @@ import { Icon } from "@bluechip/ui/icons/icon"
 import { useState } from "react"
 import { asOneLine } from "../../model/automationText.ts"
 import type { DraftFields } from "../../model/drafts.ts"
+import { StepMarker } from "./EditorSection.tsx"
 import { SettingsFields } from "./SettingsFields.tsx"
 
 /**
@@ -30,15 +31,10 @@ export function SettingsSection(
       onOpenChange={setOpen}
       className="scroll-mt-[84px] overflow-hidden rounded-lg bg-white shadow-e2 outline-none"
     >
-      <CollapsibleTrigger className="group/settings flex w-full cursor-pointer items-center gap-3 px-[18px] py-4 text-left outline-none focus-visible:bg-g-50">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-g-100 text-g-600 shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)]"
-        >
-          <Icon name="settings" size={14} />
-        </span>
+      <CollapsibleTrigger className="group/settings flex w-full cursor-pointer items-center gap-3 px-[18px] py-4 text-left outline-none hover:bg-g-50 focus-visible:bg-g-50">
+        <StepMarker mark="settings" problem={problem !== undefined} />
         <span className="grid min-w-0 flex-1 gap-0.5">
-          <span className="text-[15px] font-semibold tracking-[-0.01em]">More settings</span>
+          <span className="text-[16px] font-semibold tracking-[-0.01em]">More settings</span>
           <span className="text-label text-g-500">
             {summary.length === 0 ? "Runs every time, with no wait." : asOneLine(summary)}
           </span>
@@ -50,7 +46,7 @@ export function SettingsSection(
         />
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="border-t border-g-100 px-[18px] pt-4 pb-[18px]">
+        <div className="border-t border-g-100 px-[18px] pt-4 pb-[18px] sm:pl-[62px]">
           <SettingsFields draft={draft} zone={zone} quietProblem={problem} onChange={onChange} />
         </div>
       </CollapsibleContent>
