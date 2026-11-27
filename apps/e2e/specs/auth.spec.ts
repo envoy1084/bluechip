@@ -113,10 +113,15 @@ test.describe("sign in and out", () => {
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })
 
-  test("a signed-in visitor to the landing, sign-in and welcome pages goes home", async ({ page, user: _user }) => {
+  test("a signed-in visitor sees the landing with Open bluechip", async ({ page, user: _user }) => {
     await page.goto("/")
-    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 
+    await page.getByRole("link", { name: "Open bluechip" }).click()
+
+    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
+  })
+
+  test("a signed-in visitor to the sign-in and welcome pages goes home", async ({ page, user: _user }) => {
     await page.goto("/signin")
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 

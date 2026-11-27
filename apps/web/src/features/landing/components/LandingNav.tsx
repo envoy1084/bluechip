@@ -1,8 +1,12 @@
 import { Logo } from "@bluechip/ui/bluechip/logo"
 import { buttonVariants } from "@bluechip/ui/components/button"
+import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
+import { useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
+import { meAtom } from "../../../atoms/account.ts"
 
 /** The page's sections, in order, for the nav and the footer. */
 export const LANDING_SECTIONS = [
@@ -13,9 +17,13 @@ export const LANDING_SECTIONS = [
   { id: "faq", label: "FAQ" }
 ] as const
 
-/** The bar over the page: the lockup, the sections, Sign in and Create an account. It frosts once the page scrolls. */
+/**
+ * The bar over the page: the lockup, the sections, then Sign in and Create an account, or Open bluechip for someone
+ * already signed in. It frosts once the page scrolls.
+ */
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
+  const signedIn = AsyncResult.isSuccess(useAtomValue(meAtom))
 
   useEffect(() => {
     const update = () => setScrolled(window.scrollY > 8)
@@ -47,10 +55,18 @@ export function LandingNav() {
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-1.5">
-          <Link to="/signin" className={buttonVariants({ variant: "ghost", size: "sm" })}>Sign in</Link>
-          <Link to="/welcome" className={buttonVariants({ size: "sm" })}>Create an account</Link>
-        </div>
+        {signedIn ?
+          (
+            <Link to="/home" className={buttonVariants({ size: "sm" })}>
+              Open bluechip<Icon name="arrow-right" size={14} />
+            </Link>
+          ) :
+          (
+            <div className="flex items-center gap-1.5">
+              <Link to="/signin" className={buttonVariants({ variant: "ghost", size: "sm" })}>Sign in</Link>
+              <Link to="/welcome" className={buttonVariants({ size: "sm" })}>Create an account</Link>
+            </div>
+          )}
       </div>
     </header>
   )
