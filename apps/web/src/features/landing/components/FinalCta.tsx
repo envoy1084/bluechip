@@ -6,7 +6,6 @@ import { useRef } from "react"
 import { AppLink } from "../../../components/AppLink.tsx"
 import { track } from "../../../lib/analytics.ts"
 import { useInView } from "../hooks/useInView.ts"
-import { PaperNote } from "./PaperNote.tsx"
 
 const TITLE = "Your agents are waiting."
 
@@ -51,7 +50,6 @@ export function FinalCta() {
               />
             </AppLink>
           </div>
-          <PaperNote className="text-blue-100" />
         </div>
         <div aria-hidden className="relative h-[260px] sm:h-[320px] lg:h-full lg:min-h-[440px]">
           <Halftone scene="butterflies" palette={ON_BLUE} cell={9} className="absolute inset-0 size-full" />

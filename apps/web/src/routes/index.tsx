@@ -11,8 +11,8 @@ export const Route = createFileRoute("/")({
   head: () => {
     const head = pageHead({
       fullTitle: site.paper ?
-        "bluechip paper | Try AI agents that trade US stocks, with test money" :
-        "bluechip | AI agents that trade US stocks inside your limits",
+        "bluechip paper | AI stock agents, with test money" :
+        "bluechip | AI stock agents, inside your limits",
       path: "/",
       image: "default",
       markdown: true

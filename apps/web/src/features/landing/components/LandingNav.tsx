@@ -46,7 +46,7 @@ export function LandingNav() {
     >
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex items-center gap-2">
-          <Link to="/" aria-label="bluechip home" className="rounded-sm">
+          <Link to="/" aria-label="bluechip home" className="flex rounded-sm">
             <Logo size={24} />
           </Link>
           <PaperBadge />

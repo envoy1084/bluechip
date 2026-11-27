@@ -15,7 +15,7 @@ export function HelpFrame({ children }: Readonly<{ children: ReactNode }>) {
       <header className="sticky top-0 z-20 border-b border-g-100 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-[1200px] items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <Link to="/" aria-label="bluechip home" className="rounded-sm">
+            <Link to="/" aria-label="bluechip home" className="flex rounded-sm">
               <Logo size={22} />
             </Link>
             <span aria-hidden className="h-4 w-px bg-g-200" />

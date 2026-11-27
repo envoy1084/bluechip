@@ -2,10 +2,10 @@ import { Badge } from "@bluechip/ui/components/badge"
 import { cn } from "@bluechip/ui/lib/cn"
 import { network } from "../../lib/network.ts"
 
-/** "Paper money", next to the logo wherever it shows, only on paper money (Base Sepolia). */
+/** "Paper", next to the logo wherever it shows, only on paper money (Base Sepolia). */
 export function PaperBadge({ className }: Readonly<{ className?: string }>) {
   if (network !== "sepolia") return null
-  return <Badge variant="warning" className={className}>Paper money</Badge>
+  return <Badge variant="warning" className={className}>Paper</Badge>
 }
 
 /** A thin strip over every signed-in page on paper money, so nobody mistakes it for real money. */

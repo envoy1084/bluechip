@@ -34,7 +34,7 @@ export function LandingFooter() {
               >
                 Get started or sign in
               </AppLink>
-              <AppLink to="/recover" className={link}>Lost your passkey? Recover your account</AppLink>
+              <AppLink to="/recover" className={link}>Recover your account</AppLink>
             </nav>
             <nav aria-label="Help" className="grid content-start gap-2.5">
               <b className="text-label-sm font-semibold text-g-500">Help</b>

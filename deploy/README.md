@@ -195,7 +195,7 @@ only, no server, no database), domain `bluechip.markets` on port 80. Its build a
 - Every path of the app (`/home`, `/agents/*`, `/welcome`, `/recover`, `/signin`, `/dev/*`, anything without a page
   of its own) is a `302` to the same path and query on the app's site, from Caddy (`APP_URL`), before the shell
   loads; the shell does the same if it ever runs there.
-- A `paper.` app adds "Open beta on paper money" beside the ways in, and `llms.txt` says so.
+- A `paper.` app is named in `llms.txt` as the open beta on paper money.
 - Analytics report as paper money (`environment: paper`, `network: sepolia`) into paper's PostHog project, so the
   funnel from the landing into the app is one project's; posthog-js keeps its ids in a cookie on `bluechip.markets`
   shared with its subdomains, so the anonymous id carries into `paper.bluechip.markets`. The browser's telemetry
