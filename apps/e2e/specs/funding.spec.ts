@@ -37,7 +37,7 @@ test.describe("add cash", () => {
     const dialog = page.getByRole("dialog", { name: "Add cash" })
     await expect(dialog.getByText("Send USDC on Base to your bluechip account. It shows up here as soon as it lands."))
       .toBeVisible()
-    await expect(dialog).toContainText(user.address)
+    await expect(dialog.getByTitle(user.address)).toBeVisible()
     await expect(dialog.getByRole("button", { name: /test money/ })).toHaveCount(0)
     await user.fund(page)
     await expect(dialog.getByRole("region", { name: "Cash arrived" })).toContainText("$1,000.00")

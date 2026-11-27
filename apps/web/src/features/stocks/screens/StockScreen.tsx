@@ -58,9 +58,11 @@ function StockContent({ stock }: Readonly<{ stock: Stock }>) {
       <div className="grid gap-4">
         <PricesPausedBanner />
         <StockHeader stock={stock} />
-        <HoldingPanel stock={stock} />
         <div className="grid items-start gap-4 min-[860px]:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <PriceHistoryChart stock={stock} />
+          <div className="grid min-w-0 gap-4">
+            <PriceHistoryChart stock={stock} />
+            <HoldingPanel stock={stock} />
+          </div>
           <QuoteBox stock={stock} />
         </div>
       </div>

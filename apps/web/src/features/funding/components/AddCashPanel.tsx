@@ -16,7 +16,14 @@ const CHECK_EVERY_MS = 5000
  * The Add cash dialog's body: the account's address and QR code. While it's open, cash is checked every few seconds
  * and an arrival plays the "cash arrived" moment.
  */
-export function AddCashPanel({ address }: Readonly<{ address: `0x${string}` }>) {
+export function AddCashPanel(
+  { address, flat = false }: Readonly<{
+    address: `0x${string}`
+    /** Inside a dialog: no card of its own around it. */
+    flat?: boolean
+  }>
+) {
+  const surface = flat ? { className: "rounded-none bg-transparent p-0 shadow-none" } : {}
   const portfolio = useAtomValue(fetchedPortfolioAtom)
   const refresh = useAtomRefresh(fetchedPortfolioAtom)
 
@@ -36,6 +43,12 @@ export function AddCashPanel({ address }: Readonly<{ address: `0x${string}` }>) 
   }, [arrived, refresh])
 
   return arrived === undefined ?
-    <DepositCard address={address} paymentRequest={usdcTransferRequest({ network, recipient: address })} /> :
-    <DepositArrivedCard amount={usdcDollars(arrived)} celebrate />
+    (
+      <DepositCard
+        address={address}
+        paymentRequest={usdcTransferRequest({ network, recipient: address })}
+        {...surface}
+      />
+    ) :
+    <DepositArrivedCard amount={usdcDollars(arrived)} celebrate {...surface} />
 }

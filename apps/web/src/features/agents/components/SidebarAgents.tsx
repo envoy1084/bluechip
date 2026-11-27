@@ -25,7 +25,7 @@ const PLACEHOLDER_ROWS = ["a", "b", "c"]
 
 /**
  * The sidebar's "Your agents" group: the agents a glance shows (those waiting for you first, as the list ranks them)
- * with their state's dot, "See all" when there are more, then "New agent".
+ * with their state's dot, then "New agent". The Agents page above lists them all.
  */
 export function SidebarAgents() {
   const agents = useAtomValue(agentsAtom)
@@ -64,7 +64,6 @@ function SidebarAgentRows({ agents }: Readonly<{ agents: ReadonlyArray<Agent> }>
   const [now] = useState(() => new Date())
   const listed = useListedAgents(agents, now)
   const shown = featuredAgents(listed, SHOWN_AGENTS)
-  const more = listed.filter((each) => each.state !== "removed").length > shown.length
 
   return (
     <>
@@ -85,20 +84,6 @@ function SidebarAgentRows({ agents }: Readonly<{ agents: ReadonlyArray<Agent> }>
           </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
-      {more ?
-        (
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              isActive={matchRoute({ to: "/agents" }) !== false}
-              tooltip="See all agents"
-              render={<Link to="/agents" />}
-            >
-              <Icon name="arrow-right" />
-              <span>See all</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ) :
-        null}
     </>
   )
 }

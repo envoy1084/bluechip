@@ -24,7 +24,7 @@ export function CashDialogs() {
   return (
     <>
       <Dialog open={open === "add"} onOpenChange={(next) => setOpen(next ? "add" : null)}>
-        <DialogContent className="max-w-[520px]">
+        <DialogContent className="max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add cash</DialogTitle>
             <DialogDescription>
@@ -32,7 +32,7 @@ export function CashDialogs() {
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            {AsyncResult.isSuccess(me) && <AddCashPanel address={me.value.account.address as `0x${string}`} />}
+            {AsyncResult.isSuccess(me) && <AddCashPanel address={me.value.account.address as `0x${string}`} flat />}
           </DialogBody>
         </DialogContent>
       </Dialog>

@@ -177,8 +177,8 @@ export function AllocationDonut(
                 className={cn(
                   targeted ? "grid-cols-[10px_minmax(0,1fr)_auto_auto_64px]" : "grid-cols-[10px_minmax(0,1fr)_auto]",
                   "grid w-full cursor-pointer items-center gap-2.5 rounded-sm px-2.5 py-[7px] text-left text-[13.5px] outline-none transition-colors duration-fast ease-brand",
-                  "hover:bg-white hover:shadow-e1 focus-visible:bg-white focus-visible:ring-focus",
-                  focus === slice.id && "bg-white shadow-e1"
+                  "hover:bg-blue/10 hover:text-blue focus-visible:bg-blue/10 focus-visible:text-blue focus-visible:ring-focus",
+                  focus === slice.id && "bg-blue/10 text-blue"
                 )}
               >
                 <i

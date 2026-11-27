@@ -11,9 +11,6 @@ const DAY = 24 * 60 * 60 * 1000
 const dayMonth = (at: Date, timeZone: string) =>
   new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short" }).format(at)
 
-// The value's change counts deposits and withdrawals too, so it says so rather than read as a return.
-const VALUE_NOTE = "Change in value, including deposits and withdrawals"
-
 /**
  * The value history (a snapshot every 4 hours over 30 days) as ranges: the past week, then the past 30 days, in the
  * viewer's time, ticked by day. The week is offered only when it has a line of its own and is shorter than the month.
@@ -34,12 +31,11 @@ export const valueRanges = (
   const month: PortfolioRange = {
     id: "1M",
     description: "Past 30 days",
-    changeNote: VALUE_NOTE,
     points: plotted.map(withoutTime)
   }
 
   if (week.length < 2 || week.length === plotted.length) return [month]
-  return [{ id: "1W", description: "Past week", changeNote: VALUE_NOTE, points: week.map(withoutTime) }, month]
+  return [{ id: "1W", description: "Past week", points: week.map(withoutTime) }, month]
 }
 
 /**
