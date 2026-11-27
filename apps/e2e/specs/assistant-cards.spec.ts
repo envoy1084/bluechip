@@ -51,6 +51,11 @@ test.describe("trade cards", () => {
 
     await expect(lastTurn(page).getByText("It's in your portfolio.")).toBeVisible()
     await expect(lastTurn(page).getByRole("link", { name: "View on BaseScan" })).toBeVisible()
+
+    // Opened again, the card shows the trade as it ended, not a second Face ID.
+    await page.reload()
+    await expect(lastTurn(page).getByText("It's in your portfolio.")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Buy with Face ID" })).toHaveCount(0)
   })
 })
 

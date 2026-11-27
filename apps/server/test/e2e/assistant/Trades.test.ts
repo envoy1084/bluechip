@@ -136,6 +136,75 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           )
         }))
 
+      it.effect("reopened after the agent's trade filled: its card shows the trade filled", () =>
+        Effect.gen(function*() {
+          const { agent, user } = yield* (yield* TestAgents).locked
+          const assistant = yield* TestAssistant
+          yield* (yield* RecordedModel).record({
+            to: "Buy $40 of Nvidia with my picker, then show me",
+            rounds: [
+              [{
+                call: "proposeTrade",
+                params: { agentId: agent.id, symbol: "NVDA", side: "buy", dollars: 40, shares: null, reason: "Asked." }
+              }],
+              [{ text: "On its way." }]
+            ]
+          })
+          const conversation = yield* assistant.start(user)
+          const run = yield* assistant.ask(user, conversation.id, "Buy $40 of Nvidia with my picker, then show me")
+          const [card] = run.cards
+          assert(card?._tag === "Trade")
+          yield* user.events.next(
+            "IntentChanged",
+            ({ intent }) => intent.id === card.intent.id && intent.status === "filled"
+          )
+
+          const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
+
+          assert.deepStrictEqual(
+            thread.messages.flatMap((message) =>
+              message.parts.flatMap((part) =>
+                part.type === "card" && part.card._tag === "Trade" ? [part.card.intent.status] : []
+              )
+            ),
+            ["filled"]
+          )
+        }))
+
+      it.effect("reopened after you declined its trade: the approval card shows it declined", () =>
+        Effect.gen(function*() {
+          const user = yield* (yield* TestUsers).funded
+          const assistant = yield* TestAssistant
+          yield* (yield* RecordedModel).record({
+            to: "Buy $20 of Apple for me, or not",
+            rounds: [
+              [{
+                call: "proposeTrade",
+                params: { agentId: null, symbol: "AAPL", side: "buy", dollars: 20, shares: null, reason: "Asked." }
+              }],
+              [{ text: "Approve it on the card." }]
+            ]
+          })
+          const conversation = yield* assistant.start(user)
+          const run = yield* assistant.ask(user, conversation.id, "Buy $20 of Apple for me, or not")
+          const [card] = run.cards
+          assert(card?._tag === "Approval")
+          yield* user.api.intents.decline({ params: { id: card.intent.id } })
+
+          const thread = yield* user.api.assistant.conversation({ params: { id: conversation.id } })
+
+          assert.deepStrictEqual(
+            thread.messages.flatMap((message) =>
+              message.parts.flatMap((part) =>
+                part.type === "card" && part.card._tag === "Approval" ?
+                  [[part.card.intent.status, part.card.request.intent.status]] :
+                  []
+              )
+            ),
+            [["declined", "declined"]]
+          )
+        }))
+
       it.effect("an agent that isn't the user's: no card, and the model is told why", () =>
         Effect.gen(function*() {
           const { agent } = yield* (yield* TestAgents).locked

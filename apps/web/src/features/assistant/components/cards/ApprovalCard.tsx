@@ -1,7 +1,7 @@
 import type { Card } from "@bluechip/domain/assistant/Card"
 import type { RequestId } from "@bluechip/domain/Ids"
 import { describeLeg } from "@bluechip/domain/intents/Describe"
-import { type Intent, IntentRequest } from "@bluechip/domain/intents/Intent"
+import type { Intent } from "@bluechip/domain/intents/Intent"
 import type { TradeWarning } from "@bluechip/domain/trading/Trade"
 import { ChatCard } from "@bluechip/ui/bluechip/chat-card"
 import { PasskeyButton } from "@bluechip/ui/bluechip/passkey-button"
@@ -33,15 +33,15 @@ export function ApprovalCard(
   const [request, setRequest] = useState(card.request)
   const [signed, setSigned] = useState<Intent | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
-  const live = useAtomValue(liveIntentsAtom).get(request.intent.id)
+  // The card comes with the trade as it stands; live events move it on while you watch.
+  const current = useAtomValue(liveIntentsAtom).get(card.intent.id) ?? card.intent
   const { intent, quote } = request
 
-  // Signed here or in another tab: the trade is on its way, so show where it is.
-  const moved = live !== undefined && live.status !== "awaitingSignature"
-  if (signed !== null || moved) {
+  // Signed here, in another tab or before you came back: the trade has moved on, so show where it is.
+  if (signed !== null || current.status !== "awaitingSignature") {
     return (
       <ChatCard tag="Your trade" icon="face-id" tone="quiet">
-        <Trade intent={signed ?? live!} nameOf={nameOf} />
+        <Trade intent={signed ?? current} nameOf={nameOf} />
       </ChatCard>
     )
   }
@@ -51,17 +51,11 @@ export function ApprovalCard(
     try {
       let ready = request
       if (hasExpired(request.expiresAt)) {
-        const prepared = await prepare({
-          payload: {
-            requestId: crypto.randomUUID() as RequestId,
-            agentId: null,
-            leg: intent.leg,
-            reason: intent.reason
-          }
+        ready = await prepare({
+          params: { id: intent.id },
+          payload: { requestId: crypto.randomUUID() as RequestId }
         })
-        if (!(prepared instanceof IntentRequest)) return setSigned(prepared)
-        ready = prepared
-        setRequest(prepared)
+        setRequest(ready)
       }
       setSigned(await confirm({ id: ready.id, options: ready.options }))
     } catch (error) {

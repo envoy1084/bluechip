@@ -8,16 +8,20 @@ import {
 } from "@bluechip/domain/assistant/Conversation"
 import { NotFound } from "@bluechip/domain/Errors"
 import { type AgentId, ConversationId, type MessageId } from "@bluechip/domain/Ids"
-import { and, asc, count as countRows, desc, eq, isNotNull, lt } from "drizzle-orm"
+import { IntentRequest } from "@bluechip/domain/intents/Intent"
+import { and, asc, count as countRows, desc, eq, inArray, isNotNull, lt } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
+import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { Agents } from "../agents/Agents.ts"
 import { Analytics } from "../analytics/Analytics.ts"
+import { toIntent } from "../intents/IntentStore.ts"
+import { intents } from "../intents/tables.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { assistantCards, conversations, messages } from "./tables.ts"
 
@@ -153,7 +157,50 @@ export class Conversations extends Context.Service<Conversations, {
           db.select().from(assistantCards).where(eq(assistantCards.conversationId, row.id))
         ], { concurrency: 2 }).pipe(Effect.orDie)
 
-        const cards = new Map(cardRows.map((card) => [card.id as string, card.card]))
+        // A card keeps the trade or agent as it was shown; the thread shows each as it stands now, so a trade signed
+        // or an agent locked since reads that way when the conversation is opened again.
+        const intentIds = cardRows.flatMap(({ card }) =>
+          card._tag === "Trade" || card._tag === "Approval" ? [card.intent.id as `intent_${string}`] : []
+        )
+        const agentIds = new Set(
+          cardRows.flatMap(({ card }) =>
+            card._tag === "DraftAgent" || card._tag === "PolicyChange" ? [card.agent.id] : []
+          )
+        )
+        const [intentRows, agentList] = yield* Effect.all([
+          intentIds.length === 0 ? Effect.succeed([]) : db.select().from(intents).where(and(
+            eq(intents.userId, owner.id as `user_${string}`),
+            inArray(intents.id, intentIds)
+          )).pipe(Effect.orDie),
+          Effect.forEach(
+            agentIds,
+            (agentId) => agents.find(owner, agentId).pipe(Effect.option),
+            { concurrency: 4 }
+          )
+        ], { concurrency: 2 })
+        const currentIntents = new Map(intentRows.map((intentRow) => [intentRow.id as string, toIntent(intentRow)]))
+        const currentAgents = new Map(
+          agentList.flatMap((agent) => Option.isSome(agent) ? [[agent.value.id as string, agent.value]] : [])
+        )
+
+        const cards = new Map(cardRows.map(({ card }): [string, Card] => {
+          switch (card._tag) {
+            case "Trade": {
+              return [card.id, { ...card, intent: currentIntents.get(card.intent.id) ?? card.intent }]
+            }
+            case "Approval": {
+              const intent = currentIntents.get(card.intent.id) ?? card.intent
+              return [card.id, { ...card, intent, request: new IntentRequest({ ...card.request, intent }) }]
+            }
+            case "DraftAgent":
+            case "PolicyChange": {
+              return [card.id, { ...card, agent: currentAgents.get(card.agent.id) ?? card.agent }]
+            }
+            default: {
+              return [card.id, card]
+            }
+          }
+        }))
         return new ConversationThread({
           conversation: toConversation(row),
           messages: messageRows.map((message) => toMessage(message, cards))

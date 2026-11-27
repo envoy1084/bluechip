@@ -101,8 +101,8 @@ export const stockDayAtom = Atom.family((symbol: StockSymbol) =>
   })
 )
 
-/** Prepares your own trade again, after the card's request ran out. */
-export const prepareIntentAtom = BluechipApiClient.mutation("intents", "create")
+/** Prepares the card's trade again, with a fresh quote, after its request ran out: the same intent, not a new one. */
+export const prepareIntentAtom = BluechipApiClient.mutation("intents", "approve")
 
 /** Signs a prepared trade with the account's passkey (Face ID) and sends it. */
 export const confirmIntentAtom = BluechipApiClient.runtime.fn(
