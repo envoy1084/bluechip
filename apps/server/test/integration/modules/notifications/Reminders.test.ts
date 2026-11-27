@@ -91,7 +91,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("Reminders", (it) => {
       Effect.gen(function*() {
         const user = yield* (yield* TestUsers).signUp
         yield* (yield* Notifications).add(user.id, {
-          kind: "automationFired",
+          kind: "intentFilled",
           title: "Dip buyer ran",
           body: "It ran.",
           link: null,
@@ -106,7 +106,7 @@ layer(TestAgents.layer, { excludeTestServices: true })("Reminders", (it) => {
         }).pipe(Effect.provide(TestClock.layer()))
         const page = yield* user.api.notifications.list({ query: {} })
 
-        assert.deepStrictEqual(page.items.map((item) => item.kind), ["automationFired"])
+        assert.deepStrictEqual(page.items.map((item) => item.kind), ["intentFilled"])
       }))
 
     it.effect.each([

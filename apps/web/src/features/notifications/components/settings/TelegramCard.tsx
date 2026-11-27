@@ -57,7 +57,7 @@ export function TelegramCard() {
             title={linked.length === 0 ? "Link Telegram" : "Link another chat"}
             description={failed ?
               "We couldn't reach bluechip just now. Try again." :
-              "You get a code to send to bluechip's bot in a private chat."}
+              "Open bluechip's bot in Telegram and tap Start."}
           >
             <Button
               variant="secondary"
@@ -81,30 +81,34 @@ export function TelegramCard() {
         ) :
         (
           <div className="grid gap-3 py-4" data-testid="link-code">
-            <p className="text-[13.5px] text-g-600">
-              {code.bot === null ?
-                "Send this code to bluechip's bot in a private chat." :
-                `Send this code to ${code.bot} in a private chat. It works once, for 10 minutes.`}
-            </p>
-            <span className="flex items-center gap-2 justify-self-start">
-              <span className="rounded-md bg-g-50 px-4 py-2.5 font-mono text-[22px] font-semibold tracking-[0.18em] shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)]">
-                {code.code}
-              </span>
-              <CopyButton text={code.code} what="the code" size="md" />
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {code.deepLink === null ?
-                null :
-                (
+            {code.deepLink === null ?
+              <p className="text-[13.5px] text-g-600">Send this to bluechip's bot in a private chat.</p> :
+              (
+                <>
+                  <p className="text-[13.5px] text-g-600">
+                    Open bluechip's bot and tap Start: this chat links itself. The link works once, for 10 minutes.
+                  </p>
                   <ButtonLink
                     size="sm"
+                    className="justify-self-start"
                     render={<a href={code.deepLink} target="_blank" rel="noreferrer" aria-label="Open Telegram" />}
                   >
-                    Open Telegram
+                    <Icon name="arrow-up-right" size={14} />Open Telegram
                   </ButtonLink>
-                )}
-              <Button variant="ghost" size="sm" onClick={() => setCode(null)}>Done</Button>
-            </div>
+                  <p className="text-[13px] text-g-500">
+                    Telegram on another device? Send {code.bot ?? "the bot"} this message:
+                  </p>
+                </>
+              )}
+            <span className="flex items-center gap-2 justify-self-start">
+              <span className="rounded-md bg-g-50 px-3 py-2 font-mono text-[15px] font-semibold tracking-[0.08em] shadow-[inset_0_0_0_1px_rgba(10,11,13,.06)]">
+                /start {code.code}
+              </span>
+              <CopyButton text={`/start ${code.code}`} what="the message" size="md" />
+            </span>
+            <Button variant="ghost" size="sm" className="justify-self-start" onClick={() => setCode(null)}>
+              Done
+            </Button>
           </div>
         )}
     </SettingsSection>

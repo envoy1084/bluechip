@@ -50,7 +50,7 @@ export function SettingsRow(
 ) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-b border-g-100 py-3.5 last:border-b-0">
-      <div className="flex min-w-0 flex-[1_1_260px] items-center gap-3">
+      <div className="flex min-w-0 flex-[1_1_260px] items-start gap-3">
         {icon === undefined ?
           null :
           (

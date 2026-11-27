@@ -60,11 +60,15 @@ function TimeColumn(
   }, [ref])
 
   return (
-    <fieldset className="grid min-w-0 content-start gap-1">
-      <legend className="px-1 pb-1 text-caption font-semibold tracking-[.06em] text-g-500 uppercase">{label}</legend>
+    <fieldset className="grid min-w-0 content-start gap-1.5">
+      <legend className="pb-1.5 text-center text-caption font-medium text-g-500">{label}</legend>
       <div
         ref={list}
-        className="grid max-h-[216px] w-[58px] gap-0.5 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-width:thin]"
+        className={cn(
+          "grid max-h-[208px] w-16 gap-0.5 overflow-y-auto overscroll-contain rounded-md bg-g-50 p-1",
+          "shadow-[inset_0_0_0_1px_rgba(10,11,13,.05)] [scrollbar-width:none]",
+          "[mask-image:linear-gradient(transparent,#000_14px,#000_calc(100%_-_14px),transparent)]"
+        )}
       >
         {options.map((option) => (
           <button
@@ -76,10 +80,11 @@ function TimeColumn(
             onClick={() => onPick(option)}
             onKeyDown={moveFocus}
             className={cn(
-              "h-8 shrink-0 cursor-pointer rounded-sm text-label font-medium text-g-700 tabular-nums outline-none",
-              "transition-colors duration-fast ease-brand hover:bg-g-100 hover:text-ink",
+              "h-8 shrink-0 cursor-pointer rounded-sm text-label font-medium text-g-600 tabular-nums outline-none",
+              "transition-[background-color,color,box-shadow] duration-fast ease-brand hover:bg-white/70 hover:text-ink",
               "focus-visible:shadow-[0_0_0_1px_var(--color-blue),0_0_0_3px_rgba(42,91,255,.14)]",
-              "aria-pressed:bg-ink aria-pressed:text-white aria-pressed:hover:bg-ink"
+              "aria-pressed:bg-white aria-pressed:font-semibold aria-pressed:text-blue aria-pressed:shadow-e1",
+              "aria-pressed:hover:bg-white"
             )}
           >
             {pad(option)}
@@ -157,8 +162,11 @@ export function TimePicker(
           <Icon name="clock" />
         </PopoverTrigger>
       </InputGroup>
-      <PopoverContent align="end" initialFocus={hourRef} className="w-auto gap-0 p-2">
-        <div className="flex gap-1.5">
+      <PopoverContent align="end" initialFocus={hourRef} className="w-auto gap-3 p-3">
+        <p aria-hidden className="text-center text-[22px] leading-none font-semibold tracking-[-0.02em] tabular-nums">
+          {pad(hour)}:{pad(minute)}
+        </p>
+        <div className="flex items-start gap-2">
           <TimeColumn
             label="Hour"
             options={HOURS}
@@ -166,8 +174,9 @@ export function TimePicker(
             selectedRef={hourRef}
             onPick={(next) => onValueChange(`${pad(next)}:${pad(minute)}`)}
           />
+          <span aria-hidden className="self-center pt-6 text-label font-semibold text-g-400">:</span>
           <TimeColumn
-            label="Min"
+            label="Minute"
             options={offered}
             selected={minute}
             onPick={(next) => {

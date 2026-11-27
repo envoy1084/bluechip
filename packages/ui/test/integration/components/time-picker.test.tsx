@@ -49,7 +49,7 @@ describe("TimePicker", () => {
     )
 
     await userEvent.click(screen.getByRole("button", { name: "Pick a time" }))
-    await userEvent.click(screen.getByRole("group", { name: "Min" }).getByRole("button", { name: "45" }))
+    await userEvent.click(screen.getByRole("group", { name: "Minute" }).getByRole("button", { name: "45" }))
 
     expect(chosen).toEqual(["10:45"])
     await expect.element(screen.getByRole("group", { name: "Hour" })).not.toBeInTheDocument()
@@ -74,7 +74,7 @@ describe("TimePicker", () => {
     await userEvent.click(screen.getByRole("button", { name: "Pick a time" }))
 
     await expect.element(
-      screen.getByRole("group", { name: "Min" }).getByRole("button", { name: "07", pressed: true })
+      screen.getByRole("group", { name: "Minute" }).getByRole("button", { name: "07", pressed: true })
     ).toBeVisible()
   })
 })

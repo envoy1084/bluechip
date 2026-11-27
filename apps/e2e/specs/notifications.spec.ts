@@ -109,13 +109,13 @@ test.describe("notification settings", () => {
 
   test("a news kind can wait for the daily digest", async ({ page, user: _user }) => {
     await page.goto("/settings/notifications")
-    const digest = page.getByRole("switch", { name: "An automation ran: hold for the daily digest" })
+    const digest = page.getByRole("switch", { name: "An automation ran: only in the morning digest" })
 
     await digest.click()
 
     await expect(digest).toBeChecked()
     await page.reload()
-    await expect(page.getByRole("switch", { name: "An automation ran: hold for the daily digest" })).toBeChecked()
+    await expect(page.getByRole("switch", { name: "An automation ran: only in the morning digest" })).toBeChecked()
   })
 
   test("quiet hours: on from 22:00 to 07:00 in your zone, then off", async ({ page, user: _user }) => {
@@ -147,9 +147,9 @@ test.describe("linking Telegram", () => {
 
     const panel = page.getByTestId("link-code")
     await expect(panel).toContainText(
-      /^Send this code to (@\w+ in a private chat\. It works once, for 10 minutes\.|bluechip's bot in a private chat\.)/
+      /^(Open bluechip's bot and tap Start: this chat links itself\.|Send this to bluechip's bot in a private chat\.)/
     )
-    await expect(panel.getByText(/^[A-HJ-NP-Z2-9]{8}$/)).toBeVisible()
+    await expect(panel.getByText(/^\/start [A-HJ-NP-Z2-9]{8}$/)).toBeVisible()
     await panel.getByRole("button", { name: "Done" }).click()
     await expect(panel).toBeHidden()
   })
@@ -157,12 +157,12 @@ test.describe("linking Telegram", () => {
   test("a new code replaces the last one", async ({ page, user: _user }) => {
     await page.goto("/settings/notifications")
     await page.getByRole("button", { name: "Link Telegram" }).click()
-    const first = await page.getByTestId("link-code").getByText(/^[A-HJ-NP-Z2-9]{8}$/).textContent()
+    const first = await page.getByTestId("link-code").getByText(/^\/start [A-HJ-NP-Z2-9]{8}$/).textContent()
     await page.getByRole("button", { name: "Done" }).click()
 
     await page.getByRole("button", { name: "Link Telegram" }).click()
 
-    await expect(page.getByTestId("link-code").getByText(/^[A-HJ-NP-Z2-9]{8}$/)).not.toHaveText(first!)
+    await expect(page.getByTestId("link-code").getByText(/^\/start [A-HJ-NP-Z2-9]{8}$/)).not.toHaveText(first!)
   })
 
   test("no chat linked yet: nothing to unlink", async ({ page, user: _user }) => {

@@ -58,10 +58,10 @@ function KindRow({ info, rule }: Readonly<{ info: KindInfo; rule: NotificationRu
                 checked={rule.digest}
                 className={HIT_AREA}
                 disabled={saving}
-                aria-label={`${info.label}: hold for the daily digest`}
+                aria-label={`${info.label}: only in the morning digest`}
                 onCheckedChange={(digest) => save({ channels: rule.channels, digest })}
               />
-              Hold for the digest
+              Only in the morning digest
             </span>
           </span>
         ) :

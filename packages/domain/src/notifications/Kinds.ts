@@ -78,7 +78,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "An approval is about to expire",
     description: "An hour before a trade waiting for your approval expires.",
     severity: "important",
-    defaults: EVERYWHERE
+    defaults: ["inApp", "push"]
   }),
   kind({
     kind: "intentBlocked",
@@ -86,7 +86,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "A policy stopped a trade",
     description: "Which policy refused it, and why.",
     severity: "important",
-    defaults: EVERYWHERE
+    defaults: ["inApp", "telegram"]
   }),
   kind({
     kind: "intentFilled",
@@ -102,7 +102,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "A trade waits too long",
     description: "An agent's trade still waiting after an hour: prices paused, gas, or Base not answering.",
     severity: "info",
-    defaults: ["inApp", "telegram"]
+    defaults: ["inApp"]
   }),
   kind({
     kind: "agentPaused",
@@ -110,7 +110,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "An agent was paused",
     description: "From any device, the assistant or Telegram.",
     severity: "important",
-    defaults: EVERYWHERE
+    defaults: ["inApp", "telegram"]
   }),
   kind({
     kind: "sessionEnding",
@@ -134,7 +134,8 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "An automation ran",
     description: "What fired it and what it did.",
     severity: "info",
-    defaults: ["inApp", "telegram"]
+    defaults: ["inApp", "telegram"],
+    digest: true
   }),
   kind({
     kind: "automationMessage",
@@ -159,7 +160,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "Cash arrived",
     description: "USDC or ETH sent to your account.",
     severity: "important",
-    defaults: EVERYWHERE
+    defaults: ["inApp", "telegram"]
   }),
   kind({
     kind: "withdrawal",
@@ -167,7 +168,7 @@ export const KINDS: ReadonlyArray<KindInfo> = [
     label: "Withdrawals",
     description: "When a withdrawal lands, or fails.",
     severity: "important",
-    defaults: EVERYWHERE
+    defaults: ["inApp", "telegram"]
   }),
   kind({
     kind: "balanceUnexplained",

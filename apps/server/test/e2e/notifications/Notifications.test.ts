@@ -55,7 +55,7 @@ layer(Layer.mergeAll(TestAgents.layer, TestNotifications.layer), { excludeTestSe
         Effect.gen(function*() {
           const user = yield* (yield* TestUsers).signUp
 
-          const added = yield* (yield* Notifications).add(user.id, draft("run:3"))
+          const added = yield* (yield* Notifications).add(user.id, draft("run:3", "intentFilled"))
           const deliveries = yield* (yield* TestNotifications).delivered(added!.id)
 
           assert.deepStrictEqual(deliveries, [{ channel: "telegram", status: "skipped", error: null }])
