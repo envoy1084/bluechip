@@ -1,0 +1,46 @@
+# The Docker build context is the repository root (`docker build -f apps/server/Dockerfile .`). Only what an image
+# copies is sent: sources, manifests, the lockfile, patches and the help center. Never secrets or local state.
+
+# Secrets and local environments: images take their settings at run time (server) or as build args (web).
+**/.env
+**/.env.*
+
+# Dependencies and builds: images install from the lockfile and build their own.
+**/node_modules
+**/dist
+**/.output
+**/.tanstack
+**/.vite
+**/*.tsbuildinfo
+**/coverage
+
+# Local state, tooling and history.
+.git
+.github
+.claude
+.vscode
+.data
+.vitest
+research
+docker
+deploy
+
+# Tests are not shipped.
+**/test
+**/test-fork
+**/typetest
+**/*.test.ts
+**/*.test.tsx
+
+# Workspace members the images never build: their manifests stay, so pnpm sees the workspace the lockfile describes.
+apps/e2e/*
+!apps/e2e/package.json
+apps/uikit/*
+!apps/uikit/package.json
+scripts/*
+!scripts/package.json
+scratchpad/*
+!scratchpad/package.json
+contracts
+packages/devnet/*
+!packages/devnet/package.json

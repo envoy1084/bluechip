@@ -1,0 +1,94 @@
+# The web app in production: the static build (prerendered public pages, the SPA shell for every other path) and the
+# server's paths, proxied to it, on one origin. Traefik (Dokploy) terminates TLS in front, so this listens on plain
+# HTTP. Settings from the environment: SERVER_UPSTREAM (the server, `server:8080`), and from the image's build args
+# SITE_NETWORK (VITE_NETWORK: every network but `base` is kept out of search engines) and POSTHOG_HOST.
+{
+	admin off
+	auto_https off
+	persist_config off
+	servers {
+		# Traefik's X-Forwarded-* are kept for the server (the client's address, `https`): Traefik reaches this
+		# container on Docker's private network.
+		trusted_proxies static private_ranges
+		client_ip_headers X-Forwarded-For
+		# Plain HTTP behind Traefik: no HTTP/3, which needs TLS.
+		protocols h1 h2c
+	}
+}
+
+:80 {
+	# Every response: Traefik passes them through over HTTPS, where browsers honour HSTS.
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	@unindexed expression `"{$SITE_NETWORK:local}" != "base"`
+	header @unindexed X-Robots-Tag "noindex, nofollow"
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# The server: the API (live events and the browser's telemetry included), passkey auth and the Telegram
+	# webhook.
+	@server path /api/* /auth/* /telegram/*
+	handle @server {
+		encode {
+			zstd
+			gzip
+			# JSON only: the live events stream (text/event-stream) must not wait in a compressor's buffer.
+			match {
+				header Content-Type application/json*
+			}
+		}
+		reverse_proxy {$SERVER_UPSTREAM:server:8080} {
+			# Writes every chunk as it comes: /api/events is a stream of server-sent events.
+			flush_interval -1
+			# A request that arrives while the server restarts waits for it instead of failing.
+			lb_try_duration 15s
+			lb_try_interval 250ms
+		}
+	}
+
+	# Hashed build output: a missing chunk is a 404, never the shell (an old tab after a release reloads instead).
+	handle /assets/* {
+		root * /srv
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server {
+			precompressed br gzip
+		}
+	}
+
+	handle {
+		root * /srv
+		encode zstd gzip
+
+		# The app's own code only: TanStack's inline hydration scripts and inline styles (motion, Base UI), the
+		# chain through /api/rpc and telemetry through /api/sync on this origin, and PostHog through its own
+		# reverse proxy (POSTHOG_HOST, from the VITE_POSTHOG_HOST build arg), which also serves its scripts.
+		# Base Account (Coinbase's wallet SDK) talks to Coinbase from the page and opens its keys in a popup.
+		header {
+			Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' {$POSTHOG_HOST:}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' {$POSTHOG_HOST:} https://*.coinbase.com wss://*.coinbase.com; frame-src https://*.coinbase.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+			Cross-Origin-Opener-Policy "same-origin-allow-popups"
+			X-Frame-Options "DENY"
+			Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		}
+
+		# Images and icons change rarely and keep their names: a day. Pages, the shell, the service worker, the
+		# manifest and the crawler files are checked on every visit, so a release shows at once.
+		@longLived path /og/* /favicon.ico /favicon.svg /apple-touch-icon.png /icon-*.png
+		header @longLived Cache-Control "public, max-age=86400"
+		@revalidated not path /og/* /favicon.ico /favicon.svg /apple-touch-icon.png /icon-*.png
+		header @revalidated Cache-Control "no-cache"
+
+		header /manifest.webmanifest Content-Type "application/manifest+json"
+
+		try_files {path} {path}/index.html /_shell.html
+		file_server {
+			precompressed br gzip
+		}
+	}
+}

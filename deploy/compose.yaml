@@ -1,0 +1,77 @@
+# bluechip on Dokploy, in Compose mode (deploy/README.md): the web app (Caddy, the only public service) and the
+# server behind it, with an optional Postgres. Paper and production are two Dokploy projects deploying this same file
+# with their own environment, which Dokploy writes to `.env` beside it: the server reads all of it, the web build
+# takes its VITE_* values as build args. Set `COMPOSE_PROFILES=postgres` to run the bundled Postgres (pgvector).
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_NETWORK: ${VITE_NETWORK:?set VITE_NETWORK to sepolia (paper) or base (production)}
+        VITE_SITE_URL: ${VITE_SITE_URL:-}
+        VITE_POSTHOG_PROJECT_API_KEY: ${VITE_POSTHOG_PROJECT_API_KEY:-}
+        VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-}
+        VITE_DEPLOYMENT_ENVIRONMENT: ${VITE_DEPLOYMENT_ENVIRONMENT:-}
+    restart: unless-stopped
+    environment:
+      SERVER_UPSTREAM: server:8080
+    # Not `service_healthy`: the pages are static, and Caddy holds API requests while the server starts.
+    depends_on:
+      - server
+    # Attach the domain to this service on port 80 in Dokploy's Domains tab; Dokploy adds Traefik's labels and its
+    # network.
+    expose:
+      - "80"
+    networks:
+      - internal
+
+  server:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+    # SIGTERM, then 2 s for open requests and live streams, then the engine's shutdown.
+    stop_grace_period: 20s
+    # Reached only through the web's proxy: no domain, no published port.
+    expose:
+      - "8080"
+    networks:
+      - internal
+
+  postgres:
+    profiles: [postgres]
+    # Postgres 18 with pgvector, as compose.yaml at the root (the `vector` extension is created by a migration).
+    image: pgvector/pgvector:0.8.1-pg18-trixie@sha256:2fd905ba95f99a51be207d0ff0b8d5b8538cbce7e9083b3ccfa65b93bb28b938
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bluechip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-bluechip}
+    volumes:
+      - postgres:/var/lib/postgresql
+    shm_size: 256mb
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks:
+      - internal
+
+networks:
+  internal: {}
+
+volumes:
+  postgres: {}
