@@ -77,7 +77,7 @@ jobs:
       - run: pnpm contracts:test
       # The addresses and ABIs the TypeScript side uses are generated from the build: they must be current.
       - run: pnpm contracts:build
-      - run: git diff --exit-code packages/chain/src/agents/Deployed.ts
+      - run: git diff --exit-code packages/chain/src/policies/Deployed.ts
 
   test:
     name: Test
