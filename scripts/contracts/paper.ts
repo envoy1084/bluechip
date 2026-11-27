@@ -38,11 +38,15 @@ export interface PaperStock {
   readonly price: bigint
 }
 
-/** What a run did with each contract or setting: `deployed` (or set) now, or `present` already. */
+/**
+ * What a run did with each contract or setting: `deployed` (or set) now, or `present` already. A contract also says
+ * its Foundry artifact and encoded constructor arguments, for source verification.
+ */
 export interface PaperStep {
   readonly name: string
   readonly address: Address
   readonly status: "deployed" | "present"
+  readonly source?: { readonly artifact: string; readonly constructorArgs: Hex } | undefined
 }
 
 /** Every address paper uses, as `packages/chain/src/deployments/Sepolia.ts` exports them. */
@@ -92,19 +96,21 @@ export const deployPaper = async (
   ) => {
     const creation = bytecode[artifact]
     if (creation === undefined) throw new Error(`contracts: no Foundry artifact for ${artifact}`)
-    const initCode: Hex = `${creation}${encodeAbiParameters(types as never, args as never).slice(2)}`
+    const constructorArgs = encodeAbiParameters(types as never, args as never)
+    const initCode: Hex = `${creation}${constructorArgs.slice(2)}`
     const salt = saltOf(label)
     const address = getContractAddress({ opcode: "CREATE2", from: CREATE2_DEPLOYER, salt, bytecode: initCode })
+    const source = { artifact, constructorArgs }
 
     if ((await client.getCode({ address })) !== undefined) {
-      steps.push({ name, address, status: "present" })
+      steps.push({ name, address, status: "present", source })
       return address
     }
     await send(client.sendTransaction({ to: CREATE2_DEPLOYER, data: `${salt}${initCode.slice(2)}` }))
     if ((await client.getCode({ address })) === undefined) {
       throw new Error(`contracts: ${name} didn't land at ${address}`)
     }
-    steps.push({ name, address, status: "deployed" })
+    steps.push({ name, address, status: "deployed", source })
     return address
   }
 

@@ -13,7 +13,7 @@ import type { Address } from "viem"
  * @category contracts
  * @since 0.0.0
  */
-export const aerodromeTradePolicy: Address = "0x3FdF29585d00d26240da3c45168Cad0148Ac9073"
+export const aerodromeTradePolicy: Address = "0x81A22b8De8049c0EEadCbb20c34Ad35ABbe3f75d"
 
 /**
  * `AerodromeTradePolicy`'s ABI.
@@ -140,7 +140,7 @@ export const aerodromeTradePolicyAbi = [
  * @category contracts
  * @since 0.0.0
  */
-export const tradeGuard: Address = "0x289b48fbDAB9eB593775e54623177F914e7385F4"
+export const tradeGuard: Address = "0xcC66057AF7A47160a500F6092dc1bD5379441636"
 
 /**
  * `TradeGuard`'s ABI.

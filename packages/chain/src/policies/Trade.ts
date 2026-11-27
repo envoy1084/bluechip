@@ -34,13 +34,14 @@ export const stockOf = (deployment: Deployment, symbol: string): Stock => {
 }
 
 /**
- * `AerodromeTradePolicy`'s init data for `spec` on `deployment`.
+ * `AerodromeTradePolicy`'s init data for `spec` on `deployment`: its settings, then the agent (`agentKey`), which keys
+ * the day's spending so every session of one agent shares it.
  *
  * @stability unstable
  * @category encoding
  * @since 0.0.0
  */
-export const tradePolicyInitData = (deployment: Deployment, spec: AgentSpec): Hex => {
+export const tradePolicyInitData = (deployment: Deployment, spec: AgentSpec, agent: Hex): Hex => {
   const config = required(spec, trade)
   return encodeAbiParameters([{
     type: "tuple",
@@ -54,7 +55,7 @@ export const tradePolicyInitData = (deployment: Deployment, spec: AgentSpec): He
         components: [{ type: "address", name: "token" }, { type: "int24", name: "tickSpacing" }]
       }
     ]
-  }], [{
+  }, { type: "bytes32" }], [{
     mode: MODES[config.direction],
     maxUsdcIn: required(spec, tradeSize).maxPerTrade,
     dailyBudget: config.dailyBudget,
@@ -62,5 +63,5 @@ export const tradePolicyInitData = (deployment: Deployment, spec: AgentSpec): He
       token: stockOf(deployment, symbol).token,
       tickSpacing: stockOf(deployment, symbol).pool?.tickSpacing ?? 0
     }))
-  }])
+  }, agent])
 }

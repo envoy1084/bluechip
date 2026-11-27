@@ -12,6 +12,7 @@ import { Usdc } from "../market/Units.ts"
 import { AgentSpec, type PolicyEntry, PolicyId } from "./AgentSpec.ts"
 import { complete } from "./Catalog.ts"
 import { dollars } from "./Format.ts"
+import { gasPerDay } from "./GasBudget.ts"
 import type { Target } from "./Rebalance.ts"
 import { Direction } from "./Trade.ts"
 import { NO_TRADE_LIMIT } from "./TradesPerDay.ts"
@@ -141,7 +142,7 @@ export const TEMPLATES: Readonly<Record<TemplateId, Template>> = {
 }
 
 /**
- * The amounts a preset sets.
+ * The amounts a preset sets, and the trades a day its gas budget is sized for (`gasPerDay`).
  *
  * @stability unstable
  * @category constants
@@ -153,18 +154,38 @@ export const PRESETS: Readonly<
     readonly maxPerTrade: bigint
     readonly stockCapBps: number
     readonly cashReserveBps: number
+    readonly gasTrades: number
   }>
 > = {
-  conservative: { dailyBudget: dollars(100), maxPerTrade: dollars(50), stockCapBps: 2000, cashReserveBps: 2000 },
-  balanced: { dailyBudget: dollars(250), maxPerTrade: dollars(100), stockCapBps: 3000, cashReserveBps: 1000 },
-  active: { dailyBudget: dollars(1000), maxPerTrade: dollars(400), stockCapBps: 4000, cashReserveBps: 500 }
+  conservative: {
+    dailyBudget: dollars(100),
+    maxPerTrade: dollars(50),
+    stockCapBps: 2000,
+    cashReserveBps: 2000,
+    gasTrades: 10
+  },
+  balanced: {
+    dailyBudget: dollars(250),
+    maxPerTrade: dollars(100),
+    stockCapBps: 3000,
+    cashReserveBps: 1000,
+    gasTrades: 25
+  },
+  active: {
+    dailyBudget: dollars(1000),
+    maxPerTrade: dollars(400),
+    stockCapBps: 4000,
+    cashReserveBps: 500,
+    gasTrades: 60
+  }
 }
 
 const min = (a: bigint, b: bigint) => (a < b ? a : b)
 
 /**
  * A template's spec from a preset, with the stocks (and, for a Rebalancer, the target mix) you picked. The daily
- * budget never passes the template's, and the price settings start at their standard values.
+ * budget never passes the template's, the gas budget covers the preset's trades a day (fewer when the template trades
+ * less), and the price settings start at their standard values.
  *
  * **Example** (An active Weekly buyer)
  *
@@ -204,7 +225,8 @@ export const draftSpec = (options: {
         { id: "tradeSize", config: { maxPerTrade, minPerTrade: Usdc.make(dollars(5)) } },
         { id: "fairPrice", config: { collarBps: 100, tradeWhilePaused: template.tradeWhilePaused } },
         ...template.rules.map((id) => rules[id]!),
-        { id: "tradesPerDay", config: { count: template.tradesPerDay } }
+        { id: "tradesPerDay", config: { count: template.tradesPerDay } },
+        { id: "gasBudget", config: { weiPerDay: gasPerDay(Math.min(preset.gasTrades, template.tradesPerDay)) } }
       ]
     })
   )

@@ -136,6 +136,16 @@ describe("checkSpec", () => {
       expected: [["tradesPerDay", "count", "Pick 1 to 2000."]]
     },
     {
+      name: "a gas budget just under 0.001 ETH a day",
+      spec: changed(PICKER, { id: "gasBudget", config: { weiPerDay: 999_999_999_999_999n } }),
+      expected: [["gasBudget", "weiPerDay", "Pick 0.001 ETH to 1 ETH."]]
+    },
+    {
+      name: "a gas budget of 1 ETH a day",
+      spec: changed(PICKER, { id: "gasBudget", config: { weiPerDay: 1_000_000_000_000_000_000n } }),
+      expected: []
+    },
+    {
       name: "an empty target mix",
       spec: changed(REBALANCER, { id: "rebalance", config: { targets: [] } }),
       expected: [["rebalance", "targets", "Set a target mix."]]
@@ -200,18 +210,27 @@ describe("checkSpec", () => {
 
 describe("complete", () => {
   it("adds the hidden policies with bluechip's defaults", () => {
-    const spec = complete(without(PICKER, "gasBudget", "anyCall"))
+    const spec = complete(without(PICKER, "anyCall"))
 
-    assert.deepStrictEqual(spec.policies.slice(-2), [
-      { id: "gasBudget", config: { weiPerDay: 50_000_000_000_000_000n } },
-      { id: "anyCall", config: {} }
-    ])
+    assert.deepStrictEqual(spec.policies.at(-1), { id: "anyCall", config: {} })
   })
 
-  it("replaces a hidden policy's configuration with bluechip's", () => {
-    const spec = complete(changed(PICKER, { id: "gasBudget", config: { weiPerDay: 1n } }))
+  it("adds a missing gas budget for a balanced agent's trades", () => {
+    const spec = complete(without(PICKER, "gasBudget"))
 
-    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 50_000_000_000_000_000n })
+    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 38_000_000_000_000_000n })
+  })
+
+  it("adds a missing gas budget for the trades a day it may make, when fewer", () => {
+    const spec = complete(without(changed(PICKER, { id: "tradesPerDay", config: { count: 4 } }), "gasBudget"))
+
+    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 6_000_000_000_000_000n })
+  })
+
+  it("keeps a gas budget you set", () => {
+    const spec = complete(changed(PICKER, { id: "gasBudget", config: { weiPerDay: 1_000_000_000_000_000n } }))
+
+    assert.deepStrictEqual(configOf(spec.policies, gasBudget), { weiPerDay: 1_000_000_000_000_000n })
   })
 
   it("lists policies in the catalog's order", () => {
@@ -350,7 +369,8 @@ describe("describeSpec", () => {
         "Spend up to $250 a day",
         "Trade up to $100 at a time, and ask you before anything bigger",
         "Trade on weekends and holidays, with a tighter price limit",
-        "Trade as often as its budget allows"
+        "Trade as often as its budget allows",
+        "Spend up to 0.038 ETH on gas a day"
       ],
       never: [
         "Send money out of your account",
@@ -388,7 +408,8 @@ describe("describeSpec", () => {
         "Trade up to $200 at a time, and ask you before anything bigger",
         "Trade on weekends and holidays, with a tighter price limit",
         "Start rebalancing once your mix is 5% off target",
-        "Trade as often as its budget allows"
+        "Trade as often as its budget allows",
+        "Spend up to 0.015 ETH on gas a day"
       ],
       never: [
         "Send money out of your account",
@@ -417,7 +438,8 @@ describe("describeSpec", () => {
       "Sell Nvidia",
       "Trade up to $100 at a time, and ask you before anything bigger",
       "Trade on weekends and holidays, with a tighter price limit",
-      "Trade once a day at most"
+      "Trade once a day at most",
+      "Spend up to 0.038 ETH on gas a day"
     ])
   })
 })
@@ -440,7 +462,7 @@ describe("catalogInfo", () => {
     )
   })
 
-  it("lists every policy once, hidden ones marked", () => {
+  it("lists every policy once, the ones bluechip sets alone marked hidden", () => {
     assert.deepStrictEqual(catalogInfo().map((policy) => [policy.id, policy.hidden]), [
       ["trade", false],
       ["tradeSize", false],
@@ -451,7 +473,7 @@ describe("catalogInfo", () => {
       ["stopLossFloor", false],
       ["slippageBudget", false],
       ["tradesPerDay", false],
-      ["gasBudget", true],
+      ["gasBudget", false],
       ["anyCall", true]
     ])
   })

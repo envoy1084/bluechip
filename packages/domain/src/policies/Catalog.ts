@@ -7,7 +7,7 @@
 import * as Schema from "effect/Schema"
 import type { StockSymbol } from "../market/Market.ts"
 import { AgentSpec, POLICIES, type PolicyEntry, PolicyId, PolicyProblem } from "./AgentSpec.ts"
-import { formatDollars, formatPercent } from "./Format.ts"
+import { formatDollars, formatEther, formatPercent } from "./Format.ts"
 import * as Policy from "./Policy.ts"
 
 /**
@@ -21,7 +21,8 @@ export const policyOf = (id: PolicyId): Policy.PolicyType<PolicyId, Schema.Top> 
   POLICIES.find((policy) => policy.id === id)! as Policy.PolicyType<PolicyId, Schema.Top>
 
 /**
- * `spec` with every hidden policy set to bluechip's defaults: added when missing, replaced when given.
+ * `spec` with every hidden policy set to bluechip's defaults (added when missing, replaced when given), and each
+ * required policy with a fallback added when missing (the gas budget, sized from the spec's trades).
  *
  * @stability unstable
  * @category constructors
@@ -35,7 +36,12 @@ export const complete = (spec: AgentSpec): AgentSpec => {
       config: policy.defaults
     }) as PolicyEntry
   )
-  const policies = [...visible, ...hidden].sort((a, b) =>
+  const filled = POLICIES.flatMap((policy) =>
+    policy.fallback === undefined || policy.hidden || visible.some((entry) => entry.id === policy.id)
+      ? []
+      : [({ id: policy.id, config: policy.fallback(visible) }) as PolicyEntry]
+  )
+  const policies = [...visible, ...filled, ...hidden].sort((a, b) =>
     PolicyId.literals.indexOf(a.id) - PolicyId.literals.indexOf(b.id)
   )
   return new AgentSpec({ policies })
@@ -90,7 +96,13 @@ export const checkSpec = (spec: AgentSpec): ReadonlyArray<PolicyProblem> => {
       if (typeof value !== "number" && typeof value !== "bigint") continue
       if (value >= field.min && (field.max === undefined || value <= field.max)) continue
       const said = (bound: number) =>
-        field.unit === "usd" ? formatDollars(bound) : field.unit === "bps" ? formatPercent(bound) : String(bound)
+        field.unit === "usd" ?
+          formatDollars(bound) :
+          field.unit === "bps" ?
+          formatPercent(bound) :
+          field.unit === "wei" ?
+          formatEther(bound) :
+          String(bound)
       // A field with no ceiling (a custom amount) only has a floor to say.
       problem(
         entry.id,

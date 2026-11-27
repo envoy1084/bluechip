@@ -16,11 +16,14 @@ import {TradeShape} from "./lib/TradeShape.sol";
 /// through Aerodrome's router, in its direction, up to its size per buy and its USDC per UTC day, with exact
 /// approvals and every output paid back to the account. A failing operation is dropped by the bundler and costs
 /// nothing.
-/// @dev The session's user operation policy (init data `abi.encode(TradeShape.Settings)`): it checks every call of
-/// every operation, so the session lets calls through Namera's `AllowPolicy` as its fallback action instead of an
-/// action policy per call, which would only repeat this check and cost a session entry per stock. Storage is
-/// Namera's `PolicyStorage`, associated with the account (ERC-7562), packed (`_pack`); the daily budget charges the
-/// period of the agent's stated time, as Namera's `LimitPolicy` does, and returns its bounds.
+/// @dev The session's user operation policy (init data `abi.encode(TradeShape.Settings, bytes32 agent)`): it checks
+/// every call of every operation, so the session lets calls through Namera's `AllowPolicy` as its fallback action
+/// instead of an action policy per call, which would only repeat this check and cost a session entry per stock.
+/// Storage is Namera's `PolicyStorage`, associated with the account (ERC-7562), packed (`_pack`); the daily budget
+/// charges the period of the agent's stated time, as Namera's `LimitPolicy` does, and returns its bounds. The day's
+/// counter is keyed by the agent (`agent`, the same in every session of one agent) rather than the session, so a
+/// renewal's new session starts from what the agent already spent today; keyed by the multiplexer too, so no other
+/// caller can charge it.
 // slither-disable-next-line missing-inheritance
 contract AerodromeTradePolicy is PolicyBase, IUserOpPolicy {
     /// @notice One UTC day: the daily budget's period.
@@ -50,19 +53,23 @@ contract AerodromeTradePolicy is PolicyBase, IUserOpPolicy {
 
     /// @inheritdoc IUserOpPolicy
     function checkUserOpPolicy(bytes32 id, ERC4337.PackedUserOperation calldata userOp) external returns (uint256) {
-        TradeShape.Settings memory settings = _settings(_config(id, userOp.sender));
+        bytes memory packed = _config(id, userOp.sender);
+        TradeShape.Settings memory settings = _settings(packed);
 
         UserOpCalls.Call[] memory calls = UserOpCalls.decode(userOp.callData, userOp.sender);
         (bool ok, uint256 buys) = TradeShape.check(settings, calls, userOp.sender, USDC, ROUTER);
         if (!ok) return VALIDATION_FAILED;
 
-        return _chargeDay(id, userOp, buys, settings.dailyBudget);
+        return _chargeDay(bytes32(_wordAt(packed, 1)), userOp, buys, settings.dailyBudget);
     }
 
-    /// @notice What `account` has spent on buys in the UTC day containing `time`, under the configuration `id` that
-    /// `multiplexer` set. Lets bluechip show what's left of an agent's budget.
+    /// @notice What `account`'s agent has spent on buys in the UTC day containing `time`, in any of its sessions,
+    /// read through the configuration `id` that `multiplexer` set. Lets bluechip show what's left of an agent's budget.
     function spent(bytes32 id, address multiplexer, address account, uint256 time) external view returns (uint256) {
-        (uint256 latest, uint256 used) = _unpack(_counterOf(_dayCounter(id, multiplexer), account));
+        (bool exists, bytes memory packed) = PolicyStorage.read($, PolicyStorage.configKey(id, multiplexer), account);
+        if (!exists) return 0;
+        bytes32 counter = _dayCounter(bytes32(_wordAt(packed, 1)), multiplexer);
+        (uint256 latest, uint256 used) = _unpack(_counterOf(counter, account));
         return latest == Period.index(DAY, time) ? used : 0;
     }
 
@@ -70,24 +77,25 @@ contract AerodromeTradePolicy is PolicyBase, IUserOpPolicy {
         return interfaceId == type(IUserOpPolicy).interfaceId;
     }
 
-    /// @dev One word of settings (the mode, the most per buy from bit 8, the daily budget from bit 132), then one per
-    /// market (its token, and its tick spacing from bit 160).
+    /// @dev One word of settings (the mode, the most per buy from bit 8, the daily budget from bit 132), the agent, then
+    /// one per market (its token, and its tick spacing from bit 160).
     function _pack(bytes calldata initData) internal pure override returns (bytes memory packed) {
-        TradeShape.Settings memory settings = abi.decode(initData, (TradeShape.Settings));
+        (TradeShape.Settings memory settings, bytes32 agent) = abi.decode(initData, (TradeShape.Settings, bytes32));
         if (settings.maxUsdcIn >> LIMIT_BITS != 0 || settings.dailyBudget >> LIMIT_BITS != 0) revert LimitTooLarge();
 
-        packed = new bytes(32 * (1 + settings.markets.length));
+        packed = new bytes(32 * (2 + settings.markets.length));
         _setWordAt(
             packed,
             0,
             uint256(settings.mode) | uint256(settings.maxUsdcIn) << 8 | uint256(settings.dailyBudget)
                 << (8 + LIMIT_BITS)
         );
+        _setWordAt(packed, 1, uint256(agent));
         for (uint256 i = 0; i < settings.markets.length; ++i) {
             TradeShape.Market memory market = settings.markets[i];
             // The tick spacing's 24 bits as they are, sign included; `_settings` reads them back as an int24.
             // forge-lint: disable-next-line(unsafe-typecast)
-            _setWordAt(packed, 1 + i, uint256(uint160(market.token)) | uint256(uint24(market.tickSpacing)) << 160);
+            _setWordAt(packed, 2 + i, uint256(uint160(market.token)) | uint256(uint24(market.tickSpacing)) << 160);
         }
     }
 
@@ -100,17 +108,17 @@ contract AerodromeTradePolicy is PolicyBase, IUserOpPolicy {
         settings.maxUsdcIn = uint128((head >> 8) & ((1 << LIMIT_BITS) - 1));
         settings.dailyBudget = uint128(head >> (8 + LIMIT_BITS));
 
-        settings.markets = new TradeShape.Market[](packed.length / 32 - 1);
+        settings.markets = new TradeShape.Market[](packed.length / 32 - 2);
         for (uint256 i = 0; i < settings.markets.length; ++i) {
-            uint256 word = _wordAt(packed, 1 + i);
+            uint256 word = _wordAt(packed, 2 + i);
             settings.markets[i] = TradeShape.Market(address(uint160(word)), int24(uint24(word >> 160)));
         }
     }
 
     // forge-lint: disable-end(unsafe-typecast)
 
-    /// @dev Charges `buys` to the day of the agent's stated time, failing past `budget` or without a stated time.
-    function _chargeDay(bytes32 id, ERC4337.PackedUserOperation calldata userOp, uint256 buys, uint256 budget)
+    /// @dev Charges `buys` to `agent`'s day of its stated time, failing past `budget` or without a stated time.
+    function _chargeDay(bytes32 agent, ERC4337.PackedUserOperation calldata userOp, uint256 buys, uint256 budget)
         private
         returns (uint256)
     {
@@ -119,7 +127,7 @@ contract AerodromeTradePolicy is PolicyBase, IUserOpPolicy {
         (bool hasTime, uint256 time) = UserOpCalls.timestamp(userOp.callData);
         if (!hasTime) return VALIDATION_FAILED;
 
-        bytes32 counter = _dayCounter(id, msg.sender);
+        bytes32 counter = _dayCounter(agent, msg.sender);
         uint256 index = Period.index(DAY, time);
         (uint256 latest, uint256 used) = _unpack(_counterOf(counter, userOp.sender));
         // A later day already charged can't be the EntryPoint's present; it would reject the operation's bounds.
@@ -131,8 +139,8 @@ contract AerodromeTradePolicy is PolicyBase, IUserOpPolicy {
         return Period.bounds(DAY, time);
     }
 
-    function _dayCounter(bytes32 id, address multiplexer) private pure returns (bytes32) {
-        return keccak256(abi.encode(PolicyStorage.configKey(id, multiplexer), DAILY_BUYS, DAY));
+    function _dayCounter(bytes32 agent, address multiplexer) private pure returns (bytes32) {
+        return keccak256(abi.encode(PolicyStorage.configKey(agent, multiplexer), DAILY_BUYS, DAY));
     }
 
     function _unpack(uint256 word) private pure returns (uint256 index, uint256 used) {

@@ -1,6 +1,6 @@
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import type { Deployment } from "@bluechip/chain/Deployment"
-import { agentSession, placements } from "@bluechip/chain/policies/Session"
+import { agentKey, agentSession, placements } from "@bluechip/chain/policies/Session"
 import { AgentSession, type SessionAuthor } from "@bluechip/domain/agents/Agent"
 import type { AgentSessionId } from "@bluechip/domain/Ids"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
@@ -37,13 +37,15 @@ export const toSession = (row: SessionRow): AgentSession =>
   })
 
 /**
- * The Namera session a session row locks: its spec's policies, signed by its key, until its end. The salt comes from
- * the row, so building it again (to read its grant once locked) gives the same permission id.
+ * The Namera session a session row locks: its spec's policies, signed by its key, until its end, for its agent (every
+ * session of one agent shares the day's budget onchain). The salt comes from the row, so building it again (to read its
+ * grant once locked) gives the same permission id.
  */
 export const nameraSession = (deployment: Deployment, row: SessionRow): Session.Session =>
   agentSession({
     deployment,
     spec: row.spec,
+    agent: agentKey(row.agentId),
     signer: row.sessionKey as Address,
     validUntil: Math.floor(DateTime.toEpochMillis(row.validUntil!) / 1000),
     salt: keccak256(stringToHex(row.id))

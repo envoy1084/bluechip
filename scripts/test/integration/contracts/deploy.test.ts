@@ -26,8 +26,8 @@ layer(Layer.merge(NodeServices.layer, FreshAnvil))("deployContracts", (it) => {
       const status = yield* Effect.promise(() => contractStatus(node, contracts))
 
       assert.deepStrictEqual(first, [
-        { name: "AerodromeTradePolicy", address: "0x3FdF29585d00d26240da3c45168Cad0148Ac9073", status: "deployed" },
-        { name: "TradeGuard", address: "0x289b48fbDAB9eB593775e54623177F914e7385F4", status: "deployed" },
+        { name: "AerodromeTradePolicy", address: "0x81A22b8De8049c0EEadCbb20c34Ad35ABbe3f75d", status: "deployed" },
+        { name: "TradeGuard", address: "0xcC66057AF7A47160a500F6092dc1bD5379441636", status: "deployed" },
         { name: "RecoveryDelayPolicy", address: "0xF2C702138f8BFF92C19AA4e138ee6FE752916B4C", status: "deployed" },
         { name: "TradeSizeRule", address: "0x240274AB59bd003C39eDf22542910EA9BBc3121e", status: "deployed" },
         { name: "FairPriceRule", address: "0x8482F4E90a5101422044e1D54D45AF72A75d28e3", status: "deployed" },

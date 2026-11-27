@@ -22,6 +22,8 @@ contract AerodromeTradePolicyTest is Test {
     address internal constant ACCOUNT = address(0xACC);
 
     bytes32 internal constant OPERATION_ID = keccak256("operation");
+    bytes32 internal constant RENEWED_ID = keccak256("renewed operation");
+    bytes32 internal constant AGENT = keccak256("agent");
     uint256 internal constant NOW = 1_800_000_000;
     uint256 internal constant FAILED = 1;
 
@@ -37,7 +39,7 @@ contract AerodromeTradePolicyTest is Test {
     }
 
     function setUp() public {
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(2)));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(2), AGENT));
     }
 
     // Calls ----------------------------------------------------------------------------------------------------------
@@ -195,12 +197,12 @@ contract AerodromeTradePolicyTest is Test {
     }
 
     function test_aSellByABuyOnlyAgent() public {
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(0)));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(0), AGENT));
         assertEq(check(sell(NVDA, 1e8)), FAILED);
     }
 
     function test_aBuyByASellOnlyAgent() public {
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(1)));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(1), AGENT));
         assertEq(check(buy(NVDA, 50e6)), FAILED);
     }
 
@@ -233,6 +235,47 @@ contract AerodromeTradePolicyTest is Test {
         assertEq(policy.spent(OPERATION_ID, address(this), ACCOUNT, tomorrow), 100e6);
     }
 
+    function test_aRenewedSessionOfTheSameAgentKeepsWhatItSpentToday() public {
+        check(buy(NVDA, 100e6));
+        check(buy(AAPL, 100e6));
+        policy.initializeWithMultiplexer(ACCOUNT, RENEWED_ID, abi.encode(settings(2), AGENT));
+
+        assertEq(policy.checkUserOpPolicy(RENEWED_ID, operation(buy(NVDA, 50e6 + 1), NOW)), FAILED);
+        assertEq(policy.spent(RENEWED_ID, address(this), ACCOUNT, NOW), 200e6);
+    }
+
+    function test_anotherAgentsSessionStartsItsDayAtZero() public {
+        check(buy(NVDA, 100e6));
+        check(buy(AAPL, 100e6));
+        policy.initializeWithMultiplexer(ACCOUNT, RENEWED_ID, abi.encode(settings(2), keccak256("another agent")));
+
+        assertEq(policy.checkUserOpPolicy(RENEWED_ID, operation(buy(NVDA, 100e6), NOW)), Period.bounds(1 days, NOW));
+        assertEq(policy.spent(RENEWED_ID, address(this), ACCOUNT, NOW), 100e6);
+    }
+
+    function test_aRenewalWithALowerBudgetLeavesOnlyWhatIsLeftOfIt() public {
+        check(buy(NVDA, 100e6));
+        TradeShape.Settings memory lower = settings(2);
+        lower.dailyBudget = 120e6;
+        policy.initializeWithMultiplexer(ACCOUNT, RENEWED_ID, abi.encode(lower, AGENT));
+
+        assertEq(policy.checkUserOpPolicy(RENEWED_ID, operation(buy(NVDA, 20e6 + 1), NOW)), FAILED);
+        assertEq(policy.checkUserOpPolicy(RENEWED_ID, operation(buy(NVDA, 20e6), NOW)), Period.bounds(1 days, NOW));
+    }
+
+    function test_anotherMultiplexerCantChargeTheAgentsDay() public {
+        vm.startPrank(address(0xBAD));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(settings(2), AGENT));
+        policy.checkUserOpPolicy(OPERATION_ID, operation(buy(NVDA, 100e6), NOW));
+        vm.stopPrank();
+
+        assertEq(policy.spent(OPERATION_ID, address(this), ACCOUNT, NOW), 0);
+    }
+
+    function test_whatASessionNeverConfiguredSpent() public view {
+        assertEq(policy.spent(RENEWED_ID, address(this), ACCOUNT, NOW), 0);
+    }
+
     function test_aBuyWithoutAStatedTime() public {
         ERC4337.PackedUserOperation memory op = operation(buy(NVDA, 50e6), NOW);
         op.callData =
@@ -257,7 +300,7 @@ contract AerodromeTradePolicyTest is Test {
         s.dailyBudget = uint128(1) << 124;
 
         vm.expectRevert(AerodromeTradePolicy.LimitTooLarge.selector);
-        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(s));
+        policy.initializeWithMultiplexer(ACCOUNT, OPERATION_ID, abi.encode(s, AGENT));
     }
 
     function test_reportsOnlyTheUserOperationKind() public view {

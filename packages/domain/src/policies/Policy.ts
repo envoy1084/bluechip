@@ -164,6 +164,8 @@ export interface PolicyType<Id extends string = string, S extends Schema.Top = S
   readonly requires: ReadonlyArray<string>
   readonly conflicts: ReadonlyArray<string>
   readonly defaults: S["Type"]
+  /** For a required policy a spec may leave out: the configuration it then gets, from the spec's other policies. */
+  readonly fallback: ((policies: Entries) => S["Type"]) | undefined
   readonly validate: (config: S["Type"], policies: Entries) => ReadonlyArray<FieldProblem>
   readonly describe: (config: S["Type"], context: DescribeContext) => Description
   readonly compare: (before: S["Type"], after: S["Type"]) => Change
@@ -177,13 +179,15 @@ export interface PolicyType<Id extends string = string, S extends Schema.Top = S
  * @since 0.0.0
  */
 export const make = <const Id extends string, S extends Schema.Top>(
-  options: Omit<PolicyType<Id, S>, "entry" | "requires" | "conflicts" | "validate"> & {
+  options: Omit<PolicyType<Id, S>, "entry" | "requires" | "conflicts" | "validate" | "fallback"> & {
     readonly requires?: ReadonlyArray<string> | undefined
     readonly conflicts?: ReadonlyArray<string> | undefined
     readonly validate?: PolicyType<Id, S>["validate"] | undefined
+    readonly fallback?: PolicyType<Id, S>["fallback"] | undefined
   }
 ): PolicyType<Id, S> => ({
   ...options,
+  fallback: options.fallback,
   requires: options.requires ?? [],
   conflicts: options.conflicts ?? [],
   validate: options.validate ?? (() => []),

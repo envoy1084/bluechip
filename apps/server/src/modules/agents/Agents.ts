@@ -1,4 +1,5 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
+import { agentKey } from "@bluechip/chain/policies/Session"
 import { readUsage } from "@bluechip/chain/policies/Usage"
 import { type Agent, type AgentSession, AgentUsage, transition } from "@bluechip/domain/agents/Agent"
 import { Conflict, type NotFound, Unavailable } from "@bluechip/domain/Errors"
@@ -64,6 +65,7 @@ export class Agents extends Context.Service<Agents, {
         const current = yield* agentSessions.get(row.currentSessionId)
         const policies = yield* readUsage({
           spec: current.spec,
+          agent: agentKey(row.id),
           account: owner.account as Address,
           grant: Grant.parse(current.grant!),
           now: Math.floor(DateTime.toEpochMillis(yield* DateTime.now) / 1000)

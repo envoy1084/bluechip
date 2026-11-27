@@ -21,7 +21,7 @@ interface IAggregator {
 /// measures what the operation did to the account's balances, checks the moves (allowed stocks, the agent's
 /// direction, paid for in USDC) and values the portfolio once at Chainlink's prices, then runs each rule the session
 /// chose (`IOutcomeRule`): a rule's revert refuses the operation with the rule's own error.
-/// @dev Configuration (`abi.encode(mode, prices, markets, rules)`, the fields of `Config`, signed by the owner when the agent is locked: no admin key) is kept in a
+/// @dev Configuration (`abi.encode(mode, prices, markets, rules, agent)`, the fields of `Config`, signed by the owner when the agent is locked: no admin key) is kept in a
 /// contract's code (SSTORE2), so each check reads it with one EXTCODECOPY instead of a cold storage read per word. That
 /// deploys a contract when the session is configured, which ERC-7562 forbids during validation: TradeGuard is
 /// configured only by an owner operation installing or updating the session (execution), never in enable mode.
@@ -41,13 +41,15 @@ contract TradeGuard is ExecutionPolicyBase {
 
     /// @notice An agent's configuration: its direction (`Outcome.BUY` … `Outcome.REBALANCE`), price ages, the stocks
     /// valued (`packMarkets`: two words each, the token with whether the agent may trade it at bit 160, then the feed),
-    /// and its rules in the order they run. Encoded as its four fields in a row, so a check that needs only the markets
-    /// decodes only the first three.
+    /// its rules in the order they run, and the agent (the same in every session of one agent), which keys the rules'
+    /// state so a renewal's new session keeps it. Encoded as its five fields in a row, so a check that needs only the
+    /// markets decodes only the first three.
     struct Config {
         uint8 mode;
         Outcome.Prices prices;
         uint256[] markets;
         Rule[] rules;
+        bytes32 agent;
     }
 
     /// @notice Base's sequencer was down, or came back less than the grace period ago: prices can't be trusted.
@@ -71,7 +73,7 @@ contract TradeGuard is ExecutionPolicyBase {
 
     /// @dev The init data is kept as it is, after checking it decodes.
     function _configure(bytes32 id, address multiplexer, address account, bytes calldata initData) internal override {
-        abi.decode(initData, (uint8, Outcome.Prices, uint256[], Rule[]));
+        abi.decode(initData, (uint8, Outcome.Prices, uint256[], Rule[], bytes32));
         $configs[PolicyStorage.configKey(id, multiplexer)][account] = SSTORE2.write(initData);
     }
 
@@ -98,8 +100,8 @@ contract TradeGuard is ExecutionPolicyBase {
         _checkSequencer();
 
         Config memory config;
-        (config.mode, config.prices, config.markets, config.rules) =
-            abi.decode(_stored(id, multiplexer, account), (uint8, Outcome.Prices, uint256[], Rule[]));
+        (config.mode, config.prices, config.markets, config.rules, config.agent) =
+            abi.decode(_stored(id, multiplexer, account), (uint8, Outcome.Prices, uint256[], Rule[], bytes32));
         Outcome.Input memory input = Outcome.Input({
             mode: config.mode,
             prices: config.prices,
@@ -125,7 +127,8 @@ contract TradeGuard is ExecutionPolicyBase {
         (bool moved, Valuation memory valuation) = Outcome.value(input);
         if (!moved) return;
 
-        bytes32 key = PolicyStorage.configKey(id, multiplexer);
+        // Keyed by the agent and the multiplexer: no other caller's configuration can reach this agent's state.
+        bytes32 key = PolicyStorage.configKey(config.agent, multiplexer);
         for (uint256 i = 0; i < config.rules.length; ++i) {
             IOutcomeRule(config.rules[i].rule).check(valuation, config.rules[i].config, key, account);
         }

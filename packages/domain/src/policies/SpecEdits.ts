@@ -11,6 +11,7 @@ import { Usdc } from "../market/Units.ts"
 import { AgentSpec, POLICIES, type PolicyEntry, type PolicyId } from "./AgentSpec.ts"
 import { cashReserve } from "./CashReserve.ts"
 import { complete, policyOf } from "./Catalog.ts"
+import { gasBudget } from "./GasBudget.ts"
 import { configOf, type PolicyType } from "./Policy.ts"
 import { rebalance, type Target } from "./Rebalance.ts"
 import { stockCap } from "./StockCap.ts"
@@ -242,5 +243,6 @@ export const applyPreset = (spec: AgentSpec, template: TemplateId, preset: Prese
   next = update(next, tradeSize, (config) => ({ ...config, maxPerTrade: maxPerTrade ?? config.maxPerTrade }))
   next = update(next, stockCap, (config) => configOf(drafted, stockCap) ?? config)
   next = update(next, cashReserve, (config) => configOf(drafted, cashReserve) ?? config)
+  next = update(next, gasBudget, (config) => configOf(drafted, gasBudget) ?? config)
   return resetTargets(next)
 }

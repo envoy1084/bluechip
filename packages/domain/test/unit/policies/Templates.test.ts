@@ -17,9 +17,22 @@ describe("draftSpec", () => {
       { id: "cashReserve", config: { minBps: 1000 } },
       { id: "slippageBudget", config: { weeklyBps: 100 } },
       { id: "tradesPerDay", config: { count: 500 } },
-      { id: "gasBudget", config: { weiPerDay: 50_000_000_000_000_000n } },
+      { id: "gasBudget", config: { weiPerDay: 38_000_000_000_000_000n } },
       { id: "anyCall", config: {} }
     ])
+  })
+
+  it.each<{ preset: Preset; weiPerDay: bigint }>([
+    { preset: "conservative", weiPerDay: 15_000_000_000_000_000n },
+    { preset: "balanced", weiPerDay: 38_000_000_000_000_000n },
+    { preset: "active", weiPerDay: 90_000_000_000_000_000n }
+  ])("a $preset Weekly buyer's gas budget covers the preset's trades", ({ preset, weiPerDay }) => {
+    const spec = draftSpec({ template: "weeklyBuyer", preset, stocks: ["NVDA"], targets: [] })
+
+    assert.deepStrictEqual(spec.policies.find((entry) => entry.id === "gasBudget"), {
+      id: "gasBudget",
+      config: { weiPerDay }
+    })
   })
 
   it("a conservative Rebalancer: its own $500 budget and $200 trades, trading while paused", () => {

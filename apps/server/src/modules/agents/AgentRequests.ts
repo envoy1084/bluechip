@@ -1,6 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import {
+  agentKey,
   changeCalls,
   changedGrant,
   lockCalls,
@@ -216,7 +217,11 @@ export class AgentRequests extends Context.Service<AgentRequests, {
         const grant = current !== undefined && current.sessionKey === sending.sessionKey ?
           changedGrant(
             Grant.parse(current.grant!),
-            changeCalls(deployment, Grant.parse(current.grant!), current.spec, sending.spec).session
+            changeCalls(deployment, Grant.parse(current.grant!), {
+              agent: agentKey(row.id),
+              before: current.spec,
+              after: sending.spec
+            }).session
           ) :
           yield* lockedGrant(yield* operations.account(passkey), nameraSession(deployment, sending)).pipe(
             Effect.provideService(ChainClient, chain)
@@ -298,7 +303,11 @@ export class AgentRequests extends Context.Service<AgentRequests, {
             now
           })
         ).pipe(Effect.orDie)
-        const { calls } = changeCalls(deployment, Grant.parse(current.grant!), current.spec, spec)
+        const { calls } = changeCalls(deployment, Grant.parse(current.grant!), {
+          agent: agentKey(row.id),
+          before: current.spec,
+          after: spec
+        })
         return yield* prepare(owner, row, {
           requestId: input.requestId,
           action: "update",

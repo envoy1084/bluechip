@@ -20,6 +20,8 @@ import {MockAggregator, MockToken} from "./utils/Mocks.sol";
 /// the Rebalancer's.
 contract TradeGuardTest is Test {
     bytes32 internal constant ID = keccak256("session");
+    bytes32 internal constant RENEWED = keccak256("renewed session");
+    bytes32 internal constant AGENT = keccak256("agent");
     address internal constant ACCOUNT = address(0xACC);
 
     MockToken internal usdc = new MockToken("USDC", 6);
@@ -55,14 +57,20 @@ contract TradeGuardTest is Test {
         c.rules[2] = TradeGuard.Rule(address(stockCap), abi.encode(StockCapRule.Config(5000)));
         c.rules[3] = TradeGuard.Rule(address(cashReserve), abi.encode(CashReserveRule.Config(1000)));
         c.rules[4] = TradeGuard.Rule(address(slippageBudget), abi.encode(SlippageBudgetRule.Config(100, 7 days)));
+        c.agent = AGENT;
     }
 
     /// @dev A buy of `shares` NVDA for `cost` USDC, between the guard's checks.
     function buy(uint256 cost, uint256 shares) internal {
-        bytes memory context = guard.preCheck(ID, ACCOUNT, "");
+        buyIn(ID, cost, shares);
+    }
+
+    /// @dev The same buy in the session `id`.
+    function buyIn(bytes32 id, uint256 cost, uint256 shares) internal {
+        bytes memory context = guard.preCheck(id, ACCOUNT, "");
         usdc.burn(ACCOUNT, cost);
         nvda.mint(ACCOUNT, shares);
-        guard.postCheck(ID, ACCOUNT, context);
+        guard.postCheck(id, ACCOUNT, context);
     }
 
     /// @dev A buy of `shares` NVDA for `cost` USDC, expecting the guard to refuse it with `reason`.
@@ -76,7 +84,7 @@ contract TradeGuardTest is Test {
     }
 
     function ledger() internal view returns (uint256 used, uint256 updatedAt) {
-        return slippageBudget.ledger(address(guard), PolicyStorage.configKey(ID, address(this)), ACCOUNT);
+        return slippageBudget.ledger(address(guard), PolicyStorage.configKey(AGENT, address(this)), ACCOUNT);
     }
 
     function test_aFairBuyPassesAndTheSlippageRuleRecordsItsLoss() public {
@@ -162,6 +170,45 @@ contract TradeGuardTest is Test {
         refusedBuy(100e6, 0.995e8, abi.encodeWithSelector(Outcome.WrongDirection.selector, address(nvda)));
     }
 
+    function test_aRenewedSessionOfTheSameAgentKeepsTheSlippageLedger() public {
+        buy(100e6, 0.995e8);
+        guard.initializeWithMultiplexer(ACCOUNT, RENEWED, encoded(config()));
+
+        buyIn(RENEWED, 100e6, 0.995e8);
+
+        (uint256 used,) = ledger();
+        assertEq(used, 1e6);
+    }
+
+    function test_anotherAgentsSessionStartsItsOwnLedger() public {
+        buy(100e6, 0.995e8);
+        TradeGuard.Config memory c = config();
+        c.agent = keccak256("another agent");
+        guard.initializeWithMultiplexer(ACCOUNT, RENEWED, encoded(c));
+
+        buyIn(RENEWED, 100e6, 0.995e8);
+
+        (uint256 theirs,) =
+            slippageBudget.ledger(address(guard), PolicyStorage.configKey(c.agent, address(this)), ACCOUNT);
+        (uint256 ours,) = ledger();
+        assertEq(theirs, 0.5e6);
+        assertEq(ours, 0.5e6);
+    }
+
+    function test_anotherMultiplexerCantWriteTheAgentsLedger() public {
+        bytes memory initData = encoded(config());
+        vm.startPrank(address(0xBAD));
+        guard.initializeWithMultiplexer(ACCOUNT, ID, initData);
+        bytes memory context = guard.preCheck(ID, ACCOUNT, "");
+        usdc.burn(ACCOUNT, 100e6);
+        nvda.mint(ACCOUNT, 0.995e8);
+        guard.postCheck(ID, ACCOUNT, context);
+        vm.stopPrank();
+
+        (uint256 used,) = ledger();
+        assertEq(used, 0);
+    }
+
     function test_anAccountWithoutAConfiguration() public {
         vm.expectRevert(
             abi.encodeWithSelector(IPolicy.PolicyNotInitialized.selector, ID, address(this), address(0xBEEF))
@@ -170,6 +217,6 @@ contract TradeGuardTest is Test {
     }
 
     function encoded(TradeGuard.Config memory c) internal pure returns (bytes memory) {
-        return abi.encode(c.mode, c.prices, c.markets, c.rules);
+        return abi.encode(c.mode, c.prices, c.markets, c.rules, c.agent);
     }
 }

@@ -72,7 +72,8 @@ contract RulesHarness {
 contract AerodromeTradePolicyHarness is AerodromeTradePolicy {
     constructor() AerodromeTradePolicy(address(0), address(0)) {}
 
-    function roundTrip(bytes calldata initData) external pure returns (TradeShape.Settings memory) {
-        return _settings(_pack(initData));
+    function roundTrip(bytes calldata initData) external pure returns (TradeShape.Settings memory, bytes32 agent) {
+        bytes memory packed = _pack(initData);
+        return (_settings(packed), bytes32(_wordAt(packed, 1)));
     }
 }

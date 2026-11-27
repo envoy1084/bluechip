@@ -1,4 +1,4 @@
-import { formatPrice } from "@bluechip/domain/policies/Format"
+import { formatEther, formatPrice } from "@bluechip/domain/policies/Format"
 import { assert, describe, it } from "@effect/vitest"
 
 describe("formatPrice", () => {
@@ -10,5 +10,16 @@ describe("formatPrice", () => {
     { name: "under a cent, rounded", price: 1n, expected: "$0" }
   ])("$name", ({ expected, price }) => {
     assert.strictEqual(formatPrice(price), expected)
+  })
+})
+
+describe("formatEther", () => {
+  it.each<{ name: string; wei: bigint; expected: string }>([
+    { name: "a thousandth", wei: 1_000_000_000_000_000n, expected: "0.001 ETH" },
+    { name: "to a ten-thousandth", wei: 37_500_000_000_000_000n, expected: "0.0375 ETH" },
+    { name: "under a ten-thousandth, rounded", wei: 12_345_678_000_000n, expected: "0 ETH" },
+    { name: "whole ether", wei: 1_000_000_000_000_000_000n, expected: "1 ETH" }
+  ])("$name", ({ expected, wei }) => {
+    assert.strictEqual(formatEther(wei), expected)
   })
 })

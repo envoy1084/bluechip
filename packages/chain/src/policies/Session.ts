@@ -18,7 +18,7 @@ import * as SessionKey from "@namera-ai/sdk/keys/SessionKey"
 import * as Policy from "@namera-ai/sdk/Policy"
 import * as Session from "@namera-ai/sdk/Session"
 import * as Effect from "effect/Effect"
-import { type Address, encodeFunctionData, type Hex } from "viem"
+import { type Address, encodeFunctionData, type Hex, keccak256, stringToHex } from "viem"
 import { ChainClient } from "../ChainClient.ts"
 import type { Deployment } from "../Deployment.ts"
 import { swapCallGas } from "../market/Swaps.ts"
@@ -44,6 +44,26 @@ export const guardedCallGas = (swaps: number): bigint => swapCallGas * BigInt(Ma
  * @since 0.0.0
  */
 export const guardedTradeCallGas = guardedCallGas(1)
+
+/**
+ * The agent as its sessions name it onchain: what `AerodromeTradePolicy` keys the day's spending by and `TradeGuard` its
+ * rules' state by, the same in every session of the agent (its lock, each change and each renewal), so a new key
+ * starts from what the agent already spent. Another agent's differs, so each has its own budget.
+ *
+ * **Example** (An agent's key)
+ *
+ * ```ts import.meta.vitest
+ * import { agentKey } from "@bluechip/chain/policies/Session"
+ *
+ * agentKey("agent_01") === agentKey("agent_01") // => true
+ * agentKey("agent_01") === agentKey("agent_02") // => false
+ * ```
+ *
+ * @stability unstable
+ * @category constructors
+ * @since 0.0.0
+ */
+export const agentKey = (agentId: string): Hex => keccak256(stringToHex(`bluechip.agent:${agentId}`))
 
 /**
  * Where a policy of the spec is enforced: the session's user operation policy, its fallback action, its execution
@@ -83,25 +103,26 @@ export const placements = (deployment: Deployment, spec: AgentSpec): ReadonlyArr
   })
 
 /**
- * The Namera policies of a session for `spec`: calls pass Namera's `AllowPolicy` (`Policy.anyCall`), since
- * `AerodromeTradePolicy` checks every call of every operation more strictly than an allowlist would; `TradeGuard`
- * runs around each operation with the spec's rules; then the daily trade count and gas budget. Experimental, as
- * Namera's policies are.
+ * The Namera policies of a session for `spec`, for the agent `agent` (`agentKey`): calls pass Namera's `AllowPolicy`
+ * (`Policy.anyCall`), since `AerodromeTradePolicy` checks every call of every operation more strictly than an
+ * allowlist would; `TradeGuard` runs around each operation with the spec's rules; then the daily trade count and gas
+ * budget. The trade policy's and the rules' counters are the agent's; Namera's trade count and gas are the session's,
+ * so a renewal starts those again. Experimental, as Namera's policies are.
  *
  * @stability experimental
  * @category constructors
  * @since 0.0.0
  */
-export const compileSession = (deployment: Deployment, spec: AgentSpec): ReadonlyArray<Policy.Policy> => [
+export const compileSession = (deployment: Deployment, spec: AgentSpec, agent: Hex): ReadonlyArray<Policy.Policy> => [
   Policy.anyCall({ unsafe: true }),
   Policy.custom({
     kind: "limit",
     address: deployment.policies.aerodromeTradePolicy,
-    initData: tradePolicyInitData(deployment, spec)
+    initData: tradePolicyInitData(deployment, spec, agent)
   }),
   Policy.execution({
     address: deployment.policies.tradeGuard,
-    initData: encodeGuardConfig(guardConfig(deployment, spec))
+    initData: encodeGuardConfig(guardConfig(deployment, spec, agent))
   }),
   Policy.rateLimit({ count: required(spec, tradesPerDay).count, period: "day" }),
   Policy.gas({ maxCost: required(spec, gasBudget).weiPerDay, period: "day" })
@@ -111,19 +132,19 @@ const keyOf = (policy: Policy.Policy) =>
   JSON.stringify(policy, (_, value) => (typeof value === "bigint" ? value.toString() : value))
 
 /**
- * The onchain policies a change from `before` to `after` removes and adds: only those whose configuration changed, so
- * counters kept by the others (the daily budget, the trade count) carry over.
+ * The onchain policies a change of `agent`'s session from `before` to `after` removes and adds: only those whose
+ * configuration changed. Counters carry over either way: the session and the agent stay the same.
  *
  * @stability experimental
  * @category constructors
  * @since 0.0.0
  */
-export const diffSessions = (deployment: Deployment, before: AgentSpec, after: AgentSpec): {
+export const diffSessions = (deployment: Deployment, agent: Hex, before: AgentSpec, after: AgentSpec): {
   readonly remove: ReadonlyArray<Policy.Policy>
   readonly add: ReadonlyArray<Policy.Policy>
 } => {
-  const old = compileSession(deployment, before)
-  const next = compileSession(deployment, after)
+  const old = compileSession(deployment, before, agent)
+  const next = compileSession(deployment, after, agent)
   const oldKeys = old.map(keyOf)
   const nextKeys = next.map(keyOf)
   return {
@@ -133,8 +154,9 @@ export const diffSessions = (deployment: Deployment, before: AgentSpec, after: A
 }
 
 /**
- * The session `signer` signs in with `spec`'s policies until `validUntil` (Unix seconds). Its permission id depends on
- * `salt`: pass the same salt to build the same session again (Namera picks a random one otherwise).
+ * The session `signer` signs in with `spec`'s policies until `validUntil` (Unix seconds), for the agent `agent`
+ * (`agentKey`). Its permission id depends on `salt`: pass the same salt to build the same session again (Namera picks
+ * a random one otherwise).
  *
  * @stability experimental
  * @category constructors
@@ -143,6 +165,7 @@ export const diffSessions = (deployment: Deployment, before: AgentSpec, after: A
 export const agentSession = (options: {
   readonly deployment: Deployment
   readonly spec: AgentSpec
+  readonly agent: Hex
   readonly signer: Address
   readonly validUntil: number
   readonly salt?: Hex | undefined
@@ -150,7 +173,7 @@ export const agentSession = (options: {
   Session.from({
     signer: SessionKey.ecdsa(options.signer),
     validUntil: options.validUntil,
-    policies: compileSession(options.deployment, options.spec),
+    policies: compileSession(options.deployment, options.spec, options.agent),
     ...(options.salt === undefined ? {} : { salt: options.salt })
   })
 
@@ -172,15 +195,19 @@ export const lockCalls = (session: Session.Session): ReadonlyArray<{ readonly to
 }]
 
 /**
- * The owner's calls that change a locked session's policies from `before` to `after` (`diffSessions`), and the
+ * The owner's calls that change `agent`'s locked session's policies from `before` to `after` (`diffSessions`), and the
  * session as it will be.
  *
  * @stability experimental
  * @category encoding
  * @since 0.0.0
  */
-export const changeCalls = (deployment: Deployment, grant: Grant.Grant, before: AgentSpec, after: AgentSpec) => {
-  const update = Grant.updateCalls(grant, diffSessions(deployment, before, after))
+export const changeCalls = (
+  deployment: Deployment,
+  grant: Grant.Grant,
+  change: { readonly agent: Hex; readonly before: AgentSpec; readonly after: AgentSpec }
+) => {
+  const update = Grant.updateCalls(grant, diffSessions(deployment, change.agent, change.before, change.after))
   return { calls: ownerCalls(update.calls), session: update.session }
 }
 

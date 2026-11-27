@@ -16,6 +16,7 @@ import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AgentsCreated, AgentsLifecycle, AgentsLocked, count } from "../../platform/telemetry/Metrics.ts"
 import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
+import { automations } from "../automations/tables.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { AgentSessions, type SessionRow } from "./AgentSessions.ts"
@@ -277,11 +278,20 @@ export class AgentStore extends Context.Service<AgentStore, {
         change?: "paused" | "renewed" | undefined
       ) {
         const now = yield* DateTime.now
-        // A change notifications tell is written to their outbox in the change's transaction.
+        // A change notifications tell is written to their outbox in the change's transaction, as is what it does to
+        // the agent's automations: removed with it, or paused when it ends (a renewal leaves them for you to resume).
         const { agent, updated } = yield* db.transaction(() =>
           Effect.gen(function*() {
             const [updated] = yield* db.update(agents).set({ ...changes, updatedAt: now })
               .where(eq(agents.id, row.id)).returning()
+            if (changes.status !== row.status && (changes.status === "removed" || changes.status === "expired")) {
+              yield* db.update(automations)
+                .set({ status: changes.status === "removed" ? "deleted" : "paused", nextRunAt: null, updatedAt: now })
+                .where(and(
+                  eq(automations.agentId, row.id),
+                  inArray(automations.status, changes.status === "removed" ? ["active", "paused"] : ["active"])
+                ))
+            }
             const agent = yield* agentOf(updated!)
             if (change !== undefined) {
               yield* outbox.write(LiveEvent.cases.AgentChanged.make({ agent, change }), row.userId as UserId)

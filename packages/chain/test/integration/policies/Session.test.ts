@@ -1,6 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { localDeployment } from "@bluechip/chain/deployments/Base"
 import {
+  agentKey,
   agentSession,
   changeCalls,
   changedGrant,
@@ -34,10 +35,16 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
 
   it.effect("a $50 buy counts against the daily budget, the slippage budget, the trade count and the gas", () =>
     Effect.gen(function*() {
-      const { address, grant, trade } = yield* (yield* TestAgents).lock()
+      const { address, agentKey: agent, grant, trade } = yield* (yield* TestAgents).lock()
       yield* trade(tradeCalls(nvda, "buy", BigInt(50_000_000), address), guardedTradeCallGas)
 
-      const usage = yield* readUsage({ spec: PICKER, account: address, grant, now: Math.floor(Date.now() / 1000) })
+      const usage = yield* readUsage({
+        spec: PICKER,
+        agent,
+        account: address,
+        grant,
+        now: Math.floor(Date.now() / 1000)
+      })
 
       const [spent, slippage, trades, gas] = usage
       assert.deepStrictEqual([spent?.policy, spent?.used, spent?.limit], [
@@ -52,7 +59,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
 
   it.effect("a buy of NVDA and of AAPL in one operation count as one trade, and both against the daily budget", () =>
     Effect.gen(function*() {
-      const { address, grant, trade } = yield* (yield* TestAgents).lock()
+      const { address, agentKey: agent, grant, trade } = yield* (yield* TestAgents).lock()
       const landed = yield* trade(
         [
           ...tradeCalls(nvda, "buy", BigInt(30_000_000), address),
@@ -63,6 +70,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
 
       const [spent, , trades] = yield* readUsage({
         spec: PICKER,
+        agent,
         account: address,
         grant,
         now: Math.floor(Date.now() / 1000)
@@ -74,10 +82,10 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
 
   it.effect("a change to sell only refuses the agent's next buy", () =>
     Effect.gen(function*() {
-      const { address, agentFor, grant, send } = yield* (yield* TestAgents).lock()
+      const { address, agentFor, agentKey: agent, grant, send } = yield* (yield* TestAgents).lock()
       const sellOnly = changed(PICKER, { id: "trade", config: { direction: "sell", dailyBudget: BigInt(0) } })
 
-      const change = changeCalls(localDeployment, grant, PICKER, sellOnly)
+      const change = changeCalls(localDeployment, grant, { agent, before: PICKER, after: sellOnly })
       const landed = yield* send(change.calls)
       const decision = yield* simulateAsAgent(
         localDeployment,
@@ -91,14 +99,15 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
 
   it.effect("a change of the stock cap keeps what was spent today", () =>
     Effect.gen(function*() {
-      const { address, grant, send, trade } = yield* (yield* TestAgents).lock()
+      const { address, agentKey: agent, grant, send, trade } = yield* (yield* TestAgents).lock()
       yield* trade(tradeCalls(nvda, "buy", BigInt(50_000_000), address), guardedTradeCallGas)
       const capped = changed(PICKER, { id: "stockCap", config: { maxBps: 2000 } })
 
-      const change = changeCalls(localDeployment, grant, PICKER, capped)
+      const change = changeCalls(localDeployment, grant, { agent, before: PICKER, after: capped })
       yield* send(change.calls)
       const [spent] = yield* readUsage({
         spec: capped,
+        agent,
         account: address,
         grant: changedGrant(grant, change.session),
         now: Math.floor(Date.now() / 1000)
@@ -107,10 +116,62 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       assert.strictEqual(spent?.used, BigInt(50_000_000))
     }))
 
+  it.effect("a change of the daily budget keeps what was spent today", () =>
+    Effect.gen(function*() {
+      const { address, agentKey: agent, grant, send, trade } = yield* (yield* TestAgents).lock()
+      yield* trade(tradeCalls(nvda, "buy", BigInt(50_000_000), address), guardedTradeCallGas)
+      const lower = changed(PICKER, { id: "trade", config: { dailyBudget: BigInt(100_000_000) } })
+
+      const change = changeCalls(localDeployment, grant, { agent, before: PICKER, after: lower })
+      yield* send(change.calls)
+      const [spent] = yield* readUsage({
+        spec: lower,
+        agent,
+        account: address,
+        grant: changedGrant(grant, change.session),
+        now: Math.floor(Date.now() / 1000)
+      })
+
+      assert.deepStrictEqual([spent?.used, spent?.limit], [BigInt(50_000_000), BigInt(100_000_000)])
+    }))
+
+  it.effect("a renewal keeps what the agent spent today, and refuses a buy past what is left", () =>
+    Effect.gen(function*() {
+      const { account, address, agentKey: agent, grant, send, trade } = yield* (yield* TestAgents).lock()
+      yield* trade(tradeCalls(nvda, "buy", BigInt(100_000_000), address), guardedTradeCallGas)
+      yield* trade(tradeCalls(nvda, "buy", BigInt(100_000_000), address), guardedTradeCallGas)
+      const key = privateKeyToAccount(generatePrivateKey())
+      const session = agentSession({
+        deployment: localDeployment,
+        spec: PICKER,
+        agent,
+        signer: key.address,
+        validUntil: Session.expiresIn({ days: 90 })
+      })
+
+      yield* send(renewCalls(grant, session))
+      const renewed = yield* lockedGrant(account, session)
+      const [spent] = yield* readUsage({
+        spec: PICKER,
+        agent,
+        account: address,
+        grant: renewed,
+        now: Math.floor(Date.now() / 1000)
+      })
+      const decision = yield* simulateAsAgent(
+        localDeployment,
+        yield* (yield* TestAgents).sessionFor(renewed, key),
+        tradeCalls(nvda, "buy", BigInt(60_000_000), address)
+      )
+
+      assert.strictEqual(spent?.used, BigInt(200_000_000))
+      assert.strictEqual(decision._tag === "Refused" ? decision.refusal.policy : decision._tag, "trade")
+    }))
+
   it.effect("a renewal enables a new key's session and revokes the old one", () =>
     Effect.gen(function*() {
       const chain = yield* ChainClient
-      const { address, grant, send } = yield* (yield* TestAgents).lock()
+      const { address, agentKey: agent, grant, send } = yield* (yield* TestAgents).lock()
       const owner = yield* chain.use(
         "KernelAccount.from",
         (client) => KernelAccount.from({ client, address, owner: privateKeyToAccount(generatePrivateKey()) })
@@ -118,6 +179,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       const session = agentSession({
         deployment: localDeployment,
         spec: PICKER,
+        agent,
         signer: privateKeyToAccount(generatePrivateKey()).address,
         validUntil: Session.expiresIn({ days: 90 })
       })
@@ -151,6 +213,7 @@ layer(Layer.provideMerge(TestAgents.layer, DevnetTest.layer))("an agent's sessio
       const second = agentSession({
         deployment: localDeployment,
         spec: PICKER,
+        agent: agentKey("a second agent"),
         signer: privateKeyToAccount(generatePrivateKey()).address,
         validUntil: Session.expiresIn({ days: 90 })
       })

@@ -38,7 +38,7 @@ contract PaperTradeTest is PaperMarket {
         settings.dailyBudget = 1_000_000e6;
         settings.markets = new TradeShape.Market[](1);
         settings.markets[0] = TradeShape.Market(address(nvda), TICK_SPACING);
-        policy.initializeWithMultiplexer(TRADER, ID, abi.encode(settings));
+        policy.initializeWithMultiplexer(TRADER, ID, abi.encode(settings, keccak256("agent")));
 
         TradeGuard.Market[] memory markets = new TradeGuard.Market[](1);
         markets[0] = TradeGuard.Market(address(nvda), address(nvdaFeed), true);
@@ -52,7 +52,8 @@ contract PaperTradeTest is PaperMarket {
                 Outcome.BOTH,
                 Outcome.Prices({tradeWhilePaused: true, liveAge: 26 hours, pausedAge: 80 hours}),
                 guard.packMarkets(markets),
-                rules
+                rules,
+                keccak256("agent")
             )
         );
     }
@@ -92,7 +93,8 @@ contract PaperTradeTest is PaperMarket {
         guard.postCheck(ID, TRADER, trade(buyCalls(100e6)));
 
         // $100 for 0.66646666 NVDA, worth $99.969999 at the feed: the fee, 3 cents, is the slippage.
-        (uint256 used,) = slippageBudget.ledger(address(guard), PolicyStorage.configKey(ID, address(this)), TRADER);
+        (uint256 used,) =
+            slippageBudget.ledger(address(guard), PolicyStorage.configKey(keccak256("agent"), address(this)), TRADER);
         assertEq(used, 30_001);
         assertEq(nvda.balanceOf(TRADER), 10e8 + 66_646_666);
     }

@@ -6,7 +6,7 @@ import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
 import { quoteExactIn } from "@bluechip/chain/market/Quotes"
 import { encodeGuardConfig, guardConfig } from "@bluechip/chain/policies/Guard"
-import { compileSession, guardedTradeCallGas } from "@bluechip/chain/policies/Session"
+import { agentKey, compileSession, guardedTradeCallGas } from "@bluechip/chain/policies/Session"
 import { rpc } from "@bluechip/devnet/Controls"
 import { assert, layer } from "@effect/vitest"
 import { Policy } from "@namera-ai/sdk"
@@ -27,9 +27,10 @@ const ForkChain = Layer.provideMerge(
 // day) against the wall clock: the fork moves to now, so Chainlink's prices are as old as the fork, and the agent
 // trades on paused prices of any age.
 const { policies: { tradeGuard }, usdc } = localDeployment
-const defaults = guardConfig(localDeployment, PICKER)
+const agent = agentKey("agent_fork")
+const defaults = guardConfig(localDeployment, PICKER, agent)
 const guard = encodeGuardConfig({ ...defaults, prices: { ...defaults.prices, pausedAge: 2 ** 32 - 1 } })
-const policies = compileSession(localDeployment, PICKER).map((policy) =>
+const policies = compileSession(localDeployment, PICKER, agent).map((policy) =>
   policy.type === "execution" ? Policy.execution({ address: tradeGuard, initData: guard }) : policy
 )
 

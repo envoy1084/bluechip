@@ -11,7 +11,7 @@ import { addressOf, CONTRACTS, type ContractSpec, deployedModule, initCodeOf } f
 import { contractStatus, deployContracts, type Deployment } from "../contracts/deploy.ts"
 import { deployPaper, sepoliaModule } from "../contracts/paper.ts"
 import { seedPrices } from "../contracts/paperPrices.ts"
-import { SetupError, ToolFailed } from "../errors.ts"
+import { CheckFailed, SetupError, ToolFailed } from "../errors.ts"
 import { Tools } from "../services/Tools.ts"
 
 /** Where the generated addresses and ABIs go. */
@@ -20,7 +20,7 @@ export const DEPLOYED_MODULE = "packages/chain/src/policies/Deployed.ts"
 /** Where `contracts deploy --network sepolia` writes paper's addresses. */
 export const SEPOLIA_MODULE = "packages/chain/src/deployments/Sepolia.ts"
 
-/** Paper's server environment: its Base Sepolia RPC, the operator's key and Alpaca's keys (never printed). */
+/** Paper's server environment: its Base Sepolia RPC, the operator's key, Alpaca's and BaseScan's keys (never printed). */
 export const PAPER_ENV = "apps/server/.env.paper"
 
 /** The paper contracts' Foundry artifacts, deployed besides bluechip's policies (`contracts/src/paper/`). */
@@ -195,8 +195,44 @@ const deploySepolia = Effect.gen(function*() {
 
   yield* fs.writeFileString(path.join(root, SEPOLIA_MODULE), sepoliaModule(addresses)).pipe(Effect.orDie)
   yield* (yield* Tools).run("pnpm", ["exec", "dprint", "fmt", SEPOLIA_MODULE])
-  // Source verification needs a BaseScan key, which paper doesn't have yet.
-  yield* Console.log(`contracts: wrote ${SEPOLIA_MODULE}; source verification skipped (no BaseScan key)`)
+  yield* Console.log(`contracts: wrote ${SEPOLIA_MODULE}`)
+
+  const apiKey = env["BASESCAN_API_KEY"]
+  if (apiKey === undefined) return yield* Console.log("contracts: source verification skipped (no BASESCAN_API_KEY)")
+  // Etherscan's API (v2, one key for every chain) verifies BaseScan's; forge reads the key from its environment, so it
+  // never appears in a command line, and skips a contract verified before. BaseScan's queue can take minutes.
+  const unverified: Array<string> = []
+  for (const step of steps) {
+    if (step.source === undefined) continue
+    const verified = yield* (yield* Tools).run("forge", [
+      "verify-contract",
+      step.address,
+      step.source.artifact,
+      "--chain",
+      String(baseSepolia.id),
+      "--verifier",
+      "etherscan",
+      "--constructor-args",
+      step.source.constructorArgs,
+      "--watch",
+      "--retries",
+      "30",
+      "--delay",
+      "10"
+    ], { cwd: path.join(root, "contracts"), env: { ETHERSCAN_API_KEY: apiKey } }).pipe(
+      Effect.as(true),
+      Effect.catchTag("ToolFailed", () => Effect.succeed(false))
+    )
+    if (!verified) unverified.push(step.name)
+    const link = `https://sepolia.basescan.org/address/${step.address}#code`
+    yield* Console.log(`contracts: ${verified ? "verified" : "not verified"} ${step.name} ${link}`)
+  }
+  if (unverified.length > 0) {
+    return yield* CheckFailed.make({
+      check: "contracts verify",
+      problems: unverified.map((name) => `${name} isn't verified`)
+    })
+  }
 })
 
 const deploy = Command.make("deploy", { network, rpcUrl }).pipe(

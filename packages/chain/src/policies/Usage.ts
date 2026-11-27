@@ -1,7 +1,7 @@
 /**
- * What an agent's session has counted onchain, policy by policy: USDC put into buys this UTC day
- * (`AerodromeTradePolicy`), value lost to prices over the last seven days (`SlippageBudgetRule`'s ledger, decayed),
- * and Namera's trade count and gas this UTC day.
+ * What an agent has counted onchain, policy by policy: USDC put into buys this UTC day (`AerodromeTradePolicy`) and
+ * value lost to prices over the last seven days (`SlippageBudgetRule`'s ledger, decayed), in any of its sessions; and
+ * Namera's trade count and gas this UTC day, in its session in force.
  *
  * @since 0.0.0
  */
@@ -14,7 +14,7 @@ import * as SessionHook from "@namera-ai/contracts/SessionHook"
 import * as SmartSession from "@namera-ai/contracts/SmartSession"
 import * as Grant from "@namera-ai/sdk/Grant"
 import * as Effect from "effect/Effect"
-import { type Address, encodeAbiParameters, encodePacked, keccak256 } from "viem"
+import { type Address, encodeAbiParameters, encodePacked, type Hex, keccak256 } from "viem"
 import { ChainClient } from "../ChainClient.ts"
 import { aerodromeTradePolicyAbi, slippageBudgetRuleAbi } from "./Deployed.ts"
 import { required } from "./Rules.ts"
@@ -28,6 +28,8 @@ import { required } from "./Rules.ts"
  */
 export const readUsage = Effect.fnUntraced(function*(options: {
   readonly spec: AgentSpec
+  /** The agent's key (`agentKey`), which keys its rules' state. */
+  readonly agent: Hex
   readonly account: Address
   readonly grant: Grant.Grant
   readonly now: number
@@ -35,15 +37,11 @@ export const readUsage = Effect.fnUntraced(function*(options: {
   const chain = yield* ChainClient
   const { aerodromeTradePolicy, slippageBudgetRule, tradeGuard } = chain.deployment.policies
 
-  // Policies are keyed by the account's id of the session's policies (Smart Sessions' and SessionHook's `configId`);
-  // TradeGuard, the session's first execution policy, keys its rules' state by its own config id under SessionHook.
+  // Policies are configured under the account's id of the session's policies (Smart Sessions' `configId`); the trade
+  // policy finds the agent's day through it. TradeGuard keys its rules' state by the agent under SessionHook.
   const sessionConfigId = keccak256(encodePacked(["address", "bytes32"], [options.account, options.grant.id]))
-  const guardConfigId = keccak256(encodeAbiParameters([{ type: "bytes32" }, { type: "uint256" }], [
-    sessionConfigId,
-    BigInt(0)
-  ]))
   const ruleKey = keccak256(encodeAbiParameters([{ type: "bytes32" }, { type: "address" }], [
-    guardConfigId,
+    options.agent,
     SessionHook.addressV1
   ]))
   const carries = (id: string) => options.spec.policies.some((entry) => entry.id === id)

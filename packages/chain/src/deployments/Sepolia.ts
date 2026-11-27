@@ -23,8 +23,8 @@ export const sepoliaAddresses = {
     quoter: "0x76AA6765b0158eFb9C4a1D4885F661085dC00B48"
   },
   policies: {
-    aerodromeTradePolicy: "0x7C573EA659F7567825EC9e06d667249C7e86dBf3",
-    tradeGuard: "0x4f66104ba1464dAca5266f749b5843Ce50f25520",
+    aerodromeTradePolicy: "0x70f74cb5decD7fBC642B5092e735EAd339fdf8dB",
+    tradeGuard: "0xB3DfCaF534dde3808F0942515C3C45F253232AA1",
     recoveryDelayPolicy: "0xF2C702138f8BFF92C19AA4e138ee6FE752916B4C",
     tradeSizeRule: "0x240274AB59bd003C39eDf22542910EA9BBc3121e",
     fairPriceRule: "0x8482F4E90a5101422044e1D54D45AF72A75d28e3",

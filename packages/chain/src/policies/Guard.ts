@@ -1,6 +1,7 @@
 /**
  * `TradeGuard`'s configuration for a spec: the agent's direction, the price ages, every stock the portfolio is valued
- * over (with whether the agent may trade it), and the rules the spec carries, in the catalog's order.
+ * over (with whether the agent may trade it), the rules the spec carries, in the catalog's order, and the agent, which keys
+ * the rules' state.
  *
  * @since 0.0.0
  */
@@ -27,7 +28,8 @@ export const packMarkets = (stocks: ReadonlyArray<Stock>, allowed: ReadonlyArray
   ])
 
 /**
- * `TradeGuard.Config`: the direction, the price ages, the packed markets and the rules with their configurations.
+ * `TradeGuard.Config`: the direction, the price ages, the packed markets, the rules with their configurations, and the
+ * agent (`agentKey`), the same in each of its sessions so a renewal keeps the rules' state.
  *
  * @stability unstable
  * @category models
@@ -38,16 +40,17 @@ export interface GuardConfig {
   readonly prices: { readonly tradeWhilePaused: boolean; readonly liveAge: number; readonly pausedAge: number }
   readonly markets: ReadonlyArray<bigint>
   readonly rules: ReadonlyArray<{ readonly rule: Address; readonly config: Hex }>
+  readonly agent: Hex
 }
 
 /**
- * `TradeGuard`'s configuration for `spec` on `deployment`.
+ * `TradeGuard`'s configuration for `spec` on `deployment`, for `agent`.
  *
  * @stability unstable
  * @category constructors
  * @since 0.0.0
  */
-export const guardConfig = (deployment: Deployment, spec: AgentSpec): GuardConfig => {
+export const guardConfig = (deployment: Deployment, spec: AgentSpec, agent: Hex): GuardConfig => {
   const config = required(spec, trade)
   const carried = spec.policies.map((entry) => entry.id)
   return {
@@ -61,12 +64,13 @@ export const guardConfig = (deployment: Deployment, spec: AgentSpec): GuardConfi
     rules: RULES.filter((rule) => carried.includes(rule.policy)).map((rule) => ({
       rule: deployment.policies[rule.contract],
       config: rule.config(spec, deployment.stocks)
-    }))
+    })),
+    agent
   }
 }
 
 /**
- * `TradeGuard`'s init data: `abi.encode(mode, prices, markets, rules)`.
+ * `TradeGuard`'s init data: `abi.encode(mode, prices, markets, rules, agent)`.
  *
  * @stability unstable
  * @category encoding
@@ -84,5 +88,6 @@ export const encodeGuardConfig = (config: GuardConfig): Hex =>
       ]
     },
     { type: "uint256[]" },
-    { type: "tuple[]", components: [{ type: "address", name: "rule" }, { type: "bytes", name: "config" }] }
-  ], [config.mode, config.prices, config.markets, config.rules])
+    { type: "tuple[]", components: [{ type: "address", name: "rule" }, { type: "bytes", name: "config" }] },
+    { type: "bytes32" }
+  ], [config.mode, config.prices, config.markets, config.rules, config.agent])

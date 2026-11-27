@@ -186,10 +186,11 @@ contract FuzzTest is Test {
 
     // Stored settings -------------------------------------------------------------------------------------------
 
-    function testFuzz_policySettingsComeBackAsStored(TradeShape.Settings memory s) public view {
+    function testFuzz_policySettingsComeBackAsStored(TradeShape.Settings memory s, bytes32 agent) public view {
         s.maxUsdcIn = uint128(bound(s.maxUsdcIn, 0, (uint256(1) << 124) - 1));
         s.dailyBudget = uint128(bound(s.dailyBudget, 0, (uint256(1) << 124) - 1));
 
-        assertEq(abi.encode(policy.roundTrip(abi.encode(s))), abi.encode(s));
+        (TradeShape.Settings memory stored, bytes32 storedAgent) = policy.roundTrip(abi.encode(s, agent));
+        assertEq(abi.encode(stored, storedAgent), abi.encode(s, agent));
     }
 }

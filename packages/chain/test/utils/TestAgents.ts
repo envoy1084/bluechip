@@ -3,7 +3,7 @@ import { ChainClient } from "@bluechip/chain/ChainClient"
 import type { ChainError } from "@bluechip/chain/ChainError"
 import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { DevChain } from "@bluechip/chain/DevChain"
-import { compileSession, lockCalls, lockedGrant } from "@bluechip/chain/policies/Session"
+import { agentKey, compileSession, lockCalls, lockedGrant } from "@bluechip/chain/policies/Session"
 import { BASE_FEES } from "@bluechip/devnet/Controls"
 import { Devnet } from "@bluechip/devnet/Devnet"
 import { softwarePasskey } from "@bluechip/devnet/Passkeys"
@@ -48,6 +48,8 @@ export interface Agent {
   /** The account as its owner sends from it. */
   readonly account: KernelAccount.KernelAccount
   readonly agent: Bundler
+  /** The agent as its sessions name it onchain (`agentKey`): a renewal compiles its session with the same. */
+  readonly agentKey: Hex
   readonly grant: Grant.Grant
   /** The agent sending operations with another grant of the same key. */
   readonly agentFor: (grant: Grant.Grant) => Effect.Effect<Bundler, ChainError>
@@ -119,10 +121,11 @@ export class TestAgents extends Context.Service<TestAgents, {
       yield* dev.setUsdcBalance(account.address, BigInt(1_000_000_000))
 
       const key = privateKeyToAccount(generatePrivateKey())
+      const onchainKey = agentKey(key.address)
       const session = Session.from({
         signer: SessionKey.ecdsa(key.address),
         validUntil: Session.expiresIn({ days: 90 }),
-        policies: lockOptions.policies ?? compileSession(localDeployment, lockOptions.spec ?? PICKER)
+        policies: lockOptions.policies ?? compileSession(localDeployment, lockOptions.spec ?? PICKER, onchainKey)
       })
 
       // The owner deploys the account and locks the session in one operation, as bluechip does; the agent's trades
@@ -143,6 +146,7 @@ export class TestAgents extends Context.Service<TestAgents, {
         owner,
         account,
         agent,
+        agentKey: onchainKey,
         grant,
         agentFor,
         send,

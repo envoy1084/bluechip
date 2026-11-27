@@ -1,6 +1,6 @@
 /**
- * How policies say amounts in sentences: whole dollars, prices per share, percentages from basis points, and lists of
- * names.
+ * How policies say amounts in sentences: whole dollars, prices per share, percentages from basis points, ether, and
+ * lists of names.
  *
  * @since 0.0.0
  */
@@ -65,6 +65,25 @@ export const formatShareCount = (shares: number): string => {
  * @since 0.0.0
  */
 export const formatPercent = (bps: number): string => `${bps / 100}%`
+
+const etherFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
+
+/**
+ * Wei as ether, to a ten-thousandth: `0.0375 ETH`.
+ *
+ * **Example** (A day's gas)
+ *
+ * ```ts import.meta.vitest
+ * import { formatEther } from "@bluechip/domain/policies/Format"
+ *
+ * formatEther(BigInt(37_500_000_000_000_000)) // => "0.0375 ETH"
+ * ```
+ *
+ * @stability unstable
+ * @category formatting
+ * @since 0.0.0
+ */
+export const formatEther = (wei: bigint | number): string => `${etherFormat.format(Number(wei) / 1e18)} ETH`
 
 /**
  * Names as people list them: `NVDA, AAPL and TSLA`, `NVDA, AAPL, TSLA and 2 more`.

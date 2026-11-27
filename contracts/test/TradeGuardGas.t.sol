@@ -61,6 +61,7 @@ contract TradeGuardGasTest is Test {
         c.rules[3] = TradeGuard.Rule(address(new CashReserveRule()), abi.encode(CashReserveRule.Config(1000)));
         c.rules[4] =
             TradeGuard.Rule(address(new SlippageBudgetRule()), abi.encode(SlippageBudgetRule.Config(100, 7 days)));
+        c.agent = keccak256("agent");
     }
 
     function test_enablingASessionOnEveryStock() public {
@@ -99,6 +100,7 @@ contract TradeGuardGasTest is Test {
         c.rules[2] = TradeGuard.Rule(address(new StopLossFloorRule()), abi.encode(StopLossFloorRule.Config(floors)));
         c.rules[3] =
             TradeGuard.Rule(address(new SlippageBudgetRule()), abi.encode(SlippageBudgetRule.Config(100, 7 days)));
+        c.agent = keccak256("agent");
         guard.initializeWithMultiplexer(ACCOUNT, id, encoded(c));
 
         bytes memory context = guard.preCheck(id, ACCOUNT, "");
@@ -111,6 +113,6 @@ contract TradeGuardGasTest is Test {
     }
 
     function encoded(TradeGuard.Config memory c) internal pure returns (bytes memory) {
-        return abi.encode(c.mode, c.prices, c.markets, c.rules);
+        return abi.encode(c.mode, c.prices, c.markets, c.rules, c.agent);
     }
 }
