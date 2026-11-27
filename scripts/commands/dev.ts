@@ -1,3 +1,4 @@
+import { keepClock } from "@bluechip/devnet/Clock"
 import { BASE_FEE_WEI, BUNDLER_KEYS, rpc } from "@bluechip/devnet/Controls"
 import { Array as Arr, Console, Effect, FileSystem, Path, Schedule, Stream } from "effect"
 import { Command, Flag } from "effect/cli"
@@ -47,7 +48,8 @@ export const devProcesses = (options: { readonly uikit: boolean }): Array<DevPro
  * mode bundling as soon as an operation arrives.
  *
  * Anvil mines a block every 2 s, like Base: an agent's operation states the latest block's time, and Namera bounds it
- * to that time's UTC day, so a chain behind the real day sends operations the bundler rejects as expired.
+ * to that time's UTC day, so a chain behind the real day sends operations the bundler rejects as expired. On Base's
+ * hardfork Anvil's own clock falls behind; `up` keeps it at the real time (`keepClock`).
  */
 export const localChainProcesses = (options: { readonly stateFile: string; readonly alto: string }) => ({
   anvil: {
@@ -214,6 +216,10 @@ const up = Effect.fn("dev.up")(
             `dev: couldn't check bluechip's contracts on the local chain (${error}); pnpm dev --reset-chain starts it fresh`
           )
         )
+      )
+      yield* Effect.acquireRelease(
+        Effect.sync(() => keepClock(rpc(`http://localhost:${CHAIN_PORTS.anvil}`))),
+        (keeper) => Effect.sync(keeper.stop)
       )
     }
 

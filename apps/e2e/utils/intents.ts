@@ -5,8 +5,8 @@ import { openRule, startAgent } from "./agents.ts"
 /** The agent page's "Trade with this agent" card. */
 export const tradeCard = (page: Page) => page.getByRole("region", { name: "Trade with this agent" })
 
-/** The agent page's activity list. */
-export const agentActivity = (page: Page) => page.getByRole("region", { name: "Activity" })
+/** The agent's trades, on its History tab (`/agents/:id/history`). */
+export const agentActivity = (page: Page) => page.getByRole("region", { name: "Trades" })
 
 /** Types an amount to spend on the agent page's trade card; its policies' answer follows below it. */
 export const typeBuy = async (page: Page, dollars: number) => {

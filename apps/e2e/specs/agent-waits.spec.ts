@@ -24,6 +24,7 @@ test.describe("an agent's trade that waits", () => {
     await expect(tradeCard(page).getByText("Buy $50.00 of NVIDIA")).toBeVisible()
     await expect(tradeCard(page).getByText("Waiting", { exact: true })).toBeVisible()
     await expect(tradeCard(page).getByText(noGas)).toBeVisible()
+    await page.goto(`${page.url()}/history`)
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $50.00 of NVIDIA" })
     await expect(row.getByText("Waiting", { exact: true })).toBeVisible()
     await expect(row.getByText("You asked this agent to trade.")).toBeVisible()
@@ -42,6 +43,7 @@ test.describe("an agent's trade that waits", () => {
     await expect(
       tradeCard(page).getByText("You cancelled it. Nothing was bought. Your cash is where it was.")
     ).toBeVisible()
+    await page.goto(`${page.url()}/history`)
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $50.00 of NVIDIA" })
     await expect(row.getByText("Cancelled", { exact: true })).toBeVisible()
     await expect(row.getByRole("button", { name: "Cancel trade" })).toBeHidden()

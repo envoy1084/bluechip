@@ -1,5 +1,6 @@
 // The suite's own bluechip: a fresh database, a devnet (Anvil from the captured state, and Alto), the server and the
 // web app, each on a port of its own, so a run never touches `pnpm dev`'s database, chain or ports and needs no RPC.
+import { keepClock } from "@bluechip/devnet/Clock"
 import { BASE_FEE_WEI, BUNDLER_KEYS, rpc } from "@bluechip/devnet/Controls"
 import { type ChildProcess, execFileSync, spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
@@ -112,8 +113,10 @@ export const startStack = async (): Promise<Stack> => {
 
   const children: Array<ChildProcess> = []
   let web: ViteDevServer | undefined
+  let stopClock = () => {}
   const stop = async () => {
     stopping = true
+    stopClock()
     await web?.close()
     for (const child of children) child.kill("SIGTERM")
     await Promise.all(children.map((child) =>
@@ -148,8 +151,7 @@ export const startStack = async (): Promise<Stack> => {
       state,
       "--block-base-fee-per-gas",
       String(BASE_FEE_WEI),
-      // A block every 2 s, like Base, so the chain's clock keeps the real one: an agent's operation is bounded to its
-      // latest block's UTC day, and Alto checks that against the real clock.
+      // A block every 2 s, like Base; its clock is kept at the real one below.
       "--block-time",
       "2"
     ]))
@@ -163,6 +165,9 @@ export const startStack = async (): Promise<Stack> => {
     await anvil("anvil_setNextBlockBaseFeePerGas", [`0x${BASE_FEE_WEI.toString(16)}`])
     await anvil("anvil_mine", ["0x1"])
     await alignPrices(anvil, now)
+    // An agent's operation is bounded to its latest block's UTC day, and Alto checks that against the real clock: on
+    // Base's hardfork Anvil's own clock falls behind.
+    stopClock = keepClock(anvil).stop
 
     children.push(start("alto", path.join(root, "packages/devnet/node_modules/.bin/alto"), [
       "--rpc-url",

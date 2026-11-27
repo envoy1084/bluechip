@@ -140,7 +140,7 @@ test.describe("remove", () => {
 
     const confirm = page.getByRole("region", { name: "Remove Goner?" })
     await expect(confirm).toContainText(
-      "It stops right away and can never trade again. Your stocks and cash stay in your account; nothing is sold. Its history stays here."
+      "It stops right away and can never trade again, and its automations are deleted with it. Your stocks and cash stay in your account; nothing is sold. Its history stays here."
     )
     await confirm.getByRole("button", { name: "Remove agent" }).click()
 

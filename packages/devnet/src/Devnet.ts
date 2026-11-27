@@ -21,6 +21,7 @@ import {
   toPackedUserOperation,
   type UserOperation
 } from "viem/account-abstraction"
+import * as Clock from "./Clock.ts"
 import * as Controls from "./Controls.ts"
 import * as Instances from "./internal/instances.ts"
 
@@ -126,6 +127,10 @@ const make = Effect.fnUntraced(function*(rpcUrl: string, bundlerUrl: string) {
     // Alto starts on its first request; let it start now, against the ready chain.
     await Controls.rpc(bundlerUrl)("eth_supportedEntryPoints")
   })
+  const clock = yield* Effect.acquireRelease(
+    Effect.sync(() => Clock.keepClock(anvil)),
+    (keeper) => Effect.sync(keeper.stop)
+  )
 
   const simulateAt = (seconds: number, calls: ReadonlyArray<{ readonly to: Address; readonly data: Hex }>) =>
     Effect.promise(async () => {
@@ -139,7 +144,7 @@ const make = Effect.fnUntraced(function*(rpcUrl: string, bundlerUrl: string) {
       return block!.calls.map((call) => ({ success: call.status === "0x1", returnData: call.returnData }))
     })
 
-  return { rpcUrl, bundlerUrl, setPrice, mintShares, sendSharesOut, movePool, simulateAt }
+  return { devnet: { rpcUrl, bundlerUrl, setPrice, mintShares, sendSharesOut, movePool, simulateAt }, clock }
 })
 
 /**
@@ -177,8 +182,9 @@ export class Devnet extends Context.Service<Devnet, {
 }>()("@bluechip/devnet/Devnet") {
   /**
    * Connects to the current worker's devnet: sets Base's base fee (loading the captured state brings the fork's own),
-   * moves its clock to now (the captured state brings the capture's) and mines a block, and marks every price as just
-   * updated, since the captured state's prices are as old as the capture.
+   * moves its clock to now (the captured state brings the capture's) and mines a block, marks every price as just
+   * updated, since the captured state's prices are as old as the capture, and keeps the chain's clock from falling
+   * behind the real one for the scope (`Clock.keepClock`).
    *
    * @since 0.0.0
    */
@@ -187,7 +193,7 @@ export class Devnet extends Context.Service<Devnet, {
       Devnet,
       Effect.suspend(() => {
         const servers = Server.get(context)
-        return make(servers.anvil.url, servers.alto.url)
+        return Effect.map(make(servers.anvil.url, servers.alto.url), ({ devnet }) => devnet)
       })
     )
 
@@ -204,12 +210,12 @@ export class Devnet extends Context.Service<Devnet, {
       Effect.gen(function*() {
         const anvil = yield* startInstance(Instances.anvil(state))
         const alto = yield* startInstance(Instances.alto(anvil.started.url))
-        const devnet = yield* make(anvil.started.url, alto.started.url)
+        const { clock, devnet } = yield* make(anvil.started.url, alto.started.url)
         const rpc = Controls.rpc(anvil.started.url)
 
         const moveAhead = (seconds: number) =>
           Effect.promise(async () => {
-            await rpc("anvil_setTime", [Math.floor(Date.now() / 1000) + seconds])
+            await clock.moveAhead(seconds)
             await rpc("anvil_mine", ["0x1"])
             await restartAhead(alto.started, seconds)
           })
@@ -245,7 +251,8 @@ export class Devnet extends Context.Service<Devnet, {
  */
 export class DevnetClock extends Context.Service<DevnetClock, {
   /**
-   * Moves the chain and the bundler `seconds` ahead of the real clock: the chain's next block is dated then, and Alto
+   * Moves the chain and the bundler `seconds` ahead of the real clock: the chain's next block is dated then (and its
+   * clock is kept that far ahead), and Alto
    * restarts with its clock as far ahead, so an operation valid only from then (a recovery 48 hours on) is taken.
    */
   readonly moveAhead: (seconds: number) => Effect.Effect<void>
