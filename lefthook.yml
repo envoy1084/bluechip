@@ -15,7 +15,8 @@ commit-msg:
     - name: commitlint
       run: pnpm exec commitlint --edit {1}
 
+# The fast checks only: CI runs the whole suite (devnet, server, browser) on every push.
 pre-push:
   jobs:
     - name: check
-      run: pnpm lint && pnpm typecheck && pnpm test
+      run: pnpm lint && pnpm typecheck && pnpm test:fast

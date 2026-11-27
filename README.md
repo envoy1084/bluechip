@@ -166,6 +166,7 @@ local storage until `?softPasskey=off`.
 | ---------------------- | -------------------------------------------------------------------------------- |
 | `pnpm check`           | Everything CI runs: format, lint, types, import cycles, contracts and every test |
 | `pnpm test`            | Every Vitest project once (`pnpm test <file>` for one, `test:watch` to watch)    |
+| `pnpm test:fast`       | The tests with no devnet or browser, run before every push                       |
 | `pnpm typecheck`       | Type-check everything with the Effect diagnostics                                |
 | `pnpm lint:fix`        | oxlint's fixes; `pnpm lint` also checks which way imports point                  |
 | `pnpm format`          | Format with dprint                                                               |

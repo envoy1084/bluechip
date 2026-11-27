@@ -78,21 +78,22 @@ more detail:
 
 ## Getting started and commands
 
-| Command                | What it does                                                         |
-| ---------------------- | -------------------------------------------------------------------- |
-| `pnpm dev`             | Every local service in one terminal (below); `pnpm dev:stop` stops   |
-| `pnpm check`           | Everything CI runs, in order. Run it before every push.              |
-| `pnpm typecheck`       | Type-check everything with tsrs (TypeScript 7 + Effect diagnostics)  |
-| `pnpm lint`            | oxlint with Effect's rules, and which way imports point (`lint:fix`) |
-| `pnpm format`          | Format with dprint (`format:check` only checks)                      |
-| `pnpm test`            | Run every Vitest project once (`test:watch` for watch mode)          |
-| `pnpm test:e2e`        | The browser end-to-end suite on its own stack (slow, not in `check`) |
-| `pnpm test:fork`       | Deploy the policies to a running fork, then check real-Base facts    |
-| `pnpm contracts:test`  | Format check, lints and Foundry tests of `contracts/`                |
-| `pnpm contracts:build` | Build `contracts/` and regenerate `Deployed.ts`                      |
-| `pnpm devnet:capture`  | Rebuild the devnet's state from a fork (`devnet:deploy` adds to it)  |
-| `pnpm build`           | `tsc -b`, then each package's build                                  |
-| `pnpm circular`        | Fail on import cycles between modules                                |
+| Command                | What it does                                                           |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `pnpm dev`             | Every local service in one terminal (below); `pnpm dev:stop` stops     |
+| `pnpm check`           | Everything CI runs, in order. Run it before every push.                |
+| `pnpm typecheck`       | Type-check everything with tsrs (TypeScript 7 + Effect diagnostics)    |
+| `pnpm lint`            | oxlint with Effect's rules, and which way imports point (`lint:fix`)   |
+| `pnpm format`          | Format with dprint (`format:check` only checks)                        |
+| `pnpm test`            | Run every Vitest project once (`test:watch` for watch mode)            |
+| `pnpm test:fast`       | The tests with no devnet or browser; with lint and typecheck, pre-push |
+| `pnpm test:e2e`        | The browser end-to-end suite on its own stack (slow, not in `check`)   |
+| `pnpm test:fork`       | Deploy the policies to a running fork, then check real-Base facts      |
+| `pnpm contracts:test`  | Format check, lints and Foundry tests of `contracts/`                  |
+| `pnpm contracts:build` | Build `contracts/` and regenerate `Deployed.ts`                        |
+| `pnpm devnet:capture`  | Rebuild the devnet's state from a fork (`devnet:deploy` adds to it)    |
+| `pnpm build`           | `tsc -b`, then each package's build                                    |
+| `pnpm circular`        | Fail on import cycles between modules                                  |
 
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 

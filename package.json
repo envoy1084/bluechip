@@ -21,6 +21,7 @@
     "prepare": "lefthook install && effect-tsgo patch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:fast": "vitest run --project scripts --project domain --project web",
     "typecheck": "effect-tsgo tsrs -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "typecheck:tsc": "tsc -b tsconfig.json && pnpm --recursive --filter \"./apps/*\" run typecheck",
     "devnet:capture": "node --env-file=.env.local scripts/bin.ts devnet capture",
