@@ -1,5 +1,5 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog"
-import type { ComponentProps } from "react"
+import { type ComponentProps, createContext, type ReactNode, useContext, useState } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { Button } from "./button.tsx"
@@ -12,9 +12,51 @@ export const overlayBackdropClassName = cn(
   "data-starting-style:opacity-0 data-ending-style:opacity-0 data-ending-style:duration-fast data-ending-style:ease-brand-in"
 )
 
+const ModalOpen = createContext(false)
+
+/**
+ * Whether a modal is open, controlled or not, and provides it to its content: the root of every modal (dialog,
+ * alert dialog, sheet) wraps its children in `provider`.
+ */
+export function useModalOpen<Details extends { readonly isCanceled: boolean }>(
+  { defaultOpen, onOpenChange, open }: {
+    readonly open?: boolean | undefined
+    readonly defaultOpen?: boolean | undefined
+    readonly onOpenChange?: ((open: boolean, details: Details) => void) | undefined
+  }
+) {
+  const [own, setOwn] = useState(defaultOpen ?? false)
+  const isOpen = open ?? own
+
+  return {
+    open: isOpen,
+    onOpenChange: (next: boolean, details: Details) => {
+      onOpenChange?.(next, details)
+      if (!details.isCanceled) setOwn(next)
+    },
+    provider: (children: ReactNode) => <ModalOpen.Provider value={isOpen}>{children}</ModalOpen.Provider>
+  }
+}
+
+/**
+ * A modal's content as it was when it started closing. Closing usually resets what it shows (a finished step back to
+ * its start, a selection to nothing) while it animates out, which would flash the old content; it keeps the last
+ * open content until it's gone.
+ */
+export function useHeldWhileClosing(children: ReactNode): ReactNode {
+  const open = useContext(ModalOpen)
+  const [held, setHeld] = useState(children)
+
+  if (open && held !== children) setHeld(children)
+  return open ? children : held
+}
+
 /** A focused task on top of the page. Traps focus, closes on Esc or outside click, gives focus back. */
-export function Dialog(props: BaseDialog.Root.Props) {
-  return <BaseDialog.Root {...props} />
+export function Dialog({ children, defaultOpen, onOpenChange, open, ...props }: BaseDialog.Root.Props) {
+  const modal = useModalOpen({ defaultOpen, onOpenChange, open })
+  return modal.provider(
+    <BaseDialog.Root open={modal.open} onOpenChange={modal.onOpenChange} {...props}>{children}</BaseDialog.Root>
+  )
 }
 
 export function DialogTrigger(props: BaseDialog.Trigger.Props) {
@@ -31,6 +73,7 @@ export interface DialogContentProps extends BaseDialog.Popup.Props {
 }
 
 export function DialogContent({ className, children, showCloseButton = true, ...props }: DialogContentProps) {
+  const shown = useHeldWhileClosing(children)
   return (
     <BaseDialog.Portal>
       <BaseDialog.Backdrop data-slot="dialog-backdrop" className={overlayBackdropClassName} />
@@ -46,7 +89,7 @@ export function DialogContent({ className, children, showCloseButton = true, ...
           )}
           {...props}
         >
-          {children}
+          {shown}
           {showCloseButton && (
             <BaseDialog.Close
               data-slot="dialog-close"

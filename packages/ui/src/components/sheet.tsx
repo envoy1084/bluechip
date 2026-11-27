@@ -4,7 +4,7 @@ import type { ComponentProps } from "react"
 import { Icon } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { Button } from "./button.tsx"
-import { overlayBackdropClassName } from "./dialog.tsx"
+import { overlayBackdropClassName, useHeldWhileClosing, useModalOpen } from "./dialog.tsx"
 
 export const sheetVariants = cva(
   [
@@ -37,8 +37,11 @@ export const sheetVariants = cva(
 )
 
 /** A panel that slides in from an edge, for details you can read without leaving the page. Modal. */
-export function Sheet(props: BaseDialog.Root.Props) {
-  return <BaseDialog.Root {...props} />
+export function Sheet({ children, defaultOpen, onOpenChange, open, ...props }: BaseDialog.Root.Props) {
+  const modal = useModalOpen({ defaultOpen, onOpenChange, open })
+  return modal.provider(
+    <BaseDialog.Root open={modal.open} onOpenChange={modal.onOpenChange} {...props}>{children}</BaseDialog.Root>
+  )
 }
 
 export function SheetTrigger(props: BaseDialog.Trigger.Props) {
@@ -54,6 +57,7 @@ export interface SheetContentProps extends BaseDialog.Popup.Props, VariantProps<
 }
 
 export function SheetContent({ side, className, children, showCloseButton = true, ...props }: SheetContentProps) {
+  const shown = useHeldWhileClosing(children)
   return (
     <BaseDialog.Portal>
       <BaseDialog.Backdrop data-slot="sheet-backdrop" className={overlayBackdropClassName} />
@@ -63,7 +67,7 @@ export function SheetContent({ side, className, children, showCloseButton = true
         className={cn(sheetVariants({ side }), className)}
         {...props}
       >
-        {children}
+        {shown}
         {showCloseButton && (
           <BaseDialog.Close
             data-slot="sheet-close"
@@ -93,7 +97,10 @@ export function SheetBody({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
       data-slot="sheet-body"
-      className={cn("grid flex-1 content-start gap-5 overflow-y-auto overscroll-contain px-6 py-5", className)}
+      className={cn(
+        "grid flex-1 grid-cols-1 content-start gap-5 overflow-y-auto overscroll-contain px-6 py-5",
+        className
+      )}
       {...props}
     />
   )

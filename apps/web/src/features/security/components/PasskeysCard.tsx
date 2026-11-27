@@ -133,9 +133,8 @@ export function PasskeysCard() {
           {
             title: "Add a passkey",
             keep: "Not now",
-            description: "First make the new passkey: on this device, on another by scanning its code, or on a " +
-              "hardware key. Then approve it with one of your passkeys.",
-            action: "Make it and approve with Face ID",
+            description: "Make it on this device, your phone or a hardware key, then approve it with Face ID.",
+            action: "Add with Face ID",
             pending: "Adding the passkey",
             done: "The passkey is added",
             doneDescription: "It signs in and approves like your other passkeys.",

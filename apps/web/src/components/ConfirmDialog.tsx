@@ -29,8 +29,8 @@ export type ConfirmAction =
 
 /**
  * Asks before something that can't be undone: what it is, what follows, the way to keep things as they are (first, so
- * it takes focus, never the destructive button) and the action. `outcome` takes the buttons' place once a Face ID
- * change is on its way. Opened by `trigger`, or controlled with `open`.
+ * it takes focus, never the destructive button) and the action. `outcome` replaces the dialog's content once a Face
+ * ID change is on its way. Opened by `trigger`, or controlled with `open`.
  */
 export function ConfirmDialog(
   {
@@ -74,32 +74,44 @@ export function ConfirmDialog(
     >
       {trigger === undefined ? null : <AlertDialogTrigger render={trigger}>{triggerLabel}</AlertDialogTrigger>}
       <AlertDialogContent {...(finalFocus === undefined ? {} : { finalFocus })}>
-        <AlertDialogIcon
-          name={icon}
-          {...(danger ? {} : { className: "bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]" })}
-        />
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{consequence}</AlertDialogDescription>
-        </AlertDialogHeader>
-        {problem === undefined ? null : problem.cancelled ?
-          <output className="block text-label text-g-600">{problem.text}</output> :
-          (
-            <Alert variant="destructive">
-              <AlertDescription>{problem.text}</AlertDescription>
-            </Alert>
-          )}
+        {/* Once a Face ID change is on its way, its outcome is the whole dialog: what was asked no longer applies. */}
         {outcome ?? (
-          <AlertDialogFooter>
-            <AlertDialogCancel>{keepLabel}</AlertDialogCancel>
-            {action._tag === "danger" ?
-              <AlertDialogAction onClick={action.onConfirm}>{action.label}</AlertDialogAction> :
+          <>
+            <AlertDialogIcon
+              name={icon}
+              {...(danger ? {} : { className: "bg-blue-50 text-blue shadow-[inset_0_0_0_1px_var(--color-info-line)]" })}
+            />
+            <AlertDialogHeader>
+              <AlertDialogTitle>{title}</AlertDialogTitle>
+              <AlertDialogDescription>{consequence}</AlertDialogDescription>
+            </AlertDialogHeader>
+            {problem === undefined ? null : problem.cancelled ?
+              <output className="block text-label text-g-600">{problem.text}</output> :
               (
-                <PasskeyButton doneLabel={action.doneLabel} onAuthenticate={action.onAuthenticate}>
-                  {action.label}
-                </PasskeyButton>
+                <Alert variant="destructive">
+                  <AlertDescription>{problem.text}</AlertDescription>
+                </Alert>
               )}
-          </AlertDialogFooter>
+            {/* One row: keep first, the action taking the rest, so its width holds while it works. */}
+            <AlertDialogFooter className="flex-nowrap items-start max-[480px]:*:flex-none">
+              <AlertDialogCancel className="shrink-0">{keepLabel}</AlertDialogCancel>
+              {action._tag === "danger" ?
+                (
+                  <AlertDialogAction className="min-w-0 flex-1" onClick={action.onConfirm}>
+                    {action.label}
+                  </AlertDialogAction>
+                ) :
+                (
+                  <PasskeyButton
+                    className="min-w-0 flex-1"
+                    doneLabel={action.doneLabel}
+                    onAuthenticate={action.onAuthenticate}
+                  >
+                    {action.label}
+                  </PasskeyButton>
+                )}
+            </AlertDialogFooter>
+          </>
         )}
       </AlertDialogContent>
     </AlertDialog>

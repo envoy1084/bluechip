@@ -146,10 +146,9 @@ export function RecoveryCard() {
           {
             title: "Set up a recovery key",
             keep: "Not now",
-            description: "Make a passkey on another device (scan the code with your phone) or a hardware key, and " +
-              "keep it somewhere safe. Then lock it with Face ID. It can only ask to replace your passkeys, and " +
-              "the change waits 48 hours, so you can always cancel it.",
-            action: "Make it and lock with Face ID",
+            description: "Make a passkey on your phone or a hardware key and keep it safe. It can only ask to " +
+              "replace your passkeys, and you have 48 hours to cancel.",
+            action: "Lock with Face ID",
             pending: "Locking your recovery key",
             done: "Your recovery key is ready",
             doneDescription: "Keep it apart from this device. Sign in at bluechip's recovery page with it if you " +

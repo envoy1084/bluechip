@@ -3,21 +3,27 @@ import type { ComponentProps } from "react"
 import { Icon, type IconName } from "../icons/icon.tsx"
 import { cn } from "../lib/cn.ts"
 import { Button, type ButtonProps } from "./button.tsx"
-import { overlayBackdropClassName } from "./dialog.tsx"
+import { overlayBackdropClassName, useHeldWhileClosing, useModalOpen } from "./dialog.tsx"
 
 /**
  * Confirms something that can't be undone. Outside clicks don't close it, and focus starts on the first button,
  * so put the safe choice (`AlertDialogCancel`) first.
  */
-export function AlertDialog(props: BaseAlertDialog.Root.Props) {
-  return <BaseAlertDialog.Root {...props} />
+export function AlertDialog({ children, defaultOpen, onOpenChange, open, ...props }: BaseAlertDialog.Root.Props) {
+  const modal = useModalOpen({ defaultOpen, onOpenChange, open })
+  return modal.provider(
+    <BaseAlertDialog.Root open={modal.open} onOpenChange={modal.onOpenChange} {...props}>
+      {children}
+    </BaseAlertDialog.Root>
+  )
 }
 
 export function AlertDialogTrigger(props: BaseAlertDialog.Trigger.Props) {
   return <BaseAlertDialog.Trigger data-slot="alert-dialog-trigger" {...props} />
 }
 
-export function AlertDialogContent({ className, ...props }: BaseAlertDialog.Popup.Props) {
+export function AlertDialogContent({ className, children, ...props }: BaseAlertDialog.Popup.Props) {
+  const shown = useHeldWhileClosing(children)
   return (
     <BaseAlertDialog.Portal>
       <BaseAlertDialog.Backdrop data-slot="alert-dialog-backdrop" className={overlayBackdropClassName} />
@@ -35,7 +41,9 @@ export function AlertDialogContent({ className, ...props }: BaseAlertDialog.Popu
             className
           )}
           {...props}
-        />
+        >
+          {shown}
+        </BaseAlertDialog.Popup>
       </BaseAlertDialog.Viewport>
     </BaseAlertDialog.Portal>
   )
