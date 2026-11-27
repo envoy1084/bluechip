@@ -7,7 +7,7 @@ import { UsageBar } from "@bluechip/ui/bluechip/usage-meter"
 import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/illustration"
 import { formatDollars } from "@bluechip/ui/lib/agent-limits"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
-import { toDollars } from "../../../model/fieldText.ts"
+import { toDollars, toEther } from "../../../model/fieldText.ts"
 import { limitOf, standingOf } from "../../../model/usage.ts"
 import { StandingPill } from "./StandingPill.tsx"
 
@@ -16,8 +16,11 @@ const LIMIT: Partial<
 > = {
   trade: { title: "Daily budget", illustration: "wallet" },
   tradesPerDay: { title: "Trades today", illustration: "tally" },
-  slippageBudget: { title: "Weekly slippage", illustration: "receipt" }
+  slippageBudget: { title: "Weekly slippage", illustration: "receipt" },
+  gasBudget: { title: "Gas today", illustration: "bolt" }
 }
+
+const etherFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
 
 /**
  * One limit as a card: what it counts, how much of it is used, a bar with a tick where the day stands, and what's
@@ -32,10 +35,13 @@ export function LimitCard(
   }>
 ) {
   const dollars = counted.unit === "usd"
-  const used = dollars ? toDollars(counted.used) : Number(counted.used)
+  const ether = counted.unit === "wei"
+  const amount = (value: bigint) => dollars ? toDollars(value) : ether ? toEther(value) : Number(value)
+  const used = amount(counted.used)
   const cap = limitOf(counted)
-  const limit = cap === null ? null : dollars ? toDollars(cap) : Number(cap)
-  const show = (value: number) => dollars ? formatDollars(value) : value.toLocaleString("en-US")
+  const limit = cap === null ? null : amount(cap)
+  const show = (value: number) =>
+    dollars ? formatDollars(value) : ether ? `${etherFormat.format(value)} ETH` : value.toLocaleString("en-US")
   const standing = standingOf(counted)
   const { illustration, title } = LIMIT[counted.policy] ??
     { title: policyOf(counted.policy).title, illustration: "shield" as const }
@@ -65,7 +71,7 @@ export function LimitCard(
       <div className="flex items-baseline gap-1.5">
         <NumberRoll
           value={used}
-          {...(dollars ? { format: (value: number) => formatDollars(value) } : {})}
+          {...(dollars || ether ? { format: show } : {})}
           className="text-[28px] leading-none font-semibold tracking-[-0.03em]"
         />
         <span className="text-label text-g-500 tabular-nums">

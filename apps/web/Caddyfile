@@ -1,7 +1,8 @@
 # The web app in production: the static build only (prerendered public pages, the SPA shell for every other path). The
 # browser calls the server on its own domain (API_ORIGIN), so nothing here proxies. Traefik (Dokploy) terminates TLS in
 # front, so this listens on plain HTTP. Settings from the image's build args: SITE_NETWORK (VITE_NETWORK: every network
-# but `base` is kept out of search engines), API_ORIGIN (VITE_API_URL's origin) and POSTHOG_HOST.
+# but `base` is kept out of search engines), API_ORIGIN (VITE_API_URL's origin), POSTHOG_HOST and APP_URL
+# (VITE_APP_URL: this site is the landing alone, the app is there).
 {
 	admin off
 	auto_https off
@@ -26,6 +27,22 @@
 
 	handle /healthz {
 		respond "ok" 200
+	}
+
+	# The landing alone (APP_URL set, until mainnet): a path with no file of its own would get the SPA shell, so it is a
+	# page of the app (/home, /agents/*, /welcome, /recover, /signin, /dev/*), and goes to the same path and query on
+	# the app's site (the browser keeps the hash). Temporary: at mainnet the app is here again. The landing, /help/*,
+	# /legal/*, the crawler and agent files, the manifest and the images are files, and stay.
+	@app {
+		expression `"{$APP_URL:}" != ""`
+		not path /healthz /assets/*
+		not file {
+			root /srv
+			try_files {path} {path}/index.html
+		}
+	}
+	handle @app {
+		redir {$APP_URL:}{uri} 302
 	}
 
 	# Hashed build output: a missing chunk is a 404, never the shell (an old tab after a release reloads instead).
@@ -61,6 +78,9 @@
 		header @revalidated Cache-Control "no-cache"
 
 		header /manifest.webmanifest Content-Type "application/manifest+json"
+		# The public pages' Markdown twins, for agents (llms.txt).
+		@markdown path *.md
+		header @markdown Content-Type "text/markdown; charset=utf-8"
 
 		try_files {path} {path}/index.html /_shell.html
 		file_server {

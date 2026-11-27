@@ -14,7 +14,7 @@ import * as DateTime from "effect/DateTime"
 import type { ComponentType } from "react"
 import { ConfirmDialog } from "../../../../components/ConfirmDialog.tsx"
 import { StandingPill } from "../../../../components/StandingPill.tsx"
-import { hasEnded, RUN_OUTCOME, standingOf } from "../../../../lib/automationWords.ts"
+import { hasEnded, RUN_RESULT, standingOf } from "../../../../lib/automationWords.ts"
 import { localTimeZone, yourDateTime } from "../../../../lib/localTime.ts"
 import { useAutomationActions } from "../../hooks/useAutomationActions.ts"
 import { CREATED_BY } from "../../model/automationText.ts"
@@ -202,7 +202,7 @@ export function AutomationHero(
           <StatTile
             label="Last ran"
             value={lastAt === null ? "Never" : formatRelative(DateTime.toDateUtc(lastAt), now, { timeZone: zone })}
-            {...(last === undefined ? {} : { detail: RUN_OUTCOME[last.outcome].label })}
+            {...(last === undefined ? {} : { detail: RUN_RESULT[last.result].label })}
           />
           {automation.status !== "active" ? null : automation.nextRunAt === null ?
             <StatTile label="Runs" value="On its trigger" detail={current.text} /> :

@@ -1,6 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { NetworkCheck } from "../components/layout/NetworkCheck.tsx"
+import { landingOnly } from "../lib/appUrl.ts"
 import { siteHead } from "../lib/seo/head.ts"
 import { AnalyticsProvider } from "../providers/AnalyticsProvider.tsx"
 import { AtomProvider } from "../providers/AtomProvider.tsx"
@@ -22,7 +23,7 @@ function RootComponent() {
         <AnalyticsProvider>
           <WalletProvider>
             <Outlet />
-            <NetworkCheck />
+            {landingOnly ? null : <NetworkCheck />}
           </WalletProvider>
         </AnalyticsProvider>
       </AtomProvider>

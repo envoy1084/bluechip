@@ -12,7 +12,7 @@ import { formatDate, formatMoney } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { StandingPill } from "../../../../components/StandingPill.tsx"
 import { usdcDollars } from "../../../../lib/amounts.ts"
-import { RUN_OUTCOME, standingOf } from "../../../../lib/automationWords.ts"
+import { RUN_RESULT, standingOf } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import type { ResultState } from "../../model/resultCards.ts"
 import { RESULT_LOOK } from "../../model/resultText.ts"
@@ -59,7 +59,7 @@ export function AutomationPerformanceResult(
   { performance, state }: Readonly<{ performance: AutomationPerformance; state: ResultState }>
 ) {
   const outcomes = performance.outcomes.filter((row) => row.count > 0).map((row) =>
-    `${row.count} ${RUN_OUTCOME[row.outcome].word}`
+    `${row.count} ${RUN_RESULT[row.result].word}`
   )
   return (
     <LookedResult

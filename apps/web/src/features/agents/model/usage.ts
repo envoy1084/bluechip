@@ -11,7 +11,7 @@ export type Standing = "room" | "nearly" | "used" | "open"
 
 const DAY = 86_400_000
 
-/** The limits the Usage page shows: none bluechip keeps to itself (gas), nor a sell-only agent's daily budget of $0. */
+/** The limits the Usage page shows: none bluechip keeps to itself, nor a sell-only agent's daily budget of $0. */
 export const shownLimits = (usage: AgentUsage): ReadonlyArray<PolicyUsage> =>
   usage.policies.filter((counted) =>
     !policyOf(counted.policy).hidden && !(counted.policy === "trade" && counted.limit === BigInt(0))

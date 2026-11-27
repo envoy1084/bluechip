@@ -2,8 +2,14 @@ import { assert, describe, it } from "@effect/vitest"
 import { jsonLdScript, pageHead, pageTitle } from "../../../../src/lib/seo/head.ts"
 import { SITE_DESCRIPTION } from "../../../../src/lib/seo/site.ts"
 
-const production = { origin: "https://bluechip.markets", indexed: true, name: "bluechip", paper: false }
-const paper = { origin: "https://paper.bluechip.markets", indexed: false, name: "bluechip paper", paper: true }
+const production = { origin: "https://bluechip.markets", indexed: true, name: "bluechip", paper: false, app: null }
+const paper = {
+  origin: "https://paper.bluechip.markets",
+  indexed: false,
+  name: "bluechip paper",
+  paper: true,
+  app: null
+}
 
 describe("pageTitle", () => {
   it("a page's name, then the site's", () => {
@@ -80,6 +86,21 @@ describe("pageHead", () => {
         { name: "robots", content: "noindex, nofollow" }
       ],
       links: [{ rel: "canonical", href: "https://paper.bluechip.markets/" }]
+    })
+  })
+
+  it("a page with a Markdown twin links it beside its canonical URL", () => {
+    assert.deepStrictEqual(pageHead({ title: "Gas", path: "/help/gas", markdown: true }, production).links, [
+      { rel: "canonical", href: "https://bluechip.markets/help/gas" },
+      { rel: "alternate", type: "text/markdown", href: "https://bluechip.markets/help/gas.md" }
+    ])
+  })
+
+  it("the landing's twin is /index.md", () => {
+    assert.deepStrictEqual(pageHead({ path: "/", markdown: true }, production).links[1], {
+      rel: "alternate",
+      type: "text/markdown",
+      href: "https://bluechip.markets/index.md"
     })
   })
 })

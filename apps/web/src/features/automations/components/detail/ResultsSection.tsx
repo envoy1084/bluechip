@@ -5,10 +5,10 @@ import { formatChange, formatMoney } from "@bluechip/ui/lib/format"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import type { ReactNode } from "react"
 import { usdcDollars } from "../../../../lib/amounts.ts"
-import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
+import { RUN_RESULT } from "../../../../lib/automationWords.ts"
 import { costsSentence } from "../../../../lib/performance.ts"
 import { runsSentence } from "../../model/results.ts"
-import { OUTCOME_MARK } from "../RunStrip.tsx"
+import { RESULT_MARK } from "../RunStrip.tsx"
 
 /** A results card: an illustration, a title and what it's about, then its body; a last `mt-auto` child sits at the bottom. */
 function Panel(
@@ -61,18 +61,18 @@ function RunOutcomes({ performance }: Readonly<{ performance: AutomationPerforma
       <div aria-hidden className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-g-100">
         {shown.map((row) => (
           <div
-            key={row.outcome}
-            className={cn("h-full first:rounded-l-full last:rounded-r-full", OUTCOME_MARK[row.outcome])}
+            key={row.result}
+            className={cn("h-full first:rounded-l-full last:rounded-r-full", RESULT_MARK[row.result])}
             style={{ flexGrow: row.count }}
           />
         ))}
       </div>
       <ul className="grid gap-2">
         {shown.map((row) => (
-          <li key={row.outcome} className="flex items-center justify-between gap-3 text-[13.5px]">
+          <li key={row.result} className="flex items-center justify-between gap-3 text-[13.5px]">
             <span className="flex items-center gap-2 text-g-700">
-              <i aria-hidden className={cn("size-2 rounded-full", OUTCOME_MARK[row.outcome])} />
-              {RUN_OUTCOME[row.outcome].label}
+              <i aria-hidden className={cn("size-2 rounded-full", RESULT_MARK[row.result])} />
+              {RUN_RESULT[row.result].label}
             </span>
             <b className="font-semibold tabular-nums">{row.count}</b>
           </li>

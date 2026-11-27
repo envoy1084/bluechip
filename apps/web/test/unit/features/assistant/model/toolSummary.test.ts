@@ -168,7 +168,7 @@ describe("toolSummary", () => {
       name: "the catalog: the policies people see",
       tool: "listPolicies",
       result: Schema.encodeSync(Schema.toCodecJson(ListPolicies.successSchema))(catalogInfo()),
-      expected: "9 policies"
+      expected: "10 policies"
     },
     {
       name: "templates: built-in and saved",
@@ -294,7 +294,7 @@ describe("toolSummary", () => {
       result: {
         automationId: "automation_01jd8v4t5m6n7a8q9r0s1t2v3w",
         runs: 3,
-        outcomes: [{ outcome: "proposed", count: 3 }],
+        outcomes: [{ result: "traded", count: 3 }],
         trades: 2,
         bought: "100000000",
         sold: "0",

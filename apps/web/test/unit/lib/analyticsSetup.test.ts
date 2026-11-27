@@ -9,7 +9,9 @@ const switches = {
   projectKey: "phc_test",
   posthogHost: "https://t.example.com/",
   deploymentEnvironment: undefined,
-  appVersion: "1.2.3"
+  appVersion: "1.2.3",
+  landingOnly: false,
+  sendsToPaper: false
 } as const
 
 const paper = {
@@ -17,7 +19,8 @@ const paper = {
   network: "sepolia",
   projectKey: "phc_test",
   posthogHost: "https://t.example.com",
-  appVersion: "1.2.3"
+  appVersion: "1.2.3",
+  telemetry: true
 } as const
 const origin = "https://paper.bluechip.markets"
 
@@ -39,6 +42,16 @@ describe("analyticsSetup", () => {
         name: "a deployment name that isn't one is ignored",
         switches: { ...switches, deploymentEnvironment: "staging" },
         expected: paper
+      },
+      {
+        name: "the landing alone, sending to paper money: paper money's analytics, no telemetry",
+        switches: { ...switches, network: "base", landingOnly: true, sendsToPaper: true },
+        expected: { ...paper, telemetry: false }
+      },
+      {
+        name: "the landing alone, sending to another app: its own network's analytics, no telemetry",
+        switches: { ...switches, network: "base", landingOnly: true },
+        expected: { ...paper, environment: "production", network: "base", telemetry: false }
       },
       { name: "the development server", switches: { ...switches, dev: true }, expected: null },
       { name: "preview mode", switches: { ...switches, preview: true }, expected: null },
@@ -104,12 +117,14 @@ describe("posthogConfig", () => {
     })
   })
 
-  it("sends to our PostHog host, with typed events only", () => {
+  it("sends to our PostHog host, with typed events only, its ids shared across bluechip's subdomains", () => {
     const { before_send: _, session_recording: __, ...config } = posthogConfig(paper, { origin })
 
     assert.deepStrictEqual(config, {
       api_host: "https://t.example.com",
       ui_host: "https://us.posthog.com",
+      persistence: "localStorage+cookie",
+      cross_subdomain_cookie: true,
       defaults: "2026-08-30",
       person_profiles: "identified_only",
       autocapture: false,

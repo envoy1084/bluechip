@@ -11,7 +11,12 @@ export class Tools extends Context.Service<
     readonly run: (
       command: string,
       args: ReadonlyArray<string>,
-      options?: { readonly cwd?: string; readonly inherit?: boolean }
+      options?: {
+        readonly cwd?: string
+        readonly inherit?: boolean
+        /** Added to the inherited environment (a key the tool reads, kept off its command line). */
+        readonly env?: Readonly<Record<string, string>>
+      }
     ) => Effect.Effect<string, ToolFailed>
   }
 >()("scripts/Tools") {
@@ -23,7 +28,11 @@ export class Tools extends Context.Service<
       const run = Effect.fn("Tools.run")(function*(
         command: string,
         args: ReadonlyArray<string>,
-        options: { readonly cwd?: string; readonly inherit?: boolean } = {}
+        options: {
+          readonly cwd?: string
+          readonly inherit?: boolean
+          readonly env?: Readonly<Record<string, string>>
+        } = {}
       ) {
         const tool = Arr.join([command, ...args.slice(0, 2)], " ")
         const failed = (output: string) => ToolFailed.make({ tool, output })
@@ -31,6 +40,7 @@ export class Tools extends Context.Service<
           .spawn(
             ChildProcess.make(command, [...args], {
               ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
+              ...(options.env === undefined ? {} : { env: { ...options.env }, extendEnv: true }),
               ...(options.inherit === true ? { stdout: "inherit", stderr: "inherit" } : {})
             })
           )

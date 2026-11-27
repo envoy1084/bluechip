@@ -2,11 +2,11 @@
 // attention and why; the list's counts and filters; and when it runs next.
 import type { Agent } from "@bluechip/domain/agents/Agent"
 import { type Automation, triggerOf } from "@bluechip/domain/automations/Automation"
-import type { AutomationRun, RunOutcome } from "@bluechip/domain/automations/Run"
+import type { AutomationRun, RunResult } from "@bluechip/domain/automations/Run"
 import type { Watcher } from "@bluechip/domain/automations/Trigger"
 import type { AgentId } from "@bluechip/domain/Ids"
 import * as DateTime from "effect/DateTime"
-import { RUN_OUTCOME, type Standing } from "../../../lib/automationWords.ts"
+import { RUN_RESULT, type Standing } from "../../../lib/automationWords.ts"
 import { dayHeading, yourDateTime } from "../../../lib/localTime.ts"
 
 /**
@@ -122,11 +122,12 @@ export const summaryDetail = (needLook: ReadonlyArray<string>, today: number): s
   return today === 1 ? "They ran once today." : `They ran ${today} times today.`
 }
 
-/** "in 12 min", "in 3 h", "tomorrow", "in 4 days"; "now" once it's due. */
+/** "in 12 min", "in 3 h", "tomorrow", "in 4 days"; "now" once it's due, never before. */
 export const untilText = (at: DateTime.Utc, now: Date): string => {
   const minutes = (DateTime.toEpochMillis(at) - now.getTime()) / 60_000
-  if (minutes < 1) return "now"
-  if (minutes < 60) return `in ${Math.round(minutes)} min`
+  if (minutes <= 0) return "now"
+  // Rounded up: the last seconds before it's due still say "in 1 min".
+  if (Math.ceil(minutes) < 60) return `in ${Math.ceil(minutes)} min`
   if (minutes < 24 * 60) return `in ${Math.round(minutes / 60)} h`
   const days = Math.round(minutes / (24 * 60))
   return days === 1 ? "tomorrow" : `in ${days} days`
@@ -169,11 +170,11 @@ export const nowLine = (
   }
 }
 
-/** The recent runs' outcomes in words, for a strip of dots: "Last 3 runs: 2 traded, 1 skipped". */
-export const stripLabel = (outcomes: ReadonlyArray<RunOutcome>): string => {
-  if (outcomes.length === 0) return "No runs yet"
-  const counts = new Map<RunOutcome, number>()
-  for (const outcome of outcomes) counts.set(outcome, (counts.get(outcome) ?? 0) + 1)
-  const parts = [...counts].map(([outcome, count]) => `${count} ${RUN_OUTCOME[outcome].word}`)
-  return `${outcomes.length === 1 ? "Last run" : `Last ${outcomes.length} runs`}: ${parts.join(", ")}`
+/** The recent runs' results in words, for a strip of dots: "Last 3 runs: 2 traded, 1 blocked". */
+export const stripLabel = (results: ReadonlyArray<RunResult>): string => {
+  if (results.length === 0) return "No runs yet"
+  const counts = new Map<RunResult, number>()
+  for (const result of results) counts.set(result, (counts.get(result) ?? 0) + 1)
+  const parts = [...counts].map(([result, count]) => `${count} ${RUN_RESULT[result].word}`)
+  return `${results.length === 1 ? "Last run" : `Last ${results.length} runs`}: ${parts.join(", ")}`
 }

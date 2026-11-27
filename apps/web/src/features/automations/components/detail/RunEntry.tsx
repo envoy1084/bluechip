@@ -1,5 +1,5 @@
 import type { Automation } from "@bluechip/domain/automations/Automation"
-import type { AutomationRun, Judgment, RunOutcome } from "@bluechip/domain/automations/Run"
+import type { AutomationRun, Judgment, RunResult } from "@bluechip/domain/automations/Run"
 import type { IntentId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { StatusPill } from "@bluechip/ui/bluechip/status-pill"
@@ -8,15 +8,19 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import type { ComponentType } from "react"
-import { RUN_OUTCOME } from "../../../../lib/automationWords.ts"
+import { RUN_RESULT, runResultText } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { catalogEntry } from "../../model/drafts.ts"
 import { AutomationSentence } from "../AutomationSentence.tsx"
 import { JudgmentCard } from "./JudgmentCard.tsx"
 
-/** Each outcome's mark on the timeline: its icon on its color. */
-const NODE: Readonly<Record<RunOutcome, { readonly icon: IconName; readonly tone: string }>> = {
-  proposed: { icon: "check", tone: "bg-gain text-white" },
+/** Each result's mark on the timeline: its icon on its color. */
+const NODE: Readonly<Record<RunResult, { readonly icon: IconName; readonly tone: string }>> = {
+  traded: { icon: "check", tone: "bg-gain text-white" },
+  partlyTraded: { icon: "check", tone: "bg-warn-wash text-warn" },
+  blocked: { icon: "close", tone: "bg-loss text-white" },
+  notTraded: { icon: "minus", tone: "bg-g-100 text-g-500" },
+  working: { icon: "clock", tone: "bg-blue-100 text-blue-deep" },
   asked: { icon: "face-id", tone: "bg-blue text-white" },
   notified: { icon: "bell", tone: "bg-blue-100 text-blue-deep" },
   skipped: { icon: "minus", tone: "bg-g-100 text-g-500" },
@@ -46,9 +50,10 @@ export function RunEntry(
     index: number
   }>
 ) {
-  const node = NODE[run.outcome]
-  const outcome = RUN_OUTCOME[run.outcome]
+  const node = NODE[run.result]
+  const outcome = RUN_RESULT[run.result]
   const saidByCondition = run.conditions.some((condition) => condition.reason === run.reason)
+  const resultText = runResultText(run)
 
   return (
     <li
@@ -116,6 +121,13 @@ export function RunEntry(
           <p className="flex items-start gap-1.5 text-label-sm text-g-600">
             <Icon name="info" size={14} className="mt-px shrink-0 text-g-400" />
             {run.reason}
+          </p>
+        )}
+
+        {resultText === null ? null : (
+          <p className="flex items-start gap-1.5 text-label-sm text-g-600">
+            <Icon name="shield" size={14} className="mt-px shrink-0 text-g-400" />
+            {resultText}
           </p>
         )}
 

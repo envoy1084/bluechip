@@ -8,7 +8,7 @@ import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { StandingPill } from "../../../../components/StandingPill.tsx"
 import { WhoChip } from "../../../../components/WhoChip.tsx"
-import { hasEnded, RUN_OUTCOME } from "../../../../lib/automationWords.ts"
+import { hasEnded, RUN_RESULT } from "../../../../lib/automationWords.ts"
 import { localTimeZone } from "../../../../lib/localTime.ts"
 import { useAutomationActions } from "../../hooks/useAutomationActions.ts"
 import type { ListedAutomation } from "../../hooks/useListedAutomations.ts"
@@ -128,7 +128,7 @@ export function AutomationRow(
                 Last ran {formatRelative(DateTime.toDateUtc(lastAt), now, { timeZone: zone })}
                 {last === undefined ?
                   null :
-                  <StatusPill tone={RUN_OUTCOME[last.outcome].tone}>{RUN_OUTCOME[last.outcome].label}</StatusPill>}
+                  <StatusPill tone={RUN_RESULT[last.result].tone}>{RUN_RESULT[last.result].label}</StatusPill>}
               </span>
             )}
         </span>

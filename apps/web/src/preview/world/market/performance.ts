@@ -1,7 +1,7 @@
 // How the account is doing, from its fills the way the server's ledger works it out: lots replayed FIFO per stock
 // (reconciled shares as flagged lots), profit realised and unrealised, costs, the daily profit chart, and each stock's,
 // agent's and automation's part, with a rebalancer's drift.
-import type { AutomationRun } from "@bluechip/domain/automations/Run"
+import { type AutomationRun, RunResult } from "@bluechip/domain/automations/Run"
 import { driftOf } from "@bluechip/domain/automations/triggers/Drift"
 import type { AgentId, AutomationId } from "@bluechip/domain/Ids"
 import { series } from "@bluechip/domain/ledger/Daily"
@@ -295,7 +295,7 @@ export const agentPerformanceOf = (world: MarketWorld, agentId: AgentId, now: nu
 export const automationPerformanceOf = (
   world: MarketWorld,
   automationId: AutomationId,
-  runs: ReadonlyArray<Pick<AutomationRun, "outcome" | "firedAt">>
+  runs: ReadonlyArray<Pick<AutomationRun, "result" | "firedAt">>
 ): AutomationPerformance => {
   const { market } = world
 
@@ -317,8 +317,8 @@ export const automationPerformanceOf = (
   return new AutomationPerformance({
     automationId,
     runs: runs.length,
-    outcomes: (["proposed", "asked", "notified", "skipped", "failed"] as const)
-      .map((outcome) => new RunCount({ outcome, count: runs.filter((run) => run.outcome === outcome).length }))
+    outcomes: RunResult.literals
+      .map((result) => new RunCount({ result, count: runs.filter((run) => run.result === result).length }))
       .filter((row) => row.count > 0),
     trades: trades.length,
     bought: total("buy"),

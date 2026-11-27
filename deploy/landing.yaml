@@ -1,0 +1,20 @@
+# bluechip.markets until mainnet, on Dokploy in Compose mode (deploy/README.md): the landing alone, the web image with
+# VITE_APP_URL. Its ways in, and every path of the app, go to the paper money app (VITE_APP_URL); it has no server and
+# calls no API. At mainnet, production deploys deploy/compose.yaml on bluechip.markets instead.
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-}
+        VITE_NETWORK: ${VITE_NETWORK:-base}
+        VITE_APP_URL: ${VITE_APP_URL:?set VITE_APP_URL to the app's site (https://paper.bluechip.markets)}
+        VITE_SITE_URL: ${VITE_SITE_URL:-}
+        VITE_POSTHOG_PROJECT_API_KEY: ${VITE_POSTHOG_PROJECT_API_KEY:-}
+        VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-}
+        VITE_DEPLOYMENT_ENVIRONMENT: ${VITE_DEPLOYMENT_ENVIRONMENT:-}
+    restart: unless-stopped
+    # Attach bluechip.markets to this service on port 80 in Dokploy's Domains tab.
+    expose:
+      - "80"

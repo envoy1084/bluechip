@@ -7,8 +7,10 @@ import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { meAtom } from "../../../atoms/account.ts"
+import { AppLink } from "../../../components/AppLink.tsx"
 import { PaperBadge } from "../../../components/layout/PaperBadge.tsx"
 import { track } from "../../../lib/analytics.ts"
+import { landingOnly } from "../../../lib/appUrl.ts"
 
 /** The page's sections, in order, for the nav and the footer. */
 export const LANDING_SECTIONS = [
@@ -21,12 +23,11 @@ export const LANDING_SECTIONS = [
 ] as const
 
 /**
- * The bar over the page: the lockup, the sections, then Sign in and Get started (both to the welcome page), or Open bluechip for someone
- * already signed in. It frosts once the page scrolls.
+ * The bar over the page: the lockup, the sections, then Sign in and Get started (both to the welcome page), or Open
+ * bluechip for someone already signed in. It frosts once the page scrolls.
  */
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
-  const signedIn = AsyncResult.isSuccess(useAtomValue(meAtom))
 
   useEffect(() => {
     const update = () => setScrolled(window.scrollY > 8)
@@ -61,35 +62,46 @@ export function LandingNav() {
             </a>
           ))}
         </nav>
-        {signedIn ?
-          (
-            <Link
-              to="/home"
-              className={buttonVariants({ size: "sm" })}
-              onClick={() => track({ _tag: "landing_cta_clicked", cta: "open_app", section: "nav" })}
-            >
-              Open bluechip<Icon name="arrow-right" size={14} />
-            </Link>
-          ) :
-          (
-            <div className="flex items-center gap-1.5">
-              <Link
-                to="/welcome"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-                onClick={() => track({ _tag: "landing_cta_clicked", cta: "open_app", section: "nav" })}
-              >
-                Sign in
-              </Link>
-              <Link
-                to="/welcome"
-                className={buttonVariants({ size: "sm" })}
-                onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "nav" })}
-              >
-                Get started
-              </Link>
-            </div>
-          )}
+        {landingOnly ? <SignedOutActions /> : <AccountActions />}
       </div>
     </header>
+  )
+}
+
+/** Open bluechip for someone signed in on this site, else the ways in. */
+function AccountActions() {
+  const signedIn = AsyncResult.isSuccess(useAtomValue(meAtom))
+  if (!signedIn) return <SignedOutActions />
+
+  return (
+    <Link
+      to="/home"
+      className={buttonVariants({ size: "sm" })}
+      onClick={() => track({ _tag: "landing_cta_clicked", cta: "open_app", section: "nav" })}
+    >
+      Open bluechip<Icon name="arrow-right" size={14} />
+    </Link>
+  )
+}
+
+/** Sign in and Get started. The landing alone never asks who is signed in: it has no API, and the app is elsewhere. */
+function SignedOutActions() {
+  return (
+    <div className="flex items-center gap-1.5">
+      <AppLink
+        to="/welcome"
+        className={buttonVariants({ variant: "ghost", size: "sm" })}
+        onClick={() => track({ _tag: "landing_cta_clicked", cta: "open_app", section: "nav" })}
+      >
+        Sign in
+      </AppLink>
+      <AppLink
+        to="/welcome"
+        className={buttonVariants({ size: "sm" })}
+        onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "nav" })}
+      >
+        Get started
+      </AppLink>
+    </div>
   )
 }

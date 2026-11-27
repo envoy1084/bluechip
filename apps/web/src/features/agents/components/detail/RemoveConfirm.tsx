@@ -46,7 +46,7 @@ export function RemoveConfirm(
       <p className="text-[13.5px] text-g-700">
         {agent.status === "draft" ?
           "It was never locked, so it never traded. Nothing changes in your account." :
-          "It stops right away and can never trade again. Your stocks and cash stay in your account; nothing is sold. Its history stays here."}
+          "It stops right away and can never trade again, and its automations are deleted with it. Your stocks and cash stay in your account; nothing is sold. Its history stays here."}
       </p>
       {signing.status === "failed" ? <p role="alert" className="text-label text-loss">{signing.message}</p> : null}
       <div className="flex flex-wrap gap-2">

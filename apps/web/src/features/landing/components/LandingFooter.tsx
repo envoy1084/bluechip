@@ -1,11 +1,12 @@
 import { Logo } from "@bluechip/ui/bluechip/logo"
 import { Link } from "@tanstack/react-router"
+import { AppLink } from "../../../components/AppLink.tsx"
 import { track } from "../../../lib/analytics.ts"
 import { LANDING_SECTIONS } from "./LandingNav.tsx"
 
 const link = "rounded-sm text-body-sm text-g-600 transition-colors duration-base hover:text-ink"
 
-/** The sections again, the way into an account, and the legal pages. */
+/** The sections again, the way into an account, the help center and the legal pages. */
 export function LandingFooter() {
   return (
     <footer className="border-t border-g-100 bg-g-50 px-4 pt-14 pb-10 sm:px-6">
@@ -26,14 +27,20 @@ export function LandingFooter() {
             </nav>
             <nav aria-label="Account" className="grid content-start gap-2.5">
               <b className="text-label-sm font-semibold text-g-500">Account</b>
-              <Link
+              <AppLink
                 to="/welcome"
                 className={link}
                 onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "footer" })}
               >
                 Get started or sign in
-              </Link>
-              <Link to="/recover" className={link}>Lost your passkey? Recover your account</Link>
+              </AppLink>
+              <AppLink to="/recover" className={link}>Lost your passkey? Recover your account</AppLink>
+            </nav>
+            <nav aria-label="Help" className="grid content-start gap-2.5">
+              <b className="text-label-sm font-semibold text-g-500">Help</b>
+              <Link to="/help" className={link}>Help center</Link>
+              <Link to="/help/$slug" params={{ slug: "getting-started" }} className={link}>Getting started</Link>
+              <Link to="/help/$slug" params={{ slug: "policies" }} className={link}>Agent rules</Link>
             </nav>
             <nav aria-label="Legal" className="grid content-start gap-2.5">
               <b className="text-label-sm font-semibold text-g-500">Legal</b>

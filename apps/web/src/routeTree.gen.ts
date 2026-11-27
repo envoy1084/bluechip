@@ -19,6 +19,8 @@ import { Route as AppMemoryRouteImport } from './routes/_app/memory'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
+import { Route as HelpIndexRouteImport } from './routes/help/index'
+import { Route as HelpSlugRouteImport } from './routes/help/$slug'
 import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
 import { Route as LegalRiskRouteImport } from './routes/legal/risk'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
@@ -94,6 +96,16 @@ const DevChainRoute = DevChainRouteImport.update({
 const DevConnectionRoute = DevConnectionRouteImport.update({
   id: '/dev/connection',
   path: '/dev/connection',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpIndexRoute = HelpIndexRouteImport.update({
+  id: '/help/',
+  path: '/help/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpSlugRoute = HelpSlugRouteImport.update({
+  id: '/help/$slug',
+  path: '/help/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
@@ -246,11 +258,13 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/help/$slug': typeof HelpSlugRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
   '/welcome/deposit': typeof WelcomeDepositRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
+  '/help/': typeof HelpIndexRoute
   '/welcome/': typeof WelcomeIndexRoute
   '/agents/$agentId': typeof AppAgentsAgentIdRouteWithChildren
   '/agents/new': typeof AppAgentsNewRoute
@@ -284,11 +298,13 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/help/$slug': typeof HelpSlugRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
   '/welcome/deposit': typeof WelcomeDepositRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
+  '/help': typeof HelpIndexRoute
   '/welcome': typeof WelcomeIndexRoute
   '/agents/new': typeof AppAgentsNewRoute
   '/automations/$automationId': typeof AppAutomationsAutomationIdRoute
@@ -323,11 +339,13 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/help/$slug': typeof HelpSlugRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
   '/welcome/deposit': typeof WelcomeDepositRoute
   '/welcome/eligibility': typeof WelcomeEligibilityRoute
+  '/help/': typeof HelpIndexRoute
   '/welcome/': typeof WelcomeIndexRoute
   '/_app/agents/$agentId': typeof AppAgentsAgentIdRouteWithChildren
   '/_app/agents/new': typeof AppAgentsNewRoute
@@ -363,11 +381,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/help/$slug'
     | '/legal/privacy'
     | '/legal/risk'
     | '/legal/terms'
     | '/welcome/deposit'
     | '/welcome/eligibility'
+    | '/help/'
     | '/welcome/'
     | '/agents/$agentId'
     | '/agents/new'
@@ -401,11 +421,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/help/$slug'
     | '/legal/privacy'
     | '/legal/risk'
     | '/legal/terms'
     | '/welcome/deposit'
     | '/welcome/eligibility'
+    | '/help'
     | '/welcome'
     | '/agents/new'
     | '/automations/$automationId'
@@ -439,11 +461,13 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/help/$slug'
     | '/legal/privacy'
     | '/legal/risk'
     | '/legal/terms'
     | '/welcome/deposit'
     | '/welcome/eligibility'
+    | '/help/'
     | '/welcome/'
     | '/_app/agents/$agentId'
     | '/_app/agents/new'
@@ -475,11 +499,13 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
+  HelpSlugRoute: typeof HelpSlugRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRiskRoute: typeof LegalRiskRoute
   LegalTermsRoute: typeof LegalTermsRoute
   WelcomeDepositRoute: typeof WelcomeDepositRoute
   WelcomeEligibilityRoute: typeof WelcomeEligibilityRoute
+  HelpIndexRoute: typeof HelpIndexRoute
   WelcomeIndexRoute: typeof WelcomeIndexRoute
 }
 
@@ -553,6 +579,20 @@ declare module '@tanstack/react-router' {
       path: '/dev/connection'
       fullPath: '/dev/connection'
       preLoaderRoute: typeof DevConnectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help/': {
+      id: '/help/'
+      path: '/help'
+      fullPath: '/help/'
+      preLoaderRoute: typeof HelpIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help/$slug': {
+      id: '/help/$slug'
+      path: '/help/$slug'
+      fullPath: '/help/$slug'
+      preLoaderRoute: typeof HelpSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal/privacy': {
@@ -822,11 +862,13 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,
+  HelpSlugRoute: HelpSlugRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRiskRoute: LegalRiskRoute,
   LegalTermsRoute: LegalTermsRoute,
   WelcomeDepositRoute: WelcomeDepositRoute,
   WelcomeEligibilityRoute: WelcomeEligibilityRoute,
+  HelpIndexRoute: HelpIndexRoute,
   WelcomeIndexRoute: WelcomeIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -179,7 +179,10 @@ export const addRun = (
     conditions,
     outcome: options.outcome,
     reason,
-    intentIds: []
+    intentIds: [],
+    // The made-up world's proposed trades all filled.
+    result: options.outcome === "proposed" ? "traded" : options.outcome,
+    blockedBy: []
   })
   record.runs = [run, ...record.runs].sort((a, b) =>
     DateTime.toEpochMillis(b.firedAt) - DateTime.toEpochMillis(a.firedAt)

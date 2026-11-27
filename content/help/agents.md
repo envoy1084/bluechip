@@ -24,14 +24,16 @@ this rule stay. Review shows its rules at a glance, what it can do and what it c
 
 An agent starts as a draft. When you choose Lock with Face ID, your passkey signs its rules onchain, and Base takes a
 couple of seconds. A lock lasts 90 days: bluechip tells you seven days and one day before it ends, and Renew keeps it
-trading for another 90 days. An agent whose lock ended trades no more until you renew it.
+trading for another 90 days, with a new key. Changing its rules or renewing it doesn't start its day again: what it
+spent today still counts against its daily budget. An agent whose lock ended trades no more until you renew it, and its
+automations are paused; resume them after you renew it.
 
 ## Pausing, changing and removing
 
 Pause stops an agent at once, and Pause all agents (in the sidebar and under Danger zone in Settings) stops every one. A
 paused agent sends nothing, its trades that weren't sent yet are cancelled, and nothing is sold; Resume starts it again.
 Edit rules and Remove agent take your Face ID, because they change what is locked onchain. A removed agent can never
-trade again; your stocks and cash stay in your account, and its history stays.
+trade again and its automations are deleted with it; your stocks and cash stay in your account, and its history stays.
 
 ## The agent's page
 

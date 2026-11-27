@@ -9,6 +9,7 @@ services:
       context: ..
       dockerfile: apps/web/Dockerfile
       args:
+        APP_VERSION: ${APP_VERSION:-}
         VITE_NETWORK: ${VITE_NETWORK:?set VITE_NETWORK to sepolia (paper) or base (production)}
         VITE_API_URL: ${VITE_API_URL:?set VITE_API_URL to the server's domain (https://paper-api.bluechip.markets)}
         VITE_SITE_URL: ${VITE_SITE_URL:-}
@@ -25,6 +26,8 @@ services:
     build:
       context: ..
       dockerfile: apps/server/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-}
     restart: unless-stopped
     env_file:
       - path: .env

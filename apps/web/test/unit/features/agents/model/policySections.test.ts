@@ -9,14 +9,14 @@ const nameOf = (symbol: string) => ({ NVDA: "Nvidia", AAPL: "Apple" })[symbol] ?
 describe("policySections", () => {
   it("a stock picker: its limits, on or off, in the catalog's order, and its fine-tuning", () => {
     assert.deepStrictEqual(policySections(PICKER), {
-      limits: ["tradeSize", "stockCap", "cashReserve", "rebalance", "stopLossFloor"],
+      limits: ["tradeSize", "stockCap", "cashReserve", "rebalance", "stopLossFloor", "gasBudget"],
       fineTuning: ["fairPrice", "slippageBudget", "tradesPerDay"]
     })
   })
 
   it("from scratch: the same rows in the same order, most of them off", () => {
     assert.deepStrictEqual(policySections(scratchSpec()), {
-      limits: ["tradeSize", "stockCap", "cashReserve", "rebalance", "stopLossFloor"],
+      limits: ["tradeSize", "stockCap", "cashReserve", "rebalance", "stopLossFloor", "gasBudget"],
       fineTuning: ["fairPrice", "slippageBudget", "tradesPerDay"]
     })
   })

@@ -8,8 +8,10 @@ changes, gas is paid in ETH from your account and bluechip tells you first.
 
 ## The gas budget
 
-Each agent carries a gas budget, set by bluechip: the most gas it may spend a day, with room for fee spikes. It is one
-of its rules locked onchain, so even a leaked agent key couldn't spend more. You don't need to change it.
+Each agent carries a gas budget, Gas a day among its limits: the most gas it may spend a day, in ETH. bluechip starts
+it from the trades its preset expects (0.015 ETH for Conservative, 0.038 ETH for Balanced, 0.09 ETH for Active), with
+room for fee spikes, and you can change it like any limit. It is one of its rules locked onchain, so even a leaked agent
+key couldn't spend more. While bluechip pays gas, it also caps what bluechip spends on that agent.
 
 ## When a trade waits for gas
 

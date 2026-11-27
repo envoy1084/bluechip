@@ -5,7 +5,13 @@
 # build args. From the repository root:
 #
 #   docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=sepolia \
-#     --build-arg VITE_API_URL=https://paper-api.bluechip.markets -t bluechip-web .
+#     --build-arg VITE_API_URL=https://paper-api.bluechip.markets \
+#     --build-arg APP_VERSION=$(git rev-parse --short HEAD) -t bluechip-web .
+#
+# With VITE_APP_URL (and no VITE_API_URL) it is the landing alone, the app on that site (deploy/README.md):
+#
+#   docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=base \
+#     --build-arg VITE_APP_URL=https://paper.bluechip.markets -t bluechip-landing .
 #
 # It serves on port 80.
 
@@ -55,19 +61,27 @@ COPY packages/domain/src packages/domain/src
 COPY packages/chain/src packages/chain/src
 COPY packages/ui/src packages/ui/src
 COPY apps/web apps/web
+# The help center's articles: prerendered as /help pages, and the Markdown agents read (llms.txt).
+COPY content/help content/help
 
 # The deployment's settings, written into the bundle (apps/web/.env.example). Only public values: the bundle is
 # public (PostHog's project key too, so the secrets check is skipped above). VITE_NETWORK picks the chain, the site's
-# origin and whether search engines index it; VITE_API_URL is the server's origin (empty: this one).
+# origin and whether search engines index it; VITE_API_URL is the server's origin (empty: this one). APP_VERSION is
+# the release analytics and telemetry report, the commit deployed (deploy/README.md). VITE_APP_URL makes this build
+# the landing alone, with the app on that site.
+ARG APP_VERSION=
 ARG VITE_NETWORK=local
 ARG VITE_API_URL=
+ARG VITE_APP_URL=
 ARG VITE_SITE_URL=
 ARG VITE_POSTHOG_PROJECT_API_KEY=
 ARG VITE_POSTHOG_HOST=
 ARG VITE_DEPLOYMENT_ENVIRONMENT=
 ENV NODE_ENV=production \
+  VITE_APP_VERSION=${APP_VERSION} \
   VITE_NETWORK=${VITE_NETWORK} \
   VITE_API_URL=${VITE_API_URL} \
+  VITE_APP_URL=${VITE_APP_URL} \
   VITE_SITE_URL=${VITE_SITE_URL} \
   VITE_POSTHOG_PROJECT_API_KEY=${VITE_POSTHOG_PROJECT_API_KEY} \
   VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST} \
@@ -78,7 +92,7 @@ WORKDIR /app/apps/web
 RUN node_modules/.bin/vite build
 # Compressed once here, so Caddy serves text files without compressing them on every request.
 RUN find dist/client -type f -size +1k \
-  \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.svg' -o -name '*.json' -o -name '*.txt' \
+  \( -name '*.js' -o -name '*.css' -o -name '*.html' -o -name '*.svg' -o -name '*.json' -o -name '*.txt' -o -name '*.md' \
   -o -name '*.xml' -o -name '*.webmanifest' \) \
   -exec gzip -9 -k {} + -exec brotli --best --keep {} +
 
@@ -86,10 +100,12 @@ FROM ${CADDY_IMAGE} AS runtime
 ARG VITE_NETWORK=local
 ARG VITE_API_URL=
 ARG VITE_POSTHOG_HOST=
-# The CSP's connect-src names the server's origin (Caddyfile).
+ARG VITE_APP_URL=
+# The CSP's connect-src names the server's origin; the landing alone redirects the app's paths to APP_URL (Caddyfile).
 ENV SITE_NETWORK=${VITE_NETWORK} \
   API_ORIGIN=${VITE_API_URL} \
-  POSTHOG_HOST=${VITE_POSTHOG_HOST}
+  POSTHOG_HOST=${VITE_POSTHOG_HOST} \
+  APP_URL=${VITE_APP_URL}
 # Caddy keeps its state in /data and /config; the binary may bind port 80 without root (cap_net_bind_service).
 RUN addgroup -S caddy && adduser -S -D -H -G caddy caddy && chown -R caddy:caddy /data /config
 COPY apps/web/Caddyfile /etc/caddy/Caddyfile

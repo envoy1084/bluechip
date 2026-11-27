@@ -12,6 +12,11 @@ export interface Site {
   readonly name: string
   /** The paper money site: test USDC on Base Sepolia. */
   readonly paper: boolean
+  /**
+   * Where the app is when this site is the landing alone (`VITE_APP_URL`, until mainnet `https://paper.bluechip.markets`):
+   * its origin. `null` when the app is on this site.
+   */
+  readonly app: string | null
 }
 
 const ORIGINS: Readonly<Record<Network, string>> = {
@@ -20,21 +25,39 @@ const ORIGINS: Readonly<Record<Network, string>> = {
   local: "http://localhost:3000"
 }
 
-/** The site of a build: its network, and `VITE_SITE_URL` when it is served somewhere else (a preview deployment). */
-export const siteOf = (network: Network, configuredUrl: string | undefined): Site => {
+const originOf = (configuredUrl: string | undefined): string | null => {
   const configured = configuredUrl?.trim()
-  const origin = configured === undefined || configured === "" ? ORIGINS[network] : new URL(configured).origin
-  return {
-    origin,
-    indexed: network === "base",
-    name: network === "sepolia" ? "bluechip paper" : "bluechip",
-    paper: network === "sepolia"
-  }
+  return configured === undefined || configured === "" ? null : new URL(configured).origin
 }
+
+/**
+ * The site of a build: its network, `VITE_SITE_URL` when it is served somewhere else (a preview deployment), and
+ * `VITE_APP_URL` when it is the landing alone and the app is on another site.
+ */
+export const siteOf = (network: Network, configuredUrl: string | undefined, appUrl?: string | undefined): Site => ({
+  origin: originOf(configuredUrl) ?? ORIGINS[network],
+  indexed: network === "base",
+  name: network === "sepolia" ? "bluechip paper" : "bluechip",
+  paper: network === "sepolia",
+  app: originOf(appUrl)
+})
 
 /** A path's absolute URL on the site: `/` is the origin itself. */
 export const canonicalUrl = (path: string, site: Site): string =>
   path === "/" ? `${site.origin}/` : `${site.origin}${path}`
+
+/** A page of the app as an absolute URL: on the app's own site when this one is the landing alone. */
+export const appPageUrl = (path: string, site: Site): string => `${site.app ?? site.origin}${path}`
+
+/**
+ * Whether this landing sends people to the paper money app (`paper.bluechip.markets`, the open beta before mainnet):
+ * it says so beside its ways in, and its analytics report as paper money's.
+ */
+export const sendsToPaper = (site: Site): boolean =>
+  site.app !== null && new URL(site.app).hostname.startsWith("paper.")
+
+/** A public page's Markdown twin, for agents (llmstxt.org's convention): `/` is `/index.md`, `/help` is `/help.md`. */
+export const markdownPath = (path: string): string => path === "/" ? "/index.md" : `${path}.md`
 
 /** The brand, as every page and card names it. */
 export const BRAND = "bluechip"

@@ -93,7 +93,8 @@ describe("preview agents, policies and automations", () => {
 
   it.effect("starter: one agent with today's fill counted against its budget, and a stop-loss that hasn't run", () =>
     Effect.gen(function*() {
-      const { client, store } = yield* previewApi("starter")
+      // The agent's buy was 14.5 hours ago and budgets reset at midnight UTC: late in a UTC day, it counts today.
+      const { client, store } = yield* previewApi("starter", new Date("2026-03-10T18:00:00Z"))
       const agentId = store.cast.agents[0]!.id
 
       const agents = yield* client.agents.list()

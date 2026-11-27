@@ -7,7 +7,7 @@ import { PICKER } from "../../fixtures/Agents.ts"
 const nameOf = (symbol: string) => symbol === "NVDA" ? "Nvidia" : "Apple"
 
 describe("ruleChanges", () => {
-  it("a smaller preset over one stock fewer: each changed setting, before and after", () => {
+  it("a smaller preset over one stock fewer: each changed setting, before and after, its gas too", () => {
     const after = draftSpec({ template: "stockPicker", preset: "conservative", stocks: ["NVDA"], targets: [] })
 
     assert.deepStrictEqual(ruleChanges(PICKER, after, compareSpecs(PICKER, after), nameOf), [
@@ -25,7 +25,12 @@ describe("ruleChanges", () => {
         change: "tighter",
         fields: [{ label: "Max in one stock", before: "30%", after: "20%" }]
       },
-      { title: "Cash reserve", change: "tighter", fields: [{ label: "Cash reserve", before: "10%", after: "20%" }] }
+      { title: "Cash reserve", change: "tighter", fields: [{ label: "Cash reserve", before: "10%", after: "20%" }] },
+      {
+        title: "Gas a day",
+        change: "tighter",
+        fields: [{ label: "Gas it may spend a day", before: "0.038 ETH", after: "0.015 ETH" }]
+      }
     ])
   })
 

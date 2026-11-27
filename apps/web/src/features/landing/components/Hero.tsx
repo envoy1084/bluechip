@@ -1,8 +1,9 @@
 import { buttonVariants } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Halftone } from "@bluechip/ui/motion/halftone"
-import { Link } from "@tanstack/react-router"
+import { AppLink } from "../../../components/AppLink.tsx"
 import { track } from "../../../lib/analytics.ts"
+import { PaperNote } from "./PaperNote.tsx"
 
 const rise = "animate-[landing-rise_1000ms_var(--ease-brand)_both] motion-reduce:animate-none"
 
@@ -39,7 +40,7 @@ export function Hero() {
         <div
           className={`${rise} flex w-full flex-col gap-2.5 [animation-delay:650ms] min-[440px]:w-auto min-[440px]:flex-row`}
         >
-          <Link
+          <AppLink
             to="/welcome"
             className={buttonVariants({ size: "lg", className: "group" })}
             onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "hero" })}
@@ -50,7 +51,7 @@ export function Hero() {
               size={16}
               className="transition-transform duration-base ease-brand group-hover:translate-x-0.5"
             />
-          </Link>
+          </AppLink>
           <a
             href="#how"
             className={buttonVariants({ size: "lg", variant: "secondary" })}
@@ -59,6 +60,7 @@ export function Hero() {
             How it works
           </a>
         </div>
+        <PaperNote className={`${rise} -mt-5 text-g-600 [animation-delay:750ms]`} />
       </div>
     </section>
   )

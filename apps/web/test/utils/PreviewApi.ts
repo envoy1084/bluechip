@@ -10,12 +10,12 @@ import { mockApi } from "../../src/preview/server/MockApi.ts"
 import { PreviewStore } from "../../src/preview/store.ts"
 import type { ScenarioId } from "../../src/preview/world/cast.ts"
 
-/** A scenario's store and the typed client of its mock API. */
-export const previewApi = (scenario: ScenarioId) =>
+/** A scenario's store and the typed client of its mock API, its world made as of `now`. */
+export const previewApi = (scenario: ScenarioId, now?: Date) =>
   Effect.gen(function*() {
     // Panel actions are saved in session storage, which Node shares across a worker's tests: each test starts clean.
     globalThis.sessionStorage?.clear()
-    const store = new PreviewStore(scenario, ACTIONS)
+    const store = new PreviewStore(scenario, ACTIONS, now)
     const api = mockApi(store)
     const client = yield* HttpApiClient.make(BluechipApi, { baseUrl: "http://preview.test" }).pipe(
       Effect.provide(FetchHttpClient.layer.pipe(

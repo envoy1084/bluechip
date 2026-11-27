@@ -1,10 +1,8 @@
 import type { Me } from "@bluechip/domain/Account"
 import { Logo } from "@bluechip/ui/bluechip/logo"
-import { Button } from "@bluechip/ui/components/button"
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@bluechip/ui/components/dialog"
+import { Button, ButtonLink } from "@bluechip/ui/components/button"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { Illustration } from "@bluechip/ui/illustrations/illustration"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Navigate } from "@tanstack/react-router"
 import type { ReactNode } from "react"
@@ -12,7 +10,6 @@ import { meAtom } from "../atoms/account.ts"
 import { accountView } from "../lib/accountView.ts"
 import { IllustratedEmpty } from "./IllustratedEmpty.tsx"
 import { LoadProblem } from "./LoadProblem.tsx"
-import { PasskeySignIn } from "./PasskeySignIn.tsx"
 
 /** A page of its own for when the account itself can't be shown: the logo, then what happened. */
 function Standalone({ children }: Readonly<{ children: ReactNode }>) {
@@ -26,9 +23,9 @@ function Standalone({ children }: Readonly<{ children: ReactNode }>) {
 
 /**
  * Renders its children for the signed-in user. Without a session it sends the visitor to the landing page to sign
- * in; if the session ends while they are here (expired or signed out elsewhere), it offers to sign in again on the
- * spot instead of yanking the page away. An app older than the server asks for a reload; any other failure keeps
- * the account already shown.
+ * in; if the session ends while they are here (expired or signed out elsewhere), it says they were signed out and
+ * offers to sign in again. An app older than the server asks for a reload; any other failure keeps the account
+ * already shown.
  */
 export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNode }>) {
   const view = accountView(useAtomValue(meAtom))
@@ -64,21 +61,20 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
   }
 
   if (view._tag === "signIn") return <Navigate to="/welcome" />
+  // The whole page goes, so nothing behind it reads as a connection problem; signing in loads the app afresh, with
+  // nothing of this session's left in memory.
   if (view._tag === "signInAgain") {
     return (
-      <Dialog open>
-        <DialogContent showCloseButton={false} className="grid justify-items-center gap-2 p-8 text-center">
-          <Illustration name="passkey" size={56} />
-          <DialogTitle>Sign in again to continue</DialogTitle>
-          <DialogDescription>
-            For your safety you're signed out after 30 days, or when you sign out on another tab.
-          </DialogDescription>
-          <div className="mt-2 grid w-full gap-2">
-            {/* Signing in refreshes the account, and this page carries on where it was. */}
-            <PasskeySignIn variant="primary" onSignedIn={() => undefined} />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Standalone>
+        <IllustratedEmpty
+          illustration="passkey"
+          size={120}
+          title="You were signed out"
+          action={<ButtonLink href="/welcome">Sign in again</ButtonLink>}
+        >
+          Your session ended on another device or tab, or after 30 days. Your agents keep trading inside their limits.
+        </IllustratedEmpty>
+      </Standalone>
     )
   }
   return (

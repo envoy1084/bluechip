@@ -1,8 +1,14 @@
 import { assert, describe, it } from "@effect/vitest"
 import { crawlerFiles, robotsTxt, sitemapXml } from "../../../../src/lib/seo/crawling.ts"
 
-const production = { origin: "https://bluechip.markets", indexed: true, name: "bluechip", paper: false }
-const paper = { origin: "https://paper.bluechip.markets", indexed: false, name: "bluechip paper", paper: true }
+const production = { origin: "https://bluechip.markets", indexed: true, name: "bluechip", paper: false, app: null }
+const paper = {
+  origin: "https://paper.bluechip.markets",
+  indexed: false,
+  name: "bluechip paper",
+  paper: true,
+  app: null
+}
 
 const pages = [
   { path: "/", updated: "2026-11-27", priority: 1 },
@@ -88,5 +94,17 @@ describe("crawlerFiles", () => {
     assert.deepStrictEqual(Object.keys(files), ["robots.txt", "manifest.webmanifest"])
     assert.strictEqual(files["robots.txt"], "User-agent: *\nDisallow: /\n")
     assert.strictEqual(JSON.parse(files["manifest.webmanifest"] ?? "").name, "bluechip paper")
+  })
+
+  it("the landing alone: production's robots and sitemap, a manifest that opens the landing in the browser", () => {
+    const files = crawlerFiles({ ...production, app: "https://paper.bluechip.markets" }, pages)
+    const manifest = JSON.parse(files["manifest.webmanifest"] ?? "")
+
+    assert.deepStrictEqual(Object.keys(files), ["robots.txt", "manifest.webmanifest", "sitemap.xml"])
+    assert.strictEqual(files["robots.txt"], robotsTxt(production))
+    assert.deepStrictEqual(
+      { id: manifest.id, start_url: manifest.start_url, scope: manifest.scope, display: manifest.display },
+      { id: "/", start_url: "/", scope: "/", display: "browser" }
+    )
   })
 })

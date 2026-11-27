@@ -205,8 +205,14 @@ describe("untilText", () => {
 
   it.each([
     { name: "already due", at: "2026-11-27T11:59:50Z", expected: "now" },
-    { name: "under a minute away", at: "2026-11-27T12:00:30Z", expected: "now" },
+    { name: "due this instant", at: "2026-11-27T12:00:00Z", expected: "now" },
+    { name: "a second away", at: "2026-11-27T12:00:01Z", expected: "in 1 min" },
+    { name: "under a minute away", at: "2026-11-27T12:00:30Z", expected: "in 1 min" },
+    { name: "a minute away", at: "2026-11-27T12:01:00Z", expected: "in 1 min" },
+    { name: "just over a minute away", at: "2026-11-27T12:01:01Z", expected: "in 2 min" },
     { name: "minutes away", at: "2026-11-27T12:12:00Z", expected: "in 12 min" },
+    { name: "just under an hour away", at: "2026-11-27T12:59:30Z", expected: "in 1 h" },
+    { name: "an hour away", at: "2026-11-27T13:00:00Z", expected: "in 1 h" },
     { name: "hours away", at: "2026-11-27T15:00:00Z", expected: "in 3 h" },
     { name: "a day away", at: "2026-11-28T12:00:00Z", expected: "tomorrow" },
     { name: "days away", at: "2026-12-01T12:00:00Z", expected: "in 4 days" }
@@ -259,16 +265,16 @@ describe("nowLine", () => {
 describe("stripLabel", () => {
   it.each(
     [
-      { name: "no runs", outcomes: [], expected: "No runs yet" },
-      { name: "one run", outcomes: ["proposed"], expected: "Last run: 1 traded" },
+      { name: "no runs", results: [], expected: "No runs yet" },
+      { name: "one run", results: ["traded"], expected: "Last run: 1 traded" },
       {
-        name: "several runs, counted by outcome",
-        outcomes: ["proposed", "skipped", "proposed", "failed"],
-        expected: "Last 4 runs: 2 traded, 1 skipped, 1 failed"
+        name: "several runs, counted by result",
+        results: ["traded", "blocked", "traded", "failed"],
+        expected: "Last 4 runs: 2 traded, 1 blocked, 1 failed"
       }
     ] as const
-  )("$name", ({ expected, outcomes }) => {
-    assert.strictEqual(stripLabel(outcomes), expected)
+  )("$name", ({ expected, results }) => {
+    assert.strictEqual(stripLabel(results), expected)
   })
 })
 

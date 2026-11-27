@@ -3,7 +3,7 @@
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { policyOf, type SpecChanges } from "@bluechip/domain/policies/Catalog"
-import { formatDollars, formatPercent, formatPrice, listNames } from "@bluechip/domain/policies/Format"
+import { formatDollars, formatEther, formatPercent, formatPrice, listNames } from "@bluechip/domain/policies/Format"
 import type { Field } from "@bluechip/domain/policies/Policy"
 import type { Target } from "@bluechip/domain/policies/Rebalance"
 import type { Floor } from "@bluechip/domain/policies/StopLossFloor"
@@ -44,7 +44,7 @@ export const fieldValueText = (field: Field, value: unknown, nameOf: NameOf): st
         (value as ReadonlyArray<Floor>).map((floor) => `${nameOf(floor.symbol)} at ${formatPrice(floor.price)}`)
       )
     case "wei":
-      return `${Number(value as bigint) / 1e9} gwei`
+      return formatEther(value as bigint)
   }
 }
 

@@ -24,13 +24,17 @@ const trades = (used: number, limit: number) =>
 
 const slippage = new PolicyUsage({ policy: "slippageBudget", unit: "usd", used: BigInt(3) * DOLLAR, limit: null })
 
-const gas = new PolicyUsage({ policy: "gasBudget", unit: "usd", used: DOLLAR, limit: DOLLAR })
+const gas = new PolicyUsage({ policy: "gasBudget", unit: "wei", used: BigInt(5e15), limit: BigInt(5e15) })
 
 describe("shownLimits", () => {
-  it("leaves out gas and a sell-only agent's budget of $0", () => {
+  it("leaves out a sell-only agent's budget of $0, and keeps its gas", () => {
     const usage = new AgentUsage({ policies: [budget(0, 0), trades(1, 5), gas, slippage] })
 
-    assert.deepStrictEqual(shownLimits(usage).map((counted) => counted.policy), ["tradesPerDay", "slippageBudget"])
+    assert.deepStrictEqual(shownLimits(usage).map((counted) => counted.policy), [
+      "tradesPerDay",
+      "gasBudget",
+      "slippageBudget"
+    ])
   })
 
   it("keeps a daily budget with a limit", () => {
@@ -150,7 +154,7 @@ describe("todayRoom", () => {
     })
   })
 
-  it("gas used up doesn't count: bluechip watches it", () => {
+  it("gas used up leaves the day's room to its budget and trades", () => {
     const usage = new AgentUsage({ policies: [budget(0, 500), gas] })
 
     assert.strictEqual(todayRoom(usage, "Weekly buyer", MIDDAY).standing, "room")

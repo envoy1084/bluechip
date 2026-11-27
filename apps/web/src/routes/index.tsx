@@ -14,7 +14,8 @@ export const Route = createFileRoute("/")({
         "bluechip paper | Try AI agents that trade US stocks, with test money" :
         "bluechip | AI agents that trade US stocks inside your limits",
       path: "/",
-      image: "default"
+      image: "default",
+      markdown: true
     })
     return { ...head, scripts: [jsonLdScript(landingStructuredData(site, QUESTIONS))] }
   },

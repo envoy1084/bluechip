@@ -2,10 +2,11 @@ import { buttonVariants } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Halftone, type Palette } from "@bluechip/ui/motion/halftone"
 import { Scramble } from "@bluechip/ui/motion/scramble"
-import { Link } from "@tanstack/react-router"
 import { useRef } from "react"
+import { AppLink } from "../../../components/AppLink.tsx"
 import { track } from "../../../lib/analytics.ts"
 import { useInView } from "../hooks/useInView.ts"
+import { PaperNote } from "./PaperNote.tsx"
 
 const TITLE = "Your agents are waiting."
 
@@ -37,7 +38,7 @@ export function FinalCta() {
             Make your account with Face ID in seconds. Add cash when you're ready.
           </p>
           <div className="flex w-full flex-col gap-2.5 min-[440px]:w-auto min-[440px]:flex-row">
-            <Link
+            <AppLink
               to="/welcome"
               className={buttonVariants({ size: "lg", variant: "secondary", className: "group" })}
               onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "final" })}
@@ -48,8 +49,9 @@ export function FinalCta() {
                 size={16}
                 className="transition-transform duration-base ease-brand group-hover:translate-x-0.5"
               />
-            </Link>
+            </AppLink>
           </div>
+          <PaperNote className="text-blue-100" />
         </div>
         <div aria-hidden className="relative h-[260px] sm:h-[320px] lg:h-full lg:min-h-[440px]">
           <Halftone scene="butterflies" palette={ON_BLUE} cell={9} className="absolute inset-0 size-full" />

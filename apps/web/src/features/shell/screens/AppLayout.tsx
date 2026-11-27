@@ -111,6 +111,14 @@ export function AppLayout(
                   {agents}
                 </SidebarContent>
                 <SidebarFooter>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton tooltip="Help" render={<Link to="/help" />}>
+                        <Icon name="help" />
+                        <span>Help</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
                   {pauseAll}
                 </SidebarFooter>
                 <SidebarRail />

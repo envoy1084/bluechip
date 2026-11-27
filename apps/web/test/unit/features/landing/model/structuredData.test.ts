@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest"
 import { landingStructuredData } from "../../../../../src/features/landing/model/structuredData.ts"
 import { SITE_DESCRIPTION } from "../../../../../src/lib/seo/site.ts"
 
-const production = { origin: "https://bluechip.markets", indexed: true, name: "bluechip", paper: false }
+const production = { origin: "https://bluechip.markets", indexed: true, name: "bluechip", paper: false, app: null }
 
 describe("landingStructuredData", () => {
   it("bluechip, its website, the web app and the FAQ, as one graph", () => {

@@ -12,7 +12,7 @@ import { ChoiceField } from "../../../../../components/fields/ChoiceField.tsx"
 import { NumberField } from "../../../../../components/fields/NumberField.tsx"
 import { StockField } from "../../../../../components/fields/StockField.tsx"
 import { ToggleField } from "../../../../../components/fields/ToggleField.tsx"
-import { fieldText, toDollars } from "../../../model/fieldText.ts"
+import { toDollars, toEther } from "../../../model/fieldText.ts"
 import { DirectionField } from "./DirectionField.tsx"
 import { FloorsField } from "./FloorsField.tsx"
 import { MixField } from "./MixField.tsx"
@@ -163,13 +163,19 @@ export function FieldEditor(
           onChange={onChange}
         />
       )
-    // Shown, not edited: bluechip watches gas, not you.
+    // Edited in ether; the policy keeps wei. A thousandth of an ether is the finest step it offers.
     case "wei":
       return (
-        <p className="flex justify-between gap-3 text-[13.5px] text-g-700">
-          {field.label}
-          <b className="font-semibold tabular-nums">{fieldText(field, value, context.nameOf)}</b>
-        </p>
+        <NumberField
+          {...common}
+          unit="ether"
+          value={toEther(value as bigint)}
+          min={toEther(field.min ?? 0)}
+          max={toEther(field.sliderMax ?? field.max ?? 1e17)}
+          ceiling={field.max === undefined ? undefined : toEther(field.max)}
+          step={toEther(field.step ?? 1e15)}
+          onChange={(ether) => onChange(BigInt(Math.round(ether * 1000)) * BigInt(1e15))}
+        />
       )
   }
 }

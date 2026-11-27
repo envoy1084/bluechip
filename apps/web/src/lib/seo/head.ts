@@ -1,5 +1,5 @@
 import { site as currentSite } from "./currentSite.ts"
-import { BRAND, canonicalUrl, type Site, SITE_DESCRIPTION, SITE_KEYWORDS } from "./site.ts"
+import { BRAND, canonicalUrl, markdownPath, type Site, SITE_DESCRIPTION, SITE_KEYWORDS } from "./site.ts"
 
 /** The social images in `public/og/`, each 1200×630, rendered by `node scripts/bin.ts og`. */
 export type SocialImage = "default" | "legal" | "agents" | "automations" | "assistant" | "safety"
@@ -24,6 +24,8 @@ export interface Page {
   /** A public page's path: it gets a canonical URL and is indexed where the site is. Signed-in pages have none. */
   readonly path?: string
   readonly image?: SocialImage
+  /** A public page with a Markdown twin (`markdownPath`) links it, so agents can read the page as plain text. */
+  readonly markdown?: boolean
 }
 
 type Meta =
@@ -31,7 +33,7 @@ type Meta =
   | { readonly name: string; readonly content: string }
   | { readonly property: string; readonly content: string }
 
-type Link = { readonly rel: string; readonly href: string }
+type Link = { readonly rel: string; readonly href: string; readonly type?: string }
 
 /** `Portfolio | bluechip`, or the site's name alone. */
 export const pageTitle = (title: string | undefined, site: Site = currentSite): string =>
@@ -76,7 +78,11 @@ export const pageHead = (
     { property: "og:url", content: url },
     { name: "robots", content: site.indexed ? INDEXED : NOT_INDEXED }
   )
-  return { meta, links: [{ rel: "canonical", href: url }] }
+  const links: Array<Link> = [{ rel: "canonical", href: url }]
+  if (page.markdown === true) {
+    links.push({ rel: "alternate", type: "text/markdown", href: canonicalUrl(markdownPath(page.path), site) })
+  }
+  return { meta, links }
 }
 
 const INDEXED = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"

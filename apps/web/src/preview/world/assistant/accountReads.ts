@@ -243,8 +243,8 @@ export const getAutomationPerformance = (mint: Mint, automationId: AutomationId,
       runs,
       // Every run but one traded; the other found nothing to do.
       outcomes: runs === 0 ? [] : [
-        new RunCount({ outcome: "proposed", count: runs - 1 }),
-        new RunCount({ outcome: "skipped", count: 1 })
+        new RunCount({ result: "traded", count: runs - 1 }),
+        new RunCount({ result: "skipped", count: 1 })
       ],
       trades: Math.max(0, runs - 1),
       bought: usdc(50 * Math.max(0, runs - 1)),

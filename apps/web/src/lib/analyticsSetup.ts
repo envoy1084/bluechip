@@ -11,6 +11,11 @@ export interface AnalyticsSetup {
   /** Where posthog-js sends: the PostHog reverse proxy on our own domain (`VITE_POSTHOG_HOST`). */
   readonly posthogHost: string
   readonly appVersion: string
+  /**
+   * Whether the browser's traces, logs and metrics go out (through the server's `/api/sync/*`): never from the landing
+   * alone, which has no server.
+   */
+  readonly telemetry: boolean
 }
 
 /** What decides whether this page reports anything, read once in the browser. */
@@ -26,11 +31,17 @@ export interface AnalyticsSwitches {
   /** `VITE_DEPLOYMENT_ENVIRONMENT`, when the build names its deployment instead of deriving it from the network. */
   readonly deploymentEnvironment: string | undefined
   readonly appVersion: string
+  /** This build is the landing alone (`VITE_APP_URL`): no API, the app on another site. */
+  readonly landingOnly: boolean
+  /** The landing sends people to the paper money app (`sendsToPaper`). */
+  readonly sendsToPaper: boolean
 }
 
 /**
  * Whether and where this page reports: only a paper or production build (never the development server, never
  * preview mode, never the local chain) with PostHog's project key and host. `null` turns analytics and telemetry off.
+ * A landing that sends people to the paper money app reports as paper money (its network and environment), so the
+ * funnel from the landing into the app is one project's; its browser telemetry is off.
  */
 export const analyticsSetup = (switches: AnalyticsSwitches): AnalyticsSetup | null => {
   if (switches.dev || switches.preview) return null
@@ -38,16 +49,18 @@ export const analyticsSetup = (switches: AnalyticsSwitches): AnalyticsSetup | nu
   if (switches.projectKey === undefined || switches.projectKey.trim() === "") return null
   if (switches.posthogHost === undefined || switches.posthogHost.trim() === "") return null
 
-  const derived = switches.network === "sepolia" ? "paper" : "production"
+  const network = switches.sendsToPaper ? "sepolia" : switches.network
+  const derived = network === "sepolia" ? "paper" : "production"
   const environment = switches.deploymentEnvironment === "paper" || switches.deploymentEnvironment === "production"
     ? switches.deploymentEnvironment
     : derived
   return {
     environment,
-    network: switches.network,
+    network,
     projectKey: switches.projectKey,
     posthogHost: switches.posthogHost.replace(/\/+$/, ""),
-    appVersion: switches.appVersion
+    appVersion: switches.appVersion,
+    telemetry: !switches.landingOnly
   }
 }
 
@@ -93,6 +106,10 @@ export const posthogConfig = (
 ): Partial<PostHogConfig> => ({
   api_host: setup.posthogHost,
   ui_host: "https://us.posthog.com",
+  // The ids in a cookie on bluechip.markets itself, shared by its subdomains: someone who arrives on the landing keeps
+  // their anonymous id in the paper money app (paper.bluechip.markets), so the funnel follows them across.
+  persistence: "localStorage+cookie",
+  cross_subdomain_cookie: true,
   defaults: "2026-08-30",
   person_profiles: "identified_only",
   autocapture: false,

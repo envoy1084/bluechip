@@ -3,7 +3,7 @@
 // as the made-up person, $1,000 of test money, and the few JSON-RPC reads a wallet makes.
 import { Account, Device, Me, Passkey, PasskeyChange, User } from "@bluechip/domain/Account"
 import { BluechipApi } from "@bluechip/domain/Api"
-import { Conflict, NotFound } from "@bluechip/domain/Errors"
+import { Conflict, Forbidden, NotFound } from "@bluechip/domain/Errors"
 import type { Address, PasskeyId, SigningRequestId } from "@bluechip/domain/Ids"
 import { notificationOfTransfer } from "@bluechip/domain/notifications/Drafts"
 import { notificationOfPasskey } from "@bluechip/domain/notifications/SecurityDrafts"
@@ -256,7 +256,9 @@ const DevHandlers = HttpApiBuilder.group(
             world.account.transfers.unshift(deposit)
             return [portfolioChanged(), notify(world.account, notificationOfTransfer(deposit, stockName)!)]
           })
-        )
+        ),
+      // Only the browser suite fires automations by hand, on the real server; the god mode panel puts runs in place.
+      fireAutomation: () => Effect.fail(new Forbidden())
     })
   })
 )

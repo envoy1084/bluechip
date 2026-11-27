@@ -50,8 +50,8 @@ gradually over the week. Optional.
 
 ## Set by bluechip
 
-Two rules every agent carries, with values bluechip sets: its gas budget, the most gas it may spend a day, and the check
-that each operation it sends is a trade its other rules allow, so it can never send money out of your account.
+One rule every agent carries, set by bluechip: the check that each operation it sends is a trade its other rules allow,
+so it can never send money out of your account. Its gas budget, Gas a day, is one of its limits you can change.
 
 ## When a trade is blocked
 

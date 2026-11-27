@@ -1,16 +1,20 @@
 import { type Site, SITE_DESCRIPTION } from "./site.ts"
 
-/** The web app manifest: installed, bluechip opens on your home page, standalone, in the brand's light colors. */
+/**
+ * The web app manifest: installed, bluechip opens on your home page, standalone, in the brand's light colors. A landing
+ * whose app is on another site isn't an app to install (a manifest's start URL must be on its own site): it opens in
+ * the browser, at the landing.
+ */
 export const webManifest = (site: Site) => ({
-  id: "/home",
+  id: site.app === null ? "/home" : "/",
   name: site.name,
   short_name: site.name,
   description: SITE_DESCRIPTION,
   lang: "en",
   dir: "ltr",
-  start_url: "/home",
+  start_url: site.app === null ? "/home" : "/",
   scope: "/",
-  display: "standalone",
+  display: site.app === null ? "standalone" : "browser",
   orientation: "any",
   background_color: "#ffffff",
   theme_color: "#ffffff",

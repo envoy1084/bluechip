@@ -15,7 +15,8 @@ that match the task.
     never module constants; shared ABIs, the account's owners and recovery sessions (`account/`), and `DevChain`
     cheatcodes for the local fork.
   - `packages/devnet` (`@bluechip/devnet`, private): a local Base for tests, Anvil and Alto per Vitest worker,
-    started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), with
+    started from a state captured once from a fork (`state/devnet.state.gz`, rebuilt by `pnpm devnet:capture`), its clock
+    kept at the real one (`keepClock`: on Base's hardfork Anvil dates each block 200 ms after the last), with
     every contract bluechip uses at its real address and settable price feeds (`Devnet`, `DevnetTest`), software
     passkeys (`Passkeys`), calls simulated at a later block time (`simulateAt`, `handleOpsCall`), and a devnet of a
     test file's own whose clocks can move ahead (`DevnetTest.layerIsolated`, `DevnetClock`).
@@ -124,7 +125,13 @@ in the workspace's layout, migrations then the server, one instance only) on `ap
 (`platform/http/Cors.ts`, `OriginCheck.ts`), and Telegram's webhook goes to `API_ORIGIN`. Development, the browser
 suite and preview mode leave `VITE_API_URL` empty: the server's paths stay on the page's origin through Vite's proxy. Images build
 from the repository root (`docker build -f apps/server/Dockerfile .`); `.dockerignore` keeps env files, tests and
-local state out. A new workspace member adds its `package.json` line to both Dockerfiles.
+local state out. A new workspace member adds its `package.json` line to both Dockerfiles. Until mainnet,
+`bluechip.markets` is a third deployment, the landing alone (`deploy/landing.yaml`: the web image with
+`VITE_APP_URL=https://paper.bluechip.markets`, `VITE_NETWORK=base`, paper's PostHog key, no `VITE_API_URL`): links
+into the app go through `appHref` or `AppLink` (`apps/web/src/lib/appUrl.ts`, `components/AppLink.tsx`), never a
+hard-coded path; Caddy (`APP_URL`) and `client.tsx` send every path without a page of its own to the app's site; it
+calls no API, sends no browser telemetry, and its analytics report as paper money's. At mainnet, drop it and
+`VITE_APP_URL`.
 
 ## Validation
 
@@ -223,13 +230,16 @@ Code is organized so a maintainer can find and review any change quickly.
   Face ID that didn't finish; times in the viewer's zone, named (`yourTime`, `dailyResetText` in `lib/localTime.ts`).
 
 Every route names its page in `head()` with `pageHead` (`lib/seo/`): `Portfolio | bluechip`, a public page's
-canonical URL and its social image. Only production's public pages (landing, legal) are indexed; signed-in pages,
+canonical URL and its social image. Only production's public pages (landing, help, legal) are indexed; signed-in pages,
 paper money and local are `noindex`. The build's network (`VITE_NETWORK`, `VITE_SITE_URL` for another origin) decides
 `robots.txt`, `manifest.webmanifest` and production's `sitemap.xml`, written by the Vite config's
-`bluechip:crawler-files` plugin (and served by `vite dev`).
+`bluechip:crawler-files` plugin (and served by `vite dev`) with the files for agents (`lib/seo/llms.ts`): `llms.txt`,
+`llms-full.txt` and a Markdown twin of every public page (`/index.md`, `/help.md`, `/help/<slug>.md`, `/legal/*.md`),
+linked from its head (`pageHead({ markdown: true })`). The help center (`features/help/`) publishes each
+`content/help/*.md` at `/help/<slug>`, its sections anchored as the assistant cites them (`anchorOf`), dated from git.
 
 The web app ships as static files: `pnpm --filter @bluechip/web build` (with `.env.production` or `--mode paper`)
-prerenders the public pages (`/`, `/legal/*`) to `dist/client/**/index.html` with their head, and writes
+prerenders the public pages (`/`, `/help`, `/help/*`, `/legal/*`) to `dist/client/**/index.html` with their head, and writes
 `dist/client/_shell.html`, the SPA shell (the root's `noindex` tags) for every other path. A new public page goes in
 `pages` in `apps/web/vite.config.ts`. Serve `dist/client` with Caddy (the image's is `apps/web/Caddyfile`); the
 server has its own domain (`VITE_API_URL`):
@@ -347,6 +357,10 @@ An agent is a session key carrying onchain policies; nothing offchain limits it.
 (`packages/domain/src/policies/`): the catalog's policies with their configurations. bluechip decides on an operation
 by simulating it as the agent (`simulateAsAgent` in `packages/chain/src/policies/`) and reading the chain's answer;
 never write a TypeScript copy of a contract's rule.
+Every session of one agent (its lock, each change, each renewal with a new key) carries the same `agentKey(agentId)`
+(`packages/chain/src/policies/Session.ts`): `AerodromeTradePolicy` keys the day's spending by it and `TradeGuard` its
+rules' state, so a renewal keeps what the agent spent today; Namera's trade count and gas are the session's. Removing an
+agent deletes its automations and its expiry pauses them, in the transaction of the agent's change (`AgentStore.save`).
 
 To add a policy:
 
@@ -395,9 +409,10 @@ To add a trigger, condition or action:
 ## Notifications: to add a kind, a notifier or a chat platform
 
 Features never send messages. They say what happened: an event written to the notifications' outbox
-(`NotificationOutbox.write`) in the transaction of the change it tells, then published live (`LiveEvents`), which wakes
-`NotificationFanout` to turn the user's outbox rows into notifications (at least once; `OutboxCron` sweeps what a
-stopped process left), or `Notifications.add` with a draft. `Notifications` stores it in your center once (`dedupe_key`), publishes
+(`NotificationOutbox.write`, or `notify` for a draft written as it is) in the transaction of the change it tells, then
+published live (`LiveEvents`), which wakes `NotificationFanout` to turn the user's outbox rows into notifications (at
+least once; `OutboxCron` sweeps what a stopped process left). Only what time makes (`Reminders.ts`) calls
+`Notifications.add` itself. `Notifications` stores it in your center once (`dedupe_key`), publishes
 `NotificationAdded`, and starts a `DeliverNotification` workflow per channel its rule picks (quiet hours wait on a
 durable clock; a platform that says try again is retried). Domain in `packages/domain/src/notifications/` and
 `channels/`, server in `apps/server/src/modules/notifications/`, `push/` and `channels/`.
@@ -409,8 +424,8 @@ To add a notification kind:
    `Drafts.ts` (account safety in `SecurityDrafts.ts`), a pure function of what happened with a `dedupeKey`, tested
    with a table in `test/unit/notifications/`. A kind that offers an action where it lands (Pause all, Cancel
    recovery) says so in `actionsOf` (`Actions.ts`): the bell and Telegram show its buttons.
-2. **Server.** Make it from an outbox event in `Fanout.ts`, from time in `Reminders.ts`, or with `Notifications.add`
-   where it happens. Never call a notifier.
+2. **Server.** Make it from an outbox event in `Fanout.ts`, from time in `Reminders.ts`, or with
+   `NotificationOutbox.notify` in the transaction of the change. Never call a notifier.
 3. **Web.** Nothing: the settings page and the bell are built from the catalog.
 
 To add a notifier (a channel):

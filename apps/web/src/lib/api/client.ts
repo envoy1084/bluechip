@@ -6,9 +6,12 @@ import * as FetchHttpClient from "effect/http/FetchHttpClient"
 import * as HttpClient from "effect/http/HttpClient"
 import * as HttpClientRequest from "effect/http/HttpClientRequest"
 import * as Layer from "effect/Layer"
+import * as Option from "effect/Option"
 import * as AtomHttpApi from "effect/reactivity/AtomHttpApi"
+import * as Reactivity from "effect/reactivity/Reactivity"
 import { replaySessionId, track } from "../analytics.ts"
 import { apiOrigin } from "./origin.ts"
+import { sessionAfter } from "./session.ts"
 
 /** The header that names the session replay a request comes from, so the server's events and spans link to it. */
 export const replaySessionHeader = "x-bluechip-replay-session"
@@ -19,11 +22,25 @@ const reportApiError = (url: string, error: string) => {
   if (group !== "events") track({ _tag: "api_error", endpoint_group: group, error })
 }
 
+let sessionLive = false
+
+// A session that ended while the app was open (another device signed it out, or it expired) reads the account
+// again, once: its 401 is what the signed-in frame shows, so no screen mistakes it for a connection problem.
+const followSession = (status: number, url: string) =>
+  Effect.gen(function*() {
+    const answer = sessionAfter(sessionLive, status, url)
+    sessionLive = answer.live
+    if (!answer.ended) return
+    const reactivity = yield* Effect.serviceOption(Reactivity.Reactivity)
+    if (Option.isSome(reactivity)) reactivity.value.invalidateUnsafe([accountReactivityKey])
+  })
+
 /**
  * The typed client for `BluechipApi`, with atoms for queries and mutations. Requests go to the server's origin
  * (`apiOrigin`: its own domain on paper and production, the page's own under Vite's proxy) with the session cookie,
  * the live stream's included. Each carries the replay's session when analytics is on; a server error or a request that never arrived is an `api_error` event
- * (failures the API names are answers, and the server's events count them).
+ * (failures the API names are answers, and the server's events count them). A 401 after the account was shown reads
+ * the account again, so the signed-in frame says you were signed out.
  */
 export class BluechipApiClient extends AtomHttpApi.Service<BluechipApiClient>()("@bluechip/web/BluechipApiClient", {
   api: BluechipApi,
@@ -38,8 +55,9 @@ export class BluechipApiClient extends AtomHttpApi.Service<BluechipApiClient>()(
       return session === null ? versioned : HttpClientRequest.setHeader(versioned, replaySessionHeader, session)
     }),
     HttpClient.tap((response) =>
-      Effect.sync(() => {
+      Effect.suspend(() => {
         if (response.status >= 500) reportApiError(response.request.url, String(response.status))
+        return followSession(response.status, response.request.url)
       })
     ),
     HttpClient.tapError((error) => Effect.sync(() => reportApiError(error.request.url, error.reason._tag)))

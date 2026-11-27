@@ -48,7 +48,8 @@ export function SidebarAgents() {
           <SidebarMenuButton
             isActive={matchRoute({ to: "/agents/new" }) !== false}
             tooltip="New agent"
-            render={<Link to="/agents/new" />}
+            // A state of its own makes it a new visit even from the flow's last step, which then starts again.
+            render={<Link to="/agents/new" state={(previous) => ({ ...previous, startedAt: Date.now() })} />}
           >
             <Icon name="plus" />
             <span>New agent</span>

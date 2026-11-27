@@ -2,7 +2,10 @@ import { useRouter } from "@tanstack/react-router"
 import { type ReactNode, useEffect } from "react"
 import { notePageLeft, startAnalytics } from "../lib/analytics.ts"
 import { analyticsSetup } from "../lib/analyticsSetup.ts"
+import { landingOnly } from "../lib/appUrl.ts"
 import { network } from "../lib/network.ts"
+import { site } from "../lib/seo/currentSite.ts"
+import { sendsToPaper } from "../lib/seo/site.ts"
 import { recordPage, startTelemetry } from "../lib/telemetry.ts"
 
 /**
@@ -18,17 +21,21 @@ export const startObservability = async (): Promise<void> => {
     projectKey: import.meta.env["VITE_POSTHOG_PROJECT_API_KEY"],
     posthogHost: import.meta.env["VITE_POSTHOG_HOST"],
     deploymentEnvironment: import.meta.env["VITE_DEPLOYMENT_ENVIRONMENT"],
-    appVersion: import.meta.env["VITE_APP_VERSION"] ?? "0.0.0"
+    appVersion: import.meta.env["VITE_APP_VERSION"] ?? "0.0.0",
+    landingOnly,
+    sendsToPaper: sendsToPaper(site)
   })
   if (setup === null) return
 
   // The app renders whatever telemetry does: a failure to start it goes on as an uncaught error (PostHog's error
   // tracking and the browser's console see it), not in the way of hydrating.
-  await startTelemetry(setup).catch((error: unknown) =>
-    queueMicrotask(() => {
-      throw error
-    })
-  )
+  if (setup.telemetry) {
+    await startTelemetry(setup).catch((error: unknown) =>
+      queueMicrotask(() => {
+        throw error
+      })
+    )
+  }
   void startAnalytics(setup)
 }
 

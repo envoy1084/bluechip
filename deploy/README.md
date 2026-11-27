@@ -19,7 +19,8 @@ browser, Telegram ─▶                         └─▶ api.bluechip.markets 
 
 Paper money (`paper.bluechip.markets` and `paper-api.bluechip.markets`, Base Sepolia) and production
 (`bluechip.markets` and `api.bluechip.markets`, Base) are two Dokploy projects deploying the same
-`deploy/compose.yaml` with their own environment, database, Telegram bot and keys. The web and its API are subdomains
+`deploy/compose.yaml` with their own environment, database, Telegram bot and keys. Until mainnet, `bluechip.markets`
+is the landing alone ([below](#9-the-landing-until-mainnet)), sending people to paper money. The web and its API are subdomains
 of one site, so the server's host-only session cookie (`SameSite=Lax`, `Secure`, `HttpOnly`) goes with the page's
 requests.
 
@@ -63,7 +64,8 @@ interpolate.
 Every name, its meaning and its local default is in `apps/server/.env.example` and `apps/web/.env.example`. Never
 reuse a value between paper and production.
 
-**Web build args** (public: they ship in every page):
+**Web build args** (public: they ship in every page; `APP_VERSION` is the server's build arg too, see
+[Operations](#8-operations)):
 
 | Name                           | Paper                                | Production                     |
 | ------------------------------ | ------------------------------------ | ------------------------------ |
@@ -73,6 +75,8 @@ reuse a value between paper and production.
 | `VITE_POSTHOG_HOST`            | `https://t.envoy1084.xyz`            | the same                       |
 | `VITE_SITE_URL`                | unset (network's site)               | unset                          |
 | `VITE_DEPLOYMENT_ENVIRONMENT`  | unset (`paper`)                      | unset                          |
+| `VITE_APP_URL`                 | unset                                | unset (the landing's only)     |
+| `APP_VERSION`                  | the commit deployed (short SHA)      | the same                       |
 
 The browser calls the server at `VITE_API_URL` (the API, its live stream, `/api/rpc` and the telemetry relay
 `/api/sync/*`) and sends analytics straight to `VITE_POSTHOG_HOST` (PostHog's reverse proxy); the image's CSP allows
@@ -145,8 +149,46 @@ Restore into an empty database; the server migrates it forward on start.
 - **Deploys** rebuild both images. While the server restarts, API requests fail (Traefik answers 502) and the app
   retries; live streams reconnect on their own.
 - **Logs** are JSON on stdout (Dokploy's Logs tab); traces, logs and metrics also go to Axiom when configured.
-- **Release**: `/health` and `/api/version` report `0.0.0`, because the images start Node directly rather than
-  through pnpm (`npm_package_version`).
+- **Release**: `/health`, `/api/version` and the web app's analytics and telemetry report `APP_VERSION`, a build
+  arg of both images that `deploy/compose.yaml` takes from the environment. Set it in the project's Environment to
+  the commit you deploy (its short SHA, `git rev-parse --short HEAD`) and redeploy; Dokploy writes it to `.env`, and
+  Compose passes it to both builds. Unset, both report `0.0.0`. Locally nothing changes: pnpm's
+  `npm_package_version` is used.
+
+## 9. The landing until mainnet
+
+Until production opens, `bluechip.markets` serves the landing, `/help/*` and `/legal/*` alone, and sends people to
+paper money. It is a third deployment: a Compose service with compose path `./deploy/landing.yaml` (the web image
+only, no server, no database), domain `bluechip.markets` on port 80. Its build args:
+
+| Name                           | Value                              |
+| ------------------------------ | ---------------------------------- |
+| `VITE_NETWORK`                 | `base` (indexed, production's SEO) |
+| `VITE_APP_URL`                 | `https://paper.bluechip.markets`   |
+| `VITE_SITE_URL`                | `https://bluechip.markets`         |
+| `VITE_POSTHOG_PROJECT_API_KEY` | **paper's** project key            |
+| `VITE_POSTHOG_HOST`            | `https://t.envoy1084.xyz`          |
+| `VITE_DEPLOYMENT_ENVIRONMENT`  | unset (`paper`, from the app URL)  |
+| `VITE_API_URL`                 | unset: there is no API             |
+| `APP_VERSION`                  | the commit deployed                |
+
+`VITE_APP_URL` is an origin, without a trailing slash. With it the build is the landing alone:
+
+- Get started, Sign in, the recover link and the help center's Open bluechip link to the app's site
+  (`appHref`, `apps/web/src/lib/appUrl.ts`), and the landing never asks the API who is signed in.
+- Every path of the app (`/home`, `/agents/*`, `/welcome`, `/recover`, `/signin`, `/dev/*`, anything without a page
+  of its own) is a `302` to the same path and query on the app's site, from Caddy (`APP_URL`), before the shell
+  loads; the shell does the same if it ever runs there.
+- A `paper.` app adds "Open beta on paper money" beside the ways in, and `llms.txt` says so.
+- Analytics report as paper money (`environment: paper`, `network: sepolia`) into paper's PostHog project, so the
+  funnel from the landing into the app is one project's; posthog-js keeps its ids in a cookie on `bluechip.markets`
+  shared with its subdomains, so the anonymous id carries into `paper.bluechip.markets`. The browser's telemetry
+  (Axiom, through the server) is off.
+- `robots.txt`, `sitemap.xml`, canonical URLs and social images are production's; the manifest opens the landing in
+  the browser (the app to install is paper money's).
+
+**At mainnet:** remove this deployment, attach `bluechip.markets` and `api.bluechip.markets` to production's
+`deploy/compose.yaml` (no `VITE_APP_URL`, production's own PostHog key), and redeploy.
 
 ## Trying the images locally
 
@@ -156,6 +198,10 @@ docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=local \
   --build-arg VITE_API_URL=http://localhost:8082 -t bluechip-web .
 docker run --rm -p 8081:80 bluechip-web
 ```
+
+The landing alone: `docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=base --build-arg
+VITE_APP_URL=https://paper.bluechip.markets -t bluechip-landing .`, then `curl -I localhost:8081/home` answers `302`
+to `https://paper.bluechip.markets/home`.
 
 Run the server on `-p 8082:8080` with a throwaway environment (`NETWORK=local`, a database of its own,
 `PUBLIC_ORIGIN=http://localhost:8081`, `RP_ID=localhost`, `API_ORIGIN=http://localhost:8082`,

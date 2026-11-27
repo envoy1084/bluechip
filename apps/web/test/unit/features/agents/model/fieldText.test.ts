@@ -60,10 +60,10 @@ describe("fieldText", () => {
       expected: "Nvidia at $150 and Apple at $180.50"
     },
     {
-      name: "gas in gwei",
+      name: "gas in ether",
       field: new Field({ label: "Gas", unit: "wei" }),
-      value: 2_500_000_000n,
-      expected: "2.5 gwei"
+      value: 38_000_000_000_000_000n,
+      expected: "0.038 ETH"
     }
   ])("$name", ({ expected, field, value }) => {
     assert.strictEqual(fieldText(field, value, nameOf), expected)

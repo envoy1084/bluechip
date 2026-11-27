@@ -7,16 +7,17 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { useId, useState } from "react"
 import { FieldHelp } from "./FieldHelp.tsx"
 
-export type NumberUnit = "dollars" | "percent" | "count"
+export type NumberUnit = "dollars" | "percent" | "count" | "ether"
 
 const SLIDER_FORMAT: Readonly<Record<NumberUnit, Intl.NumberFormatOptions>> = {
   dollars: { style: "currency", currency: "USD", maximumFractionDigits: 0 },
   percent: { style: "unit", unit: "percent" },
-  count: {}
+  count: {},
+  ether: { maximumFractionDigits: 3 }
 }
 
 /**
- * A number, typed or dragged, in the units people think in (dollars, percent). The slider covers the usual range
+ * A number, typed or dragged, in the units people think in (dollars, percent, ether). The slider covers the usual range
  * (`min` to `max`); with a `ceiling` above it, "Custom amount" swaps the slider for a wider box that takes anything up to
  * the ceiling, and a value past the slider opens that way. The slider snaps to round values (multiples of `step` from
  * zero, $5, $10… rather than $1, $6…), and its left end is `min` itself. While the field is being typed in it keeps its own text, so
@@ -84,14 +85,17 @@ export function NumberField(
             {unit === "dollars" && <InputGroupText>$</InputGroupText>}
             <InputGroupInput
               id={id}
-              inputMode={unit === "percent" ? "decimal" : "numeric"}
+              inputMode={unit === "percent" || unit === "ether" ? "decimal" : "numeric"}
               autoComplete="off"
               className="text-right tabular-nums"
               value={text ?? String(value)}
               aria-invalid={problem === undefined ? undefined : true}
               aria-describedby={note === undefined ? undefined : `${id}-note`}
               onChange={(event) => {
-                const typed = event.currentTarget.value.replace(unit === "percent" ? /[^\d.]/g : /\D/g, "")
+                const typed = event.currentTarget.value.replace(
+                  unit === "percent" || unit === "ether" ? /[^\d.]/g : /\D/g,
+                  ""
+                )
                 setText(typed)
                 if (typed === "" || !Number.isFinite(Number(typed))) return
                 // Typing past the slider's end moves to a custom amount, when there's room above it.
@@ -101,6 +105,7 @@ export function NumberField(
               onBlur={() => setText(null)}
             />
             {unit === "percent" && <InputGroupText>%</InputGroupText>}
+            {unit === "ether" && <InputGroupText>ETH</InputGroupText>}
           </InputGroup>
         </span>
       </div>

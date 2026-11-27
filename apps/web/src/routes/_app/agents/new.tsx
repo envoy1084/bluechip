@@ -1,5 +1,5 @@
 import { AgentId } from "@bluechip/domain/Ids"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useLocation } from "@tanstack/react-router"
 import * as Schema from "effect/Schema"
 import { NewAgentScreen } from "../../../features/agents/screens/NewAgentScreen.tsx"
 import { SavedTemplateAutomations } from "../../../features/automations/components/template/SavedTemplateAutomations.tsx"
@@ -20,5 +20,7 @@ export const Route = createFileRoute("/_app/agents/new")({
 
 function NewAgentPage() {
   const { draft } = Route.useSearch()
-  return <NewAgentScreen draftId={draft} automations={AUTOMATIONS} />
+  // Each visit is a flow of its own: following "New agent" from its last step starts it afresh.
+  const visit = useLocation({ select: (location) => location.state.__TSR_key })
+  return <NewAgentScreen key={visit} draftId={draft} automations={AUTOMATIONS} />
 }

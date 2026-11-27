@@ -72,11 +72,11 @@ export class PreviewStore {
 
   #definitions: ReadonlyMap<string, Apply>
 
-  constructor(scenario: ScenarioId, definitions: ReadonlyArray<ActionDef>) {
+  constructor(scenario: ScenarioId, definitions: ReadonlyArray<ActionDef>, now = new Date()) {
     this.#definitions = new Map(definitions.map((definition) => [definition.name, definition.apply]))
     this.scenario = scenario
     this.cast = castOf(scenario)
-    this.world = makeWorld(this.cast, new Date())
+    this.world = makeWorld(this.cast, now)
     this.settings = readJson<Settings>(SETTINGS_KEY, { network: {}, live: "connected", faceId: "approve" })
     this.#actions = readJson<Array<Action>>(ACTIONS_KEY, [])
     for (const action of this.#actions) this.#definitions.get(action.name)?.(this.world, ...action.args)

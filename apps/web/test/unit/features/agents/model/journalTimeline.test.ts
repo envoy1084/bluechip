@@ -32,7 +32,8 @@ describe("rulesMoments", () => {
             "Stocks and direction tightened",
             "Trade size tightened",
             "Max in one stock tightened",
-            "Cash reserve tightened"
+            "Cash reserve tightened",
+            "Gas a day tightened"
           ],
           until: null
         },

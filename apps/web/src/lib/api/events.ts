@@ -71,7 +71,10 @@ export const liveEventAtom = BluechipApiClient.runtime.atom((get) => {
             get.set(liveTradesAtom, new Map(get.once(liveTradesAtom)).set(event.trade.id, event.trade))
             return Reactivity.invalidate([portfolioReactivityKey])
           }
-          if (event._tag === "AgentChanged") return Reactivity.invalidate([agentsReactivityKey])
+          // An agent removed or ended takes its automations with it (deleted, or paused).
+          if (event._tag === "AgentChanged") {
+            return Reactivity.invalidate([agentsReactivityKey, automationsReactivityKey])
+          }
           if (event._tag === "IntentChanged") {
             const { intent } = event
             get.set(liveIntentsAtom, new Map(get.once(liveIntentsAtom)).set(intent.id, intent))

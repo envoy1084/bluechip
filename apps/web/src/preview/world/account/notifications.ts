@@ -123,7 +123,9 @@ const runOf = (
       [],
     outcome,
     reason,
-    intentIds: []
+    intentIds: [],
+    result: outcome === "proposed" ? "traded" : outcome,
+    blockedBy: []
   })
 
 const transferOf = (n: number, at: DateTime.Utc, kind: Transfer["kind"], dollars: number, status: Transfer["status"]) =>
