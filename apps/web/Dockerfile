@@ -1,12 +1,13 @@
 # syntax=docker/dockerfile:1.18
 # check=skip=SecretsUsedInArgOrEnv
-# The bluechip web app: the static build served by Caddy, which proxies the server's paths (apps/web/Caddyfile). Vite
-# writes the VITE_* settings into the bundle, so each deployment builds its own image from build args. From the
-# repository root:
+# The bluechip web app: the static build served by Caddy (apps/web/Caddyfile); the browser calls the server on its own
+# domain (VITE_API_URL). Vite writes the VITE_* settings into the bundle, so each deployment builds its own image from
+# build args. From the repository root:
 #
-#   docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=sepolia -t bluechip-web .
+#   docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=sepolia \
+#     --build-arg VITE_API_URL=https://paper-api.bluechip.markets -t bluechip-web .
 #
-# Run it with SERVER_UPSTREAM (host:port of the server, `server:8080` by default); it serves on port 80.
+# It serves on port 80.
 
 ARG NODE_IMAGE=node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
 ARG CADDY_IMAGE=caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
@@ -57,14 +58,16 @@ COPY apps/web apps/web
 
 # The deployment's settings, written into the bundle (apps/web/.env.example). Only public values: the bundle is
 # public (PostHog's project key too, so the secrets check is skipped above). VITE_NETWORK picks the chain, the site's
-# origin and whether search engines index it.
+# origin and whether search engines index it; VITE_API_URL is the server's origin (empty: this one).
 ARG VITE_NETWORK=local
+ARG VITE_API_URL=
 ARG VITE_SITE_URL=
 ARG VITE_POSTHOG_PROJECT_API_KEY=
 ARG VITE_POSTHOG_HOST=
 ARG VITE_DEPLOYMENT_ENVIRONMENT=
 ENV NODE_ENV=production \
   VITE_NETWORK=${VITE_NETWORK} \
+  VITE_API_URL=${VITE_API_URL} \
   VITE_SITE_URL=${VITE_SITE_URL} \
   VITE_POSTHOG_PROJECT_API_KEY=${VITE_POSTHOG_PROJECT_API_KEY} \
   VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST} \
@@ -81,10 +84,12 @@ RUN find dist/client -type f -size +1k \
 
 FROM ${CADDY_IMAGE} AS runtime
 ARG VITE_NETWORK=local
+ARG VITE_API_URL=
 ARG VITE_POSTHOG_HOST=
+# The CSP's connect-src names the server's origin (Caddyfile).
 ENV SITE_NETWORK=${VITE_NETWORK} \
-  POSTHOG_HOST=${VITE_POSTHOG_HOST} \
-  SERVER_UPSTREAM=server:8080
+  API_ORIGIN=${VITE_API_URL} \
+  POSTHOG_HOST=${VITE_POSTHOG_HOST}
 # Caddy keeps its state in /data and /config; the binary may bind port 80 without root (cap_net_bind_service).
 RUN addgroup -S caddy && adduser -S -D -H -G caddy caddy && chown -R caddy:caddy /data /config
 COPY apps/web/Caddyfile /etc/caddy/Caddyfile

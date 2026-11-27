@@ -1,7 +1,8 @@
-# bluechip on Dokploy, in Compose mode (deploy/README.md): the web app (Caddy, the only public service) and the
-# server behind it, with an optional Postgres. Paper and production are two Dokploy projects deploying this same file
-# with their own environment, which Dokploy writes to `.env` beside it: the server reads all of it, the web build
-# takes its VITE_* values as build args. Set `COMPOSE_PROFILES=postgres` to run the bundled Postgres (pgvector).
+# bluechip on Dokploy, in Compose mode (deploy/README.md): the web app (Caddy, static pages only) and the server, each
+# on its own domain (the browser calls the server's directly), with an optional Postgres. Paper and production are two
+# Dokploy projects deploying this same file with their own environment, which Dokploy writes to `.env` beside it: the
+# server reads all of it, the web build takes its VITE_* values as build args. Set `COMPOSE_PROFILES=postgres` to run
+# the bundled Postgres (pgvector).
 services:
   web:
     build:
@@ -9,22 +10,16 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_NETWORK: ${VITE_NETWORK:?set VITE_NETWORK to sepolia (paper) or base (production)}
+        VITE_API_URL: ${VITE_API_URL:?set VITE_API_URL to the server's domain (https://paper-api.bluechip.markets)}
         VITE_SITE_URL: ${VITE_SITE_URL:-}
         VITE_POSTHOG_PROJECT_API_KEY: ${VITE_POSTHOG_PROJECT_API_KEY:-}
         VITE_POSTHOG_HOST: ${VITE_POSTHOG_HOST:-}
         VITE_DEPLOYMENT_ENVIRONMENT: ${VITE_DEPLOYMENT_ENVIRONMENT:-}
     restart: unless-stopped
-    environment:
-      SERVER_UPSTREAM: server:8080
-    # Not `service_healthy`: the pages are static, and Caddy holds API requests while the server starts.
-    depends_on:
-      - server
-    # Attach the domain to this service on port 80 in Dokploy's Domains tab; Dokploy adds Traefik's labels and its
-    # network.
+    # Static pages only: it never reaches the server. Attach the site's domain to this service on port 80 in
+    # Dokploy's Domains tab; Dokploy adds Traefik's labels and its network.
     expose:
       - "80"
-    networks:
-      - internal
 
   server:
     build:
@@ -37,13 +32,16 @@ services:
     environment:
       NODE_ENV: production
       PORT: "8080"
+      # The server's own public origin (the Telegram webhook's), the one the web build calls.
+      API_ORIGIN: ${VITE_API_URL:?set VITE_API_URL to the server's domain (https://paper-api.bluechip.markets)}
     depends_on:
       postgres:
         condition: service_healthy
         required: false
     # SIGTERM, then 2 s for open requests and live streams, then the engine's shutdown.
     stop_grace_period: 20s
-    # Reached only through the web's proxy: no domain, no published port.
+    # Attach the API's domain (api.bluechip.markets) to this service on port 8080 in Dokploy's Domains tab; no
+    # published port.
     expose:
       - "8080"
     networks:

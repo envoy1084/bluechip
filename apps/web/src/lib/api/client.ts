@@ -5,8 +5,10 @@ import { flow } from "effect/Function"
 import * as FetchHttpClient from "effect/http/FetchHttpClient"
 import * as HttpClient from "effect/http/HttpClient"
 import * as HttpClientRequest from "effect/http/HttpClientRequest"
+import * as Layer from "effect/Layer"
 import * as AtomHttpApi from "effect/reactivity/AtomHttpApi"
 import { replaySessionId, track } from "../analytics.ts"
+import { apiOrigin } from "./origin.ts"
 
 /** The header that names the session replay a request comes from, so the server's events and spans link to it. */
 export const replaySessionHeader = "x-bluechip-replay-session"
@@ -18,14 +20,17 @@ const reportApiError = (url: string, error: string) => {
 }
 
 /**
- * The typed client for `BluechipApi`, with atoms for queries and mutations. Requests go to `/api` on the page's own
- * origin (Vite proxies it in development), so the session cookie is first-party and there is no CORS. Each carries the
- * replay's session when analytics is on; a server error or a request that never arrived is an `api_error` event
+ * The typed client for `BluechipApi`, with atoms for queries and mutations. Requests go to the server's origin
+ * (`apiOrigin`: its own domain on paper and production, the page's own under Vite's proxy) with the session cookie,
+ * the live stream's included. Each carries the replay's session when analytics is on; a server error or a request that never arrived is an `api_error` event
  * (failures the API names are answers, and the server's events count them).
  */
 export class BluechipApiClient extends AtomHttpApi.Service<BluechipApiClient>()("@bluechip/web/BluechipApiClient", {
   api: BluechipApi,
-  httpClient: FetchHttpClient.layer,
+  httpClient: FetchHttpClient.layer.pipe(
+    Layer.provide(Layer.succeed(FetchHttpClient.RequestInit, { credentials: "include" }))
+  ),
+  baseUrl: apiOrigin === "" ? undefined : apiOrigin,
   transformClient: flow(
     HttpClient.mapRequest((request) => {
       const versioned = HttpClientRequest.setHeader(request, contractVersionHeader, String(ContractVersion))

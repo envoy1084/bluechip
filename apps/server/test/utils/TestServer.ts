@@ -11,6 +11,7 @@ import { AppConfig } from "../../src/config/AppConfig.ts"
 import { ReferencePrices } from "../../src/modules/market/ReferencePrices.ts"
 import { Database } from "../../src/platform/db/Database.ts"
 import { Embeddings } from "../../src/platform/embeddings/Embeddings.ts"
+import { CorsMiddleware } from "../../src/platform/http/Cors.ts"
 import { OriginCheckMiddleware } from "../../src/platform/http/OriginCheck.ts"
 import { ServicesLive } from "../../src/Services.ts"
 import { AlpacaTest } from "./AlpacaTest.ts"
@@ -43,7 +44,7 @@ export const TelegramTest = ChatTest.layer({
  * layer with `excludeTestServices`.
  */
 const serve = <A, E, R>(chat: Layer.Layer<A | Chat.Chat | ChatAdapter.Registry, E, R>) =>
-  HttpRouter.serve(Layer.mergeAll(ApiRoutes, OriginCheckMiddleware), {
+  HttpRouter.serve(Layer.mergeAll(ApiRoutes, CorsMiddleware, OriginCheckMiddleware), {
     disableListenLog: true,
     disableLogger: true
   }).pipe(

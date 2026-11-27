@@ -1,6 +1,7 @@
 import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useCallback, useEffect, useState } from "react"
+import { apiOrigin } from "../../../lib/api/origin.ts"
 import {
   pushDevicesAtom,
   pushKeyAtom,
@@ -20,8 +21,10 @@ const supported = () =>
   typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window &&
   "Notification" in window
 
-// The service worker shows pushes and opens their page when clicked (`public/sw.js`).
-const registration = () => navigator.serviceWorker.register("/sw.js").then(() => navigator.serviceWorker.ready)
+// The service worker shows pushes and opens their page when clicked (`public/sw.js`); its buttons call the server's
+// origin, which a static file can only learn from its URL.
+const workerUrl = apiOrigin === "" ? "/sw.js" : `/sw.js?api=${encodeURIComponent(apiOrigin)}`
+const registration = () => navigator.serviceWorker.register(workerUrl).then(() => navigator.serviceWorker.ready)
 
 /** This browser's push opt-in: its state, and turning it on (asks for permission) or off. */
 export function usePushDevice() {

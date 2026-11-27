@@ -10,7 +10,7 @@ import { AppConfig } from "../../../config/AppConfig.ts"
  * The Telegram bot's settings. `TELEGRAM_BOT_TOKEN` (from @BotFather, redacted) turns the bot on;
  * `TELEGRAM_BOT_USERNAME` is its handle for link codes' deep links. Updates arrive by long polling (`polling`, the
  * default outside production: no public URL needed) or a webhook (`webhook`, the default in production) at
- * `TELEGRAM_WEBHOOK_URL` (`PUBLIC_ORIGIN/telegram/webhook` by default; the server answers `/telegram/webhook`), checked
+ * `TELEGRAM_WEBHOOK_URL` (`API_ORIGIN/telegram/webhook` by default; the server answers `/telegram/webhook`), checked
  * against `TELEGRAM_WEBHOOK_SECRET` (32 to 256 of `A-Za-z0-9_-`).
  */
 export class TelegramConfig extends Context.Service<TelegramConfig, {
@@ -31,7 +31,7 @@ export class TelegramConfig extends Context.Service<TelegramConfig, {
       )
       const webhookSecret = yield* Config.option(Config.Redacted("TELEGRAM_WEBHOOK_SECRET"))
       const webhookUrl = yield* Config.String("TELEGRAM_WEBHOOK_URL").pipe(
-        Config.withDefault(new URL("/telegram/webhook", app.publicOrigin).toString())
+        Config.withDefault(new URL("/telegram/webhook", app.apiOrigin).toString())
       )
       return {
         token: Option.getOrUndefined(token),

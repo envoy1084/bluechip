@@ -4,7 +4,10 @@
 // bell's buttons do: both only take power away. Review, and a button that can't act (signed out, offline), opens the
 // page instead.
 
-// Each button's request to bluechip's API, on this origin (as the app's requests are).
+// Each button's request to bluechip's API, on the server's origin as the app's requests are: its own domain when the
+// app registered this worker with `?api=` (paper and production), this origin otherwise.
+const API_ORIGIN = new URL(self.location.href).searchParams.get("api") ?? self.location.origin
+
 const REQUESTS = {
   pauseAll: "/api/agents/pause-all",
   cancelRecovery: "/api/account/recovery/cancel"
@@ -34,7 +37,7 @@ const openPage = (link) => {
 }
 
 const act = (action, data) =>
-  fetch(REQUESTS[action], { method: "POST", credentials: "same-origin" }).then((response) => {
+  fetch(new URL(REQUESTS[action], API_ORIGIN).href, { method: "POST", credentials: "include" }).then((response) => {
     if (!response.ok) return openPage(data.link)
     const done = (data.actions ?? []).find((each) => each.action === action)?.done
     return done === undefined ? undefined : self.registration.showNotification(done, { tag: `${action}-done` })

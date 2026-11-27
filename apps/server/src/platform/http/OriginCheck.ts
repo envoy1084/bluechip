@@ -7,8 +7,10 @@ import { AppConfig } from "../../config/AppConfig.ts"
 const safeMethods = new Set(["GET", "HEAD", "OPTIONS"])
 
 /**
- * Refuses state-changing requests a browser sends from another site (cross-site request forgery). Browsers always
- * send `Origin` on such requests; requests without it (curl, server-to-server) carry no cookies a site could abuse.
+ * Refuses state-changing requests a browser sends from any origin but the web app's (`PUBLIC_ORIGIN`): cross-site
+ * request forgery, and pages on bluechip's other subdomains, which share its site and so its `SameSite=Lax` cookie.
+ * Browsers always send `Origin` on such requests; requests without it (curl, Telegram's webhook) carry no cookies a
+ * page could abuse.
  */
 export const OriginCheckMiddleware = HttpRouter.middleware(
   Effect.gen(function*() {

@@ -18,6 +18,7 @@ import { ReferencePrices } from "./modules/market/ReferencePrices.ts"
 import { Database } from "./platform/db/Database.ts"
 import { Embeddings } from "./platform/embeddings/Embeddings.ts"
 import { EngineLive } from "./platform/engine/Engine.ts"
+import { CorsMiddleware } from "./platform/http/Cors.ts"
 import { HealthRoutes } from "./platform/http/Health.ts"
 import { OriginCheckMiddleware } from "./platform/http/OriginCheck.ts"
 import { RequestIdMiddleware } from "./platform/http/RequestId.ts"
@@ -28,13 +29,14 @@ import { ServicesLive } from "./Services.ts"
 
 /**
  * Every HTTP route the server answers: health, the API under `/api` (passkey auth included) and the web app's
- * telemetry route (`/api/sync/*`), every request measured.
+ * telemetry route (`/api/sync/*`), open to the web app's origin only (CORS, the origin check), every request measured.
  */
 export const Routes = Layer.mergeAll(
   HealthRoutes,
   ApiRoutes,
   TelemetryProxyRoutes,
   RequestIdMiddleware,
+  CorsMiddleware,
   OriginCheckMiddleware,
   RequestTelemetryMiddleware
 )

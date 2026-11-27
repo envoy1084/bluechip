@@ -32,7 +32,8 @@ const crawlerFilesPlugin = (files: Readonly<Record<string, string>>): Plugin => 
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, import.meta.dirname, "")
-  // The browser only talks to the web app's origin; in development Vite forwards the server's paths to it.
+  // In development (and the browser suite) the browser calls the server on the page's own origin, through this proxy;
+  // a deployed build calls it on its own domain (VITE_API_URL).
   const server = env["SERVER_ORIGIN"] ?? "http://localhost:8080"
   const network = networks.find((candidate) => candidate === env["VITE_NETWORK"]) ?? "local"
   const site = siteOf(network, env["VITE_SITE_URL"])

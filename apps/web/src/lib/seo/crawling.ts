@@ -1,7 +1,7 @@
 import { webManifest } from "./manifest.ts"
 import { canonicalUrl, type Site } from "./site.ts"
 
-/** Where crawlers never go on production: the signed-in app, its API and the analytics relay. */
+/** Where crawlers never go on production: the signed-in app (the API is on the server's own domain). */
 const PRIVATE_PATHS = [
   "/home",
   "/portfolio",
@@ -16,9 +16,7 @@ const PRIVATE_PATHS = [
   "/recover",
   "/signin",
   "/welcome/",
-  "/dev/",
-  "/api/",
-  "/auth/"
+  "/dev/"
 ]
 
 /** `robots.txt`: production opens its public pages and points at the sitemap; paper money and local close everything. */

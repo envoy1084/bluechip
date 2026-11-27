@@ -3,25 +3,30 @@
 bluechip runs as two containers per deployment, built from this repository by Dokploy on the VPS:
 
 ```
-browser ──https──▶ Traefik (Dokploy, TLS) ──http──▶ web (Caddy, :80) ──▶ server (Node, :8080) ──▶ Postgres + pgvector
-                                                    static pages          /api/*, /auth/*, /telegram/*
+browser ───────────▶ Traefik (Dokploy, TLS) ─┬─▶ bluechip.markets ─────▶ web (Caddy, :80): static pages
+browser, Telegram ─▶                         └─▶ api.bluechip.markets ─▶ server (Node, :8080) ─▶ Postgres + pgvector
 ```
 
 - **web** (`apps/web/Dockerfile`, `apps/web/Caddyfile`): the static build (prerendered `/` and `/legal/*`, the SPA
-  shell `/_shell.html` for every other path) served by Caddy, which proxies the server's paths on the same origin.
-  The only service with a domain. `VITE_*` settings are written into the bundle, so they are **build args**.
-- **server** (`apps/server/Dockerfile`): the API, the durable engine (crons, workflows) and the Telegram bot. It
-  applies pending migrations, then starts. Not exposed: reached only through the web's proxy. Its settings are
-  **runtime environment variables**.
+  shell `/_shell.html` for every other path) served by Caddy. It proxies nothing: the browser calls the server on its
+  own domain (`VITE_API_URL`). `VITE_*` settings are written into the bundle, so they are **build args**.
+- **server** (`apps/server/Dockerfile`): the API, the durable engine (crons, workflows) and the Telegram bot, on its
+  own domain. It applies pending migrations, then starts. It answers CORS for the web app's origin (`PUBLIC_ORIGIN`)
+  only, with credentials, and refuses writes from any other origin. Its settings are **runtime environment
+  variables**.
 - **postgres**: Postgres 18 with **pgvector** (the assistant's recall and the help center's search). Either Dokploy's
   managed database with the pgvector image, or the `postgres` service of `deploy/compose.yaml`.
 
-Paper money (`paper.bluechip.markets`, Base Sepolia) and production (`bluechip.markets`, Base) are two Dokploy
-projects deploying the same `deploy/compose.yaml` with their own environment, database, Telegram bot and keys.
+Paper money (`paper.bluechip.markets` and `paper-api.bluechip.markets`, Base Sepolia) and production
+(`bluechip.markets` and `api.bluechip.markets`, Base) are two Dokploy projects deploying the same
+`deploy/compose.yaml` with their own environment, database, Telegram bot and keys. The web and its API are subdomains
+of one site, so the server's host-only session cookie (`SameSite=Lax`, `Secure`, `HttpOnly`) goes with the page's
+requests.
 
 ## 1. Before you start
 
-- DNS: `A` records for `paper.bluechip.markets` and `bluechip.markets` to the VPS.
+- DNS: `A` records for `paper.bluechip.markets`, `paper-api.bluechip.markets`, `bluechip.markets` and
+  `api.bluechip.markets` to the VPS.
 - The VPS builds the images: give it about 4 GB of memory for the web build (Vite), and room for Docker's build cache.
 - Contracts are deployed from a workstation, never from these images (`node scripts/bin.ts contracts deploy
   --network sepolia`; see `research/plan/025-testnet.md`).
@@ -60,22 +65,26 @@ reuse a value between paper and production.
 
 **Web build args** (public: they ship in every page):
 
-| Name                           | Paper                     | Production |
-| ------------------------------ | ------------------------- | ---------- |
-| `VITE_NETWORK`                 | `sepolia`                 | `base`     |
-| `VITE_POSTHOG_PROJECT_API_KEY` | paper's project key       | its own    |
-| `VITE_POSTHOG_HOST`            | `https://t.envoy1084.xyz` | the same   |
-| `VITE_SITE_URL`                | unset (network's site)    | unset      |
-| `VITE_DEPLOYMENT_ENVIRONMENT`  | unset (`paper`)           | unset      |
+| Name                           | Paper                                | Production                     |
+| ------------------------------ | ------------------------------------ | ------------------------------ |
+| `VITE_NETWORK`                 | `sepolia`                            | `base`                         |
+| `VITE_API_URL`                 | `https://paper-api.bluechip.markets` | `https://api.bluechip.markets` |
+| `VITE_POSTHOG_PROJECT_API_KEY` | paper's project key                  | its own                        |
+| `VITE_POSTHOG_HOST`            | `https://t.envoy1084.xyz`            | the same                       |
+| `VITE_SITE_URL`                | unset (network's site)               | unset                          |
+| `VITE_DEPLOYMENT_ENVIRONMENT`  | unset (`paper`)                      | unset                          |
 
-The browser sends analytics straight to `VITE_POSTHOG_HOST` (PostHog's reverse proxy), which the image's CSP
-allows in `connect-src` and `script-src`. Every network but `base` is `noindex` (its `robots.txt`, and Caddy's `X-Robots-Tag`); only production writes
+The browser calls the server at `VITE_API_URL` (the API, its live stream, `/api/rpc` and the telemetry relay
+`/api/sync/*`) and sends analytics straight to `VITE_POSTHOG_HOST` (PostHog's reverse proxy); the image's CSP allows
+both in `connect-src`, and PostHog in `script-src`. Every network but `base` is `noindex` (its `robots.txt`, and Caddy's `X-Robots-Tag`); only production writes
 `sitemap.xml`.
 
 **Server** (`NODE_ENV=production` and `PORT=8080` are set by the compose file):
 
-- Origin and passkeys: `PUBLIC_ORIGIN` (`https://paper.bluechip.markets`), `RP_ID` (`paper.bluechip.markets`).
-  Passkeys are bound to `RP_ID` for good: choose it once.
+- Origins and passkeys: `PUBLIC_ORIGIN`, the web app's origin (`https://paper.bluechip.markets`: the passkeys'
+  origin, links in messages, the only origin CORS allows), `RP_ID`, the web app's domain (`paper.bluechip.markets`;
+  passkeys are bound to it for good: choose it once). The server's own origin, `API_ORIGIN`, is set by the compose
+  file from `VITE_API_URL`.
 - Database and keys: `DATABASE_URL`, `AGENT_KEY_ENCRYPTION_KEY` (`openssl rand -base64 32`; losing or changing it
   makes every agent's key unreadable, so keep a copy outside the VPS).
 - Chain: `NETWORK` (`sepolia` or `base`, matching `VITE_NETWORK`), `BASE_RPC_URL`, `BUNDLER`, `BUNDLER_URL`,
@@ -94,20 +103,23 @@ allows in `connect-src` and `script-src`. Every network but `base` is `noindex` 
 **Compose** (only with the bundled Postgres): `COMPOSE_PROFILES=postgres`, `POSTGRES_PASSWORD`, and optionally
 `POSTGRES_USER`, `POSTGRES_DB`.
 
-## 5. Domain
+## 5. Domains
 
-Domains tab → Add domain: service **web**, host `paper.bluechip.markets` (production: `bluechip.markets`), path `/`,
-container port **80**, HTTPS on with Let's Encrypt. Dokploy adds Traefik's labels and network to `web`. Give the
-server no domain. Caddy sends HSTS (one year) and the security headers itself, so Traefik needs no middleware.
+Domains tab → Add domain, twice, HTTPS on with Let's Encrypt, path `/`:
 
-Deploy, then check `https://paper.bluechip.markets/api/version` (the server's network through the proxy) and the
-landing page.
+- service **web**, host `paper.bluechip.markets` (production: `bluechip.markets`), container port **80**. Caddy
+  sends HSTS (one year) and the security headers itself, so Traefik needs no middleware.
+- service **server**, host `paper-api.bluechip.markets` (production: `api.bluechip.markets`), container port
+  **8080**.
+
+Dokploy adds Traefik's labels and network to both. Deploy, then check `https://paper-api.bluechip.markets/api/version`
+(the server's network) and the landing page.
 
 ## 6. Telegram
 
 With `NODE_ENV=production` the bot takes updates by webhook. At startup the server registers
-`PUBLIC_ORIGIN/telegram/webhook` (or `TELEGRAM_WEBHOOK_URL`) with `TELEGRAM_WEBHOOK_SECRET` itself; Caddy routes
-`/telegram/*` to it. Use a separate bot per deployment (a bot has one webhook). To check it:
+`API_ORIGIN/telegram/webhook` (`https://paper-api.bluechip.markets/telegram/webhook`, or `TELEGRAM_WEBHOOK_URL`) with
+`TELEGRAM_WEBHOOK_SECRET` itself; Telegram posts to the server's domain. Use a separate bot per deployment (a bot has one webhook). To check it:
 `curl https://api.telegram.org/bot<token>/getWebhookInfo`.
 
 ## 7. Backups
@@ -130,8 +142,8 @@ Restore into an empty database; the server migrates it forward on start.
 - **One server per deployment.** The durable engine runs as a single runner (crons, workflows, the account desk):
   never scale `server` past one replica, and keep Compose mode, which stops the old container before starting the
   new one. Migrations take no lock, for the same reason.
-- **Deploys** rebuild both images. While the server restarts, Caddy holds API requests for up to 15 s; live streams
-  reconnect on their own.
+- **Deploys** rebuild both images. While the server restarts, API requests fail (Traefik answers 502) and the app
+  retries; live streams reconnect on their own.
 - **Logs** are JSON on stdout (Dokploy's Logs tab); traces, logs and metrics also go to Axiom when configured.
 - **Release**: `/health` and `/api/version` report `0.0.0`, because the images start Node directly rather than
   through pnpm (`npm_package_version`).
@@ -140,9 +152,12 @@ Restore into an empty database; the server migrates it forward on start.
 
 ```sh
 docker build -f apps/server/Dockerfile -t bluechip-server .
-docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=local -t bluechip-web .
+docker build -f apps/web/Dockerfile --build-arg VITE_NETWORK=local \
+  --build-arg VITE_API_URL=http://localhost:8082 -t bluechip-web .
+docker run --rm -p 8081:80 bluechip-web
 ```
 
-Run the server with a throwaway environment (`NETWORK=local`, a database of its own, `DEPLOYMENT_ENVIRONMENT`
-unset so nothing is exported) and the web with `SERVER_UPSTREAM=<server container>:8080` on the same Docker
-network. Never test with paper's or production's secrets.
+Run the server on `-p 8082:8080` with a throwaway environment (`NETWORK=local`, a database of its own,
+`PUBLIC_ORIGIN=http://localhost:8081`, `RP_ID=localhost`, `API_ORIGIN=http://localhost:8082`,
+`DEPLOYMENT_ENVIRONMENT` unset so nothing is exported), then open `http://localhost:8081`. Never test with paper's or
+production's secrets.

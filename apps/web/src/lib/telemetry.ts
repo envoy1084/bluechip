@@ -18,6 +18,7 @@ import * as Option from "effect/Option"
 import * as Atom from "effect/reactivity/Atom"
 import * as Tracer from "effect/Tracer"
 import type { AnalyticsSetup } from "./analyticsSetup.ts"
+import { apiUrl } from "./api/origin.ts"
 import { templatePath } from "./pagePath.ts"
 
 /** The share of page sessions whose traces are kept. Errors are logs, kept from every session. */
@@ -94,7 +95,7 @@ const exporters = (setup: AnalyticsSetup) => {
     attributes: { "deployment.environment": setup.environment, network: setup.network }
   }
   // Short, neutral paths: ad blockers drop requests to ones that look like telemetry.
-  const url = (signal: "traces" | "logs" | "metrics") => new URL(`/api/sync/${signal[0]}`, location.origin).href
+  const url = (signal: "traces" | "logs" | "metrics") => apiUrl(`/api/sync/${signal[0]}`)
   // `keepalive` lets the last batch leave while the tab closes.
   const fetchClient = FetchHttpClient.layer.pipe(
     Layer.provide(Layer.succeed(FetchHttpClient.RequestInit, { keepalive: true }))

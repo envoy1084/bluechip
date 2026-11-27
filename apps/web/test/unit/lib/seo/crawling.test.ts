@@ -30,8 +30,6 @@ describe("robotsTxt", () => {
         "Disallow: /signin",
         "Disallow: /welcome/",
         "Disallow: /dev/",
-        "Disallow: /api/",
-        "Disallow: /auth/",
         "",
         "Sitemap: https://bluechip.markets/sitemap.xml",
         ""

@@ -115,10 +115,14 @@ passkey's. It loads like preview mode (only from `client.tsx`, in development, n
 
 ## Deploy
 
-Paper and production run on Dokploy from `deploy/compose.yaml` (step by step in `deploy/README.md`): `web`
-(`apps/web/Dockerfile`, the static build behind Caddy, `apps/web/Caddyfile`, which proxies `/api/*`, `/auth/*` and
-`/telegram/*` to the server; `VITE_*` are build args) and `server` (`apps/server/Dockerfile`: Node runs the sources
-in the workspace's layout, migrations then the server, one instance only), on Postgres with pgvector. Images build
+Paper and production run on Dokploy from `deploy/compose.yaml` (step by step in `deploy/README.md`), each service on
+its own domain: `web` (`apps/web/Dockerfile`, the static build behind Caddy, `apps/web/Caddyfile`, which proxies
+nothing; `VITE_*` are build args) on `bluechip.markets`, and `server` (`apps/server/Dockerfile`: Node runs the sources
+in the workspace's layout, migrations then the server, one instance only) on `api.bluechip.markets` (paper:
+`paper.` and `paper-api.`), on Postgres with pgvector. The browser calls the server's domain (`VITE_API_URL`,
+`apps/web/src/lib/api/origin.ts`) with credentials; the server allows CORS and writes from `PUBLIC_ORIGIN` only
+(`platform/http/Cors.ts`, `OriginCheck.ts`), and Telegram's webhook goes to `API_ORIGIN`. Development, the browser
+suite and preview mode leave `VITE_API_URL` empty: the server's paths stay on the page's origin through Vite's proxy. Images build
 from the repository root (`docker build -f apps/server/Dockerfile .`); `.dockerignore` keeps env files, tests and
 local state out. A new workspace member adds its `package.json` line to both Dockerfiles.
 
@@ -227,11 +231,11 @@ paper money and local are `noindex`. The build's network (`VITE_NETWORK`, `VITE_
 The web app ships as static files: `pnpm --filter @bluechip/web build` (with `.env.production` or `--mode paper`)
 prerenders the public pages (`/`, `/legal/*`) to `dist/client/**/index.html` with their head, and writes
 `dist/client/_shell.html`, the SPA shell (the root's `noindex` tags) for every other path. A new public page goes in
-`pages` in `apps/web/vite.config.ts`. Serve `dist/client` with Caddy:
+`pages` in `apps/web/vite.config.ts`. Serve `dist/client` with Caddy (the image's is `apps/web/Caddyfile`); the
+server has its own domain (`VITE_API_URL`):
 
 ```caddy
 bluechip.markets {
-  reverse_proxy /api/* /auth/* localhost:8080
   root * /srv/bluechip/web
   try_files {path} {path}/index.html /_shell.html
   file_server
