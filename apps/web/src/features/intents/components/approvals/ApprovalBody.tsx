@@ -9,14 +9,13 @@ import { Button } from "@bluechip/ui/components/button"
 import { Spinner } from "@bluechip/ui/components/spinner"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { formatMoney, formatShareCount } from "@bluechip/ui/lib/format"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
 import { priceDollars, shareCount, usdcDollars } from "../../../../lib/amounts.ts"
-import { nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
+import { nothingMoved, tradeOutcome, tradesOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
 import type { useApproveIntent } from "../../hooks/useApproveIntent.ts"
 import { useLatestIntents } from "../../hooks/useLatestIntent.ts"
-import { clockTime, expiresIn } from "../../model/intentText.ts"
+import { clockTime, expiresIn, sentLeg } from "../../model/intentText.ts"
 
 type Approval = ReturnType<typeof useApproveIntent>
 
@@ -60,46 +59,27 @@ function Trades({ trades }: Readonly<{ trades: ReadonlyArray<Intent> }>) {
   )
 }
 
-/** After Face ID: one outcome for what was sent, then each trade of it as it lands. */
+/** After Face ID: one outcome for everything it sent, until each trade lands. */
 function Sent(
   { trades, onDone }: Readonly<{ trades: ReadonlyArray<Intent>; onDone?: (() => void) | undefined }>
 ) {
   const { nameOf } = useStockLookup()
   const latest = useLatestIntents(trades)
   const stages = latest.map(stageOf)
-  const lead = tradeOutcome(stages[0]!, latest[0]!.leg.side, describeLeg(latest[0]!.leg, nameOf))
+  const text = latest.length === 1 ?
+    tradeOutcome(stages[0]!, latest[0]!.leg.side, describeLeg(latest[0]!.leg, nameOf)) :
+    tradesOutcome(latest.map((intent, index) => ({ stage: stages[index]!, leg: sentLeg(intent, nameOf) })))
   const settled = stages.every((stage) => stage === "filled" || stage === "failed")
 
   return (
-    <div className="grid gap-3">
-      <Outcome
-        tone={lead.tone}
-        title={lead.title}
-        description={latest.length === 1 ? lead.description : "Sent together with one Face ID."}
-        actions={settled && onDone !== undefined ?
-          <Button variant="secondary" className="w-full" onClick={onDone}>Done</Button> :
-          undefined}
-      />
-      {latest.length === 1 ? null : (
-        <ul className="grid gap-1.5">
-          {latest.map((intent, index) => {
-            const text = tradeOutcome(stages[index]!, intent.leg.side, describeLeg(intent.leg, nameOf))
-            return (
-              <li key={intent.id} className="flex items-center gap-2 text-label">
-                <Icon
-                  name={text.tone === "success" ? "check-circle" : text.tone === "failure" ? "error" : "clock"}
-                  size={14}
-                  className={cn(
-                    text.tone === "success" ? "text-gain" : text.tone === "failure" ? "text-loss" : "text-g-400"
-                  )}
-                />
-                {text.title}
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </div>
+    <Outcome
+      tone={text.tone}
+      title={text.title}
+      description={text.description}
+      actions={settled && onDone !== undefined ?
+        <Button variant="secondary" className="w-full" onClick={onDone}>Done</Button> :
+        undefined}
+    />
   )
 }
 

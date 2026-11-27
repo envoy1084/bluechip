@@ -1,9 +1,9 @@
 import type { ActivityItem } from "@bluechip/domain/activity/Activity"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { Trade } from "@bluechip/domain/trading/Trade"
+import { shortAddress } from "@bluechip/ui/bluechip/address-chip"
 import { FairPriceCheck, OrderPreview, OrderPreviewRow } from "@bluechip/ui/bluechip/order-preview"
 import { TickerChip } from "@bluechip/ui/bluechip/ticker-chip"
-import { TradeReceipt } from "@bluechip/ui/bluechip/trade-receipt"
 import {
   Sheet,
   SheetBody,
@@ -18,6 +18,7 @@ import * as DateTime from "effect/DateTime"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type RefObject, useRef, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
+import { CopyButton } from "../../../components/CopyButton.tsx"
 import { activityAt, activityStatus, activityTitle, fairPriceText } from "../../../lib/activityText.ts"
 import { priceDollars, shareCount, usdcDollars } from "../../../lib/amounts.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
@@ -36,6 +37,16 @@ function Transaction({ txHash }: Readonly<{ txHash: string | null }>) {
     >
       {txHash.slice(0, 6)}…{txHash.slice(-4)}
     </a>
+  )
+}
+
+/** An address shortened to its ends, whole in its tooltip, with a copy button. */
+function Address({ address }: Readonly<{ address: string }>) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span title={address} className="font-mono">{shortAddress(address)}</span>
+      <CopyButton text={address} what="the address" />
+    </span>
   )
 }
 
@@ -67,7 +78,7 @@ export function ActivityDetails(
 
   return (
     <Sheet open={item !== undefined} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent initialFocus={title} finalFocus={opener}>
+      <SheetContent initialFocus={title} finalFocus={opener} className="w-[min(520px,92vw)]">
         {item !== undefined && (
           <>
             <SheetHeader>
@@ -94,9 +105,7 @@ export function ActivityDetails(
                       `${formatShares(shareCount(item.transfer.amount))} ${item.transfer.asset}`}
                   </OrderPreviewRow>
                   <OrderPreviewRow label={item.transfer.kind === "deposit" ? "From" : "To"}>
-                    <span className="font-mono">
-                      {item.transfer.kind === "deposit" ? item.transfer.from : item.transfer.to}
-                    </span>
+                    <Address address={item.transfer.kind === "deposit" ? item.transfer.from : item.transfer.to} />
                   </OrderPreviewRow>
                   <OrderPreviewRow label="Status">{activityStatus(item).label}</OrderPreviewRow>
                   <OrderPreviewRow label="Transaction">
@@ -109,31 +118,6 @@ export function ActivityDetails(
         )}
       </SheetContent>
     </Sheet>
-  )
-}
-
-/** A filled trade, kept: what moved, then how its price compared with Chainlink's. */
-function Receipt(
-  { trade, names }: Readonly<{ trade: Trade; names: ReadonlyMap<StockSymbol, string> }>
-) {
-  return (
-    <>
-      <TradeReceipt
-        side={trade.side}
-        symbol={trade.symbol}
-        name={names.get(trade.symbol) ?? trade.symbol}
-        shares={shareCount(trade.shares)}
-        price={priceDollars(trade.price)}
-        total={usdcDollars(trade.usdc)}
-        by=""
-        when=""
-        header={false}
-        {...(trade.txHash === null ? {} : { txHash: trade.txHash })}
-      />
-      <OrderPreview>
-        <PriceCheckRows trade={trade} />
-      </OrderPreview>
-    </>
   )
 }
 
@@ -156,7 +140,6 @@ function TradeRows(
 ) {
   const { trade } = item
   const buying = trade.side === "buy"
-  if (trade.status === "filled") return <Receipt trade={trade} names={names} />
 
   return (
     <OrderPreview>
@@ -165,7 +148,8 @@ function TradeRows(
         {names.get(trade.symbol) ?? trade.symbol}
       </OrderPreviewRow>
       <OrderPreviewRow label={buying ? "You paid" : "You got"}>
-        {formatMoney(usdcDollars(trade.usdc))} (quoted)
+        {formatMoney(usdcDollars(trade.usdc))}
+        {trade.status === "filled" ? "" : " (quoted)"}
       </OrderPreviewRow>
       <OrderPreviewRow label="Shares">{formatShares(shareCount(trade.shares))}</OrderPreviewRow>
       <OrderPreviewRow label="Price">{formatMoney(priceDollars(trade.price))} a share</OrderPreviewRow>

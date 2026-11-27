@@ -90,16 +90,17 @@ test.describe("activity", () => {
       await page.getByText(/^Bought \$\d+\.\d{2} of SpaceX$/).click()
 
       const details = page.getByRole("dialog", { name: /^Bought \$\d+\.\d{2} of SpaceX$/ })
-      const receipt = details.getByRole("region", { name: "Bought SpaceX" })
       await expect(details).toContainText(/You, today at \d{2}:\d{2}/)
       await expect(details.getByRole("definition")).toHaveText([
+        /SpaceX$/,
+        /^\$\d+\.\d{2}$/,
         /^[\d.]+ shares?$/,
         /^\$\d+\.\d{2} a share$/,
         /^\$\d+\.\d{2}$/,
-        /^\$\d+\.\d{2}$/,
-        /^\d+\.\d{2}% (worse|better) than Chainlink$/
+        /^\d+\.\d{2}% (worse|better) than Chainlink$/,
+        /^Filled$/,
+        /^0x[\da-f]{4}…[\da-f]{4}$/
       ])
-      await expect(receipt.getByRole("link", { name: "View on BaseScan" })).toBeVisible()
     }
   )
 })

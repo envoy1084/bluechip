@@ -9,7 +9,6 @@ import {
   SheetTitle
 } from "@bluechip/ui/components/sheet"
 import { Icon } from "@bluechip/ui/icons/icon"
-import { cn } from "@bluechip/ui/lib/cn"
 import { Link } from "@tanstack/react-router"
 import { useRef } from "react"
 import { useApprovalCount } from "../../hooks/useApprovalCount.ts"
@@ -33,22 +32,23 @@ export function ApprovalsBell(
       <Button
         ref={trigger}
         variant="ghost"
-        size={count === 0 ? "icon-sm" : "sm"}
-        className={cn(count === 0 ? null : "gap-1.5 bg-blue-50 px-2.5 text-blue hover:bg-blue-100")}
+        size="icon-sm"
+        className="relative"
         aria-label={count === 0 ? "Approvals, nothing to approve" : `Approvals, ${count} to approve`}
         onClick={() => onOpenChange(true)}
       >
         <Icon name="approvals" size={16} />
-        {count === 0 ? null : (
-          <span className="font-semibold tabular-nums">
-            {count}
-            <span className="max-sm:hidden">to approve</span>
-          </span>
-        )}
+        {count === 0 ?
+          null :
+          (
+            <span className="absolute -top-1 -right-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-blue px-[5px] text-caption-sm font-semibold text-white tabular-nums ring-2 ring-canvas">
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
       </Button>
 
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent initialFocus={title} finalFocus={trigger}>
+        <SheetContent initialFocus={title} finalFocus={trigger} className="w-[min(760px,92vw)]">
           <SheetHeader>
             <SheetTitle ref={title} tabIndex={-1} className="outline-none">Approvals</SheetTitle>
             <SheetDescription>{waitingText(count)}</SheetDescription>

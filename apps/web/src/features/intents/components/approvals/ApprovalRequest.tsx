@@ -3,7 +3,9 @@ import type { Intent } from "@bluechip/domain/intents/Intent"
 import { AgentAvatar } from "@bluechip/ui/bluechip/agent-avatar"
 import { TextMorph } from "@bluechip/ui/components/text-morph"
 import { useStockLookup } from "../../../../hooks/useStockLookup.ts"
+import { describeTrades } from "../../../../lib/tradeOutcome.ts"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
+import { sentLeg } from "../../model/intentText.ts"
 import { ApprovalBody } from "./ApprovalBody.tsx"
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1)
@@ -25,7 +27,10 @@ export function ApprovalRequest(
 ) {
   const approval = useApproveIntent(asked, together)
   const { nameOf } = useStockLookup()
-  const trade = describeLeg(approval.intent.leg, nameOf)
+  const trades = [approval.intent, ...together]
+  const trade = trades.length === 1 ?
+    describeLeg(approval.intent.leg, nameOf) :
+    describeTrades(trades.map((intent) => sentLeg(intent, nameOf)))
   const title = approval.flow.status === "declined" ?
     `You declined: ${lowerFirst(trade)}` :
     approval.flow.status === "approved" ?

@@ -2,6 +2,7 @@
 // wait for you.
 import { Conflict } from "@bluechip/domain/Errors"
 import type { Decision, Intent } from "@bluechip/domain/intents/Intent"
+import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { formatRelative, formatTime } from "@bluechip/ui/lib/format"
 import * as DateTime from "effect/DateTime"
 import { localTimeZone } from "../../../lib/localTime.ts"
@@ -62,3 +63,10 @@ export const waitingText = (count: number) =>
     count === 1 ?
     "1 trade waits for your approval" :
     `${count} trades wait for your approval`
+
+/** An intent's trade as the batch wording reads it: its side, its dollars for a buy of an amount, its stock's name. */
+export const sentLeg = (intent: Pick<Intent, "leg">, nameOf: (symbol: StockSymbol) => string) => ({
+  side: intent.leg.side,
+  usdc: "usdc" in intent.leg.amount ? intent.leg.amount.usdc : null,
+  name: nameOf(intent.leg.symbol)
+})

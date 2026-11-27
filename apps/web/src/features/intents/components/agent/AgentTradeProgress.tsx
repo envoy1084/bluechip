@@ -9,10 +9,10 @@ import { Spinner } from "@bluechip/ui/components/spinner"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useNow } from "../../../../hooks/useNow.ts"
 import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
-import { nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
+import { describeTrades, nothingMoved, tradeOutcome, type TradeStage } from "../../../../lib/tradeOutcome.ts"
 import { useApprovalGroup } from "../../hooks/useApprovalGroup.ts"
 import { useApproveIntent } from "../../hooks/useApproveIntent.ts"
-import { shownDecision } from "../../model/intentText.ts"
+import { sentLeg, shownDecision } from "../../model/intentText.ts"
 import { ApprovalBody } from "../approvals/ApprovalBody.tsx"
 import { DecisionLine } from "../DecisionLine.tsx"
 import { FilledTrade } from "../FilledTrade.tsx"
@@ -52,7 +52,9 @@ export function AgentTradeProgress(
   const needsYou = intent.status === "needsApproval" || intent.status === "awaitingSignature"
   const quiet = ENDED_QUIETLY[intent.status]
 
-  const trade = describeLeg(intent.leg, nameOf)
+  const trade = together.length === 0 ?
+    describeLeg(intent.leg, nameOf) :
+    describeTrades([intent, ...together].map((leg) => sentLeg(leg, nameOf)))
   const again = isEnded(intent.status) && onDone !== undefined ?
     (
       <Button variant="secondary" onClick={onDone}>
