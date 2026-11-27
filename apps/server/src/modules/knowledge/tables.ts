@@ -20,7 +20,8 @@ export const documents = pgTable("documents", {
 
 /**
  * A document's passages, one per section, with their vector (and the model that made it, `null` until embedded) and
- * their words for full-text search.
+ * their words for full-text search. A few hundred passages: searched exactly, with no approximate (HNSW) index, which
+ * missed close passages on a table Postgres hadn't analyzed yet.
  */
 export const chunks = pgTable("chunks", {
   id: typeId("chunk")("id").primaryKey(),
@@ -33,6 +34,5 @@ export const chunks = pgTable("chunks", {
   textSearch: tsvector("text_search").generatedAlwaysAs(sql`to_tsvector('english', text)`)
 }, (table) => [
   uniqueIndex("chunks_document_position_idx").on(table.documentId, table.position),
-  index("chunks_embedding_idx").using("hnsw", table.embedding.op("vector_cosine_ops")),
   index("chunks_text_search_idx").using("gin", table.textSearch)
 ])

@@ -1,0 +1,38 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "6414912f-9c61-4efe-9e55-606a1dbfd01d",
+  "prevIds": [
+    "2234069f-9036-48a8-85b0-fa8d393ed2c6"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "chunks",
+        "chunks_embedding_idx"
+      ],
+      "writes": [
+        "s|idx|public.chunks_embedding_idx",
+        "n|idx|public.chunks_embedding_idx",
+        "e|idx|public.chunks_embedding_idx",
+        "n|rel|public.chunks_embedding_idx"
+      ],
+      "reads": [
+        "e|tbl|public.chunks",
+        "n|sch|public",
+        "e|col|public.chunks.embedding"
+      ],
+      "sharedWrites": []
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"chunks_embedding_idx\"]"
+    }
+  ]
+}
