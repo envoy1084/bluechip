@@ -51,7 +51,7 @@ export function FairPriceChart() {
       <span
         aria-hidden
         data-seen={seen || undefined}
-        className="absolute inset-0 origin-right bg-white transition-transform delay-200 duration-[1800ms] ease-in-out data-seen:scale-x-0 motion-reduce:scale-x-0 motion-reduce:transition-none"
+        className="absolute inset-0 origin-right bg-g-50 transition-transform delay-200 duration-[1800ms] ease-in-out data-seen:scale-x-0 motion-reduce:scale-x-0 motion-reduce:transition-none"
       />
     </div>
   )

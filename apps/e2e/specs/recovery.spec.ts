@@ -28,7 +28,7 @@ test.describe("recovery", () => {
     const lost = await browser.newPage()
     await addAuthenticator(lost)
     await hardwareKey.copyTo(await addAuthenticator(lost, { transport: "usb" }))
-    await lost.goto("/signin")
+    await lost.goto("/welcome")
     await lost.getByRole("link", { name: "Lost your passkey? Recover your account" }).click()
     await lost.getByRole("button", { name: "Use my recovery key" }).click()
     await expect(lost.getByRole("heading", { name: "Ask for a recovery" })).toBeVisible()
@@ -52,7 +52,7 @@ test.describe("recovery", () => {
 
     const lost = await browser.newPage()
     await hardwareKey.copyTo(await addAuthenticator(lost, { transport: "usb" }))
-    await lost.goto("/signin")
+    await lost.goto("/welcome")
     await lost.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(lost.getByText("We couldn't sign you in")).toBeVisible()

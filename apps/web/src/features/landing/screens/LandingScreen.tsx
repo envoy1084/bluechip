@@ -8,16 +8,18 @@ import { HowItWorks } from "../components/HowItWorks.tsx"
 import { LandingFooter } from "../components/LandingFooter.tsx"
 import { LandingNav } from "../components/LandingNav.tsx"
 import { Limits } from "../components/Limits.tsx"
-import type { GlanceView } from "../components/LimitsDemo.tsx"
+import type { GlanceView, SpecEditorView } from "../components/LimitsDemo.tsx"
 import { Safety } from "../components/Safety.tsx"
 import { TickerBand } from "../components/TickerBand.tsx"
 
 /**
  * The public page at `/`: what bluechip is, how agents and their onchain limits work, why it's safe, and the ways in
  * (Create an account, Sign in on its own page). Shown to everyone: someone signed in gets Open bluechip in the nav.
- * The limits demo shows an agent's rules with the agents feature's own glance, passed in by the route.
+ * The limits demo uses the agents feature's own form and glance, passed in by the route.
  */
-export function LandingScreen({ Glance }: Readonly<{ Glance: GlanceView }>) {
+export function LandingScreen(
+  { Editor, Glance }: Readonly<{ Editor: SpecEditorView; Glance: GlanceView }>
+) {
   return (
     <div data-page="landing" className="min-h-dvh bg-white text-ink">
       <LandingNav />
@@ -25,7 +27,7 @@ export function LandingScreen({ Glance }: Readonly<{ Glance: GlanceView }>) {
         <Hero />
         <TickerBand />
         <HowItWorks />
-        <Limits Glance={Glance} />
+        <Limits Editor={Editor} Glance={Glance} />
         <AgentsShowcase />
         <Automations />
         <Safety />

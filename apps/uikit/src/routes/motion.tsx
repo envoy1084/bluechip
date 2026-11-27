@@ -4,7 +4,7 @@ import { REDUCED, SCENES } from "../pages/motion/entries.ts"
 import { HapticsCard, MomentCard, MorphCard, SkeletonCard } from "../pages/motion/feel.tsx"
 import { RollCard, ScrambleCard } from "../pages/motion/interface.tsx"
 import { Group } from "../pages/motion/layout.tsx"
-import { AssembleCard, ConfettiCard, GridCard, SceneCard, SealCard, WarpCard } from "../pages/motion/pixel.tsx"
+import { AssembleCard, ConfettiCard, GridCard, SceneCard, SealCard } from "../pages/motion/pixel.tsx"
 
 export const Route = createFileRoute("/motion")({ component: KitMotion })
 
@@ -50,7 +50,6 @@ function KitMotion() {
         </Group>
         <Group title="Pixel moments">
           <GridCard />
-          <WarpCard />
           <SealCard />
           <AssembleCard />
           <ConfettiCard />

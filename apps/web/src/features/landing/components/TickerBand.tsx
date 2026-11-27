@@ -12,7 +12,7 @@ export function TickerBand() {
               {TICKERS.map((ticker) => (
                 <li
                   key={ticker.symbol}
-                  className="inline-flex items-center gap-2.5 rounded-full bg-g-50 py-1.5 pr-4 pl-1.5 shadow-[inset_0_0_0_1px_var(--color-g-100)]"
+                  className="inline-flex items-center gap-2.5 rounded-md bg-g-50 py-1.5 pr-4 pl-1.5 shadow-[inset_0_0_0_1px_var(--color-g-100)]"
                 >
                   <TickerChip symbol={ticker.symbol} />
                   <span className="text-label font-medium whitespace-nowrap text-g-700">{ticker.name}</span>

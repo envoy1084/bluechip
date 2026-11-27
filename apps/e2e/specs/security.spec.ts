@@ -67,7 +67,7 @@ test.describe("security: devices", () => {
   test("another browser signed in is listed, notified, and signed out from here", async ({ browser, page, authenticator, user: _user }) => {
     const other = await browser.newPage()
     await authenticator.copyTo(await addAuthenticator(other))
-    await other.goto("/signin")
+    await other.goto("/welcome")
     await other.getByRole("button", { name: "Sign in with passkey" }).click()
     await expect(other.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 
@@ -78,7 +78,7 @@ test.describe("security: devices", () => {
 
     await expect(devices.getByRole("button", { name: /^Sign out (?!others)/ })).toHaveCount(0)
     await other.reload()
-    await expect(other).toHaveURL(/\/signin$/)
+    await expect(other).toHaveURL(/\/welcome$/)
     await other.close()
   })
 })

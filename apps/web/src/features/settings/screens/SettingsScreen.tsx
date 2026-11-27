@@ -43,7 +43,7 @@ export function SettingsScreen() {
             onClick={async () => {
               setSigningOut(true)
               await signOut({ reactivityKeys: [accountReactivityKey] }).finally(() => setSigningOut(false))
-              await navigate({ to: "/signin" })
+              await navigate({ to: "/welcome" })
             }}
           >
             <Icon name="logout" size={14} />Sign out

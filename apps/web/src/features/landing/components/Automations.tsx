@@ -173,7 +173,13 @@ export function Automations() {
                       >
                         {phrase.symbol === undefined ?
                           null :
-                          <TickerChip symbol={phrase.symbol} size="lg" className="mr-[.25em] align-[.16em]" />}
+                          (
+                            <TickerChip
+                              symbol={phrase.symbol}
+                              size="lg"
+                              className="relative -top-[.08em] mr-2 ml-0.5 align-middle"
+                            />
+                          )}
                         {phrase.text}
                       </span>
                       {part === "action" ? "." : ", "}

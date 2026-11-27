@@ -17,7 +17,7 @@ export function AgentsShowcase() {
               <Reveal as="li" key={template.name} delay={index * 100} className="grid">
                 <div className="group grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 rounded-2xl bg-white p-4 shadow-e2 transition-[translate,box-shadow] duration-slow ease-brand hover:-translate-y-1 hover:shadow-e3">
                   <span className="grid size-24 place-items-center rounded-[20px] bg-[radial-gradient(circle_at_50%_55%,var(--color-blue-50),var(--color-g-50))]">
-                    <Illustration name={template.illustration} variant="halftone" size={84} animate aria-hidden />
+                    <Illustration name={template.illustration} size={60} aria-hidden />
                   </span>
                   <span className="grid content-center justify-items-start gap-1.5">
                     <b className="text-body font-semibold">{template.label}</b>

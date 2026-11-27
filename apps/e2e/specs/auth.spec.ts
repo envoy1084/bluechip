@@ -2,22 +2,21 @@ import { addAuthenticator } from "../fixtures/authenticator.ts"
 import { expect, test } from "../fixtures/test.ts"
 
 test.describe("landing and legal", () => {
-  test("the landing page leads to sign-up", async ({ page }) => {
+  test("the landing page leads to the welcome page, to sign up or sign in", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.getByRole("heading", { name: "Hire an agent. Set its limits. Let it trade.", level: 1 }))
+    await expect(page.getByRole("heading", { name: "Agents trade stocks. You set the limits.", level: 1 }))
       .toBeVisible()
-    await page.getByRole("link", { name: "Create an account" }).first().click()
+    await page.getByRole("link", { name: "Get started" }).first().click()
+    await expect(page).toHaveURL(/\/welcome$/)
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
   })
 
-  test("the landing page leads to the sign-in page", async ({ page }) => {
-    await page.goto("/")
+  test("the old sign-in page leads to the welcome page", async ({ page }) => {
+    await page.goto("/welcome")
 
-    await page.getByRole("link", { name: "Sign in", exact: true }).first().click()
-
-    await expect(page).toHaveURL(/\/signin$/)
-    await expect(page.getByRole("heading", { name: "Welcome back", level: 1 })).toBeVisible()
+    await expect(page).toHaveURL(/\/welcome$/)
     await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
   })
 
@@ -63,7 +62,7 @@ test.describe("sign up", () => {
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
     await expect(page.getByRole("button", { name: "Continue" })).toBeHidden()
     await page.getByRole("button", { name: "Sign out" }).click()
-    await expect(page.getByRole("link", { name: "Create an account" }).first()).toBeVisible()
+    await expect(page.getByRole("link", { name: "Get started" }).first()).toBeVisible()
   })
 
   test("a US answer is kept: signing in again returns to eligibility", async ({ page, context }) => {
@@ -74,7 +73,7 @@ test.describe("sign up", () => {
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
 
     await context.clearCookies()
-    await page.goto("/signin")
+    await page.goto("/welcome")
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(page).toHaveURL(/\/welcome\/eligibility$/)
@@ -99,7 +98,7 @@ test.describe("sign in and out", () => {
 
     await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
     await page.goto("/home")
-    await expect(page).toHaveURL(/\/signin$/)
+    await expect(page).toHaveURL(/\/welcome$/)
 
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
@@ -135,7 +134,7 @@ test.describe("sign in and out", () => {
     const otherPage = await other.newPage()
     await authenticator.copyTo(await addAuthenticator(otherPage))
 
-    await otherPage.goto("/signin")
+    await otherPage.goto("/welcome")
     await otherPage.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(otherPage.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
@@ -144,18 +143,17 @@ test.describe("sign in and out", () => {
   })
 
   test("a device without a bluechip passkey can't sign in", async ({ page }) => {
-    await page.goto("/signin")
+    await page.goto("/welcome")
 
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(page.getByText("We couldn't sign you in")).toBeVisible()
-    await page.getByRole("link", { name: "Create an account" }).click()
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
   })
 
-  test("a signed-out visitor is sent to the sign-in page", async ({ page }) => {
+  test("a signed-out visitor is sent to the welcome page", async ({ page }) => {
     await page.goto("/portfolio")
 
-    await expect(page).toHaveURL(/\/signin$/)
+    await expect(page).toHaveURL(/\/welcome$/)
   })
 })

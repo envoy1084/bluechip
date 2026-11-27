@@ -19,6 +19,7 @@ import { Route as AppMemoryRouteImport } from './routes/_app/memory'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as DevChainRouteImport } from './routes/dev/chain'
 import { Route as DevConnectionRouteImport } from './routes/dev/connection'
+import { Route as LegalPrivacyRouteImport } from './routes/legal/privacy'
 import { Route as LegalRiskRouteImport } from './routes/legal/risk'
 import { Route as LegalTermsRouteImport } from './routes/legal/terms'
 import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
@@ -93,6 +94,11 @@ const DevChainRoute = DevChainRouteImport.update({
 const DevConnectionRoute = DevConnectionRouteImport.update({
   id: '/dev/connection',
   path: '/dev/connection',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
+  id: '/legal/privacy',
+  path: '/legal/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRiskRoute = LegalRiskRouteImport.update({
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
   '/welcome/deposit': typeof WelcomeDepositRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
   '/welcome/deposit': typeof WelcomeDepositRoute
@@ -315,6 +323,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/dev/chain': typeof DevChainRoute
   '/dev/connection': typeof DevConnectionRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/risk': typeof LegalRiskRoute
   '/legal/terms': typeof LegalTermsRoute
   '/welcome/deposit': typeof WelcomeDepositRoute
@@ -354,6 +363,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/legal/privacy'
     | '/legal/risk'
     | '/legal/terms'
     | '/welcome/deposit'
@@ -391,6 +401,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/legal/privacy'
     | '/legal/risk'
     | '/legal/terms'
     | '/welcome/deposit'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/dev/chain'
     | '/dev/connection'
+    | '/legal/privacy'
     | '/legal/risk'
     | '/legal/terms'
     | '/welcome/deposit'
@@ -463,6 +475,7 @@ export interface RootRouteChildren {
   SigninRoute: typeof SigninRoute
   DevChainRoute: typeof DevChainRoute
   DevConnectionRoute: typeof DevConnectionRoute
+  LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRiskRoute: typeof LegalRiskRoute
   LegalTermsRoute: typeof LegalTermsRoute
   WelcomeDepositRoute: typeof WelcomeDepositRoute
@@ -540,6 +553,13 @@ declare module '@tanstack/react-router' {
       path: '/dev/connection'
       fullPath: '/dev/connection'
       preLoaderRoute: typeof DevConnectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/privacy': {
+      id: '/legal/privacy'
+      path: '/legal/privacy'
+      fullPath: '/legal/privacy'
+      preLoaderRoute: typeof LegalPrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal/risk': {
@@ -802,6 +822,7 @@ const rootRouteChildren: RootRouteChildren = {
   SigninRoute: SigninRoute,
   DevChainRoute: DevChainRoute,
   DevConnectionRoute: DevConnectionRoute,
+  LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRiskRoute: LegalRiskRoute,
   LegalTermsRoute: LegalTermsRoute,
   WelcomeDepositRoute: WelcomeDepositRoute,

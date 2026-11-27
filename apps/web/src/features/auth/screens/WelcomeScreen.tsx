@@ -1,7 +1,7 @@
 import type { Me } from "@bluechip/domain/Account"
 import { AddressChip } from "@bluechip/ui/bluechip/address-chip"
 import { Alert, AlertDescription, AlertTitle } from "@bluechip/ui/components/alert"
-import { Button } from "@bluechip/ui/components/button"
+import { Button, buttonVariants } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import { Seal } from "@bluechip/ui/motion/seal"
@@ -53,6 +53,9 @@ export function WelcomeScreen() {
             <Icon name="face-id" size={18} />Create account with Face ID
           </Button>
           <PasskeySignIn />
+          <Link to="/recover" className={buttonVariants({ size: "lg", variant: "ghost", className: "w-full" })}>
+            Lost your passkey? Recover your account
+          </Link>
         </div>
         <p className="text-[12px] text-g-500">
           By continuing you agree to the{" "}

@@ -100,7 +100,7 @@ export const SCENES: ReadonlyArray<SceneEntry> = [
   }
 ]
 
-export const PIXEL: Readonly<Record<"grid" | "warp" | "seal" | "assemble" | "confetti", Entry>> = {
+export const PIXEL: Readonly<Record<"grid" | "seal" | "assemble" | "confetti", Entry>> = {
   grid: {
     n: 8,
     name: "Reactive grid",
@@ -108,14 +108,6 @@ export const PIXEL: Readonly<Record<"grid" | "warp" | "seal" | "assemble" | "con
     duration: "Endless; ripple 1.4 s",
     easing: "Spring (k .08, damping .74)",
     reduced: "A still noise field, no cursor response"
-  },
-  warp: {
-    n: 19,
-    name: "Ticker warp",
-    used: "Landing hero",
-    duration: "2.4 s launch into an endless cruise; surge 1.1 s on a press",
-    easing: "Ease out cubic launch, perspective (1/z)",
-    reduced: "One still frame of streaks and chips, no cursor response"
   },
   seal: {
     n: 9,
@@ -206,7 +198,6 @@ export const REDUCED: ReadonlyArray<readonly [string, string]> = [
   ["Halftone scenes (1–7, 11)", "One composed still frame, chosen per scene. No pointer response."],
   ["Seal, avatar reveal (9, 10)", "The finished picture, drawn at once."],
   ["Reactive grid (8)", "A still noise field. No springs, no ripples."],
-  ["Ticker warp (19)", "One still frame of streaks and chips. No launch, no surge."],
   ["Confetti (12)", "Not drawn. The toast or heading says it."],
   ["Number roll, flash (13)", "Digits change in place; the up or down color stays on the text."],
   ["Text scramble (14)", "The text is there from the start."],

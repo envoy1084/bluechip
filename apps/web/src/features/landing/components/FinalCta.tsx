@@ -37,22 +37,12 @@ export function FinalCta() {
           </p>
           <div className="flex w-full flex-col gap-2.5 min-[440px]:w-auto min-[440px]:flex-row">
             <Link to="/welcome" className={buttonVariants({ size: "lg", variant: "secondary", className: "group" })}>
-              Create an account
+              Get started
               <Icon
                 name="arrow-right"
                 size={16}
                 className="transition-transform duration-base ease-brand group-hover:translate-x-0.5"
               />
-            </Link>
-            <Link
-              to="/signin"
-              className={buttonVariants({
-                size: "lg",
-                variant: "ghost",
-                className: "text-white hover:bg-white/10 hover:text-white"
-              })}
-            >
-              Sign in
             </Link>
           </div>
         </div>

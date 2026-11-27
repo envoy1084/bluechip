@@ -1,9 +1,9 @@
-import { type GlanceView, LimitsDemo } from "./LimitsDemo.tsx"
+import { type GlanceView, LimitsDemo, type SpecEditorView } from "./LimitsDemo.tsx"
 import { Reveal } from "./Reveal.tsx"
 import { SectionIntro } from "./SectionIntro.tsx"
 
-/** The limits: the promise in a line, then an agent's rules set and locked with the new-agent flow's own pieces. */
-export function Limits({ Glance }: Readonly<{ Glance: GlanceView }>) {
+/** The limits: the promise in a line, then an agent's rules, set with the new-agent flow's own form. */
+export function Limits({ Editor, Glance }: Readonly<{ Editor: SpecEditorView; Glance: GlanceView }>) {
   return (
     <section
       id="limits"
@@ -16,10 +16,11 @@ export function Limits({ Glance }: Readonly<{ Glance: GlanceView }>) {
           align="center"
           title={<span id="landing-limits">You set the limits. bluechip enforces them.</span>}
         >
-          Checked onchain on every trade. Only your Face ID can change them.
+          Try them here. They're checked onchain on every trade.
         </SectionIntro>
         <Reveal delay={120}>
-          <LimitsDemo Glance={Glance} />
+          <LimitsDemo Editor={Editor} Glance={Glance} />
+          <p className="mt-3 text-center text-caption text-g-500">Stock prices here are examples.</p>
         </Reveal>
       </div>
     </section>

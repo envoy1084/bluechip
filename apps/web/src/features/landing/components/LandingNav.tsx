@@ -7,6 +7,7 @@ import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { meAtom } from "../../../atoms/account.ts"
+import { PaperBadge } from "../../../components/layout/PaperBadge.tsx"
 
 /** The page's sections, in order, for the nav and the footer. */
 export const LANDING_SECTIONS = [
@@ -19,7 +20,7 @@ export const LANDING_SECTIONS = [
 ] as const
 
 /**
- * The bar over the page: the lockup, the sections, then Sign in and Create an account, or Open bluechip for someone
+ * The bar over the page: the lockup, the sections, then Sign in and Get started (both to the welcome page), or Open bluechip for someone
  * already signed in. It frosts once the page scrolls.
  */
 export function LandingNav() {
@@ -42,9 +43,12 @@ export function LandingNav() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between gap-3 px-4 sm:px-6">
-        <Link to="/" aria-label="bluechip home" className="rounded-sm">
-          <Logo size={24} />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/" aria-label="bluechip home" className="rounded-sm">
+            <Logo size={24} />
+          </Link>
+          <PaperBadge />
+        </div>
         <nav aria-label="Sections" className="hidden items-center gap-0.5 md:flex">
           {LANDING_SECTIONS.map((section) => (
             <a
@@ -64,8 +68,8 @@ export function LandingNav() {
           ) :
           (
             <div className="flex items-center gap-1.5">
-              <Link to="/signin" className={buttonVariants({ variant: "ghost", size: "sm" })}>Sign in</Link>
-              <Link to="/welcome" className={buttonVariants({ size: "sm" })}>Create an account</Link>
+              <Link to="/welcome" className={buttonVariants({ variant: "ghost", size: "sm" })}>Sign in</Link>
+              <Link to="/welcome" className={buttonVariants({ size: "sm" })}>Get started</Link>
             </div>
           )}
       </div>
