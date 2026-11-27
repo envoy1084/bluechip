@@ -49,7 +49,8 @@ export const makeServer = <Out, E, RA = never, R = never>(
   adapters: Layer.Layer<Alpaca | AssistantModels | Embeddings | Out, E, RA>,
   routes: Layer.Layer<never, never, R> = Layer.empty as Layer.Layer<never, never, R>
 ) =>
-  HttpRouter.serve(Layer.mergeAll(Routes, TelegramLive, routes)).pipe(
+  // No log line per request: failed requests are logged by `RequestTelemetryMiddleware`, the rest are in the traces.
+  HttpRouter.serve(Layer.mergeAll(Routes, TelegramLive, routes), { disableLogger: true }).pipe(
     Layer.provide(NodeHttpServer.layerConfig(createServer, {
       port: Config.Port("PORT").pipe(Config.withDefault(8080)),
       // Live streams never finish on their own; cut them quickly on shutdown so clients reconnect to the next process.

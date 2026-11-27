@@ -17,6 +17,8 @@ export const replaySessionHeader = "x-bluechip-replay-session"
  *   count what traces skip; `error.type` is the status of a 4xx or 5xx (`none` otherwise). The live event stream is
  *   left out: it lasts as long as the tab stays open;
  * - the replay session (`x-bluechip-replay-session`) on the request's span as `posthog.session_id`;
+ * - one error log for a request that failed with a 5xx, with its cause: the server logs no line per request (the
+ *   router's own request logger is off), so this is the only request that reaches the logs;
  * - no spans at all under an untraced route (`isUntraced`): its handler's own spans would start traces of their own.
  */
 export const RequestTelemetryMiddleware = HttpRouter.middleware(
@@ -36,6 +38,11 @@ export const RequestTelemetryMiddleware = HttpRouter.middleware(
       const status = Exit.isSuccess(exit)
         ? exit.value.status
         : (yield* HttpServerError.causeResponse(exit.cause))[0].status
+      if (status >= 500) {
+        yield* Effect.logError("Request failed", Exit.isFailure(exit) ? exit.cause : undefined).pipe(
+          Effect.annotateLogs({ "http.route": route, "http.request.method": request.method, "http.status": status })
+        )
+      }
       yield* record(HttpServerDuration, Duration.toMillis(took), {
         "http.route": route,
         "http.request.method": request.method,
