@@ -96,7 +96,12 @@ export default defineConfig(({ mode }) => {
       description: SITE_DESCRIPTION,
       markdown: landingMarkdown(site, QUESTIONS)
     },
-    help: { path: "/help", title: "Help", description: HELP_DESCRIPTION, markdown: helpIndexMarkdown(site, groups) },
+    help: {
+      path: "/help",
+      title: "Help center",
+      description: HELP_DESCRIPTION,
+      markdown: helpIndexMarkdown(site, groups)
+    },
     articles: groups.flatMap((group) => group.articles),
     legal: LEGAL_DOCUMENTS.map((legal) => ({ ...legal, markdown: legalMarkdown(legal) }))
   })

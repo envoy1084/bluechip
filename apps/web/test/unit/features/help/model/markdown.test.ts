@@ -11,7 +11,7 @@ describe("helpIndexMarkdown", () => {
       [
         "# bluechip help",
         "",
-        "How bluechip works: your account and passkeys, agents and their rules, automations, the assistant, cash and recovery.",
+        "How bluechip works: your account and passkeys, AI agents and the rules they keep, automations, the assistant, adding cash, gas and recovery.",
         "",
         "## Getting started",
         "",

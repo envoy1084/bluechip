@@ -95,7 +95,7 @@ export const PRIVACY: LegalDocument = {
   title: "Privacy policy",
   path: "/legal/privacy",
   description:
-    "What bluechip keeps about you, why, and who else sees it. bluechip never asks for your name, email or phone number.",
+    "What bluechip keeps about you, why, who else sees it and for how long. bluechip never asks for your name, email or phone number.",
   updated: "2026-11-27",
   intro:
     "What bluechip keeps about you, why, and who else sees it. bluechip never asks for your email or phone number, shows no ads and never sells your data.",
@@ -183,7 +183,7 @@ export const RISK: LegalDocument = {
   title: "Risk disclosure",
   path: "/legal/risk",
   description:
-    "The risks of investing in tokenized US stocks onchain with software agents. Read this before you add cash.",
+    "The risks of investing in tokenized US stocks on Base with AI agents: prices, pools, smart contracts and outages. Read this before you add cash.",
   updated: "2026-11-27",
   intro:
     "Investing can lose money, and doing it onchain with software agents adds risks of its own. Read this before you add cash.",

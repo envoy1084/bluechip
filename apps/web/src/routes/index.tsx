@@ -10,9 +10,7 @@ import { jsonLdScript, pageHead } from "../lib/seo/head.ts"
 export const Route = createFileRoute("/")({
   head: () => {
     const head = pageHead({
-      fullTitle: site.paper ?
-        "bluechip paper | AI stock agents, with test money" :
-        "bluechip | AI stock agents, inside your limits",
+      fullTitle: "bluechip: AI agents for tokenized stocks on Base",
       path: "/",
       image: "default",
       markdown: true

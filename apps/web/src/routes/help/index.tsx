@@ -8,7 +8,13 @@ import { jsonLdScript, pageHead } from "../../lib/seo/head.ts"
 
 export const Route = createFileRoute("/help/")({
   head: () => ({
-    ...pageHead({ title: "Help", description: HELP_DESCRIPTION, path: "/help", image: "default", markdown: true }),
+    ...pageHead({
+      title: "Help center",
+      description: HELP_DESCRIPTION,
+      path: "/help",
+      image: "default",
+      markdown: true
+    }),
     scripts: [jsonLdScript(helpIndexStructuredData(site, HELP_GROUPS))]
   }),
   component: HelpIndexScreen

@@ -62,7 +62,7 @@ describe("helpIndexStructuredData", () => {
         name: "bluechip help",
         url: "https://bluechip.markets/help",
         description:
-          "How bluechip works: your account and passkeys, agents and their rules, automations, the assistant, cash and recovery.",
+          "How bluechip works: your account and passkeys, AI agents and the rules they keep, automations, the assistant, adding cash, gas and recovery.",
         inLanguage: "en",
         isPartOf: { "@id": "https://bluechip.markets/#website" },
         publisher: ORGANIZATION,

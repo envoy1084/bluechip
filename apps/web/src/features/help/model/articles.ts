@@ -149,4 +149,4 @@ export const helpSitemapPages = (groups: ReadonlyArray<HelpGroup>): ReadonlyArra
 
 /** What the help center's index says under its title. */
 export const HELP_DESCRIPTION =
-  "How bluechip works: your account and passkeys, agents and their rules, automations, the assistant, cash and recovery."
+  "How bluechip works: your account and passkeys, AI agents and the rules they keep, automations, the assistant, adding cash, gas and recovery."
