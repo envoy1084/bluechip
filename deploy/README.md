@@ -42,7 +42,8 @@ Create Service → Database → PostgreSQL, and set its Docker image to
 `pgvector/pgvector:0.8.1-pg18-trixie` (Dokploy's default `postgres` image has no pgvector, and the migrations fail on
 `CREATE EXTENSION vector`). Postgres 18 images keep their data in `/var/lib/postgresql`; if Dokploy mounts the
 volume at `/var/lib/postgresql/data` and the container refuses to start, change the mount path to
-`/var/lib/postgresql`. Deploy it, then use its **internal** connection URL as the server's `DATABASE_URL`.
+`/var/lib/postgresql`. Deploy it, then use its **internal** connection URL as the server's `DATABASE_URL`. The server joins `dokploy-network`
+(declared in `deploy/compose.yaml`) to reach it; keep the compose service's **Isolated Deployment** off.
 
 **Option B, the bundled service.** Set `COMPOSE_PROFILES=postgres` and `POSTGRES_PASSWORD` in the compose
 service's environment, and `DATABASE_URL=postgres://bluechip:<password>@postgres:5432/bluechip`. Its data lives in

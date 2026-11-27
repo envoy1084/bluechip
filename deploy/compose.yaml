@@ -47,8 +47,10 @@ services:
     # published port.
     expose:
       - "8080"
+    # dokploy-network reaches Dokploy's managed Postgres by its internal host name.
     networks:
       - internal
+      - dokploy-network
 
   postgres:
     profiles: [postgres]
@@ -73,6 +75,8 @@ services:
 
 networks:
   internal: {}
+  dokploy-network:
+    external: true
 
 volumes:
   postgres: {}
