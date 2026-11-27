@@ -3,6 +3,7 @@ import { assert, describe, it } from "@effect/vitest"
 import {
   countdown,
   dayGone,
+  etherAmount,
   limitOf,
   shownLimits,
   standingOf,
@@ -71,6 +72,19 @@ describe("limitOf", () => {
     { name: "trades over the default count", counted: trades(3, 2000), expected: null }
   ])("$name", ({ counted, expected }) => {
     assert.strictEqual(limitOf(counted), expected)
+  })
+})
+
+describe("etherAmount", () => {
+  it.each([
+    { name: "none", ether: 0, expected: "0 ETH" },
+    { name: "a day's gas budget", ether: 0.005, expected: "0.005 ETH" },
+    { name: "rounded to a ten-thousandth", ether: 0.00123456, expected: "0.0012 ETH" },
+    { name: "a ten-thousandth exactly", ether: 0.0001, expected: "0.0001 ETH" },
+    { name: "a filled trade's gas, under a ten-thousandth", ether: 0.0000213456, expected: "0.000021 ETH" },
+    { name: "a whole ether and more", ether: 1.23456, expected: "1.2346 ETH" }
+  ])("$name", ({ ether, expected }) => {
+    assert.strictEqual(etherAmount(ether), expected)
   })
 })
 

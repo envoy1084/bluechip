@@ -33,8 +33,9 @@ test.describe("edit rules: the rules step", () => {
 
     await page.getByRole("textbox", { name: "Daily budget" }).fill("100")
 
-    // The daily budget is part of the trade policy, marked beside what it trades.
-    await expect(page.getByRole("region", { name: "What it trades" })).toContainText("Tighter")
+    // The daily budget is part of the trade policy, marked under its limits, where the field is.
+    await expect(page.getByRole("region", { name: "Its limits" })).toContainText("Tighter")
+    await expect(page.getByRole("region", { name: "What it trades" })).not.toContainText("Tighter")
     await expect(page.getByText("These changes aren't locked yet")).toBeVisible()
     await expect(aDay(page)).toHaveText(/\$100/)
     await expect(page.getByRole("button", { name: "Review changes" })).toBeEnabled()

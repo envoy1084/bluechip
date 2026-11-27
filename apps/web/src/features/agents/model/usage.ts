@@ -44,8 +44,18 @@ export const countdown = (now: Date): string => {
   return `${Math.floor(seconds / 3600)}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`
 }
 
+const etherFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
+const tinyEtherFormat = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 })
+
+/**
+ * Gas in ETH as the usage cards show it: to a ten-thousandth, and amounts smaller than that (a few trades' gas on
+ * Base) to two significant digits rather than rounded to nothing: "0.0012 ETH", "0.000021 ETH".
+ */
+export const etherAmount = (ether: number): string =>
+  `${(ether > 0 && ether < 0.0001 ? tinyEtherFormat : etherFormat).format(ether)} ETH`
+
 /** Today in a headline and a sentence: how it stands across its daily limits, and how much of each is left. */
-export interface TodayRoom {
+interface TodayRoom {
   readonly standing: Standing
   readonly headline: string
   readonly detail: string

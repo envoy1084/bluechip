@@ -9,7 +9,7 @@ import { FieldEditor } from "../fields/FieldEditor.tsx"
 import type { EditorProps } from "./editorProps.ts"
 
 /** Which part of the trade policy an editor shows: the new agent form splits it between two sections. */
-export type TradePart = "stocks" | "direction" | "budget"
+type TradePart = "stocks" | "direction" | "budget"
 
 const EVERY_PART: ReadonlyArray<TradePart> = ["stocks", "direction", "budget"]
 

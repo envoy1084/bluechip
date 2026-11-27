@@ -8,7 +8,7 @@ import { Illustration, type IllustrationName } from "@bluechip/ui/illustrations/
 import { formatDollars } from "@bluechip/ui/lib/agent-limits"
 import { NumberRoll } from "@bluechip/ui/motion/number-roll"
 import { toDollars, toEther } from "../../../model/fieldText.ts"
-import { limitOf, standingOf } from "../../../model/usage.ts"
+import { etherAmount, limitOf, standingOf } from "../../../model/usage.ts"
 import { StandingPill } from "./StandingPill.tsx"
 
 const LIMIT: Partial<
@@ -19,8 +19,6 @@ const LIMIT: Partial<
   slippageBudget: { title: "Weekly slippage", illustration: "receipt" },
   gasBudget: { title: "Gas today", illustration: "bolt" }
 }
-
-const etherFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 })
 
 /**
  * One limit as a card: what it counts, how much of it is used, a bar with a tick where the day stands, and what's
@@ -41,7 +39,7 @@ export function LimitCard(
   const cap = limitOf(counted)
   const limit = cap === null ? null : amount(cap)
   const show = (value: number) =>
-    dollars ? formatDollars(value) : ether ? `${etherFormat.format(value)} ETH` : value.toLocaleString("en-US")
+    dollars ? formatDollars(value) : ether ? etherAmount(value) : value.toLocaleString("en-US")
   const standing = standingOf(counted)
   const { illustration, title } = LIMIT[counted.policy] ??
     { title: policyOf(counted.policy).title, illustration: "shield" as const }

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { agentAtom } from "../atoms/agents.ts"
 
 /** Where a sent lock or change of limits is: on its way to Base, landed, or failed (the agent is back where it was). */
-export type Landing = "sending" | "landed" | "failed"
+type Landing = "sending" | "landed" | "failed"
 
 /**
  * Follows a sent lock or change through the live agent until `landed` says it's done. The agent read before the

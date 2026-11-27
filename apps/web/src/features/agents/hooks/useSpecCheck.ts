@@ -4,7 +4,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useEffect, useState } from "react"
 import { checkSpecAtom } from "../atoms/policies.ts"
 
-export type SpecChecking =
+type SpecChecking =
   | { readonly status: "checking" }
   | { readonly status: "checked"; readonly check: SpecCheck }
   | { readonly status: "failed" }

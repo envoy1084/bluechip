@@ -5,7 +5,7 @@ import { AppPage } from "../../../../components/layout/AppPage.tsx"
 
 export const NEW_AGENT_STEPS = ["Start", "Rules", "Review"] as const
 
-export type NewAgentStep = (typeof NEW_AGENT_STEPS)[number]
+type NewAgentStep = (typeof NEW_AGENT_STEPS)[number]
 
 /**
  * The new agent page: where it is in the three steps, then the step, every step at the same width so the steps stay

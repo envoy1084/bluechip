@@ -4,7 +4,7 @@ import type * as AsyncResult from "effect/reactivity/AsyncResult"
 import { createContext, useContext } from "react"
 
 /** What every tab of an agent's page reads: the agent, its usage (no session: none) and stock names. */
-export interface AgentPage {
+interface AgentPage {
   readonly agent: Agent
   readonly usage: AsyncResult.AsyncResult<AgentUsage, unknown> | undefined
   readonly nameOf: (symbol: StockSymbol) => string

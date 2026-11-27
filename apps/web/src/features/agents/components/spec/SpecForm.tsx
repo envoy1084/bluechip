@@ -12,7 +12,7 @@ import { PresetPicker } from "@bluechip/ui/bluechip/preset-picker"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@bluechip/ui/components/collapsible"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useState } from "react"
-import { policySections } from "../../model/policySections.ts"
+import { policySections, tradeChanges } from "../../model/policySections.ts"
 import { presetAmounts } from "../../model/presetAmounts.ts"
 import { ChangeMark } from "./ChangeMark.tsx"
 import { TradeEditor } from "./editors/TradeEditor.tsx"
@@ -55,6 +55,7 @@ export function SpecForm(
   const problems = showProblems ? checkSpec(spec) : []
   const changes = before === undefined ? [] : compareSpecs(before, spec).policies
   const changeOf = (id: PolicyId) => changes.find((change) => change.policy === id)?.change
+  const tradeChange = before === undefined ? undefined : tradeChanges(before, spec)
   const problemOf = (id: PolicyId, field: string | null) =>
     problems.find((problem) => problem.policy === id && problem.field === field)?.message
 
@@ -101,7 +102,7 @@ export function SpecForm(
       <PolicyGroup
         title="What it trades"
         description="The stocks it may trade."
-        aside={<ChangeMark change={changeOf("trade")} />}
+        aside={<ChangeMark change={tradeChange?.stocks} />}
       >
         <div className="grid gap-4 px-[18px] py-4">
           <TradeEditor
@@ -117,7 +118,11 @@ export function SpecForm(
         </div>
       </PolicyGroup>
 
-      <PolicyGroup title="Its limits" description="Checked onchain on every trade it makes.">
+      <PolicyGroup
+        title="Its limits"
+        description="Checked onchain on every trade it makes."
+        aside={<ChangeMark change={tradeChange?.limits} />}
+      >
         <div className="grid gap-4 border-b border-g-100 px-[18px] py-4">
           <TradeEditor
             id="trade"
