@@ -1,7 +1,8 @@
-import { Effect, Redacted } from "effect"
+import { Effect, Predicate, Redacted } from "effect"
 
 import { ToolFailed } from "../errors.ts"
 import { call, list, type PostHogApi, type Row } from "./Api.ts"
+import { sizeOf, tileLayouts } from "./Layout.ts"
 import { matches } from "./Matches.ts"
 import { type PostHogDesired, type Refs, TAG } from "./Spec.ts"
 
@@ -39,8 +40,8 @@ export const resolveProject = Effect.fn("posthog.resolveProject")(function*(
 /**
  * Makes the project say what `want` says, writing only what differs (objects found by name and the `[bluechip]` tag
  * at the start of their description), in dependency order: actions and cohorts, dashboards, insights on their
- * dashboards, then the settings that point at them. A write PostHog refuses goes to the manual list and the run
- * carries on. With `dryRun`, reads only.
+ * dashboards, each dashboard's tiles in its order, then the settings that point at them. A write PostHog refuses goes
+ * to the manual list and the run carries on. With `dryRun`, reads only.
  */
 export const applyPostHog = Effect.fn("posthog.apply")(function*(
   api: PostHogApi,
@@ -126,6 +127,29 @@ export const applyPostHog = Effect.fn("posthog.apply")(function*(
       }
     }))
   )
+
+  // PostHog drops a new tile wherever it fits; each tile goes where its dashboard's order puts it.
+  for (const dashboard of want.dashboards) {
+    const id = ids.dashboard.get(dashboard.name)
+    if (id === undefined) continue
+    const current = yield* call(api, "GET", `${base}/dashboards/${id}/`)
+    const tiles = Array.isArray(current.tiles) ? current.tiles as ReadonlyArray<Row> : []
+    const placed = dashboard.insights.flatMap((name) => {
+      const tile = tiles.find((each) => Predicate.isObject(each.insight) && each.insight.name === name)
+      const insight = want.insights.find((each) => each.name === name)
+      return tile === undefined || insight === undefined ? [] : [{ tile, size: sizeOf(insight.query(refs)) }]
+    })
+    const layouts = tileLayouts(placed.map(({ size }) => size))
+    const moved = placed.flatMap(({ tile }, index) =>
+      matches(layouts[index], tile.layouts) ? [] : [{ id: tile.id, layouts: layouts[index] }]
+    )
+    if (moved.length === 0) {
+      unchanged++
+      continue
+    }
+    changes.push(`arrange dashboard "${dashboard.name}"`)
+    yield* write(`arrange dashboard "${dashboard.name}"`, "PATCH", `${base}/dashboards/${id}/`, { tiles: moved })
+  }
 
   for (const [setting, value] of Object.entries(want.settings(refs))) {
     if (matches(value, project[setting])) {

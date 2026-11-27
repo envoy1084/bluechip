@@ -66,6 +66,43 @@ describe("applyPostHog", () => {
       )
     }).pipe(Effect.provide(PostHogTest.layer)))
 
+  it.effect("tiles in the dashboard's order: the week's numbers across the top, then charts two by two", () =>
+    Effect.gen(function*() {
+      const posthog = yield* PostHogTest
+
+      yield* applyPostHog(api, projectKey, desired("paper"), { dryRun: false })
+
+      const dashboards = yield* posthog.rows("dashboards")
+      const automations = dashboards.find((row) => row.name === "bluechip: Automations")!.id
+      const tiles = yield* posthog.tiles(automations)
+      const place = (name: string) => {
+        const { sm } = tiles.find((tile) => tile.name === name)!.layouts as { sm: { x: number; y: number; w: number } }
+        return [name, sm.x, sm.y, sm.w]
+      }
+      assert.deepStrictEqual(
+        [
+          "Automations created, 7 days",
+          "Automation runs, 7 days",
+          "Automation skips, 7 days",
+          "Automation fires by outcome",
+          "Automation skips by condition",
+          "Automations by trigger",
+          "Automations by action",
+          "Automation"
+        ].map(place),
+        [
+          ["Automations created, 7 days", 0, 0, 4],
+          ["Automation runs, 7 days", 4, 0, 4],
+          ["Automation skips, 7 days", 8, 0, 4],
+          ["Automation fires by outcome", 0, 5, 6],
+          ["Automation skips by condition", 6, 5, 6],
+          ["Automations by trigger", 0, 11, 6],
+          ["Automations by action", 6, 11, 6],
+          ["Automation", 0, 17, 12]
+        ]
+      )
+    }).pipe(Effect.provide(PostHogTest.layer)))
+
   it.effect("production masks all text in replays", () =>
     Effect.gen(function*() {
       yield* applyPostHog(api, projectKey, desired("production"), { dryRun: false })

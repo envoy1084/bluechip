@@ -80,6 +80,8 @@ export const trends = (
     readonly from?: string
     readonly formula?: string
     readonly display?: "ActionsLineGraph" | "ActionsBar" | "ActionsTable" | "ActionsPie" | "BoldNumber"
+    /** Against the period before, as a change. */
+    readonly compare?: boolean
   } = {}
 ): Node =>
   viz({
@@ -89,6 +91,7 @@ export const trends = (
     dateRange: { date_from: options.from ?? "-30d" },
     filterTestAccounts: true,
     ...breakdownFilter(options.breakdown),
+    ...(options.compare === true ? { compareFilter: { compare: true } } : {}),
     trendsFilter: {
       display: options.display ?? "ActionsLineGraph",
       ...(options.formula === undefined ? {} : { formula: options.formula })
