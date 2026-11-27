@@ -14,7 +14,7 @@ import {
   resumeEntries
 } from "../model/thread.ts"
 
-export interface AssistantState {
+interface AssistantState {
   /** `null` until the first message starts a conversation. */
   readonly conversationId: ConversationId | null
   /** The agent the conversation is about, if any. */

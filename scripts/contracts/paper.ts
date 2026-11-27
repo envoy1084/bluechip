@@ -29,10 +29,10 @@ export const PAPER_TICK_SPACING = 10
 export const PAPER_FEE_PIPS = 300
 
 /** The Foundry artifacts paper deploys, by contract name: creation bytecode only. */
-export type PaperBytecode = Readonly<Record<string, Hex>>
+type PaperBytecode = Readonly<Record<string, Hex>>
 
 /** A stock to list on paper, and its seed price (8 decimals) for a feed that has none yet. */
-export interface PaperStock {
+interface PaperStock {
   readonly symbol: string
   readonly name: string
   readonly price: bigint
@@ -42,7 +42,7 @@ export interface PaperStock {
  * What a run did with each contract or setting: `deployed` (or set) now, or `present` already. A contract also says
  * its Foundry artifact and encoded constructor arguments, for source verification.
  */
-export interface PaperStep {
+interface PaperStep {
   readonly name: string
   readonly address: Address
   readonly status: "deployed" | "present"
@@ -50,7 +50,7 @@ export interface PaperStep {
 }
 
 /** Every address paper uses, as `packages/chain/src/deployments/Sepolia.ts` exports them. */
-export interface PaperAddresses {
+interface PaperAddresses {
   readonly usdc: Address
   readonly sequencerFeed: Address
   readonly feedWriter: Address
@@ -63,7 +63,7 @@ export interface PaperAddresses {
 }
 
 /** The operator's client on Base Sepolia: it signs, and reads the chain. */
-export type OperatorClient =
+type OperatorClient =
   & WalletClient<Transport, typeof baseSepolia, Account>
   & PublicActions<Transport, typeof baseSepolia>
 

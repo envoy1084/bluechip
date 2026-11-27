@@ -22,7 +22,7 @@ import {
  * (`alchemy-bso`), or Alchemy's Gas Manager paymaster (`alchemy-paymaster`); both Alchemy options draw on the Gas
  * Manager policy's balance.
  */
-export type GasSponsorship = "none" | "alchemy-bso" | "alchemy-paymaster"
+type GasSponsorship = "none" | "alchemy-bso" | "alchemy-paymaster"
 
 interface Setup {
   readonly provider: "alto" | "alchemy"

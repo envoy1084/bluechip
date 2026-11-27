@@ -5,7 +5,7 @@ import { describeSettings, type Settings } from "@bluechip/domain/automations/Se
 
 export type SettingKind = "cooldown" | "maxFires" | "expires" | "quietHours" | "marketHours" | "news"
 
-export interface SettingChip {
+interface SettingChip {
   readonly kind: SettingKind
   readonly text: string
 }

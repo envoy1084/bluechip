@@ -31,7 +31,7 @@ const SYSTEM = [
 ].join(" ")
 
 /** What a judgment decided: whether the condition holds, why, and the logged answer. */
-export interface Judged {
+interface Judged {
   readonly pass: boolean
   readonly reason: string
   readonly judgmentId: JudgmentId | null

@@ -19,13 +19,13 @@ import type { TestUser } from "./TestUsers.ts"
 import { TestUsers } from "./TestUsers.ts"
 
 /** A chat with the bot and the person in it. */
-export interface TestChat {
+interface TestChat {
   readonly thread: ChatThread.ChatThread
   readonly person: string
 }
 
 /** A message the bot posted: its id (to click its buttons) and its Markdown. */
-export interface BotMessage {
+interface BotMessage {
   readonly id: string
   readonly text: string
 }

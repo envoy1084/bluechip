@@ -8,7 +8,7 @@ import { Analytics } from "../../src/modules/analytics/Analytics.ts"
 import type { PostHogMessage } from "../../src/modules/analytics/PostHogBatcher.ts"
 
 /** An event as a test compares it: its name and its own properties, without those every event carries. */
-export interface Told {
+interface Told {
   readonly event: string
   readonly properties: Readonly<Record<string, unknown>>
 }

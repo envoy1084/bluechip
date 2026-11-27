@@ -44,7 +44,7 @@ export const passkeyProblem = (error: unknown, nothing = "Nothing was sent."): P
 }
 
 /** Why a passkey prompt failed, as analytics counts it (`passkey_prompt_failed`). */
-export type PasskeyFailureReason = "cancelled" | "not_allowed" | "timeout" | "unsupported"
+type PasskeyFailureReason = "cancelled" | "not_allowed" | "timeout" | "unsupported"
 
 /**
  * Why a passkey prompt failed, by the browser's error: closed or aborted (`cancelled`), refused (`not_allowed`,

@@ -18,7 +18,7 @@ export interface PostHogMessage {
 }
 
 /** Where and how often batches go. */
-export interface BatcherOptions {
+interface BatcherOptions {
   /** PostHog's ingest host (`https://us.i.posthog.com`). */
   readonly host: string
   readonly projectKey: Redacted.Redacted<string>

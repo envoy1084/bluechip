@@ -11,7 +11,7 @@ import { isUntraced, spanNameOf } from "../../src/platform/telemetry/SpanNames.t
 import { TICKS } from "../../src/platform/telemetry/Telemetry.ts"
 
 /** An exported span, as the test reads it. */
-export interface RecordedSpan {
+interface RecordedSpan {
   readonly name: string
   readonly kind: Tracer.SpanKind
   readonly traceId: string

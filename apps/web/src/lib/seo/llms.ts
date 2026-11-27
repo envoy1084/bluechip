@@ -1,7 +1,7 @@
 import { appPageUrl, canonicalUrl, markdownPath, sendsToPaper, type Site, SITE_DESCRIPTION } from "./site.ts"
 
 /** A public page as agents read it: where it is, what it is in a line, and the whole page in Markdown. */
-export interface MarkdownPage {
+interface MarkdownPage {
   readonly path: string
   readonly title: string
   readonly description: string
@@ -10,7 +10,7 @@ export interface MarkdownPage {
 }
 
 /** The public pages the AI files list: the landing, the help center's index and articles, and the legal pages. */
-export interface PublicPages {
+interface PublicPages {
   readonly landing: MarkdownPage
   readonly help: MarkdownPage
   readonly articles: ReadonlyArray<MarkdownPage>

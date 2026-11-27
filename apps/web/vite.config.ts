@@ -63,8 +63,13 @@ const crawlerFilesPlugin = (files: Readonly<Record<string, string>>): Plugin => 
   }
 })
 
+// A deployment's settings live in one file with its server's (`deploy/.env.<mode>`, the Dokploy Environment tab's);
+// development and the browser suite read this app's `.env.local`.
+const DEPLOYMENTS: ReadonlyArray<string> = ["paper", "production", "landing"]
+
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, import.meta.dirname, "")
+  const envDir = DEPLOYMENTS.includes(mode) ? Path.join(import.meta.dirname, "../../deploy") : import.meta.dirname
+  const env = loadEnv(mode, envDir, "")
   // In development (and the browser suite) the browser calls the server on the page's own origin, through this proxy;
   // a deployed build calls it on its own domain (VITE_API_URL).
   const server = env["SERVER_ORIGIN"] ?? "http://localhost:8080"
@@ -97,6 +102,7 @@ export default defineConfig(({ mode }) => {
   })
 
   return {
+    envDir,
     plugins: [
       tailwindcss(),
       tanstackStart({

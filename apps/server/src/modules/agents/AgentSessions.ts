@@ -21,7 +21,7 @@ import { agentSessions, sessionKeys, sessionPolicies } from "./tables.ts"
 export type SessionRow = typeof agentSessions.$inferSelect
 
 /** A database transaction, for writes that go with the agent's own. */
-export type Transaction = Parameters<Parameters<Database["Service"]["transaction"]>[0]>[0]
+type Transaction = Parameters<Parameters<Database["Service"]["transaction"]>[0]>[0]
 
 /** A session as the API returns it: its key, grant and operation stay on the server. */
 export const toSession = (row: SessionRow): AgentSession =>

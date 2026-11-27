@@ -6,7 +6,7 @@ import { ClientOutdated, Unauthenticated } from "@bluechip/domain/Errors"
 import * as Option from "effect/Option"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 
-export type AccountView =
+type AccountView =
   | { readonly _tag: "loading" }
   | { readonly _tag: "signedIn"; readonly me: Me }
   | { readonly _tag: "outdated" }

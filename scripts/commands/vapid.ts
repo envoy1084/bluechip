@@ -3,7 +3,7 @@ import { Command, Flag } from "effect/cli"
 import { createECDH } from "node:crypto"
 
 /** A web push identity: a P-256 key pair, raw and base64url, as browsers and the server take it. */
-export interface VapidKeys {
+interface VapidKeys {
   readonly publicKey: string
   readonly privateKey: string
 }

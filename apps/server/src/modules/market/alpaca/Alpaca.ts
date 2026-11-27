@@ -25,18 +25,18 @@ export class NewsStreamRefused extends Data.TaggedError("NewsStreamRefused")<{
 }> {}
 
 /** A stock's latest trade and the previous session's close, in dollars per share. */
-export interface ShareSnapshot {
+interface ShareSnapshot {
   readonly price: number
   readonly tradedAt: string
   readonly previousClose: number | null
 }
 
-export interface ShareBar {
+interface ShareBar {
   readonly at: string
   readonly close: number
 }
 
-export interface ShareTrade {
+interface ShareTrade {
   readonly symbol: string
   readonly price: number
   readonly tradedAt: string

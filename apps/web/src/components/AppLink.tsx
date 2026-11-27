@@ -3,7 +3,7 @@ import type { MouseEventHandler, ReactNode } from "react"
 import { appHref, landingOnly } from "../lib/appUrl.ts"
 
 /** The app's pages that the landing, the help center and the legal pages link to. */
-export type AppPath = "/welcome" | "/recover" | "/home"
+type AppPath = "/welcome" | "/recover" | "/home"
 
 /**
  * A link into the app: the router's link when the app is on this site, a plain link to the app's site when this build

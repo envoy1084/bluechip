@@ -42,7 +42,7 @@ const PROFILES: Readonly<Record<StockSymbol, StockProfile>> = {
 export type DayMove = "mixed" | "bigUp" | "flat" | "bigDown"
 
 /** A listed stock as the preview knows it. */
-export interface Listing {
+interface Listing {
   readonly symbol: StockSymbol
   readonly name: string
   readonly token: string

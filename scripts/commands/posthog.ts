@@ -27,14 +27,14 @@ const dryRun = Flag.Boolean("dry-run").pipe(
 
 const env = Flag.String("env-file").pipe(
   Flag.optional,
-  Flag.withDescription("Where POSTHOG_HOST and the keys are (default apps/server/.env.<project>)")
+  Flag.withDescription("Where POSTHOG_HOST and the keys are (default deploy/.env.<project>)")
 )
 
 const apply = Command.make("apply", { project, dryRun, env }).pipe(
   Command.withDescription("Make a PostHog project's settings, cohorts, insights and dashboards match bluechip's"),
   Command.withHandler(({ dryRun, env, project }) =>
     Effect.gen(function*() {
-      const file = env._tag === "Some" ? env.value : `apps/server/.env.${project}`
+      const file = env._tag === "Some" ? env.value : `deploy/.env.${project}`
       const config = yield* Config.all({
         host: Config.String("POSTHOG_HOST"),
         projectKey: Config.Redacted("POSTHOG_PROJECT_API_KEY"),

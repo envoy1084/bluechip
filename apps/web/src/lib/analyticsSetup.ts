@@ -19,7 +19,7 @@ export interface AnalyticsSetup {
 }
 
 /** What decides whether this page reports anything, read once in the browser. */
-export interface AnalyticsSwitches {
+interface AnalyticsSwitches {
   /** Vite's development server: never reports. */
   readonly dev: boolean
   /** The page was opened with `?preview` (made-up data): never reports. */

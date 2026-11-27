@@ -22,7 +22,7 @@ export const CHAIN_PORTS = { anvil: 8545, alto: 4337 } as const
 export const LOCAL_CHAIN_STATE = ".data/devnet/state.json"
 
 /** A long-running development process, shown under `name`. */
-export interface DevProcess {
+interface DevProcess {
   readonly name: string
   readonly color: number
   readonly command: string

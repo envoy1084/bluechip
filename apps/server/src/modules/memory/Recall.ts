@@ -12,7 +12,7 @@ import type { Owner } from "../signing/SigningRequests.ts"
 import { memories, recallEntries } from "./tables.ts"
 
 /** What to recall for. */
-export interface RecallQuery {
+interface RecallQuery {
   readonly text: string
   /** Every kind when absent. */
   readonly kinds?: ReadonlyArray<RecallKind> | undefined

@@ -23,14 +23,10 @@ lib-cov/
 next-env.d.ts
 
 # ── Repository tooling output ─────────────────────────────────────────────────
-# jsdocs model, bundle-size reports, local release packs, scratchpad probes.
+# jsdocs model, bundle-size reports, local release packs.
 .data/
 stats.txt
 tmp/
-scratchpad/*
-!scratchpad/index.ts
-!scratchpad/package.json
-!scratchpad/tsconfig.json
 
 # ── Frameworks ────────────────────────────────────────────────────────────────
 # Next.js

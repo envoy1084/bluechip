@@ -26,7 +26,7 @@ import { Namera } from "../../platform/namera/Namera.ts"
 import { OwnerOperations, type OwnerPasskey } from "../signing/OwnerOperations.ts"
 
 /** A passkey as the recovery session holds it. */
-export interface RecoveryPasskey {
+interface RecoveryPasskey {
   readonly credentialId: string
   readonly publicKey: string
 }

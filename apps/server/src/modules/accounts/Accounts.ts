@@ -22,7 +22,7 @@ import { accounts, passkeys, users } from "./tables.ts"
 export type PasskeyRow = typeof passkeys.$inferSelect
 
 /** A passkey that signs for the account, with the account's address. */
-export type Signer = PasskeyRow & { readonly account: string }
+type Signer = PasskeyRow & { readonly account: string }
 
 /** A passkey row as the API shows it; `current` is the one that signed in the session asking. */
 export const toPasskey = (row: PasskeyRow, current?: string) =>

@@ -20,13 +20,13 @@ import type { Owner } from "../signing/SigningRequests.ts"
 import { usageBudgets } from "./tables.ts"
 
 /** What a model call is for. */
-export type ModelFeature = "chat" | "title" | "memory" | "judgment"
+type ModelFeature = "chat" | "title" | "memory" | "judgment"
 
 /**
  * What LLM analytics says of a model call beyond its tokens and cost: where it sits in a trace (the current span's
  * when unset), how long it took, why it stopped, and for the assistant its conversation, surface, tools and text.
  */
-export type ModelCall =
+type ModelCall =
   & Partial<
     Pick<
       AiGeneration,

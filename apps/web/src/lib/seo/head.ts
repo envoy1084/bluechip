@@ -15,7 +15,7 @@ const IMAGE_ALT: Readonly<Record<SocialImage | "paper", string>> = {
 }
 
 /** A page's head: what its tab, search results and link previews say. */
-export interface Page {
+interface Page {
   /** The page's name before `| bluechip`; none for the landing's own title. */
   readonly title?: string
   /** The landing's title, written whole (it leads with the brand). */

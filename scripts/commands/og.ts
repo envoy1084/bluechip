@@ -6,7 +6,7 @@ import { createServer } from "vite"
 import { ToolFailed } from "../errors.ts"
 
 /** A PNG image at its square size, for an icon file. */
-export interface IconImage {
+interface IconImage {
   readonly size: number
   readonly png: Uint8Array
 }

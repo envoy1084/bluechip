@@ -21,7 +21,7 @@ export const DEPLOYED_MODULE = "packages/chain/src/policies/Deployed.ts"
 export const SEPOLIA_MODULE = "packages/chain/src/deployments/Sepolia.ts"
 
 /** Paper's server environment: its Base Sepolia RPC, the operator's key, Alpaca's and BaseScan's keys (never printed). */
-export const PAPER_ENV = "apps/server/.env.paper"
+export const PAPER_ENV = "deploy/.env.paper"
 
 /** The paper contracts' Foundry artifacts, deployed besides bluechip's policies (`contracts/src/paper/`). */
 const PAPER_ARTIFACTS = [

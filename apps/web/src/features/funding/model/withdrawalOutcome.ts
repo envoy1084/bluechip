@@ -1,7 +1,7 @@
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { usdcDollars } from "../../../lib/amounts.ts"
 
-export interface WithdrawalOutcomeText {
+interface WithdrawalOutcomeText {
   readonly tone: "pending" | "success" | "failure"
   readonly title: string
   readonly description: string

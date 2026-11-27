@@ -12,7 +12,7 @@ import * as Schema from "effect/Schema"
 import { count, RpcProxyCalls } from "../../platform/telemetry/Metrics.ts"
 
 /** Who is calling, for the rate limits: their session and their address on the network. */
-export interface RpcCaller {
+interface RpcCaller {
   readonly session: string
   readonly address: string
 }

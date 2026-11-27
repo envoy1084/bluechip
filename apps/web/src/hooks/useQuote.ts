@@ -11,7 +11,7 @@ import { quoteAtom } from "../atoms/market.ts"
 
 export type QuoteSide = "buy" | "sell"
 
-export type QuoteState =
+type QuoteState =
   | { readonly status: "idle" }
   | { readonly status: "loading" }
   | { readonly status: "ready"; readonly quote: Quote }

@@ -2,7 +2,7 @@
 // and never one of the other user's.
 import type { MemoryKind } from "@bluechip/domain/assistant/Memory"
 
-export interface Remembered {
+interface Remembered {
   readonly kind: MemoryKind
   readonly text: string
 }
@@ -23,7 +23,7 @@ export const BEN: ReadonlyArray<Remembered> = [
   { kind: "goal", text: "You're saving for retirement." }
 ]
 
-export interface RecallCase {
+interface RecallCase {
   readonly name: string
   /** What Ana asks. */
   readonly query: string

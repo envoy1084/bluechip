@@ -12,7 +12,7 @@ import { Database } from "../../src/platform/db/Database.ts"
 import { TestServer } from "./TestServer.ts"
 
 /** Where a delivery ended: its channel, status and why it failed. */
-export interface DeliveryEnd {
+interface DeliveryEnd {
   readonly channel: "push" | "telegram"
   readonly status: "pending" | "sent" | "skipped" | "failed"
   readonly error: string | null

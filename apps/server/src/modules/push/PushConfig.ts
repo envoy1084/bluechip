@@ -7,7 +7,7 @@ import type * as Redacted from "effect/Redacted"
 import { AppConfig } from "../../config/AppConfig.ts"
 
 /** The server's VAPID identity, `undefined` when push isn't set up (no keys in the environment). */
-export interface Vapid {
+interface Vapid {
   /** Raw P-256 public key, base64url: what browsers subscribe with. */
   readonly publicKey: string
   readonly privateKey: Redacted.Redacted<string>

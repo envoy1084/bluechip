@@ -7,7 +7,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useEffect, useMemo, useState } from "react"
 import { checkAutomationAtom } from "../atoms/automations.ts"
 
-export type Checking =
+type Checking =
   | { readonly status: "checking" }
   | { readonly status: "checked"; readonly check: Pick<AutomationCheck, "problems" | "description"> }
   | { readonly status: "failed" }

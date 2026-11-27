@@ -13,7 +13,7 @@ const dryRun = Flag.Boolean("dry-run").pipe(
 )
 
 const env = Flag.String("env-file").pipe(
-  Flag.withDefault("apps/server/.env.production"),
+  Flag.withDefault("deploy/.env.production"),
   Flag.withDescription("Where the AXIOM_*_DATASET names are (paper and production share the datasets)")
 )
 

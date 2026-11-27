@@ -12,7 +12,7 @@ import { Database } from "../../platform/db/Database.ts"
 import { auditEvents } from "./tables.ts"
 
 /** What happened, for the audit trail. */
-export interface AuditEntry {
+interface AuditEntry {
   readonly userId: UserId
   readonly actor: Actor
   readonly actorId?: string | null | undefined
@@ -26,7 +26,7 @@ export interface AuditEntry {
 }
 
 /** Which events to read: a kind of thing, one agent, between two times (`from` inclusive, `to` exclusive). */
-export interface AuditFilter {
+interface AuditFilter {
   readonly type?: AuditType | undefined
   readonly agentId?: string | undefined
   readonly from?: DateTime.Utc | undefined

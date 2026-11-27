@@ -49,13 +49,13 @@ export const fieldValueText = (field: Field, value: unknown, nameOf: NameOf): st
 }
 
 /** A field that changed: what it was and what it becomes (`null` when the rule is new or goes). */
-export interface FieldChange {
+interface FieldChange {
   readonly label: string
   readonly before: string | null
   readonly after: string | null
 }
 
-export interface RuleChangeRow {
+interface RuleChangeRow {
   readonly title: string
   readonly change: SpecChanges["policies"][number]["change"]
   readonly fields: ReadonlyArray<FieldChange>

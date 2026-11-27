@@ -37,7 +37,7 @@ export const deviceDescription = (device: Device, timeZone: string): string => {
 }
 
 /** What the recovery card says: the recovery passkey and the recovery under way, if any. */
-export interface RecoveryText {
+interface RecoveryText {
   readonly title: string
   readonly description: string
   /** A recovery is waiting out its delay, or past it: the card offers to cancel it. */

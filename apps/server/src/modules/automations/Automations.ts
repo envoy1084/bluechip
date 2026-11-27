@@ -36,7 +36,7 @@ import { automations, automationState } from "./tables.ts"
 export type AutomationRow = typeof automations.$inferSelect
 
 /** Where an automation came from: you, the assistant's card (and its message), or a template with its agent. */
-export interface Origin {
+interface Origin {
   readonly createdBy: AutomationRow["createdBy"]
   readonly createdFrom?: MessageId | null | undefined
 }

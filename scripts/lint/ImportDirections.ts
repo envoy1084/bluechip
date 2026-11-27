@@ -4,7 +4,7 @@
 import * as Path from "node:path"
 
 /** A source file: its path from the repository root, and its text. */
-export interface SourceFile {
+interface SourceFile {
   readonly path: string
   readonly source: string
 }

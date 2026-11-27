@@ -59,7 +59,7 @@ export const STOPPED = {
   unavailable: "The assistant can't answer right now. Nothing was changed. Try again in a moment."
 } as const
 
-export interface MadeCard {
+interface MadeCard {
   readonly card: Card
   /** The tool call that made it; `null` for the assistant's own cards. */
   readonly tool: { readonly name: string; readonly params: unknown } | null

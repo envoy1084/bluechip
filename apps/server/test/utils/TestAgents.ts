@@ -11,7 +11,7 @@ import { PICKER } from "../fixtures/Specs.ts"
 import { type Api, type Browser, type TestUser, TestUsers } from "./TestUsers.ts"
 
 /** What creating an agent can fail with, as the typed client reports it. */
-export type CreateError = Effect.Error<ReturnType<Api["agents"]["create"]>>
+type CreateError = Effect.Error<ReturnType<Api["agents"]["create"]>>
 
 export class TestAgents extends Context.Service<TestAgents, {
   /**

@@ -2,7 +2,7 @@
 import { expect, type Locator, type Page } from "@playwright/test"
 import type { Authenticator } from "../fixtures/authenticator.ts"
 
-export interface NewAgent {
+interface NewAgent {
   /** The template's name as the picker shows it ("Stock picker", "Weekly buyer", "Start from scratch"…). */
   readonly template?: string
   /** The stocks it trades, by symbol and name as the stock buttons read ("NVDA NVIDIA"). */

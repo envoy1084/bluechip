@@ -171,7 +171,7 @@ const batchRebalances = (fills: ReadonlyArray<PlannedFill>, cast: Cast) => {
   })
 }
 
-export interface History {
+interface History {
   readonly trades: Array<TradeRecord>
   readonly intents: Array<IntentRecord>
   readonly transfers: Array<Transfer>

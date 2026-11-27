@@ -5,7 +5,7 @@ import type { ActivityItem, ActivityKind } from "@bluechip/domain/activity/Activ
 import { formatMoney } from "@bluechip/ui/lib/format"
 import { usdcDollars } from "../../../lib/amounts.ts"
 
-export interface ActivityTotals {
+interface ActivityTotals {
   readonly bought: bigint
   readonly buys: number
   readonly sold: bigint
@@ -16,7 +16,7 @@ export interface ActivityTotals {
   readonly withdrawals: number
 }
 
-export interface SummaryTile {
+interface SummaryTile {
   readonly label: string
   readonly value: string
   readonly detail: string

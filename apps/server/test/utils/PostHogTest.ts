@@ -6,7 +6,7 @@ import * as HttpClientResponse from "effect/http/HttpClientResponse"
 import type { PostHogMessage } from "../../src/modules/analytics/PostHogBatcher.ts"
 
 /** A batch as PostHog received it. */
-export interface PostHogBatch {
+interface PostHogBatch {
   readonly url: string
   readonly api_key: string
   readonly batch: ReadonlyArray<PostHogMessage>

@@ -10,7 +10,7 @@ import { TelemetryConfig } from "../../src/platform/telemetry/TelemetryConfig.ts
 import { TelemetryProxyRoutes } from "../../src/platform/telemetry/TelemetryProxy.ts"
 
 /** A request as the upstream received it. */
-export interface UpstreamRequest {
+interface UpstreamRequest {
   readonly method: string
   readonly url: string
   readonly headers: Readonly<Record<string, string>>

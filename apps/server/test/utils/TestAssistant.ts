@@ -14,7 +14,7 @@ import type { Browser } from "./TestUsers.ts"
 import { TestUsers } from "./TestUsers.ts"
 
 /** A run as the client saw it: every event, and the cards among them. */
-export interface RunEvents {
+interface RunEvents {
   readonly runId: string
   readonly events: ReadonlyArray<AgUiSchema.Event>
   readonly cards: ReadonlyArray<Card>

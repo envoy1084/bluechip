@@ -11,12 +11,12 @@ import { origin } from "./TestConfig.ts"
 import { type Browser, type TestUser, TestUsers } from "./TestUsers.ts"
 
 /** A recovery passkey set up on a user's account. */
-export interface RecoveryKey {
+interface RecoveryKey {
   readonly authenticator: Authenticator.Authenticator
 }
 
 /** A new device signed in with the recovery passkey, and the passkey it made, once the recovery was asked for. */
-export interface Recovery {
+interface Recovery {
   readonly browser: Browser
   readonly newPasskey: Authenticator.Authenticator
   readonly recovering: Recovering

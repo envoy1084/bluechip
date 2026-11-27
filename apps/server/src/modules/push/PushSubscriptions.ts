@@ -12,7 +12,7 @@ import { count, PushSubscriptions as PushSubscriptionsMetric } from "../../platf
 import { Analytics } from "../analytics/Analytics.ts"
 import { pushSubscriptions } from "./tables.ts"
 
-export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect
+type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect
 
 const toDevice = (row: PushSubscriptionRow) =>
   new PushDevice({

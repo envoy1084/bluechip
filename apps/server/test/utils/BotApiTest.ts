@@ -9,7 +9,7 @@ import * as Layer from "effect/Layer"
 import * as Queue from "effect/Queue"
 
 /** A call as Telegram received it. */
-export interface BotApiCall {
+interface BotApiCall {
   readonly method: string
   readonly params: Readonly<Record<string, unknown>>
 }

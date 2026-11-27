@@ -5,13 +5,13 @@ import type { Address, PublicClient, Transport } from "viem"
 import type { base } from "viem/chains"
 
 /** A seed price at the feeds' 8 decimals, and where it came from. */
-export interface SeedPrice {
+interface SeedPrice {
   readonly price: bigint
   readonly source: "alpaca" | "base"
 }
 
 /** Alpaca's market data keys. */
-export interface AlpacaKeys {
+interface AlpacaKeys {
   readonly keyId: string
   readonly secret: string
 }

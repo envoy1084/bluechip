@@ -47,7 +47,7 @@ const toMessage = (row: MessageRow, cards: ReadonlyMap<string, Card>) =>
   })
 
 /** What a model round used, stored with its message. */
-export interface MessageUsage {
+interface MessageUsage {
   readonly inputTokens: number
   readonly outputTokens: number
   readonly cacheReadTokens: number

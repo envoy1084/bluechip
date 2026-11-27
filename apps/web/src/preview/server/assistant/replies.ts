@@ -40,7 +40,7 @@ const SHOWN_STATE: Readonly<Record<CastAgentState, AgentState>> = {
   removed: "removed"
 }
 
-export interface Reply {
+interface Reply {
   readonly rounds: ReadonlyArray<Round>
   /** Memories the reply made, to keep. */
   readonly memories: ReadonlyArray<Memory>

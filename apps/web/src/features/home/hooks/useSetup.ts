@@ -9,7 +9,7 @@ import { accountRecoveryAtom } from "../../../atoms/recovery.ts"
 import { setupSteps, type Stage, stageOf, type Step } from "../model/gettingStarted.ts"
 
 /** Where you are with bluechip, once it's known: the stage and the first steps; `undefined` while it loads. */
-export interface Setup {
+interface Setup {
   readonly stage: Stage
   readonly steps: ReadonlyArray<Step>
 }

@@ -6,7 +6,7 @@ import { shareCount, usdcDollars } from "./amounts.ts"
 /** Where a sent trade is. Base takes a couple of seconds, so sending and confirming read as one wait. */
 export type TradeStage = "sending" | "confirming" | "filled" | "failed"
 
-export interface TradeOutcomeText {
+interface TradeOutcomeText {
   readonly tone: "pending" | "success" | "failure"
   readonly title: string
   readonly description: string

@@ -34,7 +34,7 @@ import type { Mint } from "./mint.ts"
 import { type Beat, read } from "./rounds.ts"
 
 /** A help article's passage: its slug under `/help`, title, section and text. */
-export type HelpPassage = readonly [slug: string, title: string, section: string, text: string]
+type HelpPassage = readonly [slug: string, title: string, section: string, text: string]
 
 export const searchHelp = (mint: Mint, query: string, passages: ReadonlyArray<HelpPassage>): Beat =>
   read(

@@ -52,7 +52,7 @@ const toMemory = (row: MemoryRow, uses: number) =>
 const RECALLED_LENGTH = 500
 
 /** What a prompt carries from memory: the memories within the budget, and what was recalled from earlier. */
-export interface PromptMemory {
+interface PromptMemory {
   readonly memories: ReadonlyArray<Memory>
   readonly recalled: ReadonlyArray<RecallHit>
 }

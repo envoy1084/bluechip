@@ -64,7 +64,7 @@ export type TradeLink = {
 }
 
 /** One trade of an owner operation: what to trade, and the intent it carries out. */
-export type OwnerLeg = {
+type OwnerLeg = {
   readonly leg: Leg
   readonly link: TradeLink
 }

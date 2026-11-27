@@ -5,7 +5,7 @@
 import type { MemoryCandidate, MemoryKind, MemorySource } from "@bluechip/domain/assistant/Memory"
 
 /** A memory as the memory page lists it, newest first. */
-export interface Kept {
+interface Kept {
   readonly kind: MemoryKind
   readonly text: string
   readonly source: MemorySource
@@ -13,7 +13,7 @@ export interface Kept {
   readonly note: string | null
 }
 
-export interface NoteCase {
+interface NoteCase {
   readonly name: string
   /** Memories the user already has (said, confirmed), oldest first. */
   readonly existing: ReadonlyArray<{ readonly kind: MemoryKind; readonly text: string }>

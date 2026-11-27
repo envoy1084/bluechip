@@ -9,7 +9,7 @@ import { ConfirmDialog } from "./ConfirmDialog.tsx"
 export type Landing = "pending" | "landed" | "failed"
 
 /** The words of each step of a change: asking, on its way, through, and not through. */
-export interface ChangeWords {
+interface ChangeWords {
   readonly title: string
   readonly description: ReactNode
   readonly action: string

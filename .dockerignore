@@ -39,8 +39,6 @@ apps/uikit/*
 !apps/uikit/package.json
 scripts/*
 !scripts/package.json
-scratchpad/*
-!scratchpad/package.json
 contracts
 packages/devnet/*
 !packages/devnet/package.json

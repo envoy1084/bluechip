@@ -5,7 +5,7 @@ import * as Redacted from "effect/Redacted"
 import * as Schema from "effect/Schema"
 
 /** PostHog's private API for one project: the app's host and a personal API key with `person:write`. */
-export interface PostHogAdminOptions {
+interface PostHogAdminOptions {
   /** The ingest host (`https://us.i.posthog.com`); the API is on the app's host (`https://us.posthog.com`). */
   readonly host: string
   readonly personalKey: Redacted.Redacted<string>

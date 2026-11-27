@@ -17,7 +17,7 @@ const SLIPPAGE_BPS = 50
 const QUOTE_SECONDS = 30
 
 /** A request for a quote: spend USDC on a stock, or sell its shares for USDC. */
-export type QuoteRequest =
+type QuoteRequest =
   | { readonly symbol: StockSymbol; readonly side: "buy"; readonly usdc: Usdc }
   | { readonly symbol: StockSymbol; readonly side: "sell"; readonly shares: Shares }
 

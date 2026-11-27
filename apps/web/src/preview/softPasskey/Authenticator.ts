@@ -40,7 +40,7 @@ const throwIfAborted = (signal: AbortSignal | null | undefined) => {
 }
 
 /** The `PublicKeyCredential` a registration answers with, as browsers shape it. */
-export interface SoftRegistration {
+interface SoftRegistration {
   readonly id: string
   readonly rawId: ArrayBuffer
   readonly type: "public-key"
@@ -57,7 +57,7 @@ export interface SoftRegistration {
 }
 
 /** The `PublicKeyCredential` an assertion answers with, as browsers shape it. */
-export interface SoftAssertion {
+interface SoftAssertion {
   readonly id: string
   readonly rawId: ArrayBuffer
   readonly type: "public-key"
@@ -71,7 +71,7 @@ export interface SoftAssertion {
   }
 }
 
-export interface SoftAuthenticatorConfig {
+interface SoftAuthenticatorConfig {
   /** The page's origin, written into `clientDataJSON`; its host is the default rpId. */
   readonly origin: string
   readonly keyring: Keyring

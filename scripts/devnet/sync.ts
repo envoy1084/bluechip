@@ -4,13 +4,13 @@ import { localDeployment } from "@bluechip/chain/deployments/Base"
 import { movePool, rpc, setFeed } from "@bluechip/devnet/Controls"
 
 /** A stock as `GET /api/market/stocks` answers it: its symbol and the market's token price, if there is one. */
-export interface ListedStock {
+interface ListedStock {
   readonly symbol: string
   readonly price: { readonly price: string } | null
 }
 
 /** What one feed should read: its stock, the price (USD per token, 8 decimals) and when it updated (Unix seconds). */
-export interface FeedUpdate {
+interface FeedUpdate {
   readonly symbol: string
   readonly price: bigint
   readonly updatedAt: number

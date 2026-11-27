@@ -15,7 +15,7 @@ import { planLegs } from "./rebalancePlan.ts"
 import type { BluechipTurn } from "./thread.ts"
 
 /** Which card a tool's result is drawn as. */
-export type ResultKind =
+type ResultKind =
   | "portfolio"
   | "performance"
   | "stock"

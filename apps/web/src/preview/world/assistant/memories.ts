@@ -5,7 +5,7 @@ import type { AgentId, ConversationId, MemoryId, MessageId } from "@bluechip/dom
 import type { Cast } from "../cast.ts"
 import type { Mint } from "./mint.ts"
 
-export interface MemoryDraft {
+interface MemoryDraft {
   readonly kind: MemoryKind
   readonly text: string
   readonly source: MemorySource

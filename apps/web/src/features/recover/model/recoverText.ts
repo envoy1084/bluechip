@@ -7,7 +7,7 @@ import { passkeyProblem } from "../../../lib/passkeyProblem.ts"
 import { unavailableProblem } from "../../../lib/unavailableProblem.ts"
 
 /** Where the recovery page is, from what the server says: what to show and what it offers. */
-export interface RecoverStep {
+interface RecoverStep {
   /** `ask`: no recovery under way, so offer to ask; `make`: due, offer to make it; `wait`: nothing to do yet. */
   readonly offer: "ask" | "make" | "wait" | "signIn"
   readonly tone: OutcomeTone

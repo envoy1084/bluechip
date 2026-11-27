@@ -14,7 +14,7 @@ const STEP_EVENTS: Readonly<Record<OnboardingStep, string>> = {
 }
 
 /** Where the person is in setup; without a step the header links home instead of showing progress. */
-export type OnboardingStep = (typeof STEPS)[number]
+type OnboardingStep = (typeof STEPS)[number]
 
 /** Sign-up and sign-in: the lockup and setup progress, one centered column, and the eligibility fine print. */
 export function OnboardingFrame(

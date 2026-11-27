@@ -33,7 +33,7 @@ const toLink = (row: ChannelLinkRow) =>
   new ChannelLink({ id: row.id as ChannelLinkId, platform: row.platform, name: row.name, linkedAt: row.linkedAt })
 
 /** Who sent a code, and from which chat: the platform's ids, and the name it gives them. */
-export interface ChatOrigin {
+interface ChatOrigin {
   readonly platform: Platform
   readonly chatId: string
   readonly externalUserId: string

@@ -64,6 +64,21 @@ interpolate.
 Every name, its meaning and its local default is in `apps/server/.env.example` and `apps/web/.env.example`. Never
 reuse a value between paper and production.
 
+Each deployment's settings are one git-ignored file here, server runtime variables and web build args together, in
+the format the Environment tab takes: `deploy/.env.paper`, `deploy/.env.production` and `deploy/.env.landing`. Paste
+it into the tab after checking every line marked `CHANGE` (`DATABASE_URL` is a placeholder for the database's
+internal URL). The apps keep only `.env.local` and `.env.example`; the same files serve the workstation:
+
+- `pnpm --filter @bluechip/web build --mode paper` (or `production`, `vite build`'s default) reads
+  `deploy/.env.<mode>` (`envDir` in `apps/web/vite.config.ts`; Vite exposes only `VITE_*`).
+- `node scripts/bin.ts contracts deploy --network sepolia` reads `deploy/.env.paper` (`BASE_RPC_URL`,
+  `OPERATOR_PRIVATE_KEY`, Alpaca's keys, and `BASESCAN_API_KEY`, which is for this command only: leave it out of
+  the tab). `axiom apply` reads `deploy/.env.production` and `posthog apply --project <p>` `deploy/.env.<p>`.
+- A local server on paper's settings needs a database of its own, passed ahead of the file (which never overrides a
+  set variable), and must not take over the paper bot's updates, so leave the `TELEGRAM_*` lines out:
+  `DATABASE_URL=postgres://… node --env-file=<(grep -v '^TELEGRAM_' deploy/.env.paper) apps/server/src/bin/migrate.ts`,
+  then `src/main.ts` the same way.
+
 **Web build args** (public: they ship in every page; `APP_VERSION` is the server's build arg too, see
 [Operations](#8-operations)):
 

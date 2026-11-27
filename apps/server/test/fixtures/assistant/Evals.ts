@@ -8,7 +8,7 @@ import type { AgentId } from "@bluechip/domain/Ids"
 import type { Reply } from "../../utils/RecordedModel.ts"
 
 /** What an eval expects of a turn: the tools called, in order, and the cards shown. */
-export interface Eval {
+interface Eval {
   readonly name: string
   /** The conversation is about the user's agent (started from it), so the agent trades by default. */
   readonly focused?: boolean

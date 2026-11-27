@@ -8,7 +8,7 @@ import { liveTradesAtom } from "../../../lib/api/events.ts"
 import { tradeProblem } from "../../../lib/tradeProblem.ts"
 import { confirmTradeAtom, prepareTradeAtom } from "../atoms/trading.ts"
 
-export type TradeFlow =
+type TradeFlow =
   | { readonly status: "idle" }
   | { readonly status: "preparing" }
   | { readonly status: "signing" }

@@ -6,7 +6,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import type { ReactNode } from "react"
 
 /** Who asked for something: you, an agent, or where it came from (an automation, the assistant, Telegram, an app). */
-export type Who =
+type Who =
   | { readonly _tag: "agent"; readonly id: AgentId; readonly name: string | undefined }
   | { readonly _tag: "source"; readonly source: Intent["source"] }
 

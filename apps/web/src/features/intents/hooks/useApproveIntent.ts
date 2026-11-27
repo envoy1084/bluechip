@@ -7,7 +7,7 @@ import { approveIntentAtom, confirmIntentAtom, declineIntentAtom } from "../atom
 import { intentProblem } from "../model/intentText.ts"
 import { useLatestIntent } from "./useLatestIntent.ts"
 
-export type ApprovalFlow =
+type ApprovalFlow =
   | { readonly status: "idle" }
   | { readonly status: "preparing" }
   | { readonly status: "signing" }

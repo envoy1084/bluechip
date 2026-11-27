@@ -30,7 +30,7 @@ export const event = (
 })
 
 /** A breakdown by an event property, a person property or a HogQL expression. */
-export interface Breakdown {
+interface Breakdown {
   readonly by: string
   readonly type?: "event" | "person" | "hogql"
   readonly limit?: number

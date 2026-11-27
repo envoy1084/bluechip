@@ -22,7 +22,7 @@ const pixel = Buffer.from(
   "base64"
 )
 
-export interface Fixtures {
+interface Fixtures {
   /** The page's passkey authenticator (Face ID in the app). */
   readonly authenticator: Authenticator
   /** Console errors and warnings the page logged, and server errors it got; checked to be empty after each test. */

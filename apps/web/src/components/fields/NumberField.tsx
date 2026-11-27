@@ -7,7 +7,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { useId, useState } from "react"
 import { FieldHelp } from "./FieldHelp.tsx"
 
-export type NumberUnit = "dollars" | "percent" | "count" | "ether"
+type NumberUnit = "dollars" | "percent" | "count" | "ether"
 
 const SLIDER_FORMAT: Readonly<Record<NumberUnit, Intl.NumberFormatOptions>> = {
   dollars: { style: "currency", currency: "USD", maximumFractionDigits: 0 },

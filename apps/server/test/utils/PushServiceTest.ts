@@ -7,7 +7,7 @@ import * as HttpClientResponse from "effect/http/HttpClientResponse"
 import * as Layer from "effect/Layer"
 
 /** A push as the push service received it. */
-export interface PushRequest {
+interface PushRequest {
   readonly url: string
   readonly headers: Readonly<Record<string, string>>
   readonly body: Uint8Array

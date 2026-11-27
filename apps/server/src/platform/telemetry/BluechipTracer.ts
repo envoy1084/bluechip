@@ -6,7 +6,7 @@ import * as Tracer from "effect/Tracer"
 import { DbOperationDuration, DbTransactionDuration, recordUnsafe } from "./Metrics.ts"
 
 /** How the tracer trims and samples, and where it records the database's metrics. */
-export interface BluechipTracerOptions {
+interface BluechipTracerOptions {
   /** The share (0 to 1) of `GET` requests traced; every other request, workflow and background run is. */
   readonly sampleReads: number
   /**

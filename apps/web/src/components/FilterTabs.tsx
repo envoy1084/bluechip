@@ -3,7 +3,7 @@ import { Icon, type IconName } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 
 /** One choice of a filter bar: its label, an optional icon, and how many it shows when that's known. */
-export interface FilterOption<A extends string> {
+interface FilterOption<A extends string> {
   readonly value: A
   readonly label: string
   readonly icon?: IconName

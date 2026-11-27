@@ -8,10 +8,10 @@ import { PushNotifier } from "../push/PushNotifier.ts"
 import type { NotifierError } from "./NotifierError.ts"
 
 /** The channels a notification is delivered on beside the center. */
-export type DeliveryChannel = "push" | "telegram"
+type DeliveryChannel = "push" | "telegram"
 
 /** What a notifier did: sent it, or had nowhere to send it (no device opted in, no chat linked). */
-export type NotifierOutcome = "sent" | "skipped"
+type NotifierOutcome = "sent" | "skipped"
 
 /**
  * The notifier catalog: one notifier per channel, each with its own words for a notification (a push's title and

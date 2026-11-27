@@ -15,7 +15,7 @@ import { Analytics } from "../analytics/Analytics.ts"
 import { recallEntries } from "./tables.ts"
 
 /** Something recallable, from the record it comes from (whose id `sourceId` is). */
-export interface RecallSource {
+interface RecallSource {
   readonly kind: RecallKind
   readonly sourceId: string
   readonly userId: UserId

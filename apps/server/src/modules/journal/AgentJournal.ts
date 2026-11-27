@@ -16,7 +16,7 @@ import type { Owner } from "../signing/SigningRequests.ts"
 import { agentJournal } from "./tables.ts"
 
 /** An entry to write: whose agent, what kind, the words and what it points at. */
-export interface JournalWrite {
+interface JournalWrite {
   readonly userId: UserId
   readonly agentId: AgentId
   readonly kind: JournalKind

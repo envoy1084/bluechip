@@ -39,7 +39,6 @@ COPY packages/devnet/package.json packages/devnet/
 COPY packages/domain/package.json packages/domain/
 COPY packages/ui/package.json packages/ui/
 COPY scripts/package.json scripts/
-COPY scratchpad/package.json scratchpad/
 RUN --mount=type=bind,from=fetch,source=/pnpm,target=/pnpm,rw \
   pnpm install --offline --frozen-lockfile --prod --ignore-scripts \
   --store-dir /pnpm/store --cache-dir /pnpm/cache --package-import-method copy \

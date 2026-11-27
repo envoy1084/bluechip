@@ -400,7 +400,7 @@ const samples = (tape: Address): ReadonlyArray<Sample> => {
 }
 
 /** A contract bluechip deploys: its label (the CREATE2 salt's preimage), address and init code. */
-export interface Policy {
+interface Policy {
   readonly label: string
   readonly address: Address
   readonly initCode: Hex
@@ -426,7 +426,7 @@ const installPolicies = async (bare: Node, policies: ReadonlyArray<Policy>, mock
 }
 
 /** The helper contracts' runtime bytecode, from `forge build` in `packages/devnet/contracts`. */
-export interface HelperCode {
+interface HelperCode {
   readonly mockFeed: Hex
   readonly poolSeeder: Hex
 }

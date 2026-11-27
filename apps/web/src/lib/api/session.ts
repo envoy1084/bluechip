@@ -3,7 +3,7 @@
 // Signing in and recovering answer 401 for their own reasons, so they never end a session.
 
 /** What an answer tells about the session: `ended` once, on the first 401 after the account was shown. */
-export interface SessionAnswer {
+interface SessionAnswer {
   readonly live: boolean
   readonly ended: boolean
 }

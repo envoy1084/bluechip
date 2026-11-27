@@ -40,7 +40,7 @@ import { type Owner, type SigningRequestRow, SigningRequests } from "../signing/
 import { AgentSessions, nameraSession } from "./AgentSessions.ts"
 import { type AgentRow, AgentStore } from "./AgentStore.ts"
 
-export type AgentInput = {
+type AgentInput = {
   readonly requestId: string
   readonly name: string
   readonly template: string | null

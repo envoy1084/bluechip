@@ -21,7 +21,7 @@ import { everyToolRow } from "./threads/showcase/tools.ts"
 import { everyTrade } from "./threads/showcase/trades.ts"
 import { firstAgent, howToStart, whatDidItBuy } from "./threads/starter.ts"
 
-export interface Showcase {
+interface Showcase {
   readonly title: string
   readonly agentId: AgentId | null
   readonly hoursAgo: number

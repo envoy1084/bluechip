@@ -7,7 +7,7 @@ import type { Address, Hex } from "viem"
 import { type ContractSpec, CREATE2_DEPLOYER, saltOf } from "./artifacts.ts"
 
 /** A contract ready to deploy: its spec, init code and the address CREATE2 gives it. */
-export interface Deployable {
+interface Deployable {
   readonly spec: ContractSpec
   readonly initCode: Hex
   readonly address: Address

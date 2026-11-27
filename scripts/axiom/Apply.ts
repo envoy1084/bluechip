@@ -12,7 +12,7 @@ export const DATASET_KINDS: Readonly<Record<keyof Datasets, string>> = {
 }
 
 /** What a run did (or would do, dry), and what's left by hand. */
-export interface AxiomReport {
+interface AxiomReport {
   readonly changes: ReadonlyArray<string>
   readonly unchanged: number
   readonly manual: ReadonlyArray<string>

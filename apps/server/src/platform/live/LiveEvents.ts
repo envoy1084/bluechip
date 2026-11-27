@@ -8,7 +8,7 @@ import type * as Scope from "effect/Scope"
 import * as Stream from "effect/Stream"
 
 /** An event and who it is for. */
-export interface Delivery {
+interface Delivery {
   readonly event: LiveEvent
   /** `undefined` for everyone (prices); a user for their own money (deposits, withdrawals, portfolio). */
   readonly to: UserId | undefined

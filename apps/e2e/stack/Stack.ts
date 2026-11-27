@@ -103,7 +103,7 @@ const liveAssistant = (): Record<string, string> => {
 }
 
 /** A running stack; `stop` ends every process it started. */
-export interface Stack {
+interface Stack {
   readonly stop: () => Promise<void>
 }
 

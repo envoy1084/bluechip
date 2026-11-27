@@ -62,7 +62,7 @@ export interface Decided {
 }
 
 /** An agent's operation, signed and hashed: `send` hands it to the bundler, `wait` follows it to its receipt. */
-export interface SignedOperation {
+interface SignedOperation {
   readonly hash: Hex
   readonly send: Effect.Effect<Hex, ChainError>
   readonly wait: Effect.Effect<Receipt | undefined>

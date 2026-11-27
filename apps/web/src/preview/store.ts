@@ -15,7 +15,7 @@ export type LiveMode = "connected" | "dropped" | "outdated" | "signedOut"
 export type FaceIdMode = "approve" | "cancel"
 
 /** A panel action: a named change to the world with its arguments, saved so a reload plays it again. */
-export interface Action {
+interface Action {
   readonly name: string
   readonly args: ReadonlyArray<string | number | boolean | null>
 }
@@ -29,7 +29,7 @@ export interface ActionDef {
 }
 
 /** An action that makes saved {@link Action}s of itself, with its definition for the store's registry. */
-export interface DefinedAction {
+interface DefinedAction {
   (...args: Action["args"]): Action
   readonly def: ActionDef
 }

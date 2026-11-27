@@ -17,7 +17,7 @@ import type { ReactElement, ReactNode, RefObject } from "react"
 import type { PasskeyProblem } from "../lib/passkeyProblem.ts"
 
 /** What confirming does: a danger button that closes the dialog, or Face ID, which keeps it open while it works. */
-export type ConfirmAction =
+type ConfirmAction =
   | { readonly _tag: "danger"; readonly label: string; readonly onConfirm: () => void }
   | {
     readonly _tag: "faceId"

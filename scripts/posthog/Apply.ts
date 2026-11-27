@@ -6,7 +6,7 @@ import { matches } from "./Matches.ts"
 import { type PostHogDesired, type Refs, TAG } from "./Spec.ts"
 
 /** What a run did (or would do, dry): one line per write, the objects already right, and what's left by hand. */
-export interface ApplyReport {
+interface ApplyReport {
   readonly project: { readonly id: number; readonly name: string }
   readonly changes: ReadonlyArray<string>
   readonly unchanged: number

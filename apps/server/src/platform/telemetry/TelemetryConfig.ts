@@ -8,7 +8,7 @@ import type * as Redacted from "effect/Redacted"
 import { release } from "../../config/Release.ts"
 
 /** Where the server runs: telemetry leaves the machine only on `paper` and `production`. */
-export type DeploymentEnvironment = "development" | "paper" | "production"
+type DeploymentEnvironment = "development" | "paper" | "production"
 
 /** Axiom's OTLP ingest: one token, a dataset per signal. */
 export interface AxiomConfig {

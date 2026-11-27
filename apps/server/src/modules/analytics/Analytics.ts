@@ -14,7 +14,7 @@ import { makeDeletePerson } from "./PostHogAdmin.ts"
 import { makeBatcher, type PostHogMessage } from "./PostHogBatcher.ts"
 
 /** The fact an event tells: what makes it one, when it happened, and what it changes about the person. */
-export interface Fact {
+interface Fact {
   /**
    * The fact's own id (an intent and its status, a trade, a user): the event's uuid is made from it, so telling the
    * same fact twice (a step retried) is one event.
@@ -28,14 +28,14 @@ export interface Fact {
 }
 
 /** What every event carries, whoever tells it. */
-export interface CommonProperties {
+interface CommonProperties {
   readonly network: string
   readonly environment: string
   readonly app_version: string
 }
 
 /** Where `make` sends what it built. */
-export interface AnalyticsSink {
+interface AnalyticsSink {
   readonly send: (message: PostHogMessage) => Effect.Effect<void>
   readonly deletePerson: (distinctId: string) => Effect.Effect<void>
   readonly common: CommonProperties

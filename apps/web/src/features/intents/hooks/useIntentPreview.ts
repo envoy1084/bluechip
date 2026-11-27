@@ -10,7 +10,7 @@ import { useEffect, useState } from "react"
 import { previewIntentAtom } from "../atoms/intents.ts"
 import { intentProblem } from "../model/intentText.ts"
 
-export type PreviewState =
+type PreviewState =
   | { readonly status: "idle" }
   | { readonly status: "loading" }
   | { readonly status: "ready"; readonly decision: Decision }

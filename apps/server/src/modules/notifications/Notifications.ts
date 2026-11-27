@@ -23,7 +23,7 @@ import { count as countMetric, NotificationsCreated } from "../../platform/telem
 import { DeliverNotification } from "./DeliverNotification.ts"
 import { notificationDeliveries, notificationRules, notifications, notificationSettings } from "./tables.ts"
 
-export type NotificationRow = typeof notifications.$inferSelect
+type NotificationRow = typeof notifications.$inferSelect
 
 /** A notification as the API returns it. */
 export const toNotification = (row: NotificationRow) =>

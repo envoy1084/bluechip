@@ -25,7 +25,7 @@ import { AgentJournal } from "../journal/AgentJournal.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { automationRuns, automations, judgments } from "./tables.ts"
 
-export type RunRow = typeof automationRuns.$inferSelect
+type RunRow = typeof automationRuns.$inferSelect
 
 type ProposedTrade = Pick<typeof intents.$inferSelect, "sourceId" | "status" | "decision">
 

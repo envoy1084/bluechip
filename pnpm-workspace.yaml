@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - scratchpad
   - scripts
 
 # Versions referenced by more than one package.json. A dependency only one package uses is pinned

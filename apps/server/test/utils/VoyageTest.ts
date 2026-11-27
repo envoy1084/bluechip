@@ -8,7 +8,7 @@ import * as Layer from "effect/Layer"
 import { DIMENSIONS } from "../../src/platform/embeddings/Embeddings.ts"
 
 /** A request as Voyage received it. */
-export interface VoyageRequest {
+interface VoyageRequest {
   readonly url: string
   readonly authorization: string | undefined
   readonly body: {
@@ -20,7 +20,7 @@ export interface VoyageRequest {
 }
 
 /** An answer that isn't a success: its status, and the wait it asks for. */
-export interface VoyageFailure {
+interface VoyageFailure {
   readonly status: number
   readonly retryAfter?: string
 }

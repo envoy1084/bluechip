@@ -24,7 +24,7 @@ import { movers } from "../model/holdings.ts"
 import { type AutomationAttention, needsYou } from "../model/needsYou.ts"
 
 /** An automation as home reads it, from the automations feature: what's next for it, and whether it needs a look. */
-export interface HomeAutomation extends AutomationAttention {
+interface HomeAutomation extends AutomationAttention {
   readonly automation: Pick<Automation, "id" | "name" | "status" | "nextRunAt" | "agentId" | "trigger">
 }
 
