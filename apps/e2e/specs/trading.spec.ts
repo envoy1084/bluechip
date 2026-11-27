@@ -2,11 +2,6 @@ import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
 import { buy, giveShares } from "../utils/trading.ts"
 
-// Every trade today reverts in the bundler's simulation, so `POST /api/trades` answers 503: the server dates the swap's
-// deadline by its own clock, and the suite's chain runs ahead of it (at the next market open on a holiday or weekend).
-const deadlineBug =
-  "bug: on a holiday the chain runs days ahead of the server's clock, so every swap's deadline has passed"
-
 const tradeBox = (page: Page, name: string) => page.getByRole("region", { name: `Trade ${name}` })
 
 test.describe("buying on a stock's page", () => {
@@ -93,21 +88,20 @@ test.describe("buying on a stock's page", () => {
     await expect(box.getByRole("button", { name: "Max" })).toBeHidden()
   })
 
-  // fixme: pins a $100 price for the share count (backlog W8)
-  test.fixme("the amount switches to shares and back, keeping its value", async ({ page, funded: _funded }) => {
+  test("the amount switches to shares and back, keeping its value", async ({ page, funded: _funded }) => {
     await page.goto("/stocks/TSLA")
     const box = tradeBox(page, "Tesla")
     await box.getByRole("textbox", { name: "Buy Tesla" }).fill("50")
 
     await box.getByRole("button", { name: "Amount in USDC. Switch to shares" }).click()
 
-    await expect(box.getByRole("textbox", { name: "Buy Tesla" })).toHaveValue("0.5")
+    await expect(box.getByRole("textbox", { name: "Buy Tesla" })).toHaveValue(/^0\.\d+$/)
     await expect(box.getByRole("group", { name: "Quick amounts" })).toBeHidden()
     await box.getByRole("button", { name: "Amount in TSLA shares. Switch to USDC" }).click()
     await expect(box.getByRole("textbox", { name: "Buy Tesla" })).toHaveValue("50.00")
   })
 
-  test.fixme(`a buy with Face ID fills, then shows in holdings and activity (${deadlineBug})`, async ({ page, funded: _funded }) => {
+  test(`a buy with Face ID fills, then shows in holdings and activity`, async ({ page, funded: _funded }) => {
     await buy(page, "SPCX", 10)
 
     const status = page.getByRole("region", { name: "Trade status" })
@@ -115,13 +109,13 @@ test.describe("buying on a stock's page", () => {
     await expect(status.getByText("Shares bought")).toBeVisible()
     await expect(status.getByRole("link", { name: "View on BaseScan" })).toBeVisible()
     await page.goto("/portfolio")
-    await expect(page.getByRole("region", { name: "Holdings" }).getByRole("button", { name: /^SPCX SpaceX/ }))
+    await expect(page.getByRole("region", { name: "Holdings" }).getByRole("link", { name: /^SPCX SpaceX/ }))
       .toBeVisible()
     await page.goto("/activity")
     await expect(page.getByRole("button", { name: /^Bought \$\d+\.\d{2} of SpaceX/ })).toBeVisible()
   })
 
-  test.fixme(`"Buy more SpaceX" starts a new buy (${deadlineBug})`, async ({ page, funded: _funded }) => {
+  test(`"Buy more SpaceX" starts a new buy`, async ({ page, funded: _funded }) => {
     await buy(page, "SPCX", 5)
 
     await page.getByRole("button", { name: "Buy more SpaceX" }).click()
@@ -129,7 +123,7 @@ test.describe("buying on a stock's page", () => {
     await expect(tradeBox(page, "SpaceX").getByRole("textbox", { name: "Buy SpaceX" })).toHaveValue("")
   })
 
-  test.fixme(`a cancelled Face ID sends nothing, and the page says so (${deadlineBug})`, async ({ page, authenticator, funded: _funded }) => {
+  test(`a cancelled Face ID sends nothing, and the page says so`, async ({ page, authenticator, funded: _funded }) => {
     await page.goto("/stocks/SPCX")
     const box = tradeBox(page, "SpaceX")
     await box.getByRole("textbox", { name: "Buy SpaceX" }).fill("10")
@@ -162,8 +156,7 @@ test.describe("selling on a stock's page", () => {
     await expect(box.getByRole("button", { name: "Sell with Face ID" })).toBeDisabled()
   })
 
-  // fixme: pins $100 prices (backlog W8)
-  test.fixme("the Sell tab shows the shares you own and their worth", async ({ page, user }) => {
+  test("the Sell tab shows the shares you own and their worth", async ({ page, user }) => {
     await giveShares(user, { TSLA: 3 })
     await user.fund(page)
     await page.goto("/stocks/TSLA")
@@ -171,7 +164,7 @@ test.describe("selling on a stock's page", () => {
 
     await box.getByRole("tab", { name: "Sell" }).click()
 
-    await expect(box.getByText("3 shares, worth $300.00")).toBeVisible()
+    await expect(box.getByText(/^3 shares, worth \$[\d,]+\.\d{2}$/)).toBeVisible()
     await expect(box.getByText("Enter how much to sell.")).toBeVisible()
     await expect(box.getByRole("group", { name: "Quick amounts" })).toBeHidden()
   })
@@ -192,8 +185,7 @@ test.describe("selling on a stock's page", () => {
     await expect(box.getByRole("button", { name: "Sell with Face ID" })).toBeEnabled()
   })
 
-  // fixme: pins $100 prices (backlog W8)
-  test.fixme("Max sells every share, in the unit shown", async ({ page, user }) => {
+  test("Max sells every share, in the unit shown", async ({ page, user }) => {
     await giveShares(user, { TSLA: 3 })
     await user.fund(page)
     await page.goto("/stocks/TSLA")
@@ -202,7 +194,7 @@ test.describe("selling on a stock's page", () => {
 
     await box.getByRole("button", { name: "Max" }).click()
 
-    await expect(box.getByRole("textbox", { name: "Sell Tesla" })).toHaveValue("300")
+    await expect(box.getByRole("textbox", { name: "Sell Tesla" })).toHaveValue(/^[\d,]+(\.\d{1,2})?$/)
     await box.getByRole("button", { name: "Amount in USDC. Switch to shares" }).click()
     await expect(box.getByRole("textbox", { name: "Sell Tesla" })).toHaveValue("3")
   })
@@ -221,7 +213,7 @@ test.describe("selling on a stock's page", () => {
     await expect(box.getByRole("button", { name: "Sell with Face ID" })).toBeDisabled()
   })
 
-  test.fixme(`selling part of a holding with Face ID fills (${deadlineBug})`, async ({ page, funded: _funded }) => {
+  test(`selling part of a holding with Face ID fills`, async ({ page, funded: _funded }) => {
     await buy(page, "SPCX", 20)
     await page.getByRole("button", { name: "Buy more SpaceX" }).click()
     const box = tradeBox(page, "SpaceX")

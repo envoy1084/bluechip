@@ -69,8 +69,10 @@ test.describe("sign up", () => {
     await page.goto("/welcome")
     await page.getByRole("button", { name: "Create account with Face ID" }).click()
     await page.getByRole("button", { name: "Continue" }).click()
+    const saved = page.waitForResponse((response) => response.url().endsWith("/api/account/eligibility"))
     await page.getByRole("radio", { name: /In the United States/ }).click()
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
+    expect((await saved).status()).toBe(200)
 
     await context.clearCookies()
     await page.goto("/welcome")
@@ -147,7 +149,8 @@ test.describe("sign in and out", () => {
 
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
-    await expect(page.getByText("We couldn't sign you in")).toBeVisible()
+    // The browser finds no passkey for bluechip, which it reports as a cancelled prompt.
+    await expect(page.getByRole("status")).toHaveText("You cancelled Face ID. Sign in when you're ready.")
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
   })
 

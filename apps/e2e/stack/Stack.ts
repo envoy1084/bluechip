@@ -9,7 +9,7 @@ import * as path from "node:path"
 import { parseEnv } from "node:util"
 import { gunzipSync } from "node:zlib"
 import { createServer, type ViteDevServer } from "vite"
-import { alignPrices } from "./prices.ts"
+import { alignPrices, keepPricesAligned } from "./prices.ts"
 
 const root = path.resolve(import.meta.dirname, "../../..")
 
@@ -114,9 +114,11 @@ export const startStack = async (): Promise<Stack> => {
   const children: Array<ChildProcess> = []
   let web: ViteDevServer | undefined
   let stopClock = () => {}
+  let stopPrices = () => {}
   const stop = async () => {
     stopping = true
     stopClock()
+    stopPrices()
     await web?.close()
     for (const child of children) child.kill("SIGTERM")
     await Promise.all(children.map((child) =>
@@ -168,6 +170,7 @@ export const startStack = async (): Promise<Stack> => {
     // An agent's operation is bounded to its latest block's UTC day, and Alto checks that against the real clock: on
     // Base's hardfork Anvil's own clock falls behind.
     stopClock = keepClock(anvil).stop
+    stopPrices = keepPricesAligned(anvil).stop
 
     children.push(start("alto", path.join(root, "packages/devnet/node_modules/.bin/alto"), [
       "--rpc-url",

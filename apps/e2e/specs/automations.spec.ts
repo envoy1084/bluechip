@@ -208,7 +208,7 @@ test.describe("an agent's automations", () => {
     await expect(sentence(page)).toHaveText(/^Every Monday at 10:00 New York time, buy \$50 of NVIDIA\.$/)
   })
 
-  test("one saved for it is listed on its page and under its name", async ({ page, funded: _funded }) => {
+  test("one saved for it is listed on its page and with its name", async ({ page, funded: _funded }) => {
     await createAgent(page, { name: "Listed picker" })
     await page.getByRole("main").getByRole("link", { name: "Automations", exact: true }).click()
     await page.getByRole("region", { name: "Automations", exact: true }).getByRole("link", { name: "New automation" })
@@ -223,10 +223,10 @@ test.describe("an agent's automations", () => {
       page.getByRole("region", { name: "Automations", exact: true }).getByRole("link", { name: /^Picker's Monday / })
     ).toBeVisible()
     await page.goto("/automations")
-    await page.getByRole("combobox", { name: "Trades through" }).click()
-    await page.getByRole("option", { name: /^Listed picker/ }).click()
-    await expect(page.getByRole("list", { name: "Automations" }).getByRole("link", { name: /^Picker's Monday / }))
-      .toBeVisible()
+    // Under four automations the list has no filters: each row names who trades.
+    await expect(
+      page.getByRole("list", { name: "Automations" }).getByRole("link", { name: /^Picker's Monday .*Listed picker/ })
+    ).toBeVisible()
   })
 
   test("a Weekly buyer's review shows its weekly buy, and Done lists it saved", async ({ page, funded: _funded }) => {

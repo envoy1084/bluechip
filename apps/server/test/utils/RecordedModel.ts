@@ -54,6 +54,13 @@ export interface Reply {
 export const CONVERSATION_MODEL = "test-conversation"
 export const SMALL_MODEL = "test-small"
 
+/**
+ * Set to a file path, the assistant runs on Anthropic's models (`ANTHROPIC_API_KEY` from the environment, passed on
+ * by `TestConfig`) and
+ * `Evals.test.ts` writes what they answered there instead of checking the recordings: how `Evals.ts` is recorded.
+ */
+export const recordEvalsTo = process.env["ASSISTANT_EVALS_RECORD"]
+
 const textOf = (message: Prompt.Message): string =>
   typeof message.content === "string" ?
     message.content :
@@ -276,6 +283,16 @@ export class RecordedModel extends Context.Service<RecordedModel, {
     const conversation = Layer.effect(LanguageModel.LanguageModel, model(CONVERSATION_MODEL))
     const small = Layer.effect(LanguageModel.LanguageModel, model(SMALL_MODEL))
 
+    const models = recordEvalsTo === undefined ?
+      Layer.succeed(
+        AssistantModels,
+        AssistantModels.make({
+          conversation: { id: CONVERSATION_MODEL, layer: conversation },
+          small: { id: SMALL_MODEL, layer: small }
+        })
+      ) :
+      AssistantModels.layer
+
     return Layer.mergeAll(
       Layer.succeed(RecordedModel, {
         record: (...recorded) => Effect.sync(() => recorded.forEach((reply) => replies.set(reply.to, reply))),
@@ -284,13 +301,7 @@ export class RecordedModel extends Context.Service<RecordedModel, {
         judge: (headline, answer) => Effect.sync(() => void judgments.set(headline, answer)),
         judgmentPrompts: (headline) => Effect.sync(() => judged.get(headline) ?? [])
       }),
-      Layer.succeed(
-        AssistantModels,
-        AssistantModels.make({
-          conversation: { id: CONVERSATION_MODEL, layer: conversation },
-          small: { id: SMALL_MODEL, layer: small }
-        })
-      )
+      models
     )
   }))
 }

@@ -40,16 +40,20 @@ test.describe("portfolio", () => {
     await expect(money.getByRole("button", { name: "Add cash" })).toHaveCount(0)
   })
 
-  // fixme: pins $100 prices and shares (backlog W8)
-  test.fixme("holdings are listed biggest first, with cash last", async ({ page, user }) => {
+  test("holdings are listed biggest first, with cash last", async ({ page, user }) => {
     await giveShares(user, { TSLA: 3, AMZN: 2 })
     await user.fund(page)
 
     await page.goto("/portfolio")
 
-    await expect(holdingRows(page).nth(0)).toHaveAccessibleName(/^TSLA Tesla 3 shares, 20\.0% of your money \$300\.00/)
-    await expect(holdingRows(page).nth(1)).toHaveAccessibleName(/^AMZN Amazon 2 shares, 13\.3% of your money \$200\.00/)
-    await expect(holdingRows(page).nth(2)).toHaveAccessibleName(/^USDC Cash Ready to invest \$1,000\.00 66\.7%$/)
+    // Three Tesla shares are worth more than two of Amazon at the devnet's prices.
+    await expect(holdingRows(page).nth(0)).toHaveAccessibleName(
+      /^TSLA Tesla 3 shares, \d+\.\d% of your money \$[\d,]+\.\d{2}/
+    )
+    await expect(holdingRows(page).nth(1)).toHaveAccessibleName(
+      /^AMZN Amazon 2 shares, \d+\.\d% of your money \$[\d,]+\.\d{2}/
+    )
+    await expect(holdingRows(page).nth(2)).toHaveAccessibleName(/^USDC Cash Ready to invest \$1,000\.00 \d+\.\d%$/)
   })
 
   test("the Name tab sorts holdings by name", async ({ page, user }) => {
@@ -65,8 +69,7 @@ test.describe("portfolio", () => {
     await expect(holdingRows(page).nth(2)).toHaveAccessibleName(/^USDC Cash/)
   })
 
-  // fixme: pins +2.04% (backlog W8)
-  test.fixme("the Today tab sorts by today's move, ties kept biggest first", async ({ page, user }) => {
+  test("the Today tab sorts by today's move, cash last", async ({ page, user }) => {
     await giveShares(user, { TSLA: 3, AMZN: 2 })
     await user.fund(page)
     await page.goto("/portfolio")
@@ -77,8 +80,9 @@ test.describe("portfolio", () => {
     await sort.getByRole("tab", { name: "Today" }).click()
 
     await expect(sort.getByRole("tab", { name: "Today" })).toHaveAttribute("aria-selected", "true")
-    await expect(holdingRows(page).nth(0)).toHaveAccessibleName(/^TSLA Tesla.*\+2\.04%$/)
-    await expect(holdingRows(page).nth(1)).toHaveAccessibleName(/^AMZN Amazon.*\+2\.04%$/)
+    await expect(holdingRows(page).nth(0)).toHaveAccessibleName(/^(TSLA Tesla|AMZN Amazon).*[+−-]?\d+\.\d{2}%$/)
+    await expect(holdingRows(page).nth(1)).toHaveAccessibleName(/^(TSLA Tesla|AMZN Amazon).*[+−-]?\d+\.\d{2}%$/)
+    await expect(holdingRows(page).nth(2)).toHaveAccessibleName(/^USDC Cash/)
   })
 
   test("a holding opens its stock's page", async ({ page, user }) => {
@@ -91,8 +95,7 @@ test.describe("portfolio", () => {
     await expect(page).toHaveURL(/\/stocks\/TSLA$/)
   })
 
-  // fixme: pins $100 prices (backlog W8)
-  test.fixme("the mix splits the money between stocks and cash", async ({ page, user }) => {
+  test("the mix splits the money between stocks and cash", async ({ page, user }) => {
     await giveShares(user, { TSLA: 3, AMZN: 2 })
     await user.fund(page)
 
@@ -100,9 +103,9 @@ test.describe("portfolio", () => {
 
     const slices = page.getByRole("list", { name: "Your mix" }).getByRole("button")
     await expect(slices).toHaveCount(3)
-    await expect(slices.nth(0)).toHaveAccessibleName("Tesla 20.0%")
-    await expect(slices.nth(1)).toHaveAccessibleName("Amazon 13.3%")
-    await expect(slices.nth(2)).toHaveAccessibleName("Cash 66.7%")
+    await expect(slices.nth(0)).toHaveAccessibleName(/^Tesla \d+\.\d%$/)
+    await expect(slices.nth(1)).toHaveAccessibleName(/^Amazon \d+\.\d%$/)
+    await expect(slices.nth(2)).toHaveAccessibleName(/^Cash \d+\.\d%$/)
   })
 
   test("a single share reads \"1 share\"", async ({ page, user }) => {

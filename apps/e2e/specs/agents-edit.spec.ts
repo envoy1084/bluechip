@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
-import { createAgent, createDraft, dayFromNow, openFineTuning } from "../utils/agents.ts"
+import { createAgent, createDraft, dayFromNow, openFineTuning, openRule } from "../utils/agents.ts"
 
 /** A Stock picker of NVIDIA, live, at its rules step to change them. */
 const editAgent = async (page: Page, template = "Stock picker", stocks = ["NVDA NVIDIA"]) => {
@@ -33,7 +33,8 @@ test.describe("edit rules: the rules step", () => {
 
     await page.getByRole("textbox", { name: "Daily budget" }).fill("100")
 
-    await expect(page.getByText("Stocks and direction", { exact: true }).locator("xpath=..")).toContainText("Tighter")
+    // The daily budget is part of the trade policy, marked beside what it trades.
+    await expect(page.getByRole("region", { name: "What it trades" })).toContainText("Tighter")
     await expect(page.getByText("These changes aren't locked yet")).toBeVisible()
     await expect(aDay(page)).toHaveText(/\$100/)
     await expect(page.getByRole("button", { name: "Review changes" })).toBeEnabled()
@@ -60,9 +61,10 @@ test.describe("edit rules: the rules step", () => {
   test("a rule that can't be locked blocks the review", async ({ page, funded: _funded }) => {
     await editAgent(page)
 
-    await page.getByRole("textbox", { name: "Daily budget" }).fill("2010")
+    await openRule(page, "Cash reserve")
+    await page.getByRole("textbox", { name: "Cash reserve" }).fill("60")
 
-    await expect(page.getByText("Pick $0 to $2,000.")).toBeVisible()
+    await expect(page.getByText("Pick 0% to 50%.")).toBeVisible()
     await expect(page.getByRole("button", { name: "Review changes" })).toBeDisabled()
   })
 })
@@ -141,7 +143,8 @@ test.describe("edit rules: lock with Face ID", () => {
 
     await expect(page).toHaveURL(new RegExp(`/agents/${id}$`))
     await expect(aDay(page)).toHaveText(/\$100/)
-    await expect.poll(() => page.getByRole("region", { name: "Usage" }).ariaSnapshot()).toContain("$0 of $100")
+    await page.getByRole("link", { name: "Usage" }).click()
+    await expect(page.getByRole("heading", { name: "$100 left to spend today" })).toBeVisible()
   })
 
   test("the history gains a session that says what changed", async ({ page, funded: _funded }) => {
@@ -150,12 +153,14 @@ test.describe("edit rules: lock with Face ID", () => {
     await page.getByRole("button", { name: "Review changes" }).click()
     await page.getByRole("button", { name: "Lock new rules with Face ID" }).click()
 
-    const history = page.getByRole("region", { name: "History" })
+    await expect(page.getByRole("heading", { name: "Edited one", level: 2 })).toBeVisible()
+    await page.getByRole("link", { name: "History" }).click()
+    const history = page.getByRole("region", { name: "Its rules over time" })
     await expect(history.locator("li")).toHaveText([
       new RegExp(
-        `^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*In force\\s*Stocks and direction tighter\\.`
+        `^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*Stocks and direction tighter\\.\\s*In force`
       ),
-      new RegExp(`^Locked ${dayFromNow(0)} by you, ended ${dayFromNow(0)}\\s*Replaced\\s*Its first rules\\.$`)
+      new RegExp(`^Locked ${dayFromNow(0)} by you, ended ${dayFromNow(0)}\\s*Its first rules\\.\\s*Replaced`)
     ])
     await history.getByRole("button", { name: "What changed" }).click()
     await expect(history.getByText("Daily budget")).toBeVisible()

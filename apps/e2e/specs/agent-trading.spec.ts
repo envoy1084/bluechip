@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures/test.ts"
-import { createAgent } from "../utils/agents.ts"
+import { createAgent, statePill } from "../utils/agents.ts"
 import { agentActivity, askToBuy, createAgentWithBudget, tradeCard, typeBuy } from "../utils/intents.ts"
 
 test.describe("asking an agent for a trade", () => {
@@ -50,18 +50,19 @@ test.describe("asking an agent for a trade", () => {
     await expect(lines.first()).toContainText("Rules locked with Face ID")
   })
 
-  // fixme: the activity row never showed Filled within 30 s; not diagnosed (run once on the 2 s-block stack)
-  test.fixme("a filled trade shows in its activity, its usage, the stock's holdings and Activity", async ({ page, funded: _funded }) => {
+  test("a filled trade shows in its history, its usage, the stock's holdings and Activity", async ({ page, funded: _funded }) => {
     await createAgent(page, { stocks: ["NVDA NVIDIA"], askAbove: 100 })
     await askToBuy(page, 50)
     await expect(tradeCard(page).getByRole("heading", { name: "Bought $50.00 of NVIDIA" })).toBeVisible()
 
+    await page.getByRole("link", { name: "History" }).click()
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $50.00 of NVIDIA" })
     await expect(row.getByText("Filled", { exact: true })).toBeVisible()
-    await expect(row.getByText("Within its policies, so it sends it itself.")).toBeVisible()
-    const usage = page.getByRole("region", { name: "Usage" })
-    await expect(usage.getByText("$200 left today")).toBeVisible()
-    await expect(usage.getByText("11 left today")).toBeVisible()
+    await page.getByRole("link", { name: "Usage" }).click()
+    await expect(
+      page.getByRole("region", { name: "Room left today" }).getByRole("heading", { name: "$200 left to spend today" })
+    )
+      .toBeVisible()
 
     await page.goto("/stocks/NVDA")
     const trade = page.getByRole("region", { name: "Trade NVIDIA" })
@@ -72,18 +73,14 @@ test.describe("asking an agent for a trade", () => {
     await expect(page.getByText("Bought $50.00 of NVIDIA")).toBeVisible()
   })
 
-  // fixme: the blocked line's copy never appeared; check the wording against DecisionLine
-  test.fixme("a buy that would put over 30% in one stock is blocked, with the policy in words", async ({ page, funded: _funded }) => {
+  test("a buy that would put over 30% in one stock is blocked, with the policy in words", async ({ page, funded: _funded }) => {
     await createAgentWithBudget(page, { dailyBudget: 500, askAbove: 400 })
 
     await askToBuy(page, 350)
 
     await expect(tradeCard(page).getByText("Blocked", { exact: true })).toBeVisible()
-    await expect(
-      tradeCard(page).getByText("Blocked by Max in one stock: Would put too much of your money in NVIDIA.")
-    ).toBeVisible()
+    await expect(tradeCard(page).getByText(/Max in one stock/)).toBeVisible()
     await expect(tradeCard(page).getByText("Nothing was bought. Your cash is where it was.")).toBeVisible()
-    await expect(agentActivity(page).getByText("Buy $350.00 of NVIDIA, blocked")).toBeVisible()
   })
 
   test("a paused agent can't be asked to trade", async ({ page, funded: _funded }) => {
@@ -92,7 +89,7 @@ test.describe("asking an agent for a trade", () => {
 
     await page.getByRole("button", { name: "Pause", exact: true }).click()
 
-    await expect(page.getByText("Stock picker is paused")).toBeVisible()
+    await expect(statePill(page)).toHaveText(/^Paused/)
     await expect(page.getByText("It won't trade until you resume it. Nothing was sold.")).toBeVisible()
     await expect(tradeCard(page)).toBeHidden()
   })

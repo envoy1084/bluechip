@@ -88,10 +88,12 @@ test.describe("renew", () => {
 
     await page.getByRole("button", { name: "Renew", exact: true }).click()
 
+    await expect(page.getByText(`Locked with Face ID until ${dayFromNow(90)}`)).toBeVisible()
+    await page.getByRole("link", { name: "History" }).click()
     const history = page.getByRole("region", { name: "Its rules over time" }).locator("li")
     await expect(history).toHaveText([
-      new RegExp(`^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*In force\\s*The same rules, renewed\\.$`),
-      /Replaced\s*Its first rules\.$/
+      new RegExp(`^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*The same rules, renewed\\.\\s*In force`),
+      /Its first rules\.\s*Replaced/
     ])
     await expect(statePill(page)).toContainText("Active")
   })
@@ -105,6 +107,7 @@ test.describe("renew", () => {
     await expect(page.getByRole("alert")).toHaveText(
       "You cancelled Face ID. Nothing changed."
     )
+    await page.getByRole("link", { name: "History" }).click()
     await expect(page.getByRole("region", { name: "Its rules over time" }).locator("li")).toHaveCount(1)
   })
 })
@@ -205,8 +208,9 @@ test.describe("expired", () => {
     )
     await expect(page.getByText(`Ran out on ${ended}. Renew it to keep these rules`)).toBeVisible()
     await expect(page.getByRole("button", { name: "Edit rules" })).toBeHidden()
+    await page.getByRole("link", { name: "History" }).click()
     await expect(page.getByRole("region", { name: "Its rules over time" }).locator("li")).toHaveText([
-      /Ran out\s*Its first rules\.$/
+      /Its first rules\.\s*Ran out/
     ])
   })
 
@@ -216,9 +220,9 @@ test.describe("expired", () => {
 
     await page.goto("/agents")
 
-    await expect(page.getByRole("link", { name: /^Card ran out / })).toHaveText(
-      new RegExp(`^Card ran out\\s*(Ran out)+\\s*Buys and sells.*Ran out on ${ended}$`)
-    )
+    const card = page.getByRole("link", { name: /^Card ran out / })
+    await expect(card).toContainText("Buys and sells")
+    await expect(card).toContainText(`Ran out on ${ended}`)
     await expect(page.getByRole("main").getByRole("button", { name: "Renew", exact: true })).toBeVisible()
   })
 

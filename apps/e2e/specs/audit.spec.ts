@@ -36,7 +36,7 @@ test.describe("audit log", () => {
 
     await page.getByRole("combobox", { name: "Days" }).click()
     await page.getByRole("option", { name: "Custom range" }).click()
-    await page.getByLabel("To").fill("2020-01-01")
+    await page.getByRole("textbox", { name: "To" }).fill("2020-01-01")
 
     await expect(page.getByText("Nothing your account did matches these filters.")).toBeVisible()
   })

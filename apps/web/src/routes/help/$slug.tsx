@@ -2,6 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router"
 import { groupOf } from "../../features/help/model/articles.ts"
 import { HELP_ARTICLES, HELP_GROUPS } from "../../features/help/model/content.ts"
 import { helpArticleStructuredData } from "../../features/help/model/structuredData.ts"
+import { HelpArticleNotFound } from "../../features/help/screens/HelpArticleNotFound.tsx"
 import { HelpArticleScreen } from "../../features/help/screens/HelpArticleScreen.tsx"
 import { site } from "../../lib/seo/currentSite.ts"
 import { jsonLdScript, pageHead } from "../../lib/seo/head.ts"
@@ -26,7 +27,8 @@ export const Route = createFileRoute("/help/$slug")({
       scripts: [jsonLdScript(helpArticleStructuredData(site, article, image))]
     }
   },
-  component: HelpArticle
+  component: HelpArticle,
+  notFoundComponent: HelpArticleNotFound
 })
 
 function HelpArticle() {

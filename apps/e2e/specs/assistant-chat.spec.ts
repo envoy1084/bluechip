@@ -3,7 +3,8 @@ import { createAgent } from "../utils/agents.ts"
 import { ask, composer, lastTurn, unique } from "../utils/assistant.ts"
 
 test.describe("the chat page", () => {
-  test.beforeEach(async ({ page }) => {
+  // After signing up (the `user` fixture lands on home), so it opens the chat page signed in.
+  test.beforeEach(async ({ page, user: _user }) => {
     await page.goto("/chat")
   })
 
@@ -208,7 +209,8 @@ test.describe("chats sidebar", () => {
     await page.getByRole("complementary", { name: "Chats" }).getByRole("link", { name: "New chat" }).click()
 
     await expect(page).toHaveURL(/\/chat$/)
-    await expect(page.getByText(to, { exact: true })).toBeHidden()
+    // The chat it left stays in the sidebar, named by its first words.
+    await expect(page.getByRole("log", { name: "Messages" })).toBeHidden()
     await expect(page.getByRole("button", { name: /^How do I add money\?/ })).toBeVisible()
   })
 

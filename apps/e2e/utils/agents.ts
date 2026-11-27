@@ -37,10 +37,10 @@ export const openFineTuning = async (page: Page) => {
  * can't be reviewed until every stock has one.
  */
 export const setFloors = async (page: Page, stocks: ReadonlyArray<string>, price = 100) => {
-  await openFineTuning(page)
   await openRule(page, "Stop-loss floor")
   for (const stock of stocks) {
-    await page.getByRole("textbox", { name: stock.slice(stock.indexOf(" ") + 1), exact: true }).fill(String(price))
+    await page.getByRole("textbox", { name: `${stock.slice(stock.indexOf(" ") + 1)} floor`, exact: true })
+      .fill(String(price))
   }
 }
 
@@ -82,7 +82,7 @@ export const createDraft = async (
   await reviewAgent(page, agent)
   await authenticator.setVerified(false)
   await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
-  await expect(page.getByText("Face ID was cancelled or the request couldn't be sent. Nothing changed.")).toBeVisible()
+  await expect(page.getByText("You cancelled Face ID. Nothing changed.")).toBeVisible()
   await authenticator.setVerified(true)
 
   await page.goto("/agents")
@@ -92,6 +92,14 @@ export const createDraft = async (
 }
 
 const agentIdOf = (page: Page): string => new URL(page.url()).pathname.split("/").at(-1)!
+
+/** A rule's row header on the rules step: its title, what it does now in a sentence, and Edit when it carries it. */
+export const ruleRow = (page: Page, title: string): Locator =>
+  page.locator("[data-slot='policy-row']").getByRole("button", { name: new RegExp(`^${title}`) })
+
+/** The three numbers of the rules at a glance: a day, per trade, trades a day. */
+export const glanceNumbers = (page: Page): Locator =>
+  page.getByRole("region", { name: "Its rules at a glance" }).getByRole("definition")
 
 /** The sentences of the "It can" half of the rules at a glance on the page (one card per screen). */
 export const canRules = (page: Page): Locator =>

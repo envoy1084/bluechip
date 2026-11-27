@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures/test.ts"
-import { canRules, createAgent, dayFromNow, openRule, setFloors, startAgent } from "../utils/agents.ts"
+import { createAgent, dayFromNow, openFineTuning, openRule, setFloors, startAgent } from "../utils/agents.ts"
 
 test.describe("new agent: template step", () => {
   test("it offers the four templates and scratch, the Stock picker first", async ({ page, user: _user }) => {
@@ -32,7 +32,7 @@ test.describe("new agent: template step", () => {
   test("Back from the rules returns to the template it started from", async ({ page, user: _user }) => {
     await startAgent(page, "Weekly buyer")
 
-    await page.getByRole("button", { name: "Back" }).click()
+    await page.getByRole("button", { name: "Back", exact: true }).click()
 
     await expect(page.getByRole("radio", { name: "Weekly buyer" })).toBeChecked()
   })
@@ -58,7 +58,9 @@ test.describe("new agent: from each template to live", () => {
     await createAgent(page, { template: "Stock picker" })
 
     await expect(page.getByRole("heading", { name: "Stock picker", level: 2 })).toBeVisible()
-    await expect(canRules(page).first()).toHaveText("Buy and sell NVIDIA")
+    const glance = page.getByRole("region", { name: "Its rules at a glance" })
+    await expect(glance).toContainText("Buys and sells")
+    await expect(glance.getByRole("list", { name: "Its stocks" }).getByRole("listitem")).toHaveText(["NVDA"])
   })
 
   test("a Weekly buyer of Tesla is live", async ({ page, funded: _funded }) => {
@@ -139,7 +141,7 @@ test.describe("new agent: from each template to live", () => {
 })
 
 test.describe("new agent: review", () => {
-  test("the worst case of a Stock picker counts its trades, their size and its budget", async ({ page, user: _ }) => {
+  test("the worst case of a Stock picker is its budget and its trade size", async ({ page, user: _ }) => {
     await startAgent(page, "Stock picker")
     await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
 
@@ -147,18 +149,21 @@ test.describe("new agent: review", () => {
 
     await expect(page.getByText("The worst case")).toBeVisible()
     await expect(page.getByText(/^On its worst day/)).toHaveText(
-      "On its worst day, this agent could spend at most $250 on buys, up to $100 a trade, in at most 12 trades, only in NVIDIA. It can never move money out of your account."
+      "On its worst day, this agent could spend at most $250 on buys, up to $100 a trade, only in NVIDIA. It can never move money out of your account."
     )
   })
 
-  test("the worst case of a Weekly buyer is one trade", async ({ page, user: _user }) => {
-    await startAgent(page, "Weekly buyer")
+  test("the worst case counts its trades when they are a limit of its own", async ({ page, user: _user }) => {
+    await startAgent(page, "Stock picker")
     await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
+    await openFineTuning(page)
+    await openRule(page, "Trades a day")
+    await page.getByRole("textbox", { name: "Trades a day" }).fill("3")
 
     await page.getByRole("button", { name: "Review" }).click()
 
     await expect(page.getByText(/^On its worst day/)).toHaveText(
-      "On its worst day, this agent could spend at most $250 on buys, up to $100 a trade, in at most one trade, only in NVIDIA. It can never move money out of your account."
+      "On its worst day, this agent could spend at most $250 on buys, up to $100 a trade, in at most 3 trades, only in NVIDIA. It can never move money out of your account."
     )
   })
 
@@ -170,7 +175,7 @@ test.describe("new agent: review", () => {
     await page.getByRole("button", { name: "Review" }).click()
 
     await expect(page.getByText(/^On its worst day/)).toHaveText(
-      "On its worst day, this agent could sell up to $100 a trade, in at most 4 trades, only in Apple. It never buys, and it can never move money out of your account."
+      "On its worst day, this agent could sell up to $100 a trade, only in Apple. It never buys, and it can never move money out of your account."
     )
   })
 
@@ -182,8 +187,19 @@ test.describe("new agent: review", () => {
 
     await page.getByRole("button", { name: "Review" }).click()
 
-    await expect(page.getByRole("term")).toHaveText(["Runs for", "Asks you", "You can"])
+    // The rules at a glance's three numbers come first.
+    await expect(page.getByRole("term")).toHaveText([
+      "A day",
+      "Per trade",
+      "Trades a day",
+      "Runs for",
+      "Asks you",
+      "You can"
+    ])
     await expect(page.getByRole("definition")).toHaveText([
+      "$250",
+      "$60",
+      "No limit",
       `90 days, until ${dayFromNow(90)}`,
       "Before trades over $60",
       "Pause it any time, instantly"
@@ -211,7 +227,6 @@ test.describe("new agent: review", () => {
 
     await page.getByRole("textbox", { name: "Name" }).fill("Nvidia swing")
 
-    await expect(page.getByRole("heading", { name: "Nvidia swing", level: 3 })).toBeVisible()
     await page.getByRole("button", { name: "Lock these rules with Face ID" }).click()
     await expect(page.getByRole("heading", { name: "Nvidia swing is live" })).toBeVisible()
   })
@@ -224,30 +239,19 @@ test.describe("new agent: review", () => {
     await page.getByRole("textbox", { name: "Name" }).fill("  ")
 
     await expect(page.getByText("Give it a name.")).toBeVisible()
-    await expect(page.getByRole("heading", { name: "Your agent", level: 3 })).toBeVisible()
     await expect(page.getByRole("button", { name: "Lock these rules with Face ID" })).toBeDisabled()
   })
 
-  test("Edit rules goes back to the rules as they were set", async ({ page, user: _user }) => {
+  test("Back to rules goes back to the rules as they were set", async ({ page, user: _user }) => {
     await startAgent(page, "Stock picker")
     await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
     await page.getByRole("textbox", { name: "Daily budget" }).fill("400")
     await page.getByRole("button", { name: "Review" }).click()
 
-    await page.getByRole("button", { name: "Edit rules" }).click()
-
-    await expect(page.getByRole("textbox", { name: "Daily budget" })).toHaveValue("400")
-    await expect(page.getByRole("button", { name: "NVDA NVIDIA" })).toHaveAttribute("aria-pressed", "true")
-  })
-
-  test("Back to rules goes back to the rules", async ({ page, user: _user }) => {
-    await startAgent(page, "Stock picker")
-    await page.getByRole("button", { name: "NVDA NVIDIA" }).click()
-    await page.getByRole("button", { name: "Review" }).click()
-
     await page.getByRole("button", { name: "Back to rules" }).click()
 
     await expect(page.getByRole("heading", { name: "Its limits" })).toBeVisible()
+    await expect(page.getByRole("textbox", { name: "Daily budget" })).toHaveValue("400")
     await expect(page.getByRole("button", { name: "NVDA NVIDIA" })).toHaveAttribute("aria-pressed", "true")
   })
 })

@@ -20,10 +20,11 @@ export const buy = async (page: Page, symbol: string, dollars: number) => {
   const name = stockName(symbol)
   await page.goto(`/stocks/${symbol}`)
   await page.getByRole("textbox", { name: `Buy ${name}` }).fill(String(dollars))
-  await expect(page.getByText("Within 1% of Chainlink's price")).toBeVisible()
+  await expect(page.getByText(/^About [\d.]+ shares for \$[\d,]+\.\d{2}\.$/)).toBeVisible()
 
   await page.getByRole("button", { name: "Buy with Face ID" }).click()
-  await expect(page.getByRole("button", { name: "Bought. Buy more" })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Trade status" }).getByRole("heading", { name: /^Bought \$/ }))
+    .toBeVisible()
 }
 
 /**

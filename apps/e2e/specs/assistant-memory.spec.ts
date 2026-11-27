@@ -57,7 +57,7 @@ test.describe("memory cards", () => {
   test("a guess kept with Remember is listed as confirmed", async ({ page, user: _user, replies }) => {
     await mentionKids(page, replies)
     const card = page.getByRole("region", { name: "Memory, fact" })
-    await expect(card.getByText("Should I remember this?")).toBeVisible()
+    await expect(card.getByText("Keep this?")).toBeVisible()
 
     await card.getByRole("button", { name: "Remember" }).click()
 

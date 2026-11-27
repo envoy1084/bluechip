@@ -105,7 +105,7 @@ const drop = (spec: AgentSpec, id: PolicyId): AgentSpec =>
   new AgentSpec({ policies: spec.policies.filter((entry) => entry.id !== id) })
 
 /**
- * The direction it trades. Rebalancing comes with a target mix (and only on live prices); any other direction drops
+ * The direction it trades. Rebalancing comes with a target mix; any other direction drops
  * the mix. An agent that only sells never spends, and one that stops only selling gets the standard budget back.
  *
  * @stability unstable

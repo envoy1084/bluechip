@@ -65,7 +65,7 @@ test.describe("home", () => {
 
   test("your agents show on home and lead to theirs", async ({ page, funded: _funded }) => {
     const { id } = await createAgent(page, { name: "Home agent" })
-    await page.getByRole("link", { name: "Home" }).click()
+    await page.getByRole("link", { name: "Home", exact: true }).click()
 
     await page.getByRole("region", { name: "Your agents" }).getByRole("link", { name: /^Home agent/ }).click()
 
@@ -90,15 +90,17 @@ test.describe("home", () => {
     await expect(page.getByRole("region", { name: "Needs you" })).toBeHidden()
   })
 
-  // fixme: pins $100 prices; the stack now runs at the devnet's captured prices (backlog W8)
-  test.fixme("the total counts shares, and today's move is theirs", async ({ page, user }) => {
+  test("the total counts shares, and today's move is theirs", async ({ page, user }) => {
     await giveShares(user, { MSFT: 4 })
     await user.fund(page)
 
     await page.reload()
 
-    await expect(page.getByRole("region", { name: "Your money" })).toContainText("$1,400.00")
-    await expect(page.getByRole("main")).toContainText("+$8.00")
-    await expect(page.getByRole("main")).toContainText("+0.57%")
+    // $1,000 of cash and four shares of Microsoft at the devnet's price, more than a dollar each.
+    await expect(page.getByRole("region", { name: "Your money" })).toContainText(
+      /\$1,[1-9]\d{2}\.\d{2}|\$[2-9],\d{3}\.\d{2}/
+    )
+    await expect(page.getByRole("main")).toContainText(/[+−-]\$\d+\.\d{2}/)
+    await expect(page.getByRole("main")).toContainText(/[+−-]\d+\.\d{2}%/)
   })
 })

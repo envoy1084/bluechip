@@ -11,23 +11,18 @@ test.describe("agents list", () => {
     await expect(
       page.getByText("Start one from a template. You set its limits, and it trades only once they're locked.")
     ).toBeVisible()
-    await expect(page.getByRole("main").getByRole("link", { name: "New agent" })).toHaveCount(2)
+    // The empty state's New agent is the way in: the top bar has none of its own.
+    await expect(page.getByRole("main").getByRole("link", { name: "New agent" })).toHaveCount(1)
+    await expect(page.getByRole("main").getByRole("link", { name: "Ask the assistant" })).toBeVisible()
   })
 
   test("the empty state's New agent opens the template step", async ({ page, user: _user }) => {
     await page.goto("/agents")
 
-    await page.getByRole("main").getByRole("link", { name: "New agent" }).last().click()
-
-    await expect(page.getByRole("heading", { name: "What should your agent do?" })).toBeVisible()
-  })
-
-  test("the header's New agent opens the template step", async ({ page, user: _user }) => {
-    await page.goto("/agents")
-
-    await page.getByRole("main").getByRole("link", { name: "New agent" }).first().click()
+    await page.getByRole("main").getByRole("link", { name: "New agent" }).click()
 
     await expect(page).toHaveURL(/\/agents\/new$/)
+    await expect(page.getByRole("heading", { name: "What should your agent do?" })).toBeVisible()
   })
 
   test("a live agent's card shows its name, state, what it trades and today's budget", async ({ page, funded: _ }) => {
@@ -37,7 +32,7 @@ test.describe("agents list", () => {
 
     const card = page.getByRole("link", { name: /^Tuesday buys / })
     await expect(card).toContainText("Tuesday buysActive")
-    await expect(card).toContainText(/Buys\s*[A-Z]+/)
+    await expect(card).toContainText(/Only buys\s*[A-Z]+/)
     await expect(card.getByRole("meter", { name: "Spent today" })).toBeVisible()
     await expect(card).toContainText("$0 of $250 today")
   })
@@ -47,9 +42,10 @@ test.describe("agents list", () => {
 
     await page.goto("/agents")
 
-    await expect(page.getByRole("link", { name: /^Half made / })).toHaveText(
-      /^Half made\s*Not locked yet\s*Buys and sells.*Lock its rules with Face ID to start it$/
-    )
+    const card = page.getByRole("link", { name: /^Half made / })
+    await expect(card).toContainText("Not locked yet")
+    await expect(card).toContainText("Buys and sells")
+    await expect(card).toContainText("Lock its rules with Face ID to start it")
   })
 
   test("its filters, search and sort pick which agents show", async ({ page, funded: _funded }) => {
@@ -139,20 +135,17 @@ test.describe("agent page", () => {
     await createAgent(page, { template: "Stop-loss guard", stocks: ["AAPL Apple"] })
 
     await expect(page.getByRole("heading", { name: "Its rules" })).toBeVisible()
+    const glance = page.getByRole("region", { name: "Its rules at a glance" })
+    await expect(glance).toContainText("Only sells")
+    await expect(glance.getByRole("definition")).toHaveText(["No buys", "$100", "No limit"])
     await expect(canRules(page)).toHaveText([
-      "Sell Apple",
-      "Trade up to $100 at a time, and ask you before anything bigger",
       "Trade on weekends and holidays, with a tighter price limit",
-      "Trade 4 times a day at most"
+      "Spend up to 0.038 ETH on gas a day"
     ])
     await expect(neverRules(page)).toHaveText([
-      "Send money out of your account",
-      "Trade stocks you didn't pick",
-      "Make a trade under $5",
-      "Trade more than 1% away from Chainlink's price",
-      "Lose more than 1% of your money to prices in a week",
-      "Sell Apple above $100",
-      "Change its own policies"
+      "Never trade more than 1% away from Chainlink's price",
+      "Never sell Apple above $100",
+      "Never lose more than 1% of your money to prices in a week"
     ])
     await expect(page.getByText(`Locked with Face ID until ${dayFromNow(90)}`)).toBeVisible()
     await expect(page.getByRole("button", { name: "Edit rules" })).toBeVisible()
@@ -170,30 +163,38 @@ test.describe("agent page", () => {
   test("usage starts at nothing spent and every trade left", async ({ page, funded: _funded }) => {
     await createAgent(page, { template: "Stock picker" })
 
-    const usage = page.getByRole("region", { name: "Usage" })
-    await expect(usage.getByRole("meter", { name: "Spent today" })).toBeVisible()
-    await expect.poll(() => usage.ariaSnapshot()).toContain("Spent today $0 of $250")
-    await expect.poll(() => usage.ariaSnapshot()).toContain("$250 left today")
-    await expect(usage).toContainText("Lost to prices this week$0")
-    await expect(usage).toContainText("It stops at 1% of your money in any 7 days.")
-    await expect(usage).toContainText("Trades today0 of 12")
-    await expect(usage).toContainText("12 left today")
+    await page.getByRole("link", { name: "Usage" }).click()
+
+    const usage = page.getByRole("region", { name: "Today's usage" })
+    await expect(usage.getByRole("heading", { name: "$250 left to spend today" })).toBeVisible()
+    await expect(usage.getByRole("figure", { name: /^Daily budget: \$0 of \$250 used\./ })).toBeVisible()
+    await expect(usage.getByRole("region", { name: "Weekly slippage" })).toContainText(
+      "What it lost to prices over the last 7 days; it stops at 1% of your money."
+    )
+    await expect(usage.getByRole("region", { name: "Trades today" })).toContainText(
+      "No limit of its own: its budget stops it first."
+    )
+    await expect(usage.getByRole("region", { name: "Gas today" })).toContainText("0.038 ETH left until")
   })
 
   test("a sell-only agent's usage has no daily spend", async ({ page, funded: _funded }) => {
     await createAgent(page, { template: "Stop-loss guard", stocks: ["AAPL Apple"] })
 
-    const usage = page.getByRole("region", { name: "Usage" })
-    await expect(usage).toContainText("Trades today0 of 4")
-    await expect(usage.getByRole("meter", { name: "Spent today" })).toBeHidden()
+    await page.getByRole("link", { name: "Usage" }).click()
+
+    const usage = page.getByRole("region", { name: "Today's usage" })
+    await expect(usage.getByRole("region", { name: "Trades today" })).toBeVisible()
+    await expect(usage.getByRole("figure", { name: /^Daily budget/ })).toBeHidden()
   })
 
   test("its history starts with its first rules, in force", async ({ page, funded: _funded }) => {
     await createAgent(page)
 
-    const history = page.getByRole("region", { name: "History" }).getByRole("listitem")
+    await page.getByRole("link", { name: "History" }).click()
+
+    const history = page.getByRole("region", { name: "Its rules over time" }).locator("li")
     await expect(history).toHaveText([
-      new RegExp(`^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*In force\\s*Its first rules\\.$`)
+      new RegExp(`^Locked ${dayFromNow(0)} by you, until ${dayFromNow(90)}\\s*Its first rules\\.\\s*In force`)
     ])
   })
 

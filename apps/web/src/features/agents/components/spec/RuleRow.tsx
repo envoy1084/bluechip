@@ -18,7 +18,7 @@ const sideEffect = (spec: AgentSpec, id: PolicyId, on: boolean): string | undefi
   if (id === "rebalance") {
     return on ?
       "Turning it off lets it buy and sell freely instead." :
-      "Turning it on makes it trade only toward your mix, on live prices."
+      "Turning it on makes it trade only toward your mix."
   }
   const missing = policyOf(id).requires.filter((needed) => !hasPolicy(spec, needed as PolicyId))
   return !on && missing.length > 0 ?

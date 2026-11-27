@@ -30,7 +30,7 @@ const chipPicker = async (page: Page) => {
 test.describe("draft agent cards", () => {
   test("a draft locked with Face ID from the card goes live", async ({ page, funded: _funded, replies }) => {
     const card = await draftAppleWeekly(page, replies)
-    await expect(card.getByRole("heading", { name: "Apple weekly" })).toBeVisible()
+    await expect(card.getByText("Apple weekly", { exact: true })).toBeVisible()
     await expect(card.getByText("Runs for 90 days once locked. Pause it any time.")).toBeVisible()
     await expect(card.getByText("Not locked yet", { exact: true })).toBeVisible()
     await expect(card.getByRole("list", { name: "Its stocks" }).getByRole("listitem")).toHaveCount(1)

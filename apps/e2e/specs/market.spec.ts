@@ -5,15 +5,15 @@ import { expect, test } from "../fixtures/test.ts"
 const list = (page: Page) => page.getByRole("region", { name: "Stocks on bluechip" })
 
 test.describe("stocks list", () => {
-  // fixme: pins +2.04% and $100 prices (backlog W8)
-  test.fixme("every stock bluechip trades is listed with its price and day", async ({ page, user: _user }) => {
+  test("every stock bluechip trades is listed with its price and day", async ({ page, user: _user }) => {
     await page.goto("/stocks")
 
     await expect(list(page).getByRole("link")).toHaveCount(localDeployment.stocks.length)
     for (const stock of localDeployment.stocks) {
       await expect(list(page).getByRole("link", { name: new RegExp(`^${stock.symbol} ${stock.name}`) })).toBeVisible()
     }
-    await expect(list(page).getByRole("link", { name: /^TSLA Tesla/ })).toContainText("+2.04%")
+    await expect(list(page).getByRole("link", { name: /^TSLA Tesla/ })).toContainText(/\$[\d,]+\.\d{2}/)
+    await expect(list(page).getByRole("link", { name: /^TSLA Tesla/ })).toContainText(/[+−-]?\d+\.\d{2}%/)
     await expect(page.getByText("These are Coinbase's tokenized US stocks on Base. Each one tracks its stock's price."))
       .toBeVisible()
   })
@@ -47,15 +47,14 @@ test.describe("stock page", () => {
     await expect(page.getByRole("heading", { name: "Stock not found", level: 1 })).toBeVisible()
   })
 
-  // fixme: pins $100 prices (backlog W8)
-  test.fixme("the header shows the price, the day's move and Chainlink's price", async ({ page, user: _user }) => {
+  test("the header shows the price, the day's move and Chainlink's price", async ({ page, user: _user }) => {
     await page.goto("/stocks/MSFT")
 
     await expect(page.getByRole("heading", { name: "Microsoft", level: 1 })).toBeVisible()
     await expect(page.getByText("Microsoft on Base")).toBeVisible()
-    await expect(page.getByRole("main")).toContainText("$100.00")
-    await expect(page.getByRole("main")).toContainText("+2.04%")
-    await expect(page.getByText(/^Chainlink \$100\.00, 0\.0% apart, updated /)).toBeVisible()
+    await expect(page.getByRole("main")).toContainText(/\$[\d,]+\.\d{2}/)
+    await expect(page.getByRole("main")).toContainText(/[+−-]?\d+\.\d{2}%/)
+    await expect(page.getByText(/^Chainlink \$[\d,]+\.\d{2}, \d+\.\d% apart, updated /)).toBeVisible()
   })
 
   test("the chart loads every range at once and each tab shows its own", async ({ page, user: _user }) => {

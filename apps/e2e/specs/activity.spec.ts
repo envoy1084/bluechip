@@ -1,13 +1,7 @@
-import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
 import { buy, withdraw } from "../utils/trading.ts"
 
 const burn = "0x000000000000000000000000000000000000dEaD"
-
-const choosePeriod = async (page: Page, period: string) => {
-  await page.getByRole("combobox", { name: "Period" }).click()
-  await page.getByRole("option", { name: period }).click()
-}
 
 test.describe("activity", () => {
   test("a new person's activity is empty, and says where trades will show", async ({ page, user: _user }) => {
@@ -15,9 +9,9 @@ test.describe("activity", () => {
 
     await expect(page.getByText("No activity yet")).toBeVisible()
     await expect(page.getByText("Your trades, deposits and withdrawals show up here.")).toBeVisible()
-    await choosePeriod(page, "All time")
-    await expect(page.getByText("No activity yet")).toBeVisible()
-    await expect(page.getByText("Try another type or a longer period.")).toBeHidden()
+    await expect(page.getByRole("button", { name: "Add cash" })).toBeVisible()
+    // Nothing to filter yet.
+    await expect(page.getByRole("tablist", { name: "Filter by type" })).toBeHidden()
   })
 
   test("a withdrawal is listed under today", async ({ page, funded: _funded }) => {
@@ -43,7 +37,7 @@ test.describe("activity", () => {
     await expect(details.getByRole("definition")).toHaveText([
       "Withdrawal",
       "$15.00 USDC",
-      burn,
+      "0x0000…dEaD",
       "Sent",
       /^0x[0-9a-f]{4}…[0-9a-f]{4}$/
     ])
@@ -81,8 +75,8 @@ test.describe("activity", () => {
     await expect(page.getByText("Withdrew $15.00")).toBeVisible()
   })
 
-  test.fixme(
-    "a filled buy's details are its receipt, then the price checked against Chainlink (bug: on a holiday the chain runs days ahead of the server's clock, so every swap's deadline has passed)",
+  test(
+    "a filled buy's details are its receipt, then the price checked against Chainlink",
     async ({ page, funded: _funded }) => {
       await buy(page, "SPCX", 10)
       await page.goto("/activity")
@@ -94,7 +88,7 @@ test.describe("activity", () => {
       await expect(details.getByRole("definition")).toHaveText([
         /SpaceX$/,
         /^\$\d+\.\d{2}$/,
-        /^[\d.]+ shares?$/,
+        /^\d+\.\d+$/,
         /^\$\d+\.\d{2} a share$/,
         /^\$\d+\.\d{2}$/,
         /^\d+\.\d{2}% (worse|better) than Chainlink$/,

@@ -23,7 +23,21 @@ test.describe("security: passkeys", () => {
     await expect(page.getByRole("heading", { name: "The passkey is added" })).toBeVisible()
     expect(await hardwareKey.credentials()).toHaveLength(1)
     await page.getByRole("button", { name: "Done" }).click()
-    await expect(page.getByRole("button", { name: "Remove" })).toHaveCount(2)
+    await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(2)
+  })
+
+  test("two passkeys from the same kind of device get names of their own", async ({ page, funded: _funded }) => {
+    await addAuthenticator(page, { transport: "usb" })
+    await page.goto("/settings/security")
+
+    await page.getByRole("button", { name: "Add a passkey" }).click()
+    await page.getByRole("button", { name: "Add with Face ID" }).click()
+    await expect(page.getByRole("heading", { name: "The passkey is added" })).toBeVisible()
+    await page.getByRole("button", { name: "Done" }).click()
+
+    const removes = page.getByRole("button", { name: /^Remove / })
+    await expect(removes.first()).toHaveAccessibleName(/^Remove Passkey from [\w ]+$/)
+    await expect(removes.last()).toHaveAccessibleName(/^Remove Passkey from [\w ]+ \(2\)$/)
   })
 
   test("removing a passkey asks first and ends with an outcome", async ({ page, funded: _funded }) => {
@@ -78,6 +92,24 @@ test.describe("security: devices", () => {
 
     await expect(devices.getByRole("button", { name: /^Sign out (?!others)/ })).toHaveCount(0)
     await other.reload()
+    await expect(other).toHaveURL(/\/welcome$/)
+    await other.close()
+  })
+
+  test("a browser signed out from another one says so, and offers to sign in again", async ({ browser, page, authenticator, user: _user }) => {
+    const other = await browser.newPage()
+    await authenticator.copyTo(await addAuthenticator(other))
+    await other.goto("/welcome")
+    await other.getByRole("button", { name: "Sign in with passkey" }).click()
+    await expect(other.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
+
+    await page.goto("/settings/security")
+    await page.locator("section", { hasText: "Every browser signed in to your account." })
+      .getByRole("button", { name: "Sign out others" }).click()
+
+    // The open page learns it from its live events, without a reload.
+    await expect(other.getByRole("heading", { name: "You were signed out" })).toBeVisible()
+    await other.getByRole("link", { name: "Sign in again" }).click()
     await expect(other).toHaveURL(/\/welcome$/)
     await other.close()
   })

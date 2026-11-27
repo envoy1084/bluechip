@@ -19,21 +19,26 @@ export const saveOwn = async (page: Page, name: string) => {
   await expect(page).toHaveURL(/\/automations\/automation_[0-9a-z]+$/)
 }
 
-/**
- * Saves an automation for the agent `agentId` that asks you first about a buy of `dollars` split evenly across
- * `symbols`, through the API the editor calls (`POST /api/automations`); resolves with its id. At any hour of the
- * market, so a fire always runs.
- */
-export const saveAskingBuy = async (
-  page: Page,
-  agent: {
-    readonly agentId: string
-    readonly name: string
-    readonly dollars: number
-    readonly symbols: ReadonlyArray<string>
-  }
-): Promise<string> => {
+interface AgentBuy {
+  readonly agentId: string
+  readonly name: string
+  readonly dollars: number
+  readonly symbols: ReadonlyArray<string>
+}
+
+// Saves an automation for `agent` that buys `dollars` split evenly across its symbols, asking you first when `asks`,
+// through the API the editor calls (`POST /api/automations`); resolves with its id. At any hour of the market, so a
+// fire always runs.
+const saveBuy = async (page: Page, agent: AgentBuy, asks: boolean): Promise<string> => {
   const weight = 10_000 / agent.symbols.length
+  // USDC units, as a string: the API's JSON for amounts.
+  const trade = {
+    type: "buy",
+    config: {
+      amount: String(agent.dollars * 1_000_000),
+      split: agent.symbols.map((symbol) => ({ symbol, weight }))
+    }
+  }
   const response = await page.request.post("/api/automations", {
     headers: apiHeaders,
     data: {
@@ -43,19 +48,7 @@ export const saveAskingBuy = async (
         agentId: agent.agentId,
         trigger: { type: "schedule", config: { days: ["monday"], time: "10:00", timeZone: "America/New_York" } },
         conditions: [],
-        action: {
-          type: "ask",
-          config: {
-            trade: {
-              type: "buy",
-              // USDC units, as a string: the API's JSON for amounts.
-              config: {
-                amount: String(agent.dollars * 1_000_000),
-                split: agent.symbols.map((symbol) => ({ symbol, weight }))
-              }
-            }
-          }
-        },
+        action: asks ? { type: "ask", config: { trade } } : trade,
         settings: {
           cooldownMinutes: 60,
           maxFires: null,
@@ -70,6 +63,12 @@ export const saveAskingBuy = async (
   expect(response.status(), "POST /api/automations").toBe(200)
   return (await response.json() as { readonly id: string }).id
 }
+
+/** Saves an automation for the agent `agentId` that asks you first about a buy (see `saveBuy`); resolves with its id. */
+export const saveAskingBuy = (page: Page, agent: AgentBuy): Promise<string> => saveBuy(page, agent, true)
+
+/** Saves an automation for the agent `agentId` that has it buy on its own, within its policies; resolves with its id. */
+export const saveAgentBuy = (page: Page, agent: AgentBuy): Promise<string> => saveBuy(page, agent, false)
 
 /**
  * Runs an automation now, as its trigger would (`POST /api/dev/automations/:id/fire`, local network only): its run,

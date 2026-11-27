@@ -49,11 +49,11 @@ test.describe("approvals", () => {
     await expect(sheet.getByRole("region", { name: "Stock picker wants to buy $150.00 of NVIDIA" })).toBeVisible()
   })
 
-  // fixme: the activity row's Review and approve link never appeared; maybe no live update from Asked
-  test.fixme("the agent's activity leads to its approval", async ({ page, funded: _funded }) => {
+  test("the agent's history leads to its approval", async ({ page, funded: _funded }) => {
     await askOverLargestTrade(page)
+    await page.getByRole("link", { name: "History" }).click()
     const row = agentActivity(page).getByRole("listitem").filter({ hasText: "Buy $150.00 of NVIDIA" })
-    await expect(row.getByText("Over its $100 limit, so it needs your approval.")).toBeVisible()
+    await expect(row.getByText("You asked this agent to trade.")).toBeVisible()
 
     await row.getByRole("link", { name: "Review and approve" }).click()
 

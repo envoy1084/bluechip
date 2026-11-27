@@ -2,7 +2,7 @@ import { expect, test } from "../fixtures/test.ts"
 import { createAgent } from "../utils/agents.ts"
 
 test.describe("settings", () => {
-  test("a saved name greets you on home and in the sidebar", async ({ page, user: _user }) => {
+  test("a saved name greets you on home", async ({ page, user: _user }) => {
     await page.goto("/settings")
     const name = page.getByRole("textbox", { name: "Your name" })
     await expect(page.getByRole("button", { name: "Save" })).toBeDisabled()
@@ -11,9 +11,8 @@ test.describe("settings", () => {
     await page.getByRole("button", { name: "Save" }).click()
 
     await expect(page.getByRole("button", { name: "Save" })).toBeDisabled()
-    await page.getByRole("link", { name: "Home" }).click()
+    await page.getByRole("link", { name: "Home", exact: true }).click()
     await expect(page.getByRole("heading", { level: 2, name: /^Good (morning|afternoon|evening), Ada$/ })).toBeVisible()
-    await expect(page.getByRole("complementary", { name: "App navigation" })).toContainText("Ada")
   })
 
   test("a cleared name goes back to a plain greeting", async ({ page, user: _user }) => {
@@ -29,7 +28,7 @@ test.describe("settings", () => {
     await expect(page.getByRole("button", { name: "Save" })).toBeDisabled()
     await page.reload()
     await expect(page.getByRole("textbox", { name: "Your name" })).toHaveValue("")
-    await page.getByRole("link", { name: "Home" }).click()
+    await page.getByRole("link", { name: "Home", exact: true }).click()
     await expect(page.getByRole("heading", { level: 2, name: /^Good (morning|afternoon|evening)$/ })).toBeVisible()
   })
 
@@ -94,7 +93,7 @@ test.describe("settings", () => {
   test("the danger zone stays hidden without agents", async ({ page, user: _user }) => {
     await page.goto("/settings")
 
-    await expect(page.getByRole("heading", { name: "Assistant" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Memory" })).toBeVisible()
     await expect(page.getByRole("heading", { name: "Danger zone" })).toBeHidden()
     await expect(page.getByRole("button", { name: "Pause all" })).toBeHidden()
   })

@@ -35,6 +35,10 @@ export const TestConfig = Layer.unwrap(Effect.gen(function*() {
     VAPID_PRIVATE_KEY: vapid.getPrivateKey().toString("base64url"),
     VAPID_SUBJECT: "mailto:tests@bluechip.test",
     TELEGRAM_BOT_USERNAME: "bluechip_test_bot",
-    SCHEDULES_ENABLED: "false"
+    SCHEDULES_ENABLED: "false",
+    // Only for recording the assistant's evals on the live models (`recordEvalsTo` in `RecordedModel`).
+    ...(process.env["ASSISTANT_EVALS_RECORD"] === undefined
+      ? {}
+      : { ANTHROPIC_API_KEY: process.env["ANTHROPIC_API_KEY"] ?? "" })
   }))
 }))

@@ -13,10 +13,14 @@ export const typeBuy = async (page: Page, dollars: number) => {
   await tradeCard(page).getByRole("textbox", { name: /^Buy / }).fill(String(dollars))
 }
 
-/** Asks the agent (on its page) to buy `dollars` of its first stock. */
+/** Asks the agent (on its page) to buy `dollars` of its first stock; resolves once the server has the request. */
 export const askToBuy = async (page: Page, dollars: number) => {
   await typeBuy(page, dollars)
+  const created = page.waitForResponse((response) =>
+    response.url().endsWith("/api/intents") && response.request().method() === "POST"
+  )
   await tradeCard(page).getByRole("button", { name: /^Ask .+ to buy$/ }).click()
+  expect((await created).status(), "POST /api/intents").toBe(200)
 }
 
 /**

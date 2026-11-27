@@ -107,15 +107,17 @@ test.describe("notification settings", () => {
     }
   })
 
-  test("a news kind can wait for the daily digest", async ({ page, user: _user }) => {
+  test("an automation's runs wait for the daily digest, until you take them out of it", async ({ page, user: _user }) => {
     await page.goto("/settings/notifications")
     const digest = page.getByRole("switch", { name: "An automation ran: only in the morning digest" })
+    await expect(digest).toBeChecked()
 
     await digest.click()
 
-    await expect(digest).toBeChecked()
+    await expect(digest).not.toBeChecked()
+    await expect(digest).toBeEnabled()
     await page.reload()
-    await expect(page.getByRole("switch", { name: "An automation ran: only in the morning digest" })).toBeChecked()
+    await expect(page.getByRole("switch", { name: "An automation ran: only in the morning digest" })).not.toBeChecked()
   })
 
   test("quiet hours: on from 22:00 to 07:00 in your zone, then off", async ({ page, user: _user }) => {

@@ -101,7 +101,9 @@ export function SettingsScreen() {
 /** The kill switch over every agent, once there is one to pause: pause them all, or remove them all with Face ID. */
 function AgentsSection() {
   const { shown, allPaused, busy, failed, toggle } = usePauseAll()
-  if (!shown) return null
+  // Removing every agent leaves none to show the section for: it stays while that dialog says how it went.
+  const [removing, setRemoving] = useState(false)
+  if (!shown && !removing) return null
 
   return (
     <Section title="Danger zone" description="These act on every agent at once." illustration="emergency-stop">
@@ -118,7 +120,7 @@ function AgentsSection() {
           {allPaused ? "Resume all" : "Pause all"}
         </Button>
       </Row>
-      <RemoveAllAgents />
+      <RemoveAllAgents onOpenChange={setRemoving} />
     </Section>
   )
 }

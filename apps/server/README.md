@@ -110,7 +110,10 @@ account's desk.
 - Memories (`memories`) are what the user said (confirmed at once) or what the notes inferred (confirmed when sure,
   otherwise shown as a card to confirm). Only confirmed memories reach the system prompt; deleting one removes it.
 - Tests run on `RecordedModel` (`test/utils/`): replies replayed by the user's message, so runs are exact and free.
-  `test/e2e/assistant/Evals.test.ts` runs recorded conversations (`test/fixtures/assistant/`).
+  `test/e2e/assistant/Evals.test.ts` runs recorded conversations (`test/fixtures/assistant/`). To record them again
+  on the live models (after a prompt or toolkit change), run it with `ASSISTANT_EVALS_RECORD=<file>` and
+  `ANTHROPIC_API_KEY` set: it writes each turn's rounds, calls and cards to the file (JSON lines) instead of checking,
+  for copying into `Evals.ts` (a dozen turns, about a dollar).
 
 ## API
 

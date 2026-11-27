@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test"
 import { expect, test } from "../fixtures/test.ts"
-import { canRules, createAgent, dayFromNow, startAgent } from "../utils/agents.ts"
+import { createAgent, dayFromNow, startAgent } from "../utils/agents.ts"
 
 /** Reviews a Stock picker of Apple spending $400 a day, and saves its rules as `name`. */
 const saveTemplate = async (page: Page, name: string) => {
@@ -61,8 +61,8 @@ test.describe("saved templates", () => {
     await page.goto("/agents/new")
 
     const template = page.getByRole("radio", { name: "Apple at 400" })
-    await expect(template).toHaveAccessibleDescription("Its rules start as you saved them.")
-    await expect(template).toContainText("Buy and sell")
+    await expect(template).toHaveAccessibleDescription("AAPL, $400 a day.")
+    await expect(template).toContainText("Saved, buys and sells")
     await expect(page.getByRole("radiogroup", { name: "Agent templates" }).getByRole("radio")).toHaveCount(6)
   })
 
@@ -75,7 +75,10 @@ test.describe("saved templates", () => {
 
     await expect(page.getByRole("button", { name: "AAPL Apple" })).toHaveAttribute("aria-pressed", "true")
     await expect(page.getByRole("textbox", { name: "Daily budget" })).toHaveValue("400")
-    await expect(canRules(page).first()).toHaveText("Buy and sell Apple")
+    await expect(
+      page.getByRole("region", { name: "Its rules at a glance" }).getByRole("list", { name: "Its stocks" })
+        .getByRole("listitem")
+    ).toHaveText(["AAPL"])
     await expect(page.getByText("Start from a preset")).toBeHidden()
   })
 

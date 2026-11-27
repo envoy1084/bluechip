@@ -14,9 +14,11 @@ import {
   SidebarRail
 } from "@bluechip/ui/components/sidebar"
 import { Icon, type IconName } from "@bluechip/ui/icons/icon"
-import { useAtomMount } from "@effect/atom-react/Hooks"
+import { useAtomMount, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link, Navigate, Outlet, useMatchRoute } from "@tanstack/react-router"
+import * as AsyncResult from "effect/reactivity/AsyncResult"
 import type { ReactNode } from "react"
+import { meAtom } from "../../../atoms/account.ts"
 import { FrameActionsProvider } from "../../../components/layout/FrameActions.tsx"
 import { PaperBadge, PaperBanner } from "../../../components/layout/PaperBadge.tsx"
 import { SignedIn } from "../../../components/SignedIn.tsx"
@@ -65,11 +67,13 @@ export function AppLayout(
 ) {
   const matchRoute = useMatchRoute()
   const onChat = matchRoute({ to: "/chat/{-$conversationId}", fuzzy: true }) !== false
+  // Answering eligibility reads the account again: until that answer comes, the one shown may be from before it.
+  const rereading = AsyncResult.isWaiting(useAtomValue(meAtom))
   return (
     <SignedIn>
       {(me) =>
         me.user.eligibility !== "outsideUs" ?
-          <Navigate to="/welcome/eligibility" /> :
+          (rereading ? null : <Navigate to="/welcome/eligibility" />) :
           (
             <SidebarProvider
               className="bg-canvas"

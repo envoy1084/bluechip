@@ -17,7 +17,10 @@ test.describe("sidebar navigation", () => {
     test(`${heading} opens ${path}`, async ({ page, user: _user }) => {
       await page.goto(path === "/home" ? "/settings" : "/home")
 
-      await page.getByRole("complementary", { name: "App navigation" }).getByRole("link", { name: heading }).click()
+      await page.getByRole("complementary", { name: "App navigation" }).getByRole("link", {
+        name: heading,
+        exact: true
+      }).click()
 
       await expect(page).toHaveURL(new RegExp(`${path}$`))
       await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible()
@@ -98,7 +101,8 @@ test.describe("on a phone", () => {
 })
 
 test.describe("dev pages", () => {
-  test("/dev/chain shows the local chain's latest block", async ({ page }) => {
+  // The chain is read through the server's `/api/rpc`, for a signed-in browser only.
+  test("/dev/chain shows the local chain's latest block", async ({ page, user: _user }) => {
     await page.goto("/dev/chain")
 
     await expect(page.getByRole("heading", { name: "Chain", level: 1 })).toBeVisible()
@@ -112,7 +116,8 @@ test.describe("dev pages", () => {
 
     await expect(page.getByRole("heading", { name: "Connection", level: 1 })).toBeVisible()
     await expect(page.getByRole("definition").nth(1)).toHaveText("v1")
-    await expect(page.getByRole("definition").nth(2)).toHaveText(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+    await expect(page.getByRole("definition").nth(2)).toHaveText("local")
+    await expect(page.getByRole("definition").nth(3)).toHaveText(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
     await expect(page.getByText("Live", { exact: true })).toBeVisible()
   })
 })

@@ -1,3 +1,4 @@
+import { Toaster } from "@bluechip/ui/components/toast"
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { NetworkCheck } from "../components/layout/NetworkCheck.tsx"
@@ -24,6 +25,8 @@ function RootComponent() {
           <WalletProvider>
             <Outlet />
             {landingOnly ? null : <NetworkCheck />}
+            {/* Where every `toast()` the app shows appears. */}
+            <Toaster />
           </WalletProvider>
         </AnalyticsProvider>
       </AtomProvider>
