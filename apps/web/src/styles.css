@@ -63,3 +63,31 @@ html:active-view-transition-type(agent-tab)::view-transition-new(page) {
     animation: none;
   }
 }
+
+/*
+ * The landing page (features/landing): its hero entrances, the cards that fly out of the warp, their float and the
+ * stocks' marquee. Every use is off under reduced motion (`motion-reduce:animate-none`), and anchors scroll smoothly
+ * only when motion is welcome.
+ */
+@keyframes landing-rise {
+  from { opacity: 0; translate: 0 28px; scale: .97 }
+}
+
+@keyframes landing-arrive {
+  from { opacity: 0; translate: var(--from-x, 0) var(--from-y, 0); scale: .4 }
+  40% { opacity: 1 }
+}
+
+@keyframes landing-float {
+  50% { translate: 0 -10px }
+}
+
+@keyframes landing-marquee {
+  to { translate: -50% 0 }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has([data-page="landing"]) {
+    scroll-behavior: smooth;
+  }
+}

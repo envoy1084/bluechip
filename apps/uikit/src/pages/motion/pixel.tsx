@@ -4,6 +4,7 @@ import { Confetti } from "@bluechip/ui/motion/confetti"
 import { DotGrid } from "@bluechip/ui/motion/dot-grid"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import { Seal, type SealHandle } from "@bluechip/ui/motion/seal"
+import { WarpField } from "@bluechip/ui/motion/warp-field"
 import { useRef, useState } from "react"
 import { AGENTS, PIXEL, type SceneEntry } from "./entries.ts"
 import { Card, useSeen } from "./layout.tsx"
@@ -28,6 +29,24 @@ export function GridCard() {
           <DotGrid cell={14} gap={4} />
           <p className="pointer-events-none absolute bottom-2.5 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/85 px-2.5 py-0.5 text-caption text-g-500 shadow-hair">
             <Icon name="hand" size={14} />Move or tap
+          </p>
+        </>
+      }
+    />
+  )
+}
+
+const WARP_SYMBOLS = ["NVDA", "AAPL", "TSLA", "MSFT", "META", "AMZN"]
+
+export function WarpCard() {
+  return (
+    <Card
+      entry={PIXEL.warp}
+      stage={
+        <>
+          <WarpField symbols={WARP_SYMBOLS} />
+          <p className="pointer-events-none absolute bottom-2.5 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/85 px-2.5 py-0.5 text-caption text-g-500 shadow-hair">
+            <Icon name="hand" size={14} />Move or press
           </p>
         </>
       }

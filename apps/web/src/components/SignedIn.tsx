@@ -63,7 +63,7 @@ export function SignedIn({ children }: Readonly<{ children: (me: Me) => ReactNod
     )
   }
 
-  if (view._tag === "signIn") return <Navigate to="/" />
+  if (view._tag === "signIn") return <Navigate to="/signin" />
   if (view._tag === "signInAgain") {
     return (
       <Dialog open>

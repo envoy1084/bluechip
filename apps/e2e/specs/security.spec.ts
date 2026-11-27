@@ -18,7 +18,7 @@ test.describe("security: passkeys", () => {
     await page.goto("/settings/security")
 
     await page.getByRole("button", { name: "Add a passkey" }).click()
-    await page.getByRole("button", { name: "Make it and approve with Face ID" }).click()
+    await page.getByRole("button", { name: "Add with Face ID" }).click()
 
     await expect(page.getByRole("heading", { name: "The passkey is added" })).toBeVisible()
     expect(await hardwareKey.credentials()).toHaveLength(1)
@@ -30,7 +30,7 @@ test.describe("security: passkeys", () => {
     await addAuthenticator(page, { transport: "usb" })
     await page.goto("/settings/security")
     await page.getByRole("button", { name: "Add a passkey" }).click()
-    await page.getByRole("button", { name: "Make it and approve with Face ID" }).click()
+    await page.getByRole("button", { name: "Add with Face ID" }).click()
     await expect(page.getByRole("heading", { name: "The passkey is added" })).toBeVisible()
     await page.getByRole("button", { name: "Done" }).click()
 
@@ -47,7 +47,7 @@ test.describe("security: passkeys", () => {
     await authenticator.setVerified(false)
 
     await page.getByRole("button", { name: "Add a passkey" }).click()
-    await page.getByRole("button", { name: "Make it and approve with Face ID" }).click()
+    await page.getByRole("button", { name: "Add with Face ID" }).click()
 
     await expect(page.getByRole("alertdialog")).toContainText("Nothing changed")
     await authenticator.setVerified(true)
@@ -67,7 +67,7 @@ test.describe("security: devices", () => {
   test("another browser signed in is listed, notified, and signed out from here", async ({ browser, page, authenticator, user: _user }) => {
     const other = await browser.newPage()
     await authenticator.copyTo(await addAuthenticator(other))
-    await other.goto("/")
+    await other.goto("/signin")
     await other.getByRole("button", { name: "Sign in with passkey" }).click()
     await expect(other.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 
@@ -78,7 +78,7 @@ test.describe("security: devices", () => {
 
     await expect(devices.getByRole("button", { name: /^Sign out (?!others)/ })).toHaveCount(0)
     await other.reload()
-    await expect(other).toHaveURL(/\/$/)
+    await expect(other).toHaveURL(/\/signin$/)
     await other.close()
   })
 })

@@ -8,7 +8,7 @@ test.describe("recovery", () => {
     await expect(page.getByText("No recovery key yet")).toBeVisible()
 
     await page.getByRole("button", { name: "Set up a recovery key" }).click()
-    await page.getByRole("button", { name: "Make it and lock with Face ID" }).click()
+    await page.getByRole("button", { name: "Lock with Face ID" }).click()
 
     await expect(page.getByRole("heading", { name: "Your recovery key is ready" })).toBeVisible()
     expect(await hardwareKey.credentials()).toHaveLength(1)
@@ -20,7 +20,7 @@ test.describe("recovery", () => {
     const hardwareKey = await addAuthenticator(page, { transport: "usb" })
     await page.goto("/settings/security")
     await page.getByRole("button", { name: "Set up a recovery key" }).click()
-    await page.getByRole("button", { name: "Make it and lock with Face ID" }).click()
+    await page.getByRole("button", { name: "Lock with Face ID" }).click()
     await expect(page.getByRole("heading", { name: "Your recovery key is ready" })).toBeVisible()
     await page.getByRole("button", { name: "Done" }).click()
 
@@ -28,7 +28,7 @@ test.describe("recovery", () => {
     const lost = await browser.newPage()
     await addAuthenticator(lost)
     await hardwareKey.copyTo(await addAuthenticator(lost, { transport: "usb" }))
-    await lost.goto("/")
+    await lost.goto("/signin")
     await lost.getByRole("link", { name: "Lost your passkey? Recover your account" }).click()
     await lost.getByRole("button", { name: "Use my recovery key" }).click()
     await expect(lost.getByRole("heading", { name: "Ask for a recovery" })).toBeVisible()
@@ -47,12 +47,12 @@ test.describe("recovery", () => {
     const hardwareKey = await addAuthenticator(page, { transport: "usb" })
     await page.goto("/settings/security")
     await page.getByRole("button", { name: "Set up a recovery key" }).click()
-    await page.getByRole("button", { name: "Make it and lock with Face ID" }).click()
+    await page.getByRole("button", { name: "Lock with Face ID" }).click()
     await expect(page.getByRole("heading", { name: "Your recovery key is ready" })).toBeVisible()
 
     const lost = await browser.newPage()
     await hardwareKey.copyTo(await addAuthenticator(lost, { transport: "usb" }))
-    await lost.goto("/")
+    await lost.goto("/signin")
     await lost.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(lost.getByText("We couldn't sign you in")).toBeVisible()

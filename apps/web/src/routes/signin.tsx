@@ -1,8 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
+import { SignInScreen } from "../features/auth/screens/SignInScreen.tsx"
 
-// Signing in happens where people arrive (the landing and welcome pages); old links to /signin land there.
-export const Route = createFileRoute("/signin")({
-  beforeLoad: () => {
-    throw redirect({ to: "/", replace: true })
-  }
-})
+export const Route = createFileRoute("/signin")({ ssr: false, component: SignInScreen })

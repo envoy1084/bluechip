@@ -1,34 +1,37 @@
-import { buttonVariants } from "@bluechip/ui/components/button"
-import { Icon } from "@bluechip/ui/icons/icon"
-import { Halftone } from "@bluechip/ui/motion/halftone"
-import { Link } from "@tanstack/react-router"
-import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
-import { PasskeySignIn } from "../../../components/PasskeySignIn.tsx"
 import { SignedInRedirect } from "../../../components/SignedInRedirect.tsx"
+import { AgentsShowcase } from "../components/AgentsShowcase.tsx"
+import { Assistant } from "../components/Assistant.tsx"
+import { Faq } from "../components/Faq.tsx"
+import { FinalCta } from "../components/FinalCta.tsx"
+import { Hero } from "../components/Hero.tsx"
+import { HowItWorks } from "../components/HowItWorks.tsx"
+import { LandingFooter } from "../components/LandingFooter.tsx"
+import { LandingNav } from "../components/LandingNav.tsx"
+import { Permissions } from "../components/Permissions.tsx"
+import { Safety } from "../components/Safety.tsx"
+import { TickerBand } from "../components/TickerBand.tsx"
 
 /**
- * Where people arrive: what bluechip is, Create an account, and Sign in with passkey right here. Someone already
- * signed in goes on to home. Create an account is a link, so it works before the page hydrates.
+ * The public page at `/`: what bluechip is, how agents and their onchain limits work, why it's safe, and the ways in
+ * (Create an account, Sign in on its own page). Someone already signed in goes on to home.
  */
 export function LandingScreen() {
   return (
-    <OnboardingFrame>
+    <div data-page="landing" className="min-h-dvh bg-white text-ink">
       <SignedInRedirect />
-      <div className="-mb-1.5 size-[210px]">
-        <Halftone scene="logo" className="size-full" />
-      </div>
-      <OnboardingTitle title="You and your agents, trading stocks on Base">
-        Hire an agent, set its limits onchain, and let it trade tokenized US stocks for you.
-      </OnboardingTitle>
-      <div className="mt-2.5 grid w-full gap-2.5">
-        <Link to="/welcome" className={buttonVariants({ size: "lg", className: "w-full" })}>
-          Create an account<Icon name="arrow-right" size={16} />
-        </Link>
-        <PasskeySignIn />
-        <Link to="/recover" className={buttonVariants({ size: "lg", variant: "ghost", className: "w-full" })}>
-          Lost your passkey? Recover your account
-        </Link>
-      </div>
-    </OnboardingFrame>
+      <LandingNav />
+      <main>
+        <Hero />
+        <TickerBand />
+        <HowItWorks />
+        <Permissions />
+        <AgentsShowcase />
+        <Safety />
+        <Assistant />
+        <Faq />
+        <FinalCta />
+      </main>
+      <LandingFooter />
+    </div>
   )
 }

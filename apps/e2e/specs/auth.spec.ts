@@ -2,20 +2,21 @@ import { addAuthenticator } from "../fixtures/authenticator.ts"
 import { expect, test } from "../fixtures/test.ts"
 
 test.describe("landing and legal", () => {
-  test("the landing page leads to sign-up, and signs in right there", async ({ page }) => {
+  test("the landing page leads to sign-up", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.getByRole("heading", { name: "You and your agents, trading stocks on Base", level: 1 }))
-      .toBeVisible()
-    await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
-    await page.getByRole("link", { name: "Create an account" }).click()
+    await expect(page.getByRole("heading", { name: "Your money. Your agents. Your limits.", level: 1 })).toBeVisible()
+    await page.getByRole("link", { name: "Create an account" }).first().click()
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
   })
 
-  test("the old sign-in page leads to the landing page", async ({ page }) => {
-    await page.goto("/signin")
+  test("the landing page leads to the sign-in page", async ({ page }) => {
+    await page.goto("/")
 
-    await expect(page).toHaveURL(/\/$/)
+    await page.getByRole("link", { name: "Sign in", exact: true }).first().click()
+
+    await expect(page).toHaveURL(/\/signin$/)
+    await expect(page.getByRole("heading", { name: "Welcome back", level: 1 })).toBeVisible()
     await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
   })
 
@@ -61,7 +62,7 @@ test.describe("sign up", () => {
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
     await expect(page.getByRole("button", { name: "Continue" })).toBeHidden()
     await page.getByRole("button", { name: "Sign out" }).click()
-    await expect(page.getByRole("link", { name: "Create an account" })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Create an account" }).first()).toBeVisible()
   })
 
   test("a US answer is kept: signing in again returns to eligibility", async ({ page, context }) => {
@@ -72,7 +73,7 @@ test.describe("sign up", () => {
     await expect(page.getByText("bluechip isn't available in the US")).toBeVisible()
 
     await context.clearCookies()
-    await page.goto("/")
+    await page.goto("/signin")
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(page).toHaveURL(/\/welcome\/eligibility$/)
@@ -97,7 +98,7 @@ test.describe("sign in and out", () => {
 
     await expect(page.getByRole("button", { name: "Sign in with passkey" })).toBeVisible()
     await page.goto("/home")
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page).toHaveURL(/\/signin$/)
 
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
@@ -112,8 +113,11 @@ test.describe("sign in and out", () => {
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
   })
 
-  test("a signed-in visitor to the landing and welcome pages goes home", async ({ page, user: _user }) => {
+  test("a signed-in visitor to the landing, sign-in and welcome pages goes home", async ({ page, user: _user }) => {
     await page.goto("/")
+    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
+
+    await page.goto("/signin")
     await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
 
     await page.goto("/welcome")
@@ -125,7 +129,7 @@ test.describe("sign in and out", () => {
     const otherPage = await other.newPage()
     await authenticator.copyTo(await addAuthenticator(otherPage))
 
-    await otherPage.goto("/")
+    await otherPage.goto("/signin")
     await otherPage.getByRole("button", { name: "Sign in with passkey" }).click()
 
     await expect(otherPage.getByRole("heading", { name: "Home", level: 1 })).toBeVisible()
@@ -134,7 +138,7 @@ test.describe("sign in and out", () => {
   })
 
   test("a device without a bluechip passkey can't sign in", async ({ page }) => {
-    await page.goto("/")
+    await page.goto("/signin")
 
     await page.getByRole("button", { name: "Sign in with passkey" }).click()
 
@@ -143,9 +147,9 @@ test.describe("sign in and out", () => {
     await expect(page.getByRole("button", { name: "Create account with Face ID" })).toBeVisible()
   })
 
-  test("a signed-out visitor is sent to the landing page to sign in", async ({ page }) => {
+  test("a signed-out visitor is sent to the sign-in page", async ({ page }) => {
     await page.goto("/portfolio")
 
-    await expect(page).toHaveURL(/\/$/)
+    await expect(page).toHaveURL(/\/signin$/)
   })
 })
