@@ -8,6 +8,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { type ComponentType, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
+import { usePageTitle } from "../../../hooks/usePageTitle.ts"
 import { automationAtom } from "../atoms/automations.ts"
 import { automationPerformanceAtom } from "../atoms/performance.ts"
 import { type AgentStateView, AutomationHero } from "../components/detail/AutomationHero.tsx"
@@ -45,6 +46,7 @@ function AutomationContent(
   const result = useAtomValue(automationPerformanceAtom(automation.id))
   const performance = AsyncResult.isSuccess(result) ? result.value : undefined
   const [now] = useState(() => new Date())
+  usePageTitle(automation.name)
 
   const agent = automation.agentId === null ?
     null :

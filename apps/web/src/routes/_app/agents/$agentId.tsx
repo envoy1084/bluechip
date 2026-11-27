@@ -4,8 +4,12 @@ import * as Schema from "effect/Schema"
 import { AgentNotFound } from "../../../features/agents/components/detail/AgentNotFound.tsx"
 import { AgentScreen } from "../../../features/agents/screens/AgentScreen.tsx"
 import { AskAboutAgent } from "../../../features/assistant/components/AskAboutAgent.tsx"
+import { pageHead } from "../../../lib/seo/head.ts"
 
-export const Route = createFileRoute("/_app/agents/$agentId")({ component: AgentPage })
+export const Route = createFileRoute("/_app/agents/$agentId")({
+  head: () => pageHead({ title: "Agent", image: "agents" }),
+  component: AgentPage
+})
 
 const isAgentId = Schema.is(AgentId)
 

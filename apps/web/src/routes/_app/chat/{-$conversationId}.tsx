@@ -3,6 +3,7 @@ import { createFileRoute, Navigate } from "@tanstack/react-router"
 import * as Schema from "effect/Schema"
 import { ChatScreen } from "../../../features/assistant/screens/ChatScreen.tsx"
 import { AgentTradeProgress } from "../../../features/intents/components/agent/AgentTradeProgress.tsx"
+import { pageHead } from "../../../lib/seo/head.ts"
 
 const isConversationId = Schema.is(ConversationId)
 const isAgentId = Schema.is(AgentId)
@@ -10,6 +11,7 @@ const isAgentId = Schema.is(AgentId)
 // One route for a new chat (`/chat`) and an open one (`/chat/:id`): the first message moves the address to the
 // conversation it started without remounting the page, so the streaming answer carries on.
 export const Route = createFileRoute("/_app/chat/{-$conversationId}")({
+  head: () => pageHead({ title: "Assistant", image: "assistant" }),
   // `agent` starts a new chat about that agent; `ask` puts a question in the box to edit or send.
   validateSearch: (search: Record<string, unknown>): { agent?: AgentId; ask?: string } => ({
     ...(isAgentId(search["agent"]) ? { agent: search["agent"] } : {}),

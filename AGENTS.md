@@ -24,7 +24,8 @@ that match the task.
 - `apps/*`: runnable applications (private).
   - `apps/web` (`@bluechip/web`): the TanStack Start web app.
   - `apps/uikit` (`@bluechip/uikit`): a TanStack Router single-page app showing every `@bluechip/ui` component
-    (`pnpm --filter @bluechip/uikit dev`, port 4000).
+    (`pnpm --filter @bluechip/uikit dev`, port 4000), and the web app's link previews and icons on `/social`, which
+    `node scripts/bin.ts og` renders into `apps/web/public/` (rerun it after changing them; the PNGs are committed).
   - `apps/e2e` (`@bluechip/e2e`): the browser end-to-end suite (Playwright): the web app in Chromium against the real
     server and its own devnet, with a virtual passkey authenticator (`pnpm test:e2e`, see its README).
   - `apps/server` (`@bluechip/server`): the Effect v4 HTTP server; Postgres through Drizzle ORM (1.0 RC, Effect
@@ -207,6 +208,28 @@ Code is organized so a maintainer can find and review any change quickly.
   `activityText.ts`); `useAgentState` for an agent's pill and dot; `LoadProblem`, `IllustratedEmpty`,
   `SectionHeader` (`layout/`), `ConfirmDialog`, `WhoChip`, `FilterTabs` and `fields/`; `passkeyProblem` for a
   Face ID that didn't finish; times in the viewer's zone, named (`yourTime`, `dailyResetText` in `lib/localTime.ts`).
+
+Every route names its page in `head()` with `pageHead` (`lib/seo/`): `Portfolio | bluechip`, a public page's
+canonical URL and its social image. Only production's public pages (landing, legal) are indexed; signed-in pages,
+paper money and local are `noindex`. The build's network (`VITE_NETWORK`, `VITE_SITE_URL` for another origin) decides
+`robots.txt`, `manifest.webmanifest` and production's `sitemap.xml`, written by the Vite config's
+`bluechip:crawler-files` plugin (and served by `vite dev`).
+
+The web app ships as static files: `pnpm --filter @bluechip/web build` (with `.env.production` or `--mode paper`)
+prerenders the public pages (`/`, `/legal/*`) to `dist/client/**/index.html` with their head, and writes
+`dist/client/_shell.html`, the SPA shell (the root's `noindex` tags) for every other path. A new public page goes in
+`pages` in `apps/web/vite.config.ts`. Serve `dist/client` with Caddy:
+
+```caddy
+bluechip.markets {
+  reverse_proxy /api/* /auth/* /ingest/* localhost:8080
+  root * /srv/bluechip/web
+  try_files {path} {path}/index.html /_shell.html
+  file_server
+}
+```
+
+Paper's site can add `header X-Robots-Tag "noindex, nofollow"` for crawlers that never read the pages.
 
 Imports flow one way: shared → `features` → `routes`. Features never import each other or routes, and shared code
 never imports features. When a screen shows another feature's piece, its route composes them, passing the piece in

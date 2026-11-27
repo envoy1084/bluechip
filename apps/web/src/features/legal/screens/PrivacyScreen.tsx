@@ -1,10 +1,10 @@
 import { LegalPage } from "../components/LegalPage.tsx"
+import { PRIVACY } from "../model/documents.ts"
 
 export function PrivacyScreen() {
   return (
     <LegalPage
-      title="Privacy policy"
-      updated="27 November 2026"
+      legal={PRIVACY}
       intro="What bluechip keeps about you, why, and who else sees it. bluechip never asks for your name, email or phone number, and never sells your data."
       sections={[
         [

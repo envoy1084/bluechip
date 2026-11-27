@@ -1,10 +1,10 @@
 import { LegalPage } from "../components/LegalPage.tsx"
+import { TERMS } from "../model/documents.ts"
 
 export function TermsScreen() {
   return (
     <LegalPage
-      title="Terms of use"
-      updated="25 November 2026"
+      legal={TERMS}
       intro="These are preview terms for bluechip's early access. Reviewed terms will replace them before bluechip opens to everyone, and we will tell you when they do."
       sections={[
         [

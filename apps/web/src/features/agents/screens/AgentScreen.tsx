@@ -13,6 +13,7 @@ import { agentUsageAtom } from "../../../atoms/agents.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useAgentState } from "../../../hooks/useAgentState.ts"
+import { usePageTitle } from "../../../hooks/usePageTitle.ts"
 import { hasSession, limitLine } from "../../../lib/agentState.ts"
 import { agentAtom } from "../atoms/agents.ts"
 import { AgentAlerts } from "../components/detail/AgentAlerts.tsx"
@@ -79,6 +80,7 @@ function AgentContent(
   const removal = useRemoveAgent(agent)
   const { nameOf } = useStockLookup()
   const state = useAgentState(agent)
+  usePageTitle(agent.name)
 
   const removable = agent.status === "draft" || agent.status === "active" || agent.status === "expired"
   const keep = () => {

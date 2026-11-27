@@ -16,6 +16,8 @@
     "viem": "catalog:"
   },
   "devDependencies": {
-    "@types/madge": "5.0.3"
+    "@types/madge": "5.0.3",
+    "playwright": "1.65.1",
+    "vite": "8.3.8"
   }
 }

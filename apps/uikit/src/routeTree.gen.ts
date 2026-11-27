@@ -22,6 +22,7 @@ import { Route as IllustrationsRouteImport } from './routes/illustrations'
 import { Route as MotionRouteImport } from './routes/motion'
 import { Route as NavigationRouteImport } from './routes/navigation'
 import { Route as OverlaysRouteImport } from './routes/overlays'
+import { Route as SocialRouteImport } from './routes/social'
 import { Route as TradingRouteImport } from './routes/trading'
 
 const IndexRoute = IndexRouteImport.update({
@@ -89,6 +90,11 @@ const OverlaysRoute = OverlaysRouteImport.update({
   path: '/overlays',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SocialRoute = SocialRouteImport.update({
+  id: '/social',
+  path: '/social',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TradingRoute = TradingRouteImport.update({
   id: '/trading',
   path: '/trading',
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/motion': typeof MotionRoute
   '/navigation': typeof NavigationRoute
   '/overlays': typeof OverlaysRoute
+  '/social': typeof SocialRoute
   '/trading': typeof TradingRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/motion': typeof MotionRoute
   '/navigation': typeof NavigationRoute
   '/overlays': typeof OverlaysRoute
+  '/social': typeof SocialRoute
   '/trading': typeof TradingRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/motion': typeof MotionRoute
   '/navigation': typeof NavigationRoute
   '/overlays': typeof OverlaysRoute
+  '/social': typeof SocialRoute
   '/trading': typeof TradingRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/motion'
     | '/navigation'
     | '/overlays'
+    | '/social'
     | '/trading'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/motion'
     | '/navigation'
     | '/overlays'
+    | '/social'
     | '/trading'
   id:
     | '__root__'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/motion'
     | '/navigation'
     | '/overlays'
+    | '/social'
     | '/trading'
   fileRoutesById: FileRoutesById
 }
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   MotionRoute: typeof MotionRoute
   NavigationRoute: typeof NavigationRoute
   OverlaysRoute: typeof OverlaysRoute
+  SocialRoute: typeof SocialRoute
   TradingRoute: typeof TradingRoute
 }
 
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OverlaysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/social': {
+      id: '/social'
+      path: '/social'
+      fullPath: '/social'
+      preLoaderRoute: typeof SocialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/trading': {
       id: '/trading'
       path: '/trading'
@@ -329,6 +349,7 @@ const rootRouteChildren: RootRouteChildren = {
   MotionRoute: MotionRoute,
   NavigationRoute: NavigationRoute,
   OverlaysRoute: OverlaysRoute,
+  SocialRoute: SocialRoute,
   TradingRoute: TradingRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,10 +1,10 @@
 import { LegalPage } from "../components/LegalPage.tsx"
+import { RISK } from "../model/documents.ts"
 
 export function RiskScreen() {
   return (
     <LegalPage
-      title="Risk disclosure"
-      updated="25 November 2026"
+      legal={RISK}
       intro="Investing can lose money, and doing it onchain with software agents adds risks of its own. Read this before you add cash."
       sections={[
         [

@@ -1,11 +1,11 @@
 import type { ReactNode } from "react"
 import { OnboardingFrame } from "../../../components/layout/OnboardingFrame.tsx"
+import { type LegalDocument, updatedText } from "../model/documents.ts"
 
 /** A legal page: the onboarding frame with one readable column of headed sections. */
 export function LegalPage(
-  { title, updated, intro, sections }: Readonly<{
-    title: string
-    updated: string
+  { legal, intro, sections }: Readonly<{
+    legal: LegalDocument
     intro: ReactNode
     sections: ReadonlyArray<readonly [heading: string, body: ReactNode]>
   }>
@@ -14,8 +14,8 @@ export function LegalPage(
     <OnboardingFrame wide>
       <article className="grid w-full gap-6 text-left">
         <header className="grid gap-2">
-          <span className="text-label-sm font-medium text-g-500">Last updated {updated}</span>
-          <h1 className="text-[28px] leading-[1.12] font-semibold tracking-[-0.035em]">{title}</h1>
+          <span className="text-label-sm font-medium text-g-500">Last updated {updatedText(legal)}</span>
+          <h1 className="text-[28px] leading-[1.12] font-semibold tracking-[-0.035em]">{legal.title}</h1>
           <p className="text-[15px] text-g-600">{intro}</p>
         </header>
         {sections.map(([heading, body]) => (

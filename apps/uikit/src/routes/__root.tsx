@@ -19,7 +19,8 @@ const SECTIONS: ReadonlyArray<{ readonly to: string; readonly label: string; rea
   { to: "/agent-builder", label: "Agent builder", icon: "shield" },
   { to: "/end-states", label: "End states", icon: "check-circle" },
   { to: "/motion", label: "Motion", icon: "play" },
-  { to: "/illustrations", label: "Illustrations", icon: "image" }
+  { to: "/illustrations", label: "Illustrations", icon: "image" },
+  { to: "/social", label: "Social images", icon: "share" }
 ]
 
 // A private showcase of @bluechip/ui, mirroring the brand kit artifact section by section.
