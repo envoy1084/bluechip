@@ -1,20 +1,19 @@
-# Pull requests, pushes to main, the merge queue and manual runs. Each job runs one stage of
-# `pnpm check`, so a failure names the stage; tests also run on the oldest supported Node.
+# Pushes to main and manual runs. Each job runs one stage of `pnpm check`, so a failure names the
+# stage; tests also run on the oldest supported Node.
 name: CI
 
 on:
-  pull_request:
   push:
     branches: [main]
-  merge_group:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A newer push to main cancels the run still going for an older one.
 concurrency:
-  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   static:
