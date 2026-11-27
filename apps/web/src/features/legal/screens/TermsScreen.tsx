@@ -73,7 +73,7 @@ export function TermsScreen() {
         ],
         [
           "Ending",
-          "You can stop using bluechip at any time, and withdraw your cash first. We may suspend or close access that breaks these terms. Questions about these terms go to [contact email]."
+          "You can stop using bluechip at any time, and withdraw your cash first. We may suspend or close access that breaks these terms. Questions about these terms go to vedant@envoy1084.xyz."
         ]
       ]}
     />

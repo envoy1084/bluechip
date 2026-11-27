@@ -49,7 +49,7 @@ export function PrivacyScreen() {
         ],
         [
           "Running bluechip",
-          "Our server and the app send traces, logs and metrics to Axiom so we can keep bluechip working and fix it: each request, trade and background job, with your user id and the ids of the agents, trades, automations and chats involved. They never hold your messages, memories, passkeys, keys or full addresses. This telemetry is part of running the service, so the analytics switch doesn't turn it off. Axiom keeps it for 30 days."
+          "Our server and the app send traces, logs and metrics to Axiom so we can keep bluechip working and fix it: each request, trade and background job, with your user id and the ids of the agents, trades, automations and chats involved. They never hold your messages, memories, passkeys, keys or full addresses. This telemetry is part of running the service. Axiom keeps it for 30 days."
         ],
         [
           "Only where it counts",
@@ -57,7 +57,7 @@ export function PrivacyScreen() {
         ],
         [
           "Who else sees it",
-          "Some work is done by services on our behalf. Anthropic runs the assistant's models and its web search, and sees what you send in chat, what the assistant reads to answer you, and the news stories automations ask about. Voyage turns the text of memories, conversations and help articles into search vectors. Alchemy sends your account's operations to Base and pays their gas, so it sees your address and each operation. Our Base node provider sees the addresses bluechip reads. Alpaca provides market prices and news, and gets nothing about you. PostHog (in the US) and Axiom handle analytics and telemetry as above. Your browser's push service (from Apple, Google or Mozilla) delivers push notifications, Telegram delivers messages if you link it, and our hosting provider runs our servers and database."
+          "Some work is done by services on our behalf. Anthropic runs the assistant's models and its web search, and sees what you send in chat, what the assistant reads to answer you, and the news stories automations ask about. Voyage turns the text of memories, conversations and help articles into search vectors. Alchemy sends your account's operations to Base and pays their gas, so it sees your address and each operation. Our Base node provider sees the addresses bluechip reads. Alpaca provides market prices and news, and gets nothing about you. PostHog (in the US) and Axiom handle analytics and telemetry as above. Your browser's push service (from Apple, Google or Mozilla) delivers push notifications, Telegram delivers messages if you link it, and Contabo hosts our servers and database."
         ],
         [
           "Cookies and storage",
@@ -69,7 +69,7 @@ export function PrivacyScreen() {
         ],
         [
           "Your choices",
-          "Turn off Product analytics in Settings and bluechip sends no analytics about you, from the app or from our server. You can see what we keep in the app, download your audit log, export your memories, delete chats and memories, unlink Telegram, turn push off and sign out any device."
+          "You can see what we keep in the app, download your audit log, export your memories, delete chats and memories, unlink Telegram, turn push off and sign out any device."
         ],
         [
           "Closing your account",
@@ -81,7 +81,7 @@ export function PrivacyScreen() {
         ],
         [
           "Changes and contact",
-          "When this policy changes, the date above changes and we tell you in the app if the change matters to you. Questions or requests about your data go to [contact email]."
+          "When this policy changes, the date above changes and we tell you in the app if the change matters to you. Questions or requests about your data go to vedant@envoy1084.xyz."
         ]
       ]}
     />
