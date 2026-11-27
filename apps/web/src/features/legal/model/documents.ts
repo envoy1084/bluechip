@@ -10,8 +10,9 @@ export interface LegalDocument {
 export const TERMS: LegalDocument = {
   title: "Terms of use",
   path: "/legal/terms",
-  description: "The terms of bluechip's early access: what bluechip is, who can use it, fees, and what you agree to.",
-  updated: "2026-11-25"
+  description:
+    "The terms of bluechip's early access: what bluechip is, paper and real money, who can use it, agents, fees, and what you agree to.",
+  updated: "2026-11-27"
 }
 
 export const PRIVACY: LegalDocument = {
@@ -27,7 +28,7 @@ export const RISK: LegalDocument = {
   path: "/legal/risk",
   description:
     "The risks of investing in tokenized US stocks onchain with software agents. Read this before you add cash.",
-  updated: "2026-11-25"
+  updated: "2026-11-27"
 }
 
 export const LEGAL_DOCUMENTS: ReadonlyArray<LegalDocument> = [TERMS, PRIVACY, RISK]
