@@ -3,6 +3,7 @@ import { useState } from "react"
 import { setTimeZoneAtom } from "../../../atoms/account.ts"
 import { ZoneField } from "../../../components/fields/ZoneField.tsx"
 import { SettingsRow as Row } from "../../../components/layout/SettingsSection.tsx"
+import { track } from "../../../lib/analytics.ts"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 
@@ -17,6 +18,7 @@ export function TimeZoneRow({ saved }: Readonly<{ saved: string | null }>) {
     setSaving(true)
     setFailed(false)
     await setTimeZone({ payload: { timeZone }, reactivityKeys: [accountReactivityKey] })
+      .then(() => track({ _tag: "settings_changed", setting: "time_zone" }))
       .catch(() => setFailed(true))
       .finally(() => setSaving(false))
   }

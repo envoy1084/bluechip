@@ -1,8 +1,7 @@
-import type { RegistrationCredential } from "@bluechip/domain/WebAuthn"
-import { startRegistration } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
+import { identify } from "../../../lib/analytics.ts"
 import { accountReactivityKey, BluechipApiClient } from "../../../lib/api/client.ts"
-import { asCredential, ceremonyOptions } from "../../../lib/passkey.ts"
+import { createPasskey } from "../../../lib/passkey.ts"
 
 /** Creates a passkey (Face ID / Touch ID), then the account it owns, and signs in. */
 export const signUpAtom = BluechipApiClient.runtime.fn(
@@ -10,16 +9,12 @@ export const signUpAtom = BluechipApiClient.runtime.fn(
     const client = yield* BluechipApiClient
     const name = displayName === undefined || displayName === "" ? {} : { displayName }
     const ceremony = yield* client.auth.registerOptions({ payload: name })
-    const credential = yield* Effect.tryPromise(() =>
-      startRegistration({ optionsJSON: ceremonyOptions(ceremony.options) })
-    )
-    return yield* client.auth.registerVerify({
-      payload: {
-        challengeId: ceremony.challengeId,
-        credential: asCredential<typeof RegistrationCredential.Type>(credential),
-        ...name
-      }
+    const credential = yield* createPasskey(ceremony.options)
+    const signedUp = yield* client.auth.registerVerify({
+      payload: { challengeId: ceremony.challengeId, credential, ...name }
     })
+    identify(signedUp.user.id)
+    return signedUp
   }),
   { reactivityKeys: [accountReactivityKey] }
 )

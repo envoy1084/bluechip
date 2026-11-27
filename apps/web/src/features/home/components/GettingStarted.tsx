@@ -5,6 +5,7 @@ import { cn } from "@bluechip/ui/lib/cn"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import { cashDialogAtom } from "../../../atoms/cashDialog.ts"
+import { track } from "../../../lib/analytics.ts"
 import { nextStep, type Step } from "../model/gettingStarted.ts"
 
 /** The next step's one button. */
@@ -14,7 +15,13 @@ function StepAction({ step }: Readonly<{ step: Step }>) {
   switch (step.id) {
     case "cash":
       return (
-        <Button size="sm" onClick={() => openCash("add")}>
+        <Button
+          size="sm"
+          onClick={() => {
+            track({ _tag: "add_cash_opened", entry: "home" })
+            openCash("add")
+          }}
+        >
           <Icon name="plus" size={14} />Add cash
         </Button>
       )

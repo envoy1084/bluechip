@@ -7,10 +7,11 @@ import { trade } from "@bluechip/domain/policies/Trade"
 import { SkeletonBlock } from "@bluechip/ui/components/skeleton"
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
+import { track } from "../../../lib/analytics.ts"
 import { agentAtom, removeAgentAtom } from "../atoms/agents.ts"
 import { templatesAtom } from "../atoms/policies.ts"
 import { LockStep } from "../components/new/LockStep.tsx"
@@ -18,7 +19,7 @@ import { NewAgentShell } from "../components/new/NewAgentShell.tsx"
 import { PoliciesStep } from "../components/new/PoliciesStep.tsx"
 import { ReviewStep } from "../components/new/ReviewStep.tsx"
 import { TemplateStep } from "../components/new/TemplateStep.tsx"
-import { type Origin, originLabel, originOf, originPresets, originSpec } from "../model/origin.ts"
+import { type Origin, originEventTemplate, originLabel, originOf, originPresets, originSpec } from "../model/origin.ts"
 import { type AutomationSlots, type TemplateAutomation, templateAutomations } from "../model/templateAutomations.ts"
 
 const newRequestId = () => crypto.randomUUID() as RequestId
@@ -106,8 +107,18 @@ function NewAgentFlow(
     { readonly spec: AgentSpec; readonly list: ReadonlyArray<TemplateAutomation> } | null
   >(null)
 
+  const startedFrom = originEventTemplate(start === null ? FIRST : start.origin)
+  const entry = start === null ? "new" : "assistant_draft"
+  useEffect(() => track({ _tag: "agent_flow_started", template: startedFrom, entry }), [startedFrom, entry])
+  const completed = (finished: "template" | "rules" | "review") =>
+    track({ _tag: "agent_step_completed", step: finished, template: originEventTemplate(origin) })
+
   const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
   const send = (agent: Agent) => setSent((last) => ({ agent, attempt: (last?.attempt ?? 0) + 1 }))
+  const firstSend = (agent: Agent) => {
+    completed("review")
+    send(agent)
+  }
 
   const kept = automations?.list ?? []
   const { Defaults, Saved } = slots
@@ -158,13 +169,21 @@ function NewAgentFlow(
       }
     }
     if (automations?.spec !== spec) setAutomations({ spec, list: templateAutomations(origin, spec) })
+    completed("rules")
     setStep("review")
   }
 
   if (step === "template") {
     return (
       <NewAgentShell step="Start">
-        <TemplateStep origin={origin} onPick={pickOrigin} onContinue={() => setStep("rules")} />
+        <TemplateStep
+          origin={origin}
+          onPick={pickOrigin}
+          onContinue={() => {
+            completed("template")
+            setStep("rules")
+          }}
+        />
       </NewAgentShell>
     )
   }
@@ -196,7 +215,7 @@ function NewAgentFlow(
         draft={draft}
         requestId={requestId}
         onDraft={setDraft}
-        onSent={send}
+        onSent={firstSend}
         onEdit={() => void backToRules()}
         editProblem={editProblem}
         automations={

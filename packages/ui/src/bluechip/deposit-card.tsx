@@ -64,6 +64,8 @@ export interface DepositCardProps {
   readonly description?: ReactNode
   /** Under the address, like an "Add cash" button. */
   readonly footer?: ReactNode
+  /** Called once the address is copied. */
+  readonly onAddressCopied?: () => void
   readonly className?: string
 }
 
@@ -71,7 +73,9 @@ export interface DepositCardProps {
  * Where to send cash: a QR code your wallet opens as a USDC transfer on Base, and your address to copy. The warning
  * is loud because other coins or networks can be lost.
  */
-export function DepositCard({ address, paymentRequest, title, description, footer, className }: DepositCardProps) {
+export function DepositCard(
+  { address, paymentRequest, title, description, footer, onAddressCopied, className }: DepositCardProps
+) {
   const titleId = useId()
 
   return (
@@ -95,7 +99,11 @@ export function DepositCard({ address, paymentRequest, title, description, foote
             <span className="text-label font-[550] text-g-800">Your address</span>
             <span className="text-label-sm text-g-500">Scan it with your wallet, or copy the address.</span>
           </div>
-          <AddressChip address={address} className="justify-self-start" />
+          <AddressChip
+            address={address}
+            className="justify-self-start"
+            {...(onAddressCopied === undefined ? {} : { onCopied: onAddressCopied })}
+          />
           <div
             role="note"
             className="flex items-start gap-2.5 rounded-md bg-warn-wash px-3 py-[11px] text-label leading-[1.45] text-[#6b4a00] shadow-[inset_0_0_0_1px_var(--color-warn-line)]"

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { fetchedPortfolioAtom } from "../../../atoms/portfolio.ts"
 import { TestMoney } from "../../../components/TestMoney.tsx"
 import { usdcDollars } from "../../../lib/amounts.ts"
+import { track } from "../../../lib/analytics.ts"
 import { network } from "../../../lib/network.ts"
 
 // While this dialog is open, balances are read this often: deposits aren't watched in the background, so the
@@ -50,6 +51,7 @@ export function AddCashPanel(
           <DepositCard
             address={address}
             paymentRequest={usdcTransferRequest({ network, recipient: address })}
+            onAddressCopied={() => track({ _tag: "deposit_address_copied" })}
             {...surface}
           />
         ) :

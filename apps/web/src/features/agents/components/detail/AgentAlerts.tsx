@@ -10,6 +10,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { useAwaitingByAgent } from "../../../../hooks/useAwaitingByAgent.ts"
+import { track } from "../../../../lib/analytics.ts"
 import { lockAgentAtom } from "../../atoms/agents.ts"
 import { useAgentMoment } from "../../hooks/useAgentMoment.ts"
 import { useAgentSigning } from "../../hooks/useAgentSigning.ts"
@@ -61,7 +62,13 @@ function ApprovalsAlert({ awaiting }: Readonly<{ awaiting: number }>) {
         sends nothing until you approve or decline with Face ID.
       </AlertDescription>
       <AlertAction>
-        <ButtonLink size="sm" render={<Link to="/approvals" />}>Review</ButtonLink>
+        <ButtonLink
+          size="sm"
+          render={<Link to="/approvals" />}
+          onClick={() => track({ _tag: "approval_opened", entry: "agent_page" })}
+        >
+          Review
+        </ButtonLink>
       </AlertAction>
     </Alert>
   )

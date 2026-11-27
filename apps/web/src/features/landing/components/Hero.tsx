@@ -2,6 +2,7 @@ import { buttonVariants } from "@bluechip/ui/components/button"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Halftone } from "@bluechip/ui/motion/halftone"
 import { Link } from "@tanstack/react-router"
+import { track } from "../../../lib/analytics.ts"
 
 const rise = "animate-[landing-rise_1000ms_var(--ease-brand)_both] motion-reduce:animate-none"
 
@@ -38,7 +39,11 @@ export function Hero() {
         <div
           className={`${rise} flex w-full flex-col gap-2.5 [animation-delay:650ms] min-[440px]:w-auto min-[440px]:flex-row`}
         >
-          <Link to="/welcome" className={buttonVariants({ size: "lg", className: "group" })}>
+          <Link
+            to="/welcome"
+            className={buttonVariants({ size: "lg", className: "group" })}
+            onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "hero" })}
+          >
             Get started
             <Icon
               name="arrow-right"
@@ -46,7 +51,13 @@ export function Hero() {
               className="transition-transform duration-base ease-brand group-hover:translate-x-0.5"
             />
           </Link>
-          <a href="#how" className={buttonVariants({ size: "lg", variant: "secondary" })}>How it works</a>
+          <a
+            href="#how"
+            className={buttonVariants({ size: "lg", variant: "secondary" })}
+            onClick={() => track({ _tag: "landing_cta_clicked", cta: "how_it_works", section: "hero" })}
+          >
+            How it works
+          </a>
         </div>
       </div>
     </section>

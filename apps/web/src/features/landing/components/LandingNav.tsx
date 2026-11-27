@@ -8,6 +8,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useEffect, useState } from "react"
 import { meAtom } from "../../../atoms/account.ts"
 import { PaperBadge } from "../../../components/layout/PaperBadge.tsx"
+import { track } from "../../../lib/analytics.ts"
 
 /** The page's sections, in order, for the nav and the footer. */
 export const LANDING_SECTIONS = [
@@ -62,14 +63,30 @@ export function LandingNav() {
         </nav>
         {signedIn ?
           (
-            <Link to="/home" className={buttonVariants({ size: "sm" })}>
+            <Link
+              to="/home"
+              className={buttonVariants({ size: "sm" })}
+              onClick={() => track({ _tag: "landing_cta_clicked", cta: "open_app", section: "nav" })}
+            >
               Open bluechip<Icon name="arrow-right" size={14} />
             </Link>
           ) :
           (
             <div className="flex items-center gap-1.5">
-              <Link to="/welcome" className={buttonVariants({ variant: "ghost", size: "sm" })}>Sign in</Link>
-              <Link to="/welcome" className={buttonVariants({ size: "sm" })}>Get started</Link>
+              <Link
+                to="/welcome"
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+                onClick={() => track({ _tag: "landing_cta_clicked", cta: "open_app", section: "nav" })}
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/welcome"
+                className={buttonVariants({ size: "sm" })}
+                onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "nav" })}
+              >
+                Get started
+              </Link>
             </div>
           )}
       </div>

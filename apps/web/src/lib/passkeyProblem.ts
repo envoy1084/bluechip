@@ -42,3 +42,20 @@ export const passkeyProblem = (error: unknown, nothing = "Nothing was sent."): P
   }
   return { cancelled: false, text: `Face ID didn't finish, or the request couldn't be sent. ${nothing}` }
 }
+
+/** Why a passkey prompt failed, as analytics counts it (`passkey_prompt_failed`). */
+export type PasskeyFailureReason = "cancelled" | "not_allowed" | "timeout" | "unsupported"
+
+/**
+ * Why a passkey prompt failed, by the browser's error: closed or aborted (`cancelled`), refused (`not_allowed`,
+ * which WebAuthn also says when the prompt timed out or the passkey can't be used here), out of time (`timeout`), or
+ * not possible in this browser or on this address (`unsupported`). `null` when nothing says the prompt failed.
+ */
+export const passkeyFailureReason = (error: unknown): PasskeyFailureReason | null => {
+  const names = namesOf(error)
+  if (names.includes("AbortError")) return "cancelled"
+  if (names.includes("TimeoutError")) return "timeout"
+  if (names.includes("NotSupportedError") || names.includes("SecurityError")) return "unsupported"
+  if (names.includes("NotAllowedError") || names.includes("InvalidStateError")) return "not_allowed"
+  return null
+}

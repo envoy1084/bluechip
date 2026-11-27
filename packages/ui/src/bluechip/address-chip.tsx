@@ -17,6 +17,8 @@ export interface AddressChipProps extends Omit<ComponentProps<"span">, "children
   readonly feedback?: "inline" | "toast"
   /** The whole address, wrapping, where every character matters before sending; shortened otherwise. */
   readonly full?: boolean
+  /** Called once the address is on the clipboard. */
+  readonly onCopied?: () => void
 }
 
 /**
@@ -24,7 +26,7 @@ export interface AddressChipProps extends Omit<ComponentProps<"span">, "children
  * shows a check for 1.6 s and is announced.
  */
 export function AddressChip(
-  { address, network = true, feedback = "inline", full = false, className, ...props }: AddressChipProps
+  { address, network = true, feedback = "inline", full = false, onCopied, className, ...props }: AddressChipProps
 ) {
   const [copied, setCopied] = useState<"idle" | "copied" | "failed">("idle")
 
@@ -38,6 +40,7 @@ export function AddressChip(
     navigator.clipboard.writeText(address).then(
       () => {
         setCopied("copied")
+        onCopied?.()
         if (feedback === "toast") toast.success("Address copied", { description: shortAddress(address) })
       },
       () => {

@@ -8,6 +8,7 @@ import { Link } from "@tanstack/react-router"
 import * as DateTime from "effect/DateTime"
 import { TradeRow } from "../../../../components/TradeRow.tsx"
 import { WhoChip } from "../../../../components/WhoChip.tsx"
+import { track } from "../../../../lib/analytics.ts"
 import { INTENT_STATUS } from "../../../../lib/intentStatus.ts"
 import { nothingMoved } from "../../../../lib/tradeOutcome.ts"
 import { useLatestIntent } from "../../hooks/useLatestIntent.ts"
@@ -73,7 +74,11 @@ export function ActivityRow(
         waitingForYou ?
         (
           <span className="mt-1">
-            <ButtonLink size="sm" render={<Link to="/approvals" />}>
+            <ButtonLink
+              size="sm"
+              render={<Link to="/approvals" />}
+              onClick={() => track({ _tag: "approval_opened", entry: "agent_page" })}
+            >
               <Icon name="face-id" size={14} />Review and approve
             </ButtonLink>
           </span>

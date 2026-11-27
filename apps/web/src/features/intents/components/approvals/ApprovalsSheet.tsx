@@ -11,6 +11,7 @@ import {
 import { Icon } from "@bluechip/ui/icons/icon"
 import { Link } from "@tanstack/react-router"
 import { useRef } from "react"
+import { track } from "../../../../lib/analytics.ts"
 import { useApprovalCount } from "../../hooks/useApprovalCount.ts"
 import { waitingText } from "../../model/intentText.ts"
 import { ApprovalsList } from "./ApprovalsList.tsx"
@@ -35,7 +36,10 @@ export function ApprovalsBell(
         size="icon-sm"
         className="relative"
         aria-label={count === 0 ? "Approvals, nothing to approve" : `Approvals, ${count} to approve`}
-        onClick={() => onOpenChange(true)}
+        onClick={() => {
+          track({ _tag: "approval_opened", entry: "bell" })
+          onOpenChange(true)
+        }}
       >
         <Icon name="approvals" size={16} />
         {count === 0 ?

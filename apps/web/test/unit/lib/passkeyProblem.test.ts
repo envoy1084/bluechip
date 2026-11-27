@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest"
-import { passkeyProblem } from "../../../src/lib/passkeyProblem.ts"
+import { passkeyFailureReason, passkeyProblem } from "../../../src/lib/passkeyProblem.ts"
 
 const domError = (name: string) => Object.assign(new Error("The operation failed."), { name })
 
@@ -65,5 +65,24 @@ describe("passkeyProblem", () => {
       cancelled: true,
       text: "You cancelled Face ID. Nothing changed."
     })
+  })
+})
+
+describe("passkeyFailureReason", () => {
+  it.each([
+    { name: "the prompt was aborted", error: domError("AbortError"), expected: "cancelled" },
+    { name: "the browser refused (closed or timed out)", error: domError("NotAllowedError"), expected: "not_allowed" },
+    { name: "a passkey that can't be used here", error: domError("InvalidStateError"), expected: "not_allowed" },
+    { name: "out of time", error: domError("TimeoutError"), expected: "timeout" },
+    { name: "a browser without passkeys", error: domError("NotSupportedError"), expected: "unsupported" },
+    { name: "an address passkeys don't work on", error: domError("SecurityError"), expected: "unsupported" },
+    {
+      name: "a refusal wrapped in causes",
+      error: new Error("An unknown error occurred", { cause: domError("NotAllowedError") }),
+      expected: "not_allowed"
+    },
+    { name: "a failure that isn't the prompt's", error: new Error("Failed to fetch"), expected: null }
+  ])("$name", ({ error, expected }) => {
+    assert.strictEqual(passkeyFailureReason(error), expected)
   })
 })

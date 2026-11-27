@@ -7,6 +7,7 @@ import { useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { SettingsRow, SettingsSection } from "../../../components/layout/SettingsSection.tsx"
+import { track } from "../../../lib/analytics.ts"
 import { securityReactivityKey } from "../../../lib/api/client.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
 import { devicesAtom, signOutDeviceAtom, signOutOthersAtom } from "../atoms/security.ts"
@@ -77,7 +78,11 @@ export function DevicesCard() {
               variant="secondary"
               size="sm"
               loading={busy === "others"}
-              onClick={() => void run("others", () => signOutOthers({ reactivityKeys: [securityReactivityKey] }))}
+              onClick={() =>
+                void run("others", async () => {
+                  await signOutOthers({ reactivityKeys: [securityReactivityKey] })
+                  track({ _tag: "signed_out", scope: "others" })
+                })}
             >
               <Icon name="logout" size={14} />Sign out others
             </Button>

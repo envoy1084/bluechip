@@ -10,6 +10,7 @@ import * as AsyncResult from "effect/reactivity/AsyncResult"
 import { useState } from "react"
 import { claimTestMoneyAtom, faucetAllowanceAtom } from "../atoms/faucet.ts"
 import { usdcDollars } from "../lib/amounts.ts"
+import { track } from "../lib/analytics.ts"
 import { portfolioReactivityKey } from "../lib/api/client.ts"
 import { yourTime } from "../lib/localTime.ts"
 import { network } from "../lib/network.ts"
@@ -35,6 +36,7 @@ export function TestMoney({ className }: Readonly<{ className?: string }>) {
 
   const add = () => {
     setState("adding")
+    track({ _tag: "faucet_requested", usd: usdcDollars(amount) })
     claim({ payload: { amount }, reactivityKeys: [portfolioReactivityKey] }).then(
       () => setState("added"),
       (error: unknown) => setState(error instanceof FaucetLimitReached ? "idle" : "failed")

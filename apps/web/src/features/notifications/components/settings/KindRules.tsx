@@ -4,6 +4,7 @@ import { Switch } from "@bluechip/ui/components/switch"
 import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
 import { SettingsRow, SettingsSection } from "../../../../components/layout/SettingsSection.tsx"
+import { track } from "../../../../lib/analytics.ts"
 import { notificationKeys, setRuleAtom } from "../../atoms/notifications.ts"
 import { CHANNEL_LABELS, isChangeable, settingsSections, withChannel } from "../../model/notificationText.ts"
 
@@ -43,6 +44,7 @@ function KindRow({ info, rule }: Readonly<{ info: KindInfo; rule: NotificationRu
   const save = async (next: { readonly channels: ReadonlyArray<Channel>; readonly digest: boolean }) => {
     setSaving(true)
     await setRule({ params: { kind: info.kind }, payload: next, reactivityKeys: notificationKeys })
+      .then(() => track({ _tag: "settings_changed", setting: "notification_rule" }))
       .finally(() => setSaving(false))
   }
 

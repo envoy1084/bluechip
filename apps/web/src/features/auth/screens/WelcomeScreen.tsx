@@ -11,6 +11,7 @@ import { useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
 import { PasskeySignIn } from "../../../components/PasskeySignIn.tsx"
 import { SignedInRedirect } from "../../../components/SignedInRedirect.tsx"
+import { track } from "../../../lib/analytics.ts"
 import { signUpAtom } from "../atoms/auth.ts"
 
 type Phase =
@@ -24,6 +25,7 @@ export function WelcomeScreen() {
 
   const create = () => {
     setPhase({ _tag: "Start", creating: true, failed: false })
+    track({ _tag: "signup_started" })
     signUp(undefined).then(
       (me) => setPhase({ _tag: "Created", me }),
       () => setPhase({ _tag: "Start", creating: false, failed: true })

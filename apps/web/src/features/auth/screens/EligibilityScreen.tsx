@@ -8,6 +8,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { OnboardingFrame, OnboardingTitle } from "../../../components/layout/OnboardingFrame.tsx"
 import { SignedIn } from "../../../components/SignedIn.tsx"
+import { resetAnalytics, track } from "../../../lib/analytics.ts"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { setEligibilityAtom, signOutAtom } from "../atoms/auth.ts"
 
@@ -93,6 +94,8 @@ function EligibilityForm({ saved }: Readonly<{ saved: SavedEligibility }>) {
               onClick={async () => {
                 setSigningOut(true)
                 await signOut({ reactivityKeys: [accountReactivityKey] }).finally(() => setSigningOut(false))
+                track({ _tag: "signed_out", scope: "this" })
+                resetAnalytics()
                 await navigate({ to: "/" })
               }}
             >

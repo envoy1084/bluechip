@@ -14,6 +14,7 @@ import { accountRecoveryAtom } from "../../../atoms/recovery.ts"
 import { IllustratedEmpty } from "../../../components/IllustratedEmpty.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { usePauseAll } from "../../../hooks/usePauseAll.ts"
+import { track } from "../../../lib/analytics.ts"
 import {
   notificationKeys,
   notificationsAtom,
@@ -135,14 +136,19 @@ export function NotificationBell({ onReview }: Readonly<{ onReview: () => void }
                         now={now}
                         live={live}
                         onReview={() => {
+                          track({ _tag: "approval_opened", entry: "bell" })
                           review()
                           void markRead()
                         }}
                         onOpen={async () => {
+                          track({ _tag: "notification_opened", kind: notification.kind, from: "bell" })
                           setOpen(false)
                           await markRead()
                           // An approval still waiting opens where you are; one already handled shows its page.
-                          if (approval && live.has("review")) return onReview()
+                          if (approval && live.has("review")) {
+                            track({ _tag: "approval_opened", entry: "bell" })
+                            return onReview()
+                          }
                           if (notification.link !== null) {
                             await navigate({ href: notification.link })
                           }

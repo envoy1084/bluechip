@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link, useNavigate } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { stocksAtom } from "../../../atoms/market.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
+import { previousPage, track } from "../../../lib/analytics.ts"
 import { localTimeZone } from "../../../lib/localTime.ts"
+import { templatePath } from "../../../lib/pagePath.ts"
 import { changedKeys, createAutomationAtom } from "../atoms/automations.ts"
 import { AutomationEditor } from "../components/editor/AutomationEditor.tsx"
 import { ScreenState } from "../components/ScreenState.tsx"
@@ -29,6 +31,10 @@ const YOU = "you"
 export function NewAutomationScreen(
   { agentId, trigger }: Readonly<{ agentId?: AgentId | undefined; trigger?: Trigger["type"] | undefined }>
 ) {
+  // Opened from an agent's page, or from the page before (by route); `starter` is the example picked, if any.
+  const entry = agentId === undefined ? templatePath(previousPage() ?? "direct") : "agent_page"
+  const starter = trigger ?? null
+  useEffect(() => track({ _tag: "automation_editor_opened", entry, starter }), [entry, starter])
   const agents = useAtomValue(agentsAtom)
   const stocks = useAtomValue(stocksAtom)
   const refreshAgents = useAtomRefresh(agentsAtom)

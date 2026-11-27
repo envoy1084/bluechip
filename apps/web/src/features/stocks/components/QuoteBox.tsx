@@ -19,6 +19,7 @@ import { AmountInput, type AmountUnit } from "../../../components/fields/AmountI
 import { QuoteSummary, QuoteSummarySkeleton } from "../../../components/trading/QuoteSummary.tsx"
 import { type QuoteSide, useQuote } from "../../../hooks/useQuote.ts"
 import { parseShares, parseUsdc, shareCount, usdcDollars } from "../../../lib/amounts.ts"
+import { track } from "../../../lib/analytics.ts"
 import { useMarketStatus } from "../hooks/useMarketStatus.ts"
 import { useTrade } from "../hooks/useTrade.ts"
 import { amountHint } from "../model/amountHint.ts"
@@ -131,6 +132,7 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
 
   const trade = () => {
     if (amount === null) return
+    track({ _tag: "trade_review_opened", symbol: stock.symbol, side, entry: "stock_page" })
     void start(side, side === "buy" ? { usdc: Usdc.make(amount) } : { shares: Shares.make(amount) })
   }
 
@@ -204,7 +206,14 @@ export function QuoteBox({ stock }: Readonly<{ stock: Stock }>) {
             <span className="text-label text-g-700">
               {cash === BigInt(0) ? `Add cash to buy ${stock.name}.` : "Add cash, or lower the amount."}
             </span>
-            <Button variant="secondary" size="sm" onClick={() => openCash("add")}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                track({ _tag: "add_cash_opened", entry: "buy_box" })
+                openCash("add")
+              }}
+            >
               <Icon name="plus" size={14} />Add cash
             </Button>
           </div>

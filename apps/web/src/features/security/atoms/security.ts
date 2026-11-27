@@ -1,9 +1,7 @@
 import type { PasskeyId, RequestId, SessionId } from "@bluechip/domain/Ids"
-import type { RegistrationCredential } from "@bluechip/domain/WebAuthn"
-import { startRegistration } from "@simplewebauthn/browser"
 import * as Effect from "effect/Effect"
 import { BluechipApiClient, liveReactivityKey, securityReactivityKey } from "../../../lib/api/client.ts"
-import { asCredential, ceremonyOptions, signWithPasskey } from "../../../lib/passkey.ts"
+import { createPasskey, signWithPasskey } from "../../../lib/passkey.ts"
 
 const keys = [securityReactivityKey, liveReactivityKey]
 
@@ -12,13 +10,6 @@ export const passkeysAtom = BluechipApiClient.query("account", "passkeys", { rea
 
 /** The browsers signed in to the account. */
 export const devicesAtom = BluechipApiClient.query("account", "devices", { reactivityKeys: keys })
-
-// Creates a new passkey (on this device, another one by its QR code, or a hardware key) from the server's options.
-const createPasskey = (options: Record<string, unknown>) =>
-  Effect.map(
-    Effect.tryPromise(() => startRegistration({ optionsJSON: ceremonyOptions(options) })),
-    (credential) => asCredential<typeof RegistrationCredential.Type>(credential)
-  )
 
 /** Makes another passkey, then signs its addition as an owner with one of the account's passkeys (Face ID). */
 export const addPasskeyAtom = BluechipApiClient.runtime.fn(

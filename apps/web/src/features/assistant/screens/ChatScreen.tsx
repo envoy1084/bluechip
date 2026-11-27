@@ -6,10 +6,11 @@ import { SidebarProvider, SidebarTrigger, useSidebar } from "@bluechip/ui/compon
 import { Icon } from "@bluechip/ui/icons/icon"
 import { useAtomValue } from "@effect/atom-react/Hooks"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
-import type { CSSProperties, ReactNode } from "react"
+import { type CSSProperties, type ReactNode, useEffect } from "react"
 import { agentsAtom } from "../../../atoms/agents.ts"
 import { ConnectionBanner } from "../../../components/layout/ConnectionBanner.tsx"
 import { useFrameActions } from "../../../components/layout/FrameActions.tsx"
+import { previousPage, track } from "../../../lib/analytics.ts"
 import { conversationsAtom } from "../atoms/assistant.ts"
 import type { CardViews } from "../components/cards/CardViews.ts"
 import { Conversation } from "../components/Conversation.tsx"
@@ -58,6 +59,11 @@ export function ChatScreen(
   }>
 ) {
   const app = useSidebar()
+  // Where the chat was opened from: an agent's page, home's question box, or the sidebar and every other way in.
+  const entry = agentId !== null ? "agent_page" : initialMessage !== undefined || previousPage() === "/home" ?
+    "home_ask" :
+    "sidebar"
+  useEffect(() => track({ _tag: "assistant_opened", entry }), [entry])
   const assistant = useAssistant({ conversationId, agentId, onStarted })
   const frameActions = useFrameActions()
 

@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect"
+import { identify } from "../lib/analytics.ts"
 import { accountReactivityKey, BluechipApiClient, liveReactivityKey } from "../lib/api/client.ts"
 import { signWithPasskey } from "../lib/passkey.ts"
 
@@ -19,7 +20,9 @@ export const signInAtom = BluechipApiClient.runtime.fn(
     const client = yield* BluechipApiClient
     const ceremony = yield* client.auth.loginOptions()
     const credential = yield* signWithPasskey(ceremony.options)
-    return yield* client.auth.loginVerify({ payload: { challengeId: ceremony.challengeId, credential } })
+    const signedIn = yield* client.auth.loginVerify({ payload: { challengeId: ceremony.challengeId, credential } })
+    identify(signedIn.user.id)
+    return signedIn
   }),
   { reactivityKeys: [accountReactivityKey] }
 )

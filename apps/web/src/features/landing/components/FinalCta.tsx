@@ -4,6 +4,7 @@ import { Halftone, type Palette } from "@bluechip/ui/motion/halftone"
 import { Scramble } from "@bluechip/ui/motion/scramble"
 import { Link } from "@tanstack/react-router"
 import { useRef } from "react"
+import { track } from "../../../lib/analytics.ts"
 import { useInView } from "../hooks/useInView.ts"
 
 const TITLE = "Your agents are waiting."
@@ -36,7 +37,11 @@ export function FinalCta() {
             Make your account with Face ID in seconds. Add cash when you're ready.
           </p>
           <div className="flex w-full flex-col gap-2.5 min-[440px]:w-auto min-[440px]:flex-row">
-            <Link to="/welcome" className={buttonVariants({ size: "lg", variant: "secondary", className: "group" })}>
+            <Link
+              to="/welcome"
+              className={buttonVariants({ size: "lg", variant: "secondary", className: "group" })}
+              onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "final" })}
+            >
               Get started
               <Icon
                 name="arrow-right"

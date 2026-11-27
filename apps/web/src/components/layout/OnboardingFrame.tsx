@@ -2,9 +2,16 @@ import { Logo } from "@bluechip/ui/bluechip/logo"
 import { Icon } from "@bluechip/ui/icons/icon"
 import { cn } from "@bluechip/ui/lib/cn"
 import { Link } from "@tanstack/react-router"
-import type { ReactNode } from "react"
+import { type ReactNode, useEffect } from "react"
+import { track } from "../../lib/analytics.ts"
 
 const STEPS = ["Account", "Eligibility", "Add cash"] as const
+
+const STEP_EVENTS: Readonly<Record<OnboardingStep, string>> = {
+  Account: "account",
+  Eligibility: "eligibility",
+  "Add cash": "add_cash"
+}
 
 /** Where the person is in setup; without a step the header links home instead of showing progress. */
 export type OnboardingStep = (typeof STEPS)[number]
@@ -14,6 +21,11 @@ export function OnboardingFrame(
   { children, step, wide = false }: Readonly<{ children: ReactNode; step?: OnboardingStep; wide?: boolean }>
 ) {
   const at = step === undefined ? -1 : STEPS.indexOf(step)
+
+  useEffect(() => {
+    if (step !== undefined) track({ _tag: "welcome_step_viewed", step: STEP_EVENTS[step] })
+  }, [step])
+
   return (
     <div className="flex min-h-dvh flex-col bg-[radial-gradient(ellipse_70%_40%_at_50%_0%,var(--color-blue-50),transparent_70%),var(--color-canvas)]">
       <header className="flex items-center justify-between gap-3 px-4 py-3 sm:px-7 sm:py-4">

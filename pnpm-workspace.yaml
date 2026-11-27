@@ -42,6 +42,8 @@ minimumReleaseAgeExclude:
 # Dependency install scripts are denied unless listed as true.
 allowBuilds:
   "@depot/cli": false
+  # posthog-js pulls core-js, whose script only prints a funding message.
+  core-js: false
   dprint: false
   esbuild: false
   lefthook: true

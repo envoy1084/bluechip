@@ -21,6 +21,9 @@ export const originKey = (origin: Origin): string =>
 export const originTemplate = (origin: Origin): string | null =>
   origin.kind === "scratch" ? null : origin.kind === "builtIn" ? origin.template : origin.template.id
 
+/** What analytics calls an origin: a built-in template's id, or `saved` or `scratch` (a saved template's id is yours). */
+export const originEventTemplate = (origin: Origin): string => origin.kind === "builtIn" ? origin.template : origin.kind
+
 export const originLabel = (origin: Origin): string =>
   origin.kind === "builtIn" ?
     TEMPLATES[origin.template].title :

@@ -1,5 +1,6 @@
 import { Logo } from "@bluechip/ui/bluechip/logo"
 import { Link } from "@tanstack/react-router"
+import { track } from "../../../lib/analytics.ts"
 import { LANDING_SECTIONS } from "./LandingNav.tsx"
 
 const link = "rounded-sm text-body-sm text-g-600 transition-colors duration-base hover:text-ink"
@@ -25,7 +26,13 @@ export function LandingFooter() {
             </nav>
             <nav aria-label="Account" className="grid content-start gap-2.5">
               <b className="text-label-sm font-semibold text-g-500">Account</b>
-              <Link to="/welcome" className={link}>Get started or sign in</Link>
+              <Link
+                to="/welcome"
+                className={link}
+                onClick={() => track({ _tag: "landing_cta_clicked", cta: "get_started", section: "footer" })}
+              >
+                Get started or sign in
+              </Link>
               <Link to="/recover" className={link}>Lost your passkey? Recover your account</Link>
             </nav>
             <nav aria-label="Legal" className="grid content-start gap-2.5">

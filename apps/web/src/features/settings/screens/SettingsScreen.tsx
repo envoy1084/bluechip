@@ -10,8 +10,10 @@ import { meAtom } from "../../../atoms/account.ts"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { SettingsRow as Row, SettingsSection as Section } from "../../../components/layout/SettingsSection.tsx"
 import { usePauseAll } from "../../../hooks/usePauseAll.ts"
+import { resetAnalytics, track } from "../../../lib/analytics.ts"
 import { accountReactivityKey } from "../../../lib/api/client.ts"
 import { setDisplayNameAtom, signOutAtom } from "../atoms/settings.ts"
+import { AnalyticsRow } from "../components/AnalyticsRow.tsx"
 import { RemoveAllAgents } from "../components/RemoveAllAgents.tsx"
 import { TestMoneyRow } from "../components/TestMoneyRow.tsx"
 import { TimeZoneRow } from "../components/TimeZoneRow.tsx"
@@ -32,6 +34,7 @@ export function SettingsScreen() {
           <AddressChip address={account.address} />
         </Row>
         <TestMoneyRow />
+        <AnalyticsRow />
         <Row
           title="Sign out"
           description="Signs this browser out. Your agents keep working inside their limits."
@@ -43,6 +46,8 @@ export function SettingsScreen() {
             onClick={async () => {
               setSigningOut(true)
               await signOut({ reactivityKeys: [accountReactivityKey] }).finally(() => setSigningOut(false))
+              track({ _tag: "signed_out", scope: "this" })
+              resetAnalytics()
               await navigate({ to: "/welcome" })
             }}
           >

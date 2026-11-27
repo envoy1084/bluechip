@@ -13,6 +13,7 @@ import { portfolioAtom, portfolioHistoryAtom } from "../../../atoms/portfolio.ts
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
 import { useStockLookup } from "../../../hooks/useStockLookup.ts"
 import { usdcDollars } from "../../../lib/amounts.ts"
+import { track } from "../../../lib/analytics.ts"
 import { moneySummary } from "../../../lib/moneySummary.ts"
 import { mixParts, wholePercents } from "../model/holdings.ts"
 
@@ -86,7 +87,14 @@ export function MoneyCard() {
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-g-100 pt-3 text-label text-g-500">
         <span>{formatMoney(cash)} in cash to invest</span>
-        <Button variant="secondary" size="sm" onClick={() => openCash("add")}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            track({ _tag: "add_cash_opened", entry: "home" })
+            openCash("add")
+          }}
+        >
           <Icon name="plus" size={14} />Add cash
         </Button>
       </div>

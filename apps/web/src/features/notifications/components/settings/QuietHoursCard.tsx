@@ -4,6 +4,7 @@ import { useAtomSet } from "@effect/atom-react/Hooks"
 import { useState } from "react"
 import { TimeField } from "../../../../components/fields/TimeField.tsx"
 import { SettingsRow, SettingsSection } from "../../../../components/layout/SettingsSection.tsx"
+import { track } from "../../../../lib/analytics.ts"
 import { zoneLabel } from "../../../../lib/timeZones.ts"
 import { notificationKeys, setQuietHoursAtom } from "../../atoms/notifications.ts"
 
@@ -16,6 +17,7 @@ export function QuietHoursCard(
   const save = async (next: QuietHours | null) => {
     setSaving(true)
     await setQuietHours({ payload: { quietHours: next }, reactivityKeys: notificationKeys })
+      .then(() => track({ _tag: "settings_changed", setting: "quiet_hours" }))
       .finally(() => setSaving(false))
   }
   const current = quietHours ?? { from: "22:00", to: "07:00" }

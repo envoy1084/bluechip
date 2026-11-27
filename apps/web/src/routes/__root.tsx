@@ -2,6 +2,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import type { ReactNode } from "react"
 import { NetworkCheck } from "../components/layout/NetworkCheck.tsx"
 import { network } from "../lib/network.ts"
+import { AnalyticsProvider } from "../providers/AnalyticsProvider.tsx"
 import { AtomProvider } from "../providers/AtomProvider.tsx"
 import { WalletProvider } from "../providers/WalletProvider.tsx"
 import styles from "../styles.css?url"
@@ -24,10 +25,12 @@ function RootComponent() {
   return (
     <RootDocument>
       <AtomProvider>
-        <WalletProvider>
-          <Outlet />
-          <NetworkCheck />
-        </WalletProvider>
+        <AnalyticsProvider>
+          <WalletProvider>
+            <Outlet />
+            <NetworkCheck />
+          </WalletProvider>
+        </AnalyticsProvider>
       </AtomProvider>
     </RootDocument>
   )

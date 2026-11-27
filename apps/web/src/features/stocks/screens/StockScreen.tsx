@@ -4,8 +4,11 @@ import { companyLogos } from "@bluechip/ui/logos/company"
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react/Hooks"
 import { Link } from "@tanstack/react-router"
 import * as AsyncResult from "effect/reactivity/AsyncResult"
+import { useEffect } from "react"
 import { AppPage } from "../../../components/layout/AppPage.tsx"
 import { LoadProblem } from "../../../components/LoadProblem.tsx"
+import { previousPage, track } from "../../../lib/analytics.ts"
+import { stockViewSource } from "../../../lib/pagePath.ts"
 import { stockAtom } from "../atoms/market.ts"
 import { HoldingPanel } from "../components/HoldingPanel.tsx"
 import { PriceHistoryChart } from "../components/PriceHistoryChart.tsx"
@@ -16,6 +19,7 @@ import { StockNotFound } from "../components/StockNotFound.tsx"
 
 /** A stock's page: its price, your holding of it, its history, and the box to buy or sell it. */
 export function StockScreen({ symbol }: Readonly<{ symbol: StockSymbol }>) {
+  useEffect(() => track({ _tag: "stock_viewed", symbol, from: stockViewSource(previousPage()) }), [symbol])
   const stock = useAtomValue(stockAtom(symbol))
   const refresh = useAtomRefresh(stockAtom(symbol))
   if (AsyncResult.isSuccess(stock)) {
