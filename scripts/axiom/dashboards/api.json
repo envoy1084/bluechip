@@ -1,0 +1,249 @@
+{
+  "uid": "bluechip-api",
+  "name": "bluechip API health",
+  "description": "[bluechip] Requests, latency and errors by route, live streams and the chain-read proxy.",
+  "owner": "X-AXIOM-EVERYONE",
+  "refreshTime": 60,
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-7d",
+  "timeWindowEnd": "qr-now",
+  "charts": [
+    {
+      "id": "filters",
+      "type": "SmartFilter",
+      "name": "Filters",
+      "filters": [
+        {
+          "id": "env",
+          "name": "Environment",
+          "type": "select",
+          "selectType": "list",
+          "active": true,
+          "options": [
+            {
+              "key": "production",
+              "value": "production",
+              "default": true
+            },
+            {
+              "key": "paper",
+              "value": "paper"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "requests-total",
+      "type": "Statistic",
+      "name": "Requests",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.request.duration`\n| where `deployment.environment` == $env\n| where `axiom.histogram` == \"count\"\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "errors-5xx",
+      "type": "Statistic",
+      "name": "5xx responses",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.request.duration`\n| where `deployment.environment` == $env\n| where `axiom.histogram` == \"count\"\n| where `http.response.status_class` == \"5xx\"\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "streams-now",
+      "type": "Statistic",
+      "name": "Live streams",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.active_streams`\n| where `deployment.environment` == $env\n| align using last\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "rpc-total",
+      "type": "Statistic",
+      "name": "Chain reads proxied",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.rpc_proxy.calls`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "requests-by-route",
+      "type": "TimeSeries",
+      "name": "Requests by route",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.request.duration`\n| where `deployment.environment` == $env\n| where `axiom.histogram` == \"count\"\n| align to $__interval using sum\n| group by `http.route` using sum"
+      }
+    },
+    {
+      "id": "requests-by-class",
+      "type": "TimeSeries",
+      "name": "Requests by status class",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.request.duration`\n| where `deployment.environment` == $env\n| where `axiom.histogram` == \"count\"\n| align to $__interval using sum\n| group by `http.response.status_class` using sum"
+      }
+    },
+    {
+      "id": "latency-by-route",
+      "type": "TimeSeries",
+      "name": "Latency p50 / p95 / p99 by route (ms)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.request.duration`\n| where `deployment.environment` == $env\n| bucket by `http.route` to $__interval using interpolate_delta_histogram(0.5, 0.95, 0.99)"
+      }
+    },
+    {
+      "id": "error-types",
+      "type": "TimeSeries",
+      "name": "Errors by type",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.request.duration`\n| where `deployment.environment` == $env\n| where `axiom.histogram` == \"count\"\n| align to $__interval using sum\n| group by `error.type` using sum"
+      }
+    },
+    {
+      "id": "streams",
+      "type": "TimeSeries",
+      "name": "Live streams open",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`http.server.active_streams`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group using sum"
+      }
+    },
+    {
+      "id": "rpc-methods",
+      "type": "TimeSeries",
+      "name": "Chain reads by method",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.rpc_proxy.calls`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `rpc.method` using sum"
+      }
+    },
+    {
+      "id": "rpc-outcomes",
+      "type": "TimeSeries",
+      "name": "Chain reads by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.rpc_proxy.calls`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "slowest-routes",
+      "type": "Table",
+      "name": "Slowest routes, p95 (sampled traces)",
+      "query": {
+        "apl": "declare query_parameters (env:string = \"production\");\n['${TRACES_DATASET}']\n| where tostring(column_ifexists('resource.deployment.environment', '')) == env\n| extend span_kind = tostring(column_ifexists('kind', '')), span = tostring(column_ifexists('name', '')), ms = todouble(column_ifexists('duration', 0)) / 1000000\n| where span_kind == 'server'\n| summarize p95_ms = percentile(ms, 95), n = count() by span\n| order by p95_ms desc\n| take 20"
+      }
+    },
+    {
+      "id": "recent-errors",
+      "type": "Table",
+      "name": "Errors with their trace",
+      "query": {
+        "apl": "declare query_parameters (env:string = \"production\");\n['${LOGS_DATASET}']\n| where tostring(column_ifexists('resource.deployment.environment', '')) == env\n| extend level = toupper(tostring(column_ifexists('severity_text', '')))\n| where level in ('ERROR', 'FATAL')\n| project _time, level, body = tostring(column_ifexists('body', '')), trace_id = tostring(column_ifexists('trace_id', ''))\n| order by _time desc\n| take 50"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "filters",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 1
+    },
+    {
+      "i": "requests-total",
+      "x": 0,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "errors-5xx",
+      "x": 3,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "streams-now",
+      "x": 6,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "rpc-total",
+      "x": 9,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "requests-by-route",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "requests-by-class",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "latency-by-route",
+      "x": 0,
+      "y": 7,
+      "w": 12,
+      "h": 4
+    },
+    {
+      "i": "error-types",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "streams",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "rpc-methods",
+      "x": 0,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "rpc-outcomes",
+      "x": 6,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "slowest-routes",
+      "x": 0,
+      "y": 19,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "recent-errors",
+      "x": 6,
+      "y": 19,
+      "w": 6,
+      "h": 4
+    }
+  ]
+}

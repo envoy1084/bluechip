@@ -1,0 +1,295 @@
+{
+  "uid": "bluechip-assistant",
+  "name": "bluechip Assistant and models",
+  "description": "[bluechip] Assistant turns, tools and cards; model tokens, cost, latency and errors; embeddings.",
+  "owner": "X-AXIOM-EVERYONE",
+  "refreshTime": 60,
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-7d",
+  "timeWindowEnd": "qr-now",
+  "charts": [
+    {
+      "id": "filters",
+      "type": "SmartFilter",
+      "name": "Filters",
+      "filters": [
+        {
+          "id": "env",
+          "name": "Environment",
+          "type": "select",
+          "selectType": "list",
+          "active": true,
+          "options": [
+            {
+              "key": "production",
+              "value": "production",
+              "default": true
+            },
+            {
+              "key": "paper",
+              "value": "paper"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "turns-total",
+      "type": "Statistic",
+      "name": "Turns",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.assistant.turns`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "cost-total",
+      "type": "Statistic",
+      "name": "Model cost",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.cost`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true,
+      "customUnits": "USD"
+    },
+    {
+      "id": "errors-total",
+      "type": "Statistic",
+      "name": "Model errors",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.errors`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "budget-total",
+      "type": "Statistic",
+      "name": "Budgets spent",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.budget_exhausted`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "turns",
+      "type": "TimeSeries",
+      "name": "Turns by surface",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.assistant.turns`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `surface` using sum"
+      }
+    },
+    {
+      "id": "turn-outcomes",
+      "type": "TimeSeries",
+      "name": "Turns by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.assistant.turns`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "tools",
+      "type": "TimeSeries",
+      "name": "Tool calls by tool",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.assistant.tool_calls`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `tool` using sum"
+      }
+    },
+    {
+      "id": "tool-outcomes",
+      "type": "TimeSeries",
+      "name": "Tool calls by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.assistant.tool_calls`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "cards",
+      "type": "TimeSeries",
+      "name": "Cards by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.assistant.cards`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "tokens",
+      "type": "TimeSeries",
+      "name": "Tokens by kind",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.tokens`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `kind` using sum"
+      }
+    },
+    {
+      "id": "cost-model",
+      "type": "TimeSeries",
+      "name": "Cost by model (USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.cost`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `model` using sum"
+      }
+    },
+    {
+      "id": "cost-feature",
+      "type": "TimeSeries",
+      "name": "Cost by feature (USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.cost`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `feature` using sum"
+      }
+    },
+    {
+      "id": "latency",
+      "type": "TimeSeries",
+      "name": "Model latency p50 / p95 (ms)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.duration`\n| where `deployment.environment` == $env\n| bucket by `model` to $__interval using interpolate_delta_histogram(0.5, 0.95)"
+      }
+    },
+    {
+      "id": "llm-errors",
+      "type": "TimeSeries",
+      "name": "Model errors by kind",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.llm.errors`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `kind` using sum"
+      }
+    },
+    {
+      "id": "embeddings",
+      "type": "TimeSeries",
+      "name": "Embedding calls by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.embeddings.calls`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "embeddings-backlog",
+      "type": "TimeSeries",
+      "name": "Embedding backlog",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.embeddings.backlog`\n| where `deployment.environment` == $env\n| align to $__interval using last\n| group using sum"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "filters",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 1
+    },
+    {
+      "i": "turns-total",
+      "x": 0,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "cost-total",
+      "x": 3,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "errors-total",
+      "x": 6,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "budget-total",
+      "x": 9,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "turns",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "turn-outcomes",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "tools",
+      "x": 0,
+      "y": 7,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "tool-outcomes",
+      "x": 6,
+      "y": 7,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "cards",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "tokens",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "cost-model",
+      "x": 0,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "cost-feature",
+      "x": 6,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "latency",
+      "x": 0,
+      "y": 19,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "llm-errors",
+      "x": 6,
+      "y": 19,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "embeddings",
+      "x": 0,
+      "y": 23,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "embeddings-backlog",
+      "x": 6,
+      "y": 23,
+      "w": 6,
+      "h": 4
+    }
+  ]
+}

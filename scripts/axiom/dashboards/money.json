@@ -1,0 +1,236 @@
+{
+  "uid": "bluechip-money",
+  "name": "bluechip Money in and out",
+  "description": "[bluechip] Deposits, withdrawals, the faucet, unexplained adjustments and the paper operator's balance.",
+  "owner": "X-AXIOM-EVERYONE",
+  "refreshTime": 60,
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-7d",
+  "timeWindowEnd": "qr-now",
+  "charts": [
+    {
+      "id": "filters",
+      "type": "SmartFilter",
+      "name": "Filters",
+      "filters": [
+        {
+          "id": "env",
+          "name": "Environment",
+          "type": "select",
+          "selectType": "list",
+          "active": true,
+          "options": [
+            {
+              "key": "production",
+              "value": "production",
+              "default": true
+            },
+            {
+              "key": "paper",
+              "value": "paper"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deposits-total",
+      "type": "Statistic",
+      "name": "Deposits",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.deposits`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "deposits-value",
+      "type": "Statistic",
+      "name": "Deposited",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.deposits.value`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true,
+      "customUnits": "USD"
+    },
+    {
+      "id": "withdrawals-value",
+      "type": "Statistic",
+      "name": "Withdrawn",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.withdrawals.value`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true,
+      "customUnits": "USD"
+    },
+    {
+      "id": "unexplained-total",
+      "type": "Statistic",
+      "name": "Unexplained adjustments",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.reconcile.unexplained`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "deposits",
+      "type": "TimeSeries",
+      "name": "Deposits per day",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.deposits`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group using sum"
+      }
+    },
+    {
+      "id": "deposits-usd",
+      "type": "TimeSeries",
+      "name": "Deposited per day (USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.deposits.value`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group using sum"
+      }
+    },
+    {
+      "id": "withdrawals",
+      "type": "TimeSeries",
+      "name": "Withdrawals by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.withdrawals`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "withdrawals-usd",
+      "type": "TimeSeries",
+      "name": "Withdrawn by outcome (USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.withdrawals.value`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "faucet",
+      "type": "TimeSeries",
+      "name": "Faucet mints by outcome (paper)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.faucet.mints`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "faucet-usd",
+      "type": "TimeSeries",
+      "name": "Faucet value (paper, USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.faucet.value`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group using sum"
+      }
+    },
+    {
+      "id": "unexplained",
+      "type": "TimeSeries",
+      "name": "Unexplained adjustments by asset",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.reconcile.unexplained`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `asset` using sum"
+      }
+    },
+    {
+      "id": "operator-balance",
+      "type": "TimeSeries",
+      "name": "Operator balance (paper, ETH; top up under 0.1)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.paper.operator_balance`\n| where `deployment.environment` == $env\n| align to $__interval using last\n| group using sum"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "filters",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 1
+    },
+    {
+      "i": "deposits-total",
+      "x": 0,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "deposits-value",
+      "x": 3,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "withdrawals-value",
+      "x": 6,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "unexplained-total",
+      "x": 9,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "deposits",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "deposits-usd",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "withdrawals",
+      "x": 0,
+      "y": 7,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "withdrawals-usd",
+      "x": 6,
+      "y": 7,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "faucet",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "faucet-usd",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "unexplained",
+      "x": 0,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "operator-balance",
+      "x": 6,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    }
+  ]
+}

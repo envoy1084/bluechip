@@ -1,0 +1,241 @@
+{
+  "uid": "bluechip-chain",
+  "name": "bluechip Chain and bundler",
+  "description": "[bluechip] RPC and bundler calls, user operation latency and outcomes, gas, and market data freshness.",
+  "owner": "X-AXIOM-EVERYONE",
+  "refreshTime": 60,
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-7d",
+  "timeWindowEnd": "qr-now",
+  "charts": [
+    {
+      "id": "filters",
+      "type": "SmartFilter",
+      "name": "Filters",
+      "filters": [
+        {
+          "id": "env",
+          "name": "Environment",
+          "type": "select",
+          "selectType": "list",
+          "active": true,
+          "options": [
+            {
+              "key": "production",
+              "value": "production",
+              "default": true
+            },
+            {
+              "key": "paper",
+              "value": "paper"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rpc-latency",
+      "type": "TimeSeries",
+      "name": "RPC latency p50 / p95 by operation (ms)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.chain.rpc.duration`\n| where `deployment.environment` == $env\n| bucket by `operation` to $__interval using interpolate_delta_histogram(0.5, 0.95)"
+      }
+    },
+    {
+      "id": "rpc-errors",
+      "type": "TimeSeries",
+      "name": "RPC errors by kind",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.chain.rpc.errors`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `kind` using sum"
+      }
+    },
+    {
+      "id": "bundler-calls",
+      "type": "TimeSeries",
+      "name": "Bundler calls by method",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.bundler.calls`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `rpc.method` using sum"
+      }
+    },
+    {
+      "id": "bundler-errors",
+      "type": "TimeSeries",
+      "name": "Bundler calls by error code",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.bundler.calls`\n| where `deployment.environment` == $env\n| where `outcome` != \"ok\"\n| align to $__interval using sum\n| group by `error_code` using sum"
+      }
+    },
+    {
+      "id": "bundler-latency",
+      "type": "TimeSeries",
+      "name": "Bundler latency p95 (ms)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.bundler.duration`\n| where `deployment.environment` == $env\n| bucket by `rpc.method` to $__interval using interpolate_delta_histogram(0.95)"
+      }
+    },
+    {
+      "id": "userop-latency",
+      "type": "TimeSeries",
+      "name": "User operation send to receipt p50 / p95 (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.user_ops.latency`\n| where `deployment.environment` == $env\n| bucket by `kind` to $__interval using interpolate_delta_histogram(0.5, 0.95)"
+      }
+    },
+    {
+      "id": "userop-outcomes",
+      "type": "TimeSeries",
+      "name": "User operations by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.user_ops.outcome`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "gas-price",
+      "type": "TimeSeries",
+      "name": "Gas price (gwei)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.gas.price`\n| where `deployment.environment` == $env\n| align to $__interval using avg\n| group using sum"
+      }
+    },
+    {
+      "id": "price-age",
+      "type": "TimeSeries",
+      "name": "Market price age by source (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.market.price_age`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group by `source` using sum"
+      }
+    },
+    {
+      "id": "feed-gap",
+      "type": "TimeSeries",
+      "name": "Alpaca and Chainlink apart (bps)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.market.feed_gap`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group by `symbol` using sum"
+      }
+    },
+    {
+      "id": "reconnects",
+      "type": "TimeSeries",
+      "name": "Stream reconnects",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.market.stream_reconnects`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `stream` using sum"
+      }
+    },
+    {
+      "id": "feed-pushes",
+      "type": "TimeSeries",
+      "name": "Paper feed pushes by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.paper.feed_pushes`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "feed-age",
+      "type": "TimeSeries",
+      "name": "Paper feed age (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.paper.feed_age`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group using sum"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "filters",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 1
+    },
+    {
+      "i": "rpc-latency",
+      "x": 0,
+      "y": 1,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "rpc-errors",
+      "x": 6,
+      "y": 1,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "bundler-calls",
+      "x": 0,
+      "y": 5,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "bundler-errors",
+      "x": 6,
+      "y": 5,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "bundler-latency",
+      "x": 0,
+      "y": 9,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "userop-latency",
+      "x": 6,
+      "y": 9,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "userop-outcomes",
+      "x": 0,
+      "y": 13,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "gas-price",
+      "x": 6,
+      "y": 13,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "price-age",
+      "x": 0,
+      "y": 17,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "feed-gap",
+      "x": 6,
+      "y": 17,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "reconnects",
+      "x": 0,
+      "y": 21,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "feed-pushes",
+      "x": 4,
+      "y": 21,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "feed-age",
+      "x": 8,
+      "y": 21,
+      "w": 4,
+      "h": 4
+    }
+  ]
+}

@@ -1,0 +1,355 @@
+{
+  "uid": "bluechip-trading",
+  "name": "bluechip Trading",
+  "description": "[bluechip] Trades, intents, approvals and batches, by environment.",
+  "owner": "X-AXIOM-EVERYONE",
+  "refreshTime": 60,
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-7d",
+  "timeWindowEnd": "qr-now",
+  "charts": [
+    {
+      "id": "filters",
+      "type": "SmartFilter",
+      "name": "Filters",
+      "filters": [
+        {
+          "id": "env",
+          "name": "Environment",
+          "type": "select",
+          "selectType": "list",
+          "active": true,
+          "options": [
+            {
+              "key": "production",
+              "value": "production",
+              "default": true
+            },
+            {
+              "key": "paper",
+              "value": "paper"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trades-total",
+      "type": "Statistic",
+      "name": "Trades filled",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.filled`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "value-total",
+      "type": "Statistic",
+      "name": "Dollars traded",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.value`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true,
+      "customUnits": "USD"
+    },
+    {
+      "id": "failed-total",
+      "type": "Statistic",
+      "name": "Trades failed",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.failed`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "blocked-total",
+      "type": "Statistic",
+      "name": "Intents blocked",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.intents.blocked`\n| where `deployment.environment` == $env\n| align using sum\n| group using sum"
+      },
+      "colorScheme": "Blue",
+      "showChart": true
+    },
+    {
+      "id": "trades-by-source",
+      "type": "TimeSeries",
+      "name": "Trades by source",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.filled`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `source` using sum"
+      }
+    },
+    {
+      "id": "value-by-source",
+      "type": "TimeSeries",
+      "name": "Dollars traded by source",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.value`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `source` using sum"
+      }
+    },
+    {
+      "id": "value-by-side",
+      "type": "TimeSeries",
+      "name": "Dollars traded by side",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.value`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `side` using sum"
+      }
+    },
+    {
+      "id": "trade-size",
+      "type": "TimeSeries",
+      "name": "Trade size p50 / p95 (USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.size`\n| where `deployment.environment` == $env\n| bucket to $__interval using interpolate_delta_histogram(0.5, 0.95)"
+      }
+    },
+    {
+      "id": "intents-ended",
+      "type": "TimeSeries",
+      "name": "Intents ended by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.intents.ended`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "blocked-by-policy",
+      "type": "TimeSeries",
+      "name": "Blocked by policy",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.intents.blocked`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `policy` using sum"
+      }
+    },
+    {
+      "id": "waits",
+      "type": "TimeSeries",
+      "name": "Waits by reason",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.intents.waited`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `reason` using sum"
+      }
+    },
+    {
+      "id": "intent-duration",
+      "type": "TimeSeries",
+      "name": "Intent duration p50 / p95 by executor (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.intents.duration`\n| where `deployment.environment` == $env\n| bucket by `executor` to $__interval using interpolate_delta_histogram(0.5, 0.95)"
+      }
+    },
+    {
+      "id": "approvals",
+      "type": "TimeSeries",
+      "name": "Approvals requested",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.approvals.requested`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `reason` using sum"
+      }
+    },
+    {
+      "id": "approvals-resolved",
+      "type": "TimeSeries",
+      "name": "Approvals resolved",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.approvals.resolved`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "time-to-approve",
+      "type": "TimeSeries",
+      "name": "Time to approve p50 (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.approvals.time_to_resolve`\n| where `deployment.environment` == $env\n| bucket by `outcome` to $__interval using interpolate_delta_histogram(0.5)"
+      }
+    },
+    {
+      "id": "batches",
+      "type": "TimeSeries",
+      "name": "Batches created",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.batches.created`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `legs` using sum"
+      }
+    },
+    {
+      "id": "waves",
+      "type": "TimeSeries",
+      "name": "Waves sent",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.batches.waves_sent`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "fees",
+      "type": "TimeSeries",
+      "name": "Fees by kind (USD)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.fees`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `kind` using sum"
+      }
+    },
+    {
+      "id": "slippage",
+      "type": "TimeSeries",
+      "name": "Slippage p95 (bps)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.trades.slippage`\n| where `deployment.environment` == $env\n| bucket to $__interval using interpolate_delta_histogram(0.95)"
+      }
+    },
+    {
+      "id": "gas-sponsored",
+      "type": "TimeSeries",
+      "name": "Gas paid by the paymaster (ETH)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.gas.sponsored`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `kind` using sum"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "filters",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 1
+    },
+    {
+      "i": "trades-total",
+      "x": 0,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "value-total",
+      "x": 3,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "failed-total",
+      "x": 6,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "blocked-total",
+      "x": 9,
+      "y": 1,
+      "w": 3,
+      "h": 2
+    },
+    {
+      "i": "trades-by-source",
+      "x": 0,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "value-by-source",
+      "x": 6,
+      "y": 3,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "value-by-side",
+      "x": 0,
+      "y": 7,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "trade-size",
+      "x": 6,
+      "y": 7,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "intents-ended",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "blocked-by-policy",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "waits",
+      "x": 0,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "intent-duration",
+      "x": 6,
+      "y": 15,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "approvals",
+      "x": 0,
+      "y": 19,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "approvals-resolved",
+      "x": 4,
+      "y": 19,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "time-to-approve",
+      "x": 8,
+      "y": 19,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "batches",
+      "x": 0,
+      "y": 23,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "waves",
+      "x": 6,
+      "y": 23,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "fees",
+      "x": 0,
+      "y": 27,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "slippage",
+      "x": 4,
+      "y": 27,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "gas-sponsored",
+      "x": 8,
+      "y": 27,
+      "w": 4,
+      "h": 4
+    }
+  ]
+}

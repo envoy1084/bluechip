@@ -1,0 +1,226 @@
+{
+  "uid": "bluechip-engine",
+  "name": "bluechip Engine and database",
+  "description": "[bluechip] Workflows, the engine backlog, the desk, crons, the outbox and the database.",
+  "owner": "X-AXIOM-EVERYONE",
+  "refreshTime": 60,
+  "schemaVersion": 2,
+  "timeWindowStart": "qr-now-7d",
+  "timeWindowEnd": "qr-now",
+  "charts": [
+    {
+      "id": "filters",
+      "type": "SmartFilter",
+      "name": "Filters",
+      "filters": [
+        {
+          "id": "env",
+          "name": "Environment",
+          "type": "select",
+          "selectType": "list",
+          "active": true,
+          "options": [
+            {
+              "key": "production",
+              "value": "production",
+              "default": true
+            },
+            {
+              "key": "paper",
+              "value": "paper"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "workflow-duration",
+      "type": "TimeSeries",
+      "name": "Workflow duration p50 / p95 (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.engine.workflow.duration`\n| where `deployment.environment` == $env\n| bucket by `workflow` to $__interval using interpolate_delta_histogram(0.5, 0.95)"
+      }
+    },
+    {
+      "id": "workflow-retries",
+      "type": "TimeSeries",
+      "name": "Workflow retries",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.engine.workflow.retries`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `workflow` using sum"
+      }
+    },
+    {
+      "id": "backlog",
+      "type": "TimeSeries",
+      "name": "Engine backlog by entity",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.engine.backlog`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group by `entity` using sum"
+      }
+    },
+    {
+      "id": "desk-queue",
+      "type": "TimeSeries",
+      "name": "Desk queue",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.desk.queue`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group using sum"
+      }
+    },
+    {
+      "id": "cron-runs",
+      "type": "TimeSeries",
+      "name": "Cron runs by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.cron.runs`\n| where `deployment.environment` == $env\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "cron-lag",
+      "type": "TimeSeries",
+      "name": "Cron lag p95 (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.cron.lag`\n| where `deployment.environment` == $env\n| bucket by `cron` to $__interval using interpolate_delta_histogram(0.95)"
+      }
+    },
+    {
+      "id": "outbox-pending",
+      "type": "TimeSeries",
+      "name": "Outbox pending",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.outbox.pending`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group using sum"
+      }
+    },
+    {
+      "id": "outbox-age",
+      "type": "TimeSeries",
+      "name": "Outbox oldest (s)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`bluechip.outbox.age`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group using sum"
+      }
+    },
+    {
+      "id": "db-p95",
+      "type": "TimeSeries",
+      "name": "Statement p95 by table (ms)",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`db.client.operation.duration`\n| where `deployment.environment` == $env\n| bucket by `db.table` to $__interval using interpolate_delta_histogram(0.95)"
+      }
+    },
+    {
+      "id": "db-transactions",
+      "type": "TimeSeries",
+      "name": "Transactions by outcome",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`db.client.transaction.duration`\n| where `deployment.environment` == $env\n| where `axiom.histogram` == \"count\"\n| align to $__interval using sum\n| group by `outcome` using sum"
+      }
+    },
+    {
+      "id": "db-connections",
+      "type": "TimeSeries",
+      "name": "Pool connections",
+      "query": {
+        "mpl": "`${METRICS_DATASET}`:`db.client.connections`\n| where `deployment.environment` == $env\n| align to $__interval using max\n| group by `state` using sum"
+      }
+    },
+    {
+      "id": "slow-queries",
+      "type": "Table",
+      "name": "Queries that dominate time (kept statement spans)",
+      "query": {
+        "apl": "declare query_parameters (env:string = \"production\");\n['${TRACES_DATASET}']\n| where tostring(column_ifexists('resource.deployment.environment', '')) == env\n| extend span = tostring(column_ifexists('name', '')), ms = todouble(column_ifexists('duration', 0)) / 1000000\n| where span startswith 'select ' or span startswith 'insert ' or span startswith 'update ' or span startswith 'delete '\n| summarize total_ms = sum(ms), p95_ms = percentile(ms, 95), n = count() by span\n| order by total_ms desc\n| take 20"
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "filters",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 1
+    },
+    {
+      "i": "workflow-duration",
+      "x": 0,
+      "y": 1,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "workflow-retries",
+      "x": 6,
+      "y": 1,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "backlog",
+      "x": 0,
+      "y": 5,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "desk-queue",
+      "x": 6,
+      "y": 5,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "cron-runs",
+      "x": 0,
+      "y": 9,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "cron-lag",
+      "x": 6,
+      "y": 9,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "outbox-pending",
+      "x": 0,
+      "y": 13,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "outbox-age",
+      "x": 6,
+      "y": 13,
+      "w": 6,
+      "h": 4
+    },
+    {
+      "i": "db-p95",
+      "x": 0,
+      "y": 17,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "db-transactions",
+      "x": 4,
+      "y": 17,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "db-connections",
+      "x": 8,
+      "y": 17,
+      "w": 4,
+      "h": 4
+    },
+    {
+      "i": "slow-queries",
+      "x": 0,
+      "y": 21,
+      "w": 12,
+      "h": 4
+    }
+  ]
+}
