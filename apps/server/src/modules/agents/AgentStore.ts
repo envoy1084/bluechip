@@ -1,10 +1,11 @@
 import { Agent, SESSION_DAYS } from "@bluechip/domain/agents/Agent"
+import { usdBucket } from "@bluechip/domain/analytics/Buckets"
 import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, UserId } from "@bluechip/domain/Ids"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { TEMPLATES } from "@bluechip/domain/policies/Templates"
-import { and, asc, eq, inArray, lt, ne } from "drizzle-orm"
+import { and, asc, count as countRows, eq, inArray, lt, ne, sql } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -13,6 +14,7 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { AgentsCreated, AgentsLifecycle, AgentsLocked, count } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
@@ -46,6 +48,20 @@ const toAgent = (row: AgentRow, sessions: ReadonlyArray<SessionRow>): Agent => {
 // A built-in template by its id; a template of your own as `saved`; none as `custom`, so the metrics stay few.
 const templateOf = (template: string | null) =>
   template === null ? "custom" : template in TEMPLATES ? template : "saved"
+
+// A spec as analytics sees it: its policies' ids, and its limits as ranges.
+const specFacts = (spec: AgentSpec) => {
+  const config = (id: string) =>
+    spec.policies.find((entry) => entry.id === id)?.config as Readonly<Record<string, unknown>> | undefined
+  const dollars = (value: unknown) => typeof value === "bigint" ? Number(value) / 1e6 : 0
+  const stocks = config("trade")?.["stocks"]
+  return {
+    policies: spec.policies.map((entry) => entry.id),
+    max_per_trade_bucket: usdBucket(dollars(config("tradeSize")?.["maxPerTrade"])),
+    daily_budget_bucket: usdBucket(dollars(config("trade")?.["dailyBudget"])),
+    stocks_count: Array.isArray(stocks) ? stocks.length : 0
+  }
+}
 
 export class AgentStore extends Context.Service<AgentStore, {
   /** A new draft agent, with its first session (a new key, valid for 90 days) waiting to be locked. */
@@ -87,6 +103,7 @@ export class AgentStore extends Context.Service<AgentStore, {
       const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const sessions = yield* AgentSessions
+      const analytics = yield* Analytics
 
       const create = Effect.fn("AgentStore.create")(function*(owner: Owner, input: {
         readonly name: string
@@ -119,7 +136,17 @@ export class AgentStore extends Context.Service<AgentStore, {
               .where(eq(agents.id, id)).returning()
             return inserted!
           })
-        ).pipe(Effect.orDie, Effect.tap(count(AgentsCreated, { template: templateOf(input.template) })))
+        ).pipe(
+          Effect.orDie,
+          Effect.tap(count(AgentsCreated, { template: templateOf(input.template) })),
+          Effect.tap((row) =>
+            analytics.capture(owner.id, {
+              _tag: "agent_created",
+              template: templateOf(input.template),
+              ...specFacts(input.spec)
+            }, { id: row.id, at: now })
+          )
+        )
       })
 
       const owned = Effect.fn("AgentStore.owned")(function*(owner: Owner, id: AgentId) {
@@ -195,6 +222,53 @@ export class AgentStore extends Context.Service<AgentStore, {
           ? "changed"
           : undefined
         if (lifecycle !== undefined) yield* count(AgentsLifecycle, { change: lifecycle })
+        yield* tell(row, updated, lifecycle)
+      })
+
+      // The agents' analytics events for the same move, with the owner's agent counts.
+      const tell = Effect.fnUntraced(function*(row: AgentRow, updated: AgentRow, lifecycle: string | undefined) {
+        const locked = row.status === "locking" && updated.status !== "locking"
+        if (!locked && lifecycle === undefined) return
+        const userId = row.userId as UserId
+        const template = templateOf(row.templateId)
+        const fact = {
+          id: `${row.id}:${updated.status}:${DateTime.formatIso(updated.updatedAt)}`,
+          at: updated.updatedAt
+        }
+
+        const [counts] = yield* db.select({
+          agents: countRows(),
+          active: countRows(sql`case when ${agents.status} = 'active' and not ${agents.paused} then 1 end`),
+          everLocked: countRows(agents.currentSessionId)
+        }).from(agents).where(
+          and(eq(agents.userId, row.userId), ne(agents.status, "removed"), ne(agents.status, "draft"))
+        )
+          .pipe(Effect.orDie)
+        const set = { agents_count: counts?.agents ?? 0, active_agents_count: counts?.active ?? 0 }
+
+        if (locked && updated.status === "active") {
+          const session = yield* sessions.get(updated.currentSessionId)
+          yield* analytics.capture(userId, {
+            _tag: "agent_locked",
+            template,
+            policies: session.spec.policies.map((entry) => entry.id),
+            is_first: (counts?.everLocked ?? 0) <= 1,
+            seconds_from_created: Math.max(
+              0,
+              (DateTime.toEpochMillis(updated.updatedAt) - DateTime.toEpochMillis(row.createdAt)) / 1000
+            )
+          }, { ...fact, set, setOnce: { first_agent_at: DateTime.formatIso(updated.updatedAt) } })
+        } else if (locked) {
+          yield* analytics.capture(userId, { _tag: "agent_lock_failed", reason: updated.status }, fact)
+        }
+        if (lifecycle !== undefined) {
+          yield* analytics.capture(userId, {
+            _tag: `agent_${lifecycle}` as "agent_paused",
+            template,
+            by: lifecycle === "expired" ? "expiry" : "you",
+            changed_policies: []
+          }, { ...fact, set })
+        }
       })
 
       const save = Effect.fn("AgentStore.save")(function*(

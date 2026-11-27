@@ -1,3 +1,4 @@
+import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { isSpent } from "@bluechip/domain/assistant/Budget"
 import { type Card, describeCard, isPending } from "@bluechip/domain/assistant/Card"
 import {
@@ -41,6 +42,7 @@ import {
   record as recordMetric
 } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { ConversationMemory } from "../memory/ConversationMemory.ts"
 import { Memories } from "../memory/Memories.ts"
 import { MemoryExtractor } from "../memory/MemoryExtractor.ts"
@@ -116,6 +118,8 @@ export class Assistant extends Context.Service<Assistant, {
       const conversationMemory = yield* ConversationMemory
       const titles = yield* Titles
       const toolkit = yield* AssistantToolkit
+      const analytics = yield* Analytics
+      const money = (yield* ChainDeployment).network === "base" ? "real" as const : "paper" as const
       const runs = new Map<string, Run>()
       const deleting = new Set<ConversationId>()
       const scope = yield* Effect.scope
@@ -146,6 +150,22 @@ export class Assistant extends Context.Service<Assistant, {
           source: context.surface === "web" ? "assistant" as const : "channel" as const
         }
         const waiting: Array<Card> = []
+        // The turn as LLM analytics tells it: one trace (the run), a generation per round, a span per tool call.
+        const traceId = input.runId
+        const traced = { rounds: 0, error: undefined as string | undefined, startedAt: 0 }
+        // The turn's trace, told before its last event, so whoever reads the run's end finds it told.
+        const endTrace = Effect.gen(function*() {
+          yield* analytics.capture(owner.id, {
+            _tag: "$ai_trace",
+            $ai_trace_id: traceId,
+            $ai_session_id: conversationId,
+            $ai_span_name: context.surface,
+            $ai_latency: ((yield* Clock.currentTimeMillis) - traced.startedAt) / 1000,
+            $ai_is_error: traced.error !== undefined,
+            $ai_error: traced.error,
+            rounds: traced.rounds
+          }, { id: traceId })
+        })
 
         // A card the assistant makes itself, stored in its own message.
         const ownCards = Effect.fnUntraced(function*(inputs: ReadonlyArray<CardInput>) {
@@ -201,6 +221,7 @@ export class Assistant extends Context.Service<Assistant, {
                 }))
               } :
               { type: "success" }
+            yield* endTrace
             return Stream.fromIterable([...memoryCards.map((card) => cardEvent(null, card)), finished(outcome)])
           }))
 
@@ -214,6 +235,10 @@ export class Assistant extends Context.Service<Assistant, {
           Stream.unwrap(Effect.gen(function*() {
             if (isSpent(yield* budgets.today(owner))) {
               yield* count(AssistantTurns, { surface: context.surface, outcome: "budget_spent" })
+              traced.error = "budget_spent"
+              yield* analytics.capture(owner.id, { _tag: "assistant_error", kind: "budget_spent" }, {
+                id: `${traceId}:budget`
+              })
               return stop("budget", BUDGET_SPENT)
             }
             const startedAt = yield* Clock.currentTimeMillis
@@ -263,21 +288,79 @@ export class Assistant extends Context.Service<Assistant, {
                 metadata.modelId :
                 models.conversationModel
               const usage = usageOf(parts)
-              if (parts.some((part) => part.type === "finish")) yield* budgets.record(owner, model, usage, "chat")
+              const latencyMs = (yield* Clock.currentTimeMillis) - startedAt
+              const spanId = `${traceId}:round-${step}`
+              const stopReason = parts.find((part) => part.type === "finish")
+              const generation = {
+                $ai_trace_id: traceId,
+                $ai_span_id: spanId,
+                $ai_parent_id: traceId,
+                $ai_session_id: conversationId,
+                $ai_stop_reason: stopReason?.type === "finish" ? stopReason.reason : undefined,
+                $ai_tools: parts.flatMap((part) => part.type === "tool-call" ? [part.name] : []),
+                surface: context.surface,
+                agent_id: context.agentId ?? undefined,
+                $ai_input: [{ role: "user", content: context.userText }],
+                $ai_output_choices: [{
+                  role: "assistant",
+                  content: parts.flatMap((part) => part.type === "text-delta" ? [part.delta] : []).join("")
+                }],
+                latencyMs
+              }
+              traced.rounds = step
+              if (stopReason !== undefined) yield* budgets.record(owner, model, usage, "chat", generation)
               const llm = { model, feature: "chat" }
-              yield* recordMetric(LlmDuration, (yield* Clock.currentTimeMillis) - startedAt, {
+              yield* recordMetric(LlmDuration, latencyMs, {
                 ...llm,
                 outcome: failure === undefined ? "ok" : "error"
               })
-              if (failure !== undefined) yield* count(LlmErrors, { ...llm, kind: modelErrorKind(failure) })
+              if (failure !== undefined) {
+                const kind = modelErrorKind(failure)
+                traced.error = kind
+                yield* count(LlmErrors, { ...llm, kind })
+                // A call that failed costs nothing in the budget, but LLM analytics sees it.
+                const { $ai_input, $ai_output_choices, latencyMs: _, ...known } = generation
+                yield* analytics.capture(owner.id, {
+                  _tag: "$ai_generation",
+                  ...known,
+                  $ai_span_name: "chat",
+                  $ai_model: model,
+                  $ai_provider: "anthropic",
+                  $ai_input_tokens: usage.inputTokens,
+                  $ai_output_tokens: usage.outputTokens,
+                  $ai_cache_read_input_tokens: usage.cacheReadTokens,
+                  $ai_cache_creation_input_tokens: usage.cacheWriteTokens,
+                  $ai_latency: latencyMs / 1000,
+                  $ai_is_error: true,
+                  $ai_error: kind,
+                  $ai_total_cost_usd: 0,
+                  ...(analytics.capturesText ? { $ai_input } : {})
+                }, { id: spanId })
+                yield* analytics.capture(owner.id, { _tag: "assistant_error", kind: "model_error" }, { id: spanId })
+              }
               for (const part of parts) {
                 if (part.type !== "tool-result" || part.providerExecuted === true) continue
                 const tool = (AssistantToolkit.tools as Record<string, Tool.Any | undefined>)[part.name]
-                yield* count(AssistantToolCalls, {
+                const risk = tool === undefined ? "none" : riskOf(tool) ?? "none"
+                const outcome = part.isFailure ? "error" : "ok"
+                yield* count(AssistantToolCalls, { tool: part.name, risk, outcome })
+                yield* analytics.capture(owner.id, {
+                  _tag: "tool_called",
                   tool: part.name,
-                  risk: tool === undefined ? "none" : riskOf(tool) ?? "none",
-                  outcome: part.isFailure ? "error" : "ok"
-                })
+                  risk,
+                  outcome,
+                  conversation_id: conversationId
+                }, { id: part.id })
+                yield* analytics.capture(owner.id, {
+                  _tag: "$ai_span",
+                  $ai_trace_id: traceId,
+                  $ai_span_id: part.id,
+                  $ai_parent_id: spanId,
+                  $ai_session_id: conversationId,
+                  $ai_span_name: part.name,
+                  $ai_is_error: part.isFailure,
+                  risk
+                }, { id: part.id })
               }
 
               const fromTools = toolCards(parts)
@@ -328,12 +411,17 @@ export class Assistant extends Context.Service<Assistant, {
               if (failure !== undefined) {
                 yield* count(AssistantTurns, { surface: context.surface, outcome: "error" })
                 yield* Effect.logWarning("The assistant's model failed", failure)
+                yield* endTrace
                 return Stream.fromIterable<AgUiSchema.Event>([
                   ...extraEvents,
                   { type: "RUN_ERROR", message: unavailable, code: "model" }
                 ])
               }
-              if (stopped !== null) return Stream.fromIterable([...extraEvents, finished({ type: "cancelled" })])
+              if (stopped !== null) {
+                traced.error = stopped
+                yield* endTrace
+                return Stream.fromIterable([...extraEvents, finished({ type: "cancelled" })])
+              }
 
               const finish = parts.find((part) => part.type === "finish")
               const usedTools = parts.some((part) => part.type === "tool-result" && part.providerExecuted !== true)
@@ -365,8 +453,17 @@ export class Assistant extends Context.Service<Assistant, {
             }),
             conversationMemory.summary(conversationId)
           ], { concurrency: 4 })
+          traced.startedAt = yield* Clock.currentTimeMillis
+          yield* analytics.capture(owner.id, {
+            _tag: "message_sent",
+            surface: context.surface,
+            conversation_id: conversationId,
+            turn_index: thread.messages.filter((message) => message.role === "user").length
+          }, { id: context.userMessage.id })
           const focus = owned.find((agent) => agent.id === thread.conversation.agentId) ?? null
           const system = systemPrompt({
+            surface: context.surface,
+            money,
             today: DateTime.formatIsoDateUtc(yield* DateTime.now),
             agents: owned,
             memories: remembered.memories,
@@ -379,11 +476,16 @@ export class Assistant extends Context.Service<Assistant, {
             -1 :
             thread.messages.findIndex((message) => message.id === summary.throughMessageId)
           const prompt = Prompt.concat(
-            Prompt.make([{
-              role: "system",
-              content: system,
-              options: { anthropic: { cacheControl: { type: "ephemeral" } } }
-            }]),
+            // The instructions are the same for every user on a surface, so the cache keeps them (with the tools) across
+            // turns and users; the user's context, which changes every turn, comes after them.
+            Prompt.make([
+              {
+                role: "system",
+                content: system.instructions,
+                options: { anthropic: { cacheControl: { type: "ephemeral" } } }
+              },
+              { role: "system", content: system.context }
+            ]),
             promptOf(thread.messages.slice(after + 1))
           )
           return round(1, prompt)

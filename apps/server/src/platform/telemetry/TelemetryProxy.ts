@@ -16,17 +16,12 @@ import { stampJson, stampProtobuf } from "./OtlpStamp.ts"
 import { axiomHeaders } from "./Telemetry.ts"
 import { TelemetryConfig } from "./TelemetryConfig.ts"
 
-// Session recordings are the largest PostHog bodies; a browser's OTLP batch is a few kilobytes.
-const INGEST_MAX_BYTES = 5 * 1024 * 1024
+// A browser's OTLP batch is a few kilobytes.
 const OTLP_MAX_BYTES = 1024 * 1024
 
-// Requests a minute per address: posthog-js sends a batch every few seconds and recordings in chunks; the OTLP
-// exporters a batch per signal every few seconds.
-const INGEST_PER_MINUTE = 600
+// Requests a minute per address: the OTLP exporters send a batch per signal every few seconds.
 const OTLP_PER_MINUTE = 240
 
-// Only what the upstream needs from the browser: never its cookies.
-const FORWARDED_HEADERS = ["content-type", "content-encoding", "user-agent", "accept"]
 const RETURNED_HEADERS = ["content-type", "cache-control", "retry-after"]
 
 const tooMany = HttpServerResponse.empty({ status: 429, headers: { "retry-after": "60" } })
@@ -36,24 +31,15 @@ const addressOf = (request: HttpServerRequest.HttpServerRequest) =>
   request.headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
     Option.getOrElse(request.remoteAddress, () => "unknown")
 
-const pathAndQueryOf = (url: string) => {
-  const parsed = new URL(url, "http://bluechip")
-  return { path: parsed.pathname, query: parsed.search }
-}
-
 /**
- * The web app's telemetry, through the server, so the browser talks only to bluechip's origin (ad blockers and
- * cross-origin rules leave it alone) and holds no Axiom token. Neither route is traced or logged per request.
+ * The web app's own traces, logs and metrics, through the server, so the browser holds no Axiom token. The paths are
+ * short and neutral (`POST /api/sync/{t,l,m}` for traces, logs and metrics), since ad blockers drop requests to ones
+ * that look like telemetry. Not traced or logged per request.
  *
- * - `* /ingest/*`: PostHog's ingest (`POSTHOG_HOST`, `/ingest/static/*` from `POSTHOG_ASSETS_HOST`), path and query
- *   as sent, with the browser's address as `x-forwarded-for` (PostHog's country) and no cookies. `404` outside paper
- *   and production.
- * - `POST /api/telemetry/v1/{traces,logs,metrics}`: OTLP (`application/json` or `application/x-protobuf`, gzip or
- *   not), each resource given `deployment.environment` and `network` when it lacks them, forwarded uncompressed to
- *   Axiom's dataset for the signal with the server's ingest token. `204` (accepted, dropped) when Axiom is off, `415`
- *   for another content type, `400` for a body that doesn't decode.
- *
- * Both answer `413` over their size (5 MiB, 1 MiB) and `429` past their rate per address (600, 240 a minute).
+ * OTLP (`application/json` or `application/x-protobuf`, gzip or not), each resource given `deployment.environment`
+ * and `network` when it lacks them, forwarded uncompressed to Axiom's dataset for the signal with the server's ingest
+ * token. `204` (accepted, dropped) when Axiom is off, `415` for another content type, `400` for a body that doesn't
+ * decode, `413` over 1 MiB and `429` past 240 a minute per address.
  */
 export const TelemetryProxyRoutes = Layer.effectDiscard(Effect.gen(function*() {
   const config = yield* TelemetryConfig
@@ -106,33 +92,6 @@ export const TelemetryProxyRoutes = Layer.effectDiscard(Effect.gen(function*() {
       })
     )
 
-  const ingest = Effect.gen(function*() {
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const posthog = config.posthog
-    if (posthog === undefined) return HttpServerResponse.empty({ status: 404 })
-    if (!(yield* within(request, "ingest", INGEST_PER_MINUTE))) return tooMany
-
-    const { path, query } = pathAndQueryOf(request.url)
-    const rest = path.replace(/^\/ingest/, "") || "/"
-    const host = rest.startsWith("/static/") ? posthog.assets : posthog.ingest
-    let outbound = HttpClientRequest.make(request.method as "GET")(`${host}${rest}${query}`)
-    for (const name of FORWARDED_HEADERS) {
-      const value = request.headers[name]
-      if (value !== undefined && name !== "content-type") outbound = HttpClientRequest.setHeader(outbound, name, value)
-    }
-    outbound = HttpClientRequest.setHeader(outbound, "x-forwarded-for", addressOf(request))
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      const body = yield* readBody(request, INGEST_MAX_BYTES)
-      if (body === undefined) return HttpServerResponse.empty({ status: 413 })
-      outbound = HttpClientRequest.bodyUint8Array(
-        outbound,
-        body,
-        request.headers["content-type"] ?? "application/octet-stream"
-      )
-    }
-    return yield* respond(outbound)
-  }).pipe(HttpMiddleware.withLoggerDisabled)
-
   const otlp = Effect.fnUntraced(function*(signal: "traces" | "logs" | "metrics") {
     const request = yield* HttpServerRequest.HttpServerRequest
     const axiom = config.axiom
@@ -162,8 +121,7 @@ export const TelemetryProxyRoutes = Layer.effectDiscard(Effect.gen(function*() {
     )
   }, HttpMiddleware.withLoggerDisabled)
 
-  yield* router.add("*", "/ingest/*", ingest)
   for (const signal of ["traces", "logs", "metrics"] as const) {
-    yield* router.add("POST", `/api/telemetry/v1/${signal}`, otlp(signal))
+    yield* router.add("POST", `/api/sync/${signal[0]}`, otlp(signal))
   }
 })).pipe(Layer.provide(RateLimiter.layer), Layer.provide(RateLimiter.layerStoreMemory))

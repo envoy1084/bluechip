@@ -18,8 +18,7 @@ describe("untracedRequest", () => {
   it.each([
     { name: "an API call", path: "/api/trades", expected: false },
     { name: "the live stream", path: "/api/events", expected: true },
-    { name: "telemetry's own export", path: "/api/telemetry/v1/traces", expected: true },
-    { name: "analytics' own requests", path: "/ingest/e/", expected: true },
+    { name: "telemetry's own export", path: "/api/sync/t", expected: true },
     { name: "a path that only starts like the stream", path: "/api/eventsx", expected: false }
   ])("$name", ({ path, expected }) => {
     assert.strictEqual(untracedRequest(path), expected)

@@ -27,6 +27,7 @@ import { AppConfig } from "../../config/AppConfig.ts"
 import { count, TelegramMessages } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { Assistant } from "../assistant/Assistant.ts"
 import { Conversations } from "../assistant/Conversations.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
@@ -91,6 +92,7 @@ export class ChatBot extends Context.Service<ChatBot, {
       const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
       const market = yield* MarketPrices
       const { publicOrigin } = yield* AppConfig
+      const analytics = yield* Analytics
 
       const post = (thread: ChatThread.ChatThread, reply: ChatReply) =>
         chat.post(thread, chatContent(reply, publicOrigin)).pipe(
@@ -186,6 +188,9 @@ export class ChatBot extends Context.Service<ChatBot, {
           const code = linkCodeIn(text)
           return yield* say(thread, code === null ? NOT_LINKED : yield* link(message, code))
         }
+        yield* analytics.capture(who.owner.id, { _tag: "telegram_message", kind: "text", command: null }, {
+          id: `${message.threadId}:${message.messageId}`
+        })
         yield* converse(thread, who, text)
       })
 

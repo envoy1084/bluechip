@@ -14,12 +14,13 @@ import * as Option from "effect/Option"
 import { AppConfig } from "../../config/AppConfig.ts"
 import { count, UsersSignedIn } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Notifications } from "../notifications/Notifications.ts"
 import { Challenges } from "./Challenges.ts"
 import { passkeyLabel } from "./PasskeyLabel.ts"
 import { Sessions } from "./Sessions.ts"
-import { deviceOf } from "./UserAgents.ts"
+import { deviceClassOf, deviceOf } from "./UserAgents.ts"
 import { WebAuthn } from "./WebAuthn.ts"
 
 // SimpleWebAuthn leaves unset options as `undefined`, which is not JSON; send them as the browser will read them.
@@ -36,6 +37,7 @@ export const AuthHandlers = HttpApiBuilder.group(
     const webAuthn = yield* WebAuthn
     const notifications = yield* Notifications
     const audit = yield* AuditLog
+    const analytics = yield* Analytics
 
     // Starts a session for the user on this browser and sets its cookie on the response. A sign-in on a device the
     // user never signed in on is a security notification (not the sign-up's first one).
@@ -60,6 +62,7 @@ export const AuthHandlers = HttpApiBuilder.group(
         secure: config.env === "production",
         expires: DateTime.toDateUtc(session.expiresAt)
       })
+      return session
     })
 
     return handlers.handleAll({
@@ -75,6 +78,19 @@ export const AuthHandlers = HttpApiBuilder.group(
         const label = passkeyLabel({ aaguid: passkey.aaguid, userAgent: request.headers["user-agent"] })
         const { me, passkeyId } = yield* accounts.register({ displayName: payload.displayName, passkey, label })
         yield* signIn(me.user.id, passkeyId, true)
+        yield* analytics.capture(me.user.id, {
+          _tag: "signed_up",
+          method: "passkey",
+          authenticator: payload.credential.authenticatorAttachment === "cross-platform"
+            ? "cross_platform"
+            : "platform",
+          device_class: deviceClassOf(request.headers["user-agent"])
+        }, {
+          id: me.user.id,
+          at: me.user.createdAt,
+          set: { passkeys_count: 1 },
+          setOnce: { signed_up_at: DateTime.formatIso(me.user.createdAt) }
+        })
         return me
       }),
       loginOptions: Effect.fn(function*() {
@@ -93,8 +109,13 @@ export const AuthHandlers = HttpApiBuilder.group(
           }
           const counter = yield* webAuthn.verifyAuthentication(payload.credential, challenge, passkey.value)
           yield* accounts.recordPasskeyUse(passkey.value.id, counter)
-          yield* signIn(passkey.value.userId as UserId, passkey.value.id as PasskeyId, false)
+          const session = yield* signIn(passkey.value.userId as UserId, passkey.value.id as PasskeyId, false)
           yield* count(UsersSignedIn, { method: "passkey", outcome: "ok" })
+          yield* analytics.capture(passkey.value.userId as UserId, {
+            _tag: "signed_in",
+            method: "discoverable",
+            new_device: session.newDevice
+          }, { id: session.id })
           return yield* accounts.me(passkey.value.userId as UserId)
         },
         Effect.tapErrorTag("SignatureRejected", () => count(UsersSignedIn, { method: "passkey", outcome: "rejected" }))

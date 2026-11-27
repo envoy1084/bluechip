@@ -1,12 +1,14 @@
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { fillOf } from "@bluechip/chain/market/Swaps"
+import { usdBucket } from "@bluechip/domain/analytics/Buckets"
+import type { TradeSource } from "@bluechip/domain/analytics/Properties"
 import { NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, TradeId, TxHash, UserId } from "@bluechip/domain/Ids"
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import { bpsBetween, Price, priceOf, Shares, Usdc } from "@bluechip/domain/market/Units"
 import { Trade, transition } from "@bluechip/domain/trading/Trade"
-import { and, eq } from "drizzle-orm"
+import { and, count as countRows, eq } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -27,6 +29,7 @@ import {
   TradesValue,
   usd
 } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { intents } from "../intents/tables.ts"
 import { Ledger } from "../ledger/Ledger.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
@@ -79,6 +82,7 @@ export class TradeLedger extends Context.Service<TradeLedger, {
       const balances = yield* AccountBalances
       const ledger = yield* Ledger
       const deployment = yield* ChainDeployment
+      const analytics = yield* Analytics
 
       const record = Effect.fn("TradeLedger.record")(function*(trade: typeof trades.$inferInsert) {
         const [row] = yield* db.insert(trades).values(trade).returning().pipe(Effect.orDie)
@@ -103,8 +107,13 @@ export class TradeLedger extends Context.Service<TradeLedger, {
       const measure = Effect.fnUntraced(function*(trade: TradeRow, receipt: Receipt | undefined) {
         const [intent] = trade.intentId === null ?
           [] :
-          yield* db.select({ source: intents.source, executor: intents.executor })
-            .from(intents).where(eq(intents.id, trade.intentId)).pipe(Effect.orDie)
+          yield* db.select({
+            source: intents.source,
+            sourceId: intents.sourceId,
+            executor: intents.executor,
+            batchId: intents.batchId,
+            createdAt: intents.createdAt
+          }).from(intents).where(eq(intents.id, trade.intentId)).pipe(Effect.orDie)
         const executor = intent?.executor ?? (trade.agentId === null ? "owner" : "agent")
         const source = sourceOf(intent?.source ?? "owner", executor)
         yield* Effect.annotateCurrentSpan({
@@ -113,8 +122,18 @@ export class TradeLedger extends Context.Service<TradeLedger, {
           "intent.source": source
         })
 
+        const userId = trade.userId as UserId
+        const settledAt = trade.settledAt ?? trade.createdAt
         if (trade.status !== "filled") {
-          return yield* count(TradesFailed, { reason: receipt === undefined ? "bundler" : "reverted", source })
+          const reason = receipt === undefined ? "bundler" : "reverted"
+          yield* count(TradesFailed, { reason, source })
+          return yield* analytics.capture(userId, {
+            _tag: "trade_failed",
+            symbol: trade.symbol,
+            side: trade.side,
+            source: source as TradeSource,
+            reason
+          }, { id: trade.id, at: settledAt })
         }
         const dollars = usd(trade.usdc)
         yield* Effect.annotateCurrentSpan("trade.usd", dollars)
@@ -132,6 +151,33 @@ export class TradeLedger extends Context.Service<TradeLedger, {
         if (costs?.slippage != null) {
           yield* recordMetric(TradesFees, usd(costs.slippage), { kind: "slippage", gas_paid_by: gasPaidBy })
         }
+
+        const [filled] = yield* db.select({ count: countRows() }).from(trades)
+          .where(and(eq(trades.userId, trade.userId), eq(trades.status, "filled"))).pipe(Effect.orDie)
+        const fills = filled?.count ?? 1
+        const asked = intent?.createdAt ?? trade.createdAt
+        yield* analytics.capture(userId, {
+          _tag: "trade_filled",
+          symbol: trade.symbol,
+          side: trade.side,
+          usd: dollars,
+          usd_bucket: usdBucket(dollars),
+          source: source as TradeSource,
+          executor,
+          agent_id: trade.agentId,
+          automation_id: intent?.source === "automation" ? intent.sourceId : null,
+          batch_id: intent?.batchId ?? null,
+          slippage_bps: trade.gapBps,
+          fee_usd: costs?.fee == null ? 0 : usd(costs.fee),
+          gas_sponsored: gasPaidBy === "sponsor",
+          is_first: fills === 1,
+          seconds_to_fill: Math.max(0, (DateTime.toEpochMillis(settledAt) - DateTime.toEpochMillis(asked)) / 1000)
+        }, {
+          id: trade.id,
+          at: settledAt,
+          set: { trades_count: fills },
+          setOnce: { first_trade_at: DateTime.formatIso(settledAt) }
+        })
       })
 
       const settle = Effect.fn("TradeLedger.settle")(

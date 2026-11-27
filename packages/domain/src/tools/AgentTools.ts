@@ -162,8 +162,8 @@ export const ExplainDecision = Tool.make("explainDecision", {
  * @since 0.0.0
  */
 export const PauseAgent = Tool.make("pauseAgent", {
-  description: "Shows a card to pause an agent: once the user confirms, bluechip sends none of its trades. Its " +
-    "policies stay locked onchain.",
+  description: "Asks the user to confirm pausing an agent: once they confirm, bluechip sends none of its trades. Its " +
+    "policies stay locked onchain. Nothing changes until they confirm.",
   parameters: AgentParameters,
   success: Card,
   failure: ToolProblem,
@@ -178,7 +178,7 @@ export const PauseAgent = Tool.make("pauseAgent", {
  * @since 0.0.0
  */
 export const ResumeAgent = Tool.make("resumeAgent", {
-  description: "Shows a card to resume a paused agent, applied once the user confirms.",
+  description: "Asks the user to confirm resuming a paused agent; it trades again once they confirm.",
   parameters: AgentParameters,
   success: Card,
   failure: ToolProblem,
@@ -193,7 +193,7 @@ export const ResumeAgent = Tool.make("resumeAgent", {
  * @since 0.0.0
  */
 export const PauseAll = Tool.make("pauseAll", {
-  description: "Shows a card to pause every agent at once, applied once the user confirms.",
+  description: "Asks the user to confirm pausing every agent at once; applied once they confirm.",
   success: Card,
   failure: ToolProblem,
   failureMode: "return",
@@ -207,9 +207,10 @@ export const PauseAll = Tool.make("pauseAll", {
  * @since 0.0.0
  */
 export const DraftAgent = Tool.make("draftAgent", {
-  description: "Drafts a new agent from a template and preset, with the user's stocks and any policy changes, and " +
-    "shows it as a card. It is locked onchain only when the user approves it with Face ID; check it with " +
-    "checkAgentSpec first when unsure.",
+  description: "Drafts a new agent from a template and preset, with the user's stocks and any policy changes. " +
+    "Returns what it can and never does and the automations it comes with: tell the user its key limits in words. " +
+    "It is locked onchain only when the user approves it with Face ID; check it with checkAgentSpec first when " +
+    "unsure.",
   parameters: Schema.Struct({ name: AgentName, draft: SpecDraft }),
   success: Card,
   failure: ToolProblem,
@@ -224,8 +225,8 @@ export const DraftAgent = Tool.make("draftAgent", {
  * @since 0.0.0
  */
 export const ChangeAgentPolicies = Tool.make("changeAgentPolicies", {
-  description: "Prepares a change to an active agent's policies and shows what changes as a card; the user signs it " +
-    "with Face ID.",
+  description: "Prepares a change to an active agent's policies for the user's Face ID. Returns what changes, " +
+    "policy by policy, and whether it loosens or tightens the agent: tell the user that in words.",
   parameters: Schema.Struct({ agentId: AgentIdParam, changes: SpecPatch }),
   success: Card,
   failure: ToolProblem,
@@ -240,8 +241,8 @@ export const ChangeAgentPolicies = Tool.make("changeAgentPolicies", {
  * @since 0.0.0
  */
 export const RenewAgent = Tool.make("renewAgent", {
-  description: "Prepares a renewal of an agent's session (a new key, the same policies, 90 more days) as a card the " +
-    "user signs with Face ID.",
+  description: "Prepares a renewal of an agent's session (a new key, the same policies, 90 more days) for the " +
+    "user's Face ID.",
   parameters: AgentParameters,
   success: Card,
   failure: ToolProblem,
@@ -256,8 +257,8 @@ export const RenewAgent = Tool.make("renewAgent", {
  * @since 0.0.0
  */
 export const RemoveAgent = Tool.make("removeAgent", {
-  description: "Prepares the removal of an agent (revoking its session onchain) as a card the user signs with Face " +
-    "ID. A draft is removed at once.",
+  description: "Prepares the removal of an agent (revoking its session onchain) for the user's Face ID. A draft is " +
+    "removed at once.",
   parameters: AgentParameters,
   success: Card,
   failure: ToolProblem,

@@ -59,7 +59,7 @@ export const WEB_EVENTS = [
 
   // Settings, errors, help
   Schema.TaggedStruct("settings_changed", {
-    setting: Schema.Literals(["time_zone", "quiet_hours", "notification_rule", "analytics_opt_out"])
+    setting: Schema.Literals(["time_zone", "quiet_hours", "notification_rule"])
   }),
   Schema.TaggedStruct("api_error", { endpoint_group: Schema.String, error: Schema.String }),
   Schema.TaggedStruct("help_article_viewed", { slug: Schema.String })

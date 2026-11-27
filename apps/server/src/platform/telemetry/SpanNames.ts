@@ -54,10 +54,10 @@ const UNTRACED = new Set(["/health", "/api/version", "/api/events", "/api/rpc"])
 /**
  * Requests that make no trace: health checks, the version, the live event stream (open for hours; counted by
  * `http.server.active_streams` instead), the web app's chain reads (`/api/rpc`), the telemetry the web app sends
- * through the server (`/ingest`, `/api/telemetry`), and preflights.
+ * through the server (`/api/sync/*`), and preflights.
  */
 export const isUntraced = (request: HttpServerRequest.HttpServerRequest) => {
   if (request.method === "OPTIONS") return true
   const path = pathOf(request.url)
-  return UNTRACED.has(path) || path === "/ingest" || path.startsWith("/ingest/") || path.startsWith("/api/telemetry/")
+  return UNTRACED.has(path) || path.startsWith("/api/sync/")
 }

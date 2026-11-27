@@ -26,7 +26,7 @@ const stockLine = (stock: Stock) =>
  */
 export const GetPortfolio = Tool.make("getPortfolio", {
   description: "The user's portfolio now: cash, each holding with its value and weight, and the change since the " +
-    "previous close. The user sees it as a card; refer to it rather than repeating every number.",
+    "previous close. Answer with the total, the cash and the holdings that matter to the question, not every line.",
   success: Portfolio,
   failure: ToolProblem,
   failureMode: "return",

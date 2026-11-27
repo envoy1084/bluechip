@@ -1,6 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { assetsOf, readBalances } from "@bluechip/chain/funding/Balances"
+import { fundedBucket, usdBucket } from "@bluechip/domain/analytics/Buckets"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { UserId } from "@bluechip/domain/Ids"
 import { reconcile } from "@bluechip/domain/ledger/Reconcile"
@@ -26,6 +27,7 @@ import {
   usd
 } from "../../platform/telemetry/Metrics.ts"
 import { accounts, users } from "../accounts/tables.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { transfers } from "../funding/tables.ts"
 import { toTransfer } from "../funding/Transfers.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
@@ -78,6 +80,7 @@ export class Reconciliation extends Context.Service<Reconciliation, {
       const assets = assetsOf(deployment)
       const market = yield* MarketPrices
       const ledger = yield* Ledger
+      const analytics = yield* Analytics
       const live = yield* LiveEvents
       const outbox = yield* NotificationOutbox
       const notifications = yield* Notifications
@@ -107,6 +110,44 @@ export class Reconciliation extends Context.Service<Reconciliation, {
           }
         }
         return found
+      })
+
+      // The deposits told to analytics: each with whether it was the first, and the first one also as `first_funded`,
+      // with what the person has put in overall as a range.
+      const tellDeposits = Effect.fnUntraced(function*(
+        userId: UserId,
+        added: ReadonlyArray<typeof transfers.$inferSelect>
+      ) {
+        const [deposits, [user]] = yield* Effect.all([
+          db.select({ id: transfers.id, amount: transfers.amount }).from(transfers)
+            .where(and(eq(transfers.userId, userId as `user_${string}`), eq(transfers.kind, "deposit")))
+            .orderBy(transfers.createdAt, transfers.id),
+          db.select({ createdAt: users.createdAt }).from(users).where(eq(users.id, userId as `user_${string}`))
+        ]).pipe(Effect.orDie)
+        const total = usd(deposits.reduce((sum, deposit) => sum + deposit.amount, BigInt(0)))
+        const set = { has_funded: true, funded_bucket: fundedBucket(total) }
+
+        for (const row of added) {
+          const dollars = usd(row.amount)
+          const isFirst = deposits[0]?.id === row.id
+          const fact = { id: row.id, at: row.createdAt, set }
+          yield* analytics.capture(userId, {
+            _tag: "deposit_detected",
+            usd: dollars,
+            usd_bucket: usdBucket(dollars),
+            is_first: isFirst
+          }, isFirst ? { ...fact, setOnce: { first_funded_at: DateTime.formatIso(row.createdAt) } } : fact)
+          if (isFirst && user !== undefined) {
+            yield* analytics.capture(userId, {
+              _tag: "first_funded",
+              usd_bucket: usdBucket(dollars),
+              hours_since_signup: Math.max(
+                0,
+                (DateTime.toEpochMillis(row.createdAt) - DateTime.toEpochMillis(user.createdAt)) / 3_600_000
+              )
+            }, fact)
+          }
+        }
       })
 
       const check = Effect.fn("Reconciliation.check")(
@@ -313,6 +354,7 @@ export class Reconciliation extends Context.Service<Reconciliation, {
               yield* count(Deposits, { network: chain.network })
               yield* recordMetric(DepositsValue, usd(row.amount), { network: chain.network })
             }
+            if (transferRows.length > 0) yield* tellDeposits(userId, transferRows)
             for (const row of adjustmentRows) {
               yield* count(ReconcileUnexplained, { asset: row.asset === "USDC" ? "usdc" : "stock" })
             }

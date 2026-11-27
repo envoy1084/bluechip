@@ -59,6 +59,6 @@ export default defineConfig(({ mode }) => {
     ],
     // The release analytics and telemetry report, as the server's (`npm_package_version` when built by pnpm).
     define: { "import.meta.env.VITE_APP_VERSION": JSON.stringify(process.env["npm_package_version"] ?? "0.0.0") },
-    server: { proxy: { "/api": server, "/auth": server, "/ingest": server } }
+    server: { proxy: { "/api": server, "/auth": server } }
   }
 })

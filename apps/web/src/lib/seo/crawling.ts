@@ -18,8 +18,7 @@ const PRIVATE_PATHS = [
   "/welcome/",
   "/dev/",
   "/api/",
-  "/auth/",
-  "/ingest/"
+  "/auth/"
 ]
 
 /** `robots.txt`: production opens its public pages and points at the sitemap; paper money and local close everything. */

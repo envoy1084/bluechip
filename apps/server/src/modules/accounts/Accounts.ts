@@ -15,6 +15,7 @@ import { toWebAuthnAccount } from "viem/account-abstraction"
 import { Database } from "../../platform/db/Database.ts"
 import { Namera } from "../../platform/namera/Namera.ts"
 import { count, UsersEligibility, UsersSignedUp } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import type { NewPasskey } from "../auth/WebAuthn.ts"
 import { accounts, passkeys, users } from "./tables.ts"
 
@@ -97,6 +98,7 @@ export class Accounts extends Context.Service<Accounts, {
       const db = yield* Database
       const chain = yield* ChainClient
       const namera = yield* Namera
+      const analytics = yield* Analytics
 
       const register = Effect.fn("Accounts.register")(function*(input: {
         readonly displayName: string | undefined
@@ -175,6 +177,13 @@ export class Accounts extends Context.Service<Accounts, {
             .returning()
             .pipe(Effect.orDie)
           yield* count(UsersEligibility, { answer: eligibility })
+          if (eligibility !== "unknown") {
+            const answer = eligibility === "us" ? "us_person" as const : "eligible" as const
+            yield* analytics.capture(userId, { _tag: "eligibility_answered", answer }, {
+              id: `${userId}:${answer}`,
+              set: { eligibility: answer }
+            })
+          }
           return toUser(row!)
         }
       )

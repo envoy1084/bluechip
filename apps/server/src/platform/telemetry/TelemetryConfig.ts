@@ -25,8 +25,8 @@ export interface AxiomConfig {
 /**
  * The server's telemetry settings. Axiom (`axiom`) is on only when `DEPLOYMENT_ENVIRONMENT` is `paper` or
  * `production` and `AXIOM_TOKEN`, `AXIOM_EDGE_DOMAIN` (or `AXIOM_DOMAIN`) and the three `AXIOM_*_DATASET`s are all set; otherwise nothing is
- * exported and the native tracer keeps spans in the process. `posthog` is the PostHog ingest the `/ingest` proxy
- * forwards to, on the same two environments. `sampleReads` (`TRACE_SAMPLE_READS`, 0 to 1) is the share of `GET`
+ * exported and the native tracer keeps spans in the process. `posthog` is PostHog's ingest host (`POSTHOG_HOST`)
+ * the server's own analytics posts to, on the same two environments. `sampleReads` (`TRACE_SAMPLE_READS`, 0 to 1) is the share of `GET`
  * requests traced: 20% in production, all of them elsewhere.
  */
 export class TelemetryConfig extends Context.Service<TelemetryConfig, {
@@ -34,7 +34,7 @@ export class TelemetryConfig extends Context.Service<TelemetryConfig, {
   readonly network: Network
   readonly release: string
   readonly axiom: AxiomConfig | undefined
-  readonly posthog: { readonly ingest: string; readonly assets: string } | undefined
+  readonly posthog: { readonly ingest: string } | undefined
   readonly sampleReads: number
 }>()("@bluechip/server/TelemetryConfig") {
   static readonly layer = Layer.effect(
@@ -54,8 +54,7 @@ export class TelemetryConfig extends Context.Service<TelemetryConfig, {
         metrics: Config.String("AXIOM_METRICS_DATASET")
       }))
       const posthog = {
-        ingest: yield* Config.String("POSTHOG_HOST").pipe(Config.withDefault("https://us.i.posthog.com")),
-        assets: yield* Config.String("POSTHOG_ASSETS_HOST").pipe(Config.withDefault("https://us-assets.i.posthog.com"))
+        ingest: yield* Config.String("POSTHOG_HOST").pipe(Config.withDefault("https://us.i.posthog.com"))
       }
       const sampleReads = yield* Config.Number("TRACE_SAMPLE_READS").pipe(
         Config.withDefault(environment === "production" ? 0.2 : 1)

@@ -10,6 +10,7 @@ import { createServer } from "node:http"
 import { ApiRoutes } from "./Api.ts"
 import { AppConfig } from "./config/AppConfig.ts"
 import { LoggingLive } from "./config/Logging.ts"
+import { Analytics } from "./modules/analytics/Analytics.ts"
 import { AssistantModels } from "./modules/assistant/AssistantModels.ts"
 import { TelegramLive } from "./modules/channels/telegram/Telegram.ts"
 import { Alpaca } from "./modules/market/alpaca/Alpaca.ts"
@@ -27,7 +28,7 @@ import { ServicesLive } from "./Services.ts"
 
 /**
  * Every HTTP route the server answers: health, the API under `/api` (passkey auth included) and the web app's
- * telemetry proxy (`/ingest`, `/api/telemetry`), every request measured.
+ * telemetry route (`/api/sync/*`), every request measured.
  */
 export const Routes = Layer.mergeAll(
   HealthRoutes,
@@ -59,6 +60,7 @@ export const makeServer = <Out, E, RA = never, R = never>(
     Layer.provideMerge(ServicesLive),
     Layer.provide(ReferencePrices.layer),
     Layer.provide(adapters),
+    Layer.provide(Analytics.layer),
     Layer.provide(Layer.merge(Chat.layer, FetchHttpClient.layer)),
     Layer.provide(EngineLive),
     Layer.provide(Database.layer),

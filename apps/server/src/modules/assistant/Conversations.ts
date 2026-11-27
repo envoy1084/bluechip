@@ -8,7 +8,7 @@ import {
 } from "@bluechip/domain/assistant/Conversation"
 import { NotFound } from "@bluechip/domain/Errors"
 import { type AgentId, ConversationId, type MessageId } from "@bluechip/domain/Ids"
-import { and, asc, desc, eq, lt } from "drizzle-orm"
+import { and, asc, count as countRows, desc, eq, lt } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -17,6 +17,7 @@ import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { assistantCards, conversations, messages } from "./tables.ts"
 
@@ -88,6 +89,7 @@ export class Conversations extends Context.Service<Conversations, {
     Effect.gen(function*() {
       const db = yield* Database
       const agents = yield* Agents
+      const analytics = yield* Analytics
 
       const start = Effect.fn("Conversations.start")(
         function*(owner: Owner, input: { readonly agentId: AgentId | null; readonly surface?: Surface | undefined }) {
@@ -103,6 +105,13 @@ export class Conversations extends Context.Service<Conversations, {
             createdAt: now,
             updatedAt: now
           }).returning().pipe(Effect.orDie)
+          const [started] = yield* db.select({ count: countRows() }).from(conversations)
+            .where(eq(conversations.userId, owner.id as `user_${string}`)).pipe(Effect.orDie)
+          yield* analytics.capture(owner.id, {
+            _tag: "conversation_started",
+            surface: row!.surface,
+            has_agent: row!.agentId !== null
+          }, { id: row!.id, at: now, set: { assistant_conversations_count: started?.count ?? 1 } })
           return toConversation(row!)
         }
       )

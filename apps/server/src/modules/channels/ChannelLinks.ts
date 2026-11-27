@@ -17,6 +17,7 @@ import { createHash, randomInt } from "node:crypto"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { ChannelsLinks as ChannelsLinksMetric, count } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Notifications } from "../notifications/Notifications.ts"
 import { channelLinkCodes, channelLinks } from "./tables.ts"
@@ -66,6 +67,7 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
       const db = yield* Database
       const notifications = yield* Notifications
       const audit = yield* AuditLog
+      const analytics = yield* Analytics
       const telegram = yield* TelegramConfig
 
       const createCode = Effect.fn("ChannelLinks.createCode")(function*(userId: UserId, platform: Platform) {
@@ -108,7 +110,17 @@ export class ChannelLinks extends Context.Service<ChannelLinks, {
             subjectType: "channelLink",
             subjectId: row.id,
             data: change === "blocked" ? { platform: row.platform, reason: "blocked" } : { platform: row.platform }
-          }).pipe(Effect.andThen(count(ChannelsLinksMetric, { platform: row.platform, change })))
+          }).pipe(
+            Effect.andThen(count(ChannelsLinksMetric, { platform: row.platform, change })),
+            Effect.andThen(
+              row.platform !== "telegram" ? Effect.void : analytics.capture(row.userId as UserId, {
+                _tag: change === "linked" ? "telegram_linked" : "telegram_unlinked"
+              }, {
+                id: `${row.id}:${change === "linked" ? "linked" : "unlinked"}`,
+                set: { telegram_linked: change === "linked" }
+              })
+            )
+          )
         )
 
       const ofChat = Effect.fn("ChannelLinks.ofChat")(function*(platform: Platform, chatId: string) {

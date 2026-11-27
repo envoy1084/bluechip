@@ -1,5 +1,6 @@
 import { EVENTS, toCapture } from "@bluechip/domain/analytics/Events"
 import { FORBIDDEN_METRIC_ATTRIBUTES, METRICS } from "@bluechip/domain/analytics/Metrics"
+import { PERSON_PROPERTIES } from "@bluechip/domain/analytics/Person"
 import { isForbiddenProperty } from "@bluechip/domain/analytics/Properties"
 import { ServerEvent } from "@bluechip/domain/analytics/ServerEvents"
 import { WebEvent } from "@bluechip/domain/analytics/WebEvents"
@@ -58,6 +59,12 @@ describe("the event catalogue", () => {
     const event = WebEvent.make({ _tag: "stock_viewed", symbol: "NVDA", from: "home" })
 
     assert.deepStrictEqual(toCapture(event), { event: "stock_viewed", properties: { symbol: "NVDA", from: "home" } })
+  })
+})
+
+describe("the person properties", () => {
+  it("no property has a forbidden name", () => {
+    assert.deepStrictEqual(PERSON_PROPERTIES.filter(isForbiddenProperty), [])
   })
 })
 

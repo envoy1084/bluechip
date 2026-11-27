@@ -18,6 +18,7 @@ import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, FaucetMints, FaucetValue, record as recordMetric, usd } from "../../platform/telemetry/Metrics.ts"
 import { users } from "../accounts/tables.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { Operator } from "../paper/Operator.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { faucetGrants } from "./tables.ts"
@@ -43,6 +44,7 @@ export class Faucet extends Context.Service<Faucet, {
       const operator = yield* Effect.serviceOption(Operator)
       const balances = yield* AccountBalances
       const live = yield* LiveEvents
+      const analytics = yield* Analytics
 
       // Sends the test money and answers its transaction (none on the local chain, whose controls send at once).
       const send = (account: `0x${string}`, amount: Usdc): Effect.Effect<TxHash | null, ChainError> => {
@@ -93,6 +95,10 @@ export class Faucet extends Context.Service<Faucet, {
 
           if (reserved.id === null) {
             yield* count(FaucetMints, { outcome: "over_daily_limit" })
+            yield* analytics.capture(user.id, { _tag: "faucet_refused", usd: usd(amount), reason: "daily_limit" }, {
+              id: `${user.id}:refused:${DateTime.formatIso(now)}`,
+              at: now
+            })
             return yield* new FaucetLimitReached({
               remaining: reserved.before.remaining,
               resetsAt: reserved.before.resetsAt
@@ -104,7 +110,13 @@ export class Faucet extends Context.Service<Faucet, {
             Effect.tapError((error) =>
               Effect.andThen(
                 Effect.logWarning("Faucet: the test money wasn't sent", error),
-                count(FaucetMints, { outcome: "failed" })
+                Effect.andThen(
+                  count(FaucetMints, { outcome: "failed" }),
+                  analytics.capture(user.id, { _tag: "faucet_refused", usd: usd(amount), reason: "failed" }, {
+                    id: grantId,
+                    at: now
+                  })
+                )
               )
             ),
             Effect.catchTag("ChainError", () =>
@@ -118,6 +130,7 @@ export class Faucet extends Context.Service<Faucet, {
           }
 
           yield* count(FaucetMints, { outcome: "minted" })
+          yield* analytics.capture(user.id, { _tag: "faucet_minted", usd: usd(amount) }, { id: grantId, at: now })
           yield* recordMetric(FaucetValue, usd(amount), {})
           yield* balances.invalidate(user.account)
           yield* live.publish(LiveEvent.cases.PortfolioChanged.make({}), user.id)

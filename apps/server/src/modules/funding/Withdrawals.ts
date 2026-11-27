@@ -1,6 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { assetsOf } from "@bluechip/chain/funding/Balances"
+import { usdBucket } from "@bluechip/domain/analytics/Buckets"
 import {
   type Conflict,
   InsufficientCash,
@@ -32,6 +33,7 @@ import {
   WithdrawalsValue
 } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
 import { AccountBalances } from "../portfolio/AccountBalances.ts"
 import { OwnerOperations, type OwnerPasskey } from "../signing/OwnerOperations.ts"
@@ -69,6 +71,7 @@ export class Withdrawals extends Context.Service<Withdrawals, {
       const operations = yield* OwnerOperations
       const signing = yield* SigningRequests
       const scope = yield* Effect.scope
+      const analytics = yield* Analytics
 
       const toSigningRequest = Effect.fnUntraced(function*(row: SigningRequestRow) {
         return new SigningRequest({
@@ -108,6 +111,14 @@ export class Withdrawals extends Context.Service<Withdrawals, {
             const outcome = row.status === "confirmed" ? "sent" : "failed"
             yield* count(WithdrawalsMetric, { outcome })
             yield* recordMetric(WithdrawalsValue, usd(BigInt(row.amount ?? 0)), { outcome })
+            const usd_bucket = usdBucket(usd(BigInt(row.amount ?? 0)))
+            yield* analytics.capture(
+              owner.id,
+              outcome === "sent" ?
+                { _tag: "withdrawal_sent", usd_bucket } :
+                { _tag: "withdrawal_failed", usd_bucket, reason: row.txHash === null ? "not_included" : "reverted" },
+              { id: row.id, at: settledAt }
+            )
           }
 
           // Fresh balances before the events, so a client that refetches on them already sees the money gone.
@@ -197,6 +208,10 @@ export class Withdrawals extends Context.Service<Withdrawals, {
           createdAt: yield* DateTime.now
         }).returning().pipe(Effect.orDie)
 
+        yield* analytics.capture(owner.id, {
+          _tag: "withdrawal_requested",
+          usd_bucket: usdBucket(usd(row!.amount))
+        }, { id: row!.id, at: row!.createdAt })
         yield* track(row!.id, owner, passkey, userOpHash)
         return toTransfer(row!)
       })

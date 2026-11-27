@@ -14,7 +14,7 @@ const PAPER: TelemetryConfig["Service"] = {
     url: "https://axiom.test",
     datasets: { traces: "bluechip-traces", logs: "bluechip-logs", metrics: "bluechip-metrics" }
   },
-  posthog: { ingest: "https://posthog.test", assets: "https://assets.posthog.test" },
+  posthog: { ingest: "https://posthog.test" },
   sampleReads: 1
 }
 const DEVELOPMENT: TelemetryConfig["Service"] = {
@@ -27,12 +27,12 @@ const DEVELOPMENT: TelemetryConfig["Service"] = {
 const spans = JSON.stringify({ resourceSpans: [{ resource: { attributes: [] }, scopeSpans: [] }] })
 
 describe("the telemetry proxy", () => {
-  describe("POST /api/telemetry/v1/:signal", () => {
+  describe("POST /api/sync/{t,l,m}", () => {
     it.effect("forwards JSON traces to Axiom's traces dataset with the server's token, stamped", () =>
       Effect.gen(function*() {
         const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
 
-        const response = yield* proxy.send("/api/telemetry/v1/traces", {
+        const response = yield* proxy.send("/api/sync/t", {
           method: "POST",
           headers: { "content-type": "application/json", cookie: "bluechip_session=secret" },
           body: spans
@@ -59,7 +59,7 @@ describe("the telemetry proxy", () => {
       Effect.gen(function*() {
         const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
 
-        const response = yield* proxy.send("/api/telemetry/v1/metrics", {
+        const response = yield* proxy.send("/api/sync/m", {
           method: "POST",
           headers: { "content-type": "application/json", "content-encoding": "gzip" },
           body: gzipSync(JSON.stringify({ resourceMetrics: [] }))
@@ -76,7 +76,7 @@ describe("the telemetry proxy", () => {
       Effect.gen(function*() {
         const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
 
-        const response = yield* proxy.send("/api/telemetry/v1/logs", {
+        const response = yield* proxy.send("/api/sync/l", {
           method: "POST",
           headers: { "content-type": "text/plain" },
           body: "hello"
@@ -89,7 +89,7 @@ describe("the telemetry proxy", () => {
       Effect.gen(function*() {
         const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
 
-        const response = yield* proxy.send("/api/telemetry/v1/logs", {
+        const response = yield* proxy.send("/api/sync/l", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: "{"
@@ -102,7 +102,7 @@ describe("the telemetry proxy", () => {
       Effect.gen(function*() {
         const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
 
-        const response = yield* proxy.send("/api/telemetry/v1/traces", {
+        const response = yield* proxy.send("/api/sync/t", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: "x".repeat(1024 * 1024 + 1)
@@ -115,66 +115,13 @@ describe("the telemetry proxy", () => {
       Effect.gen(function*() {
         const proxy = yield* TelemetryUpstreamTest.proxy(DEVELOPMENT)
 
-        const response = yield* proxy.send("/api/telemetry/v1/traces", {
+        const response = yield* proxy.send("/api/sync/t", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: spans
         })
 
         assert.deepStrictEqual([response.status, (yield* proxy.received).length], [204, 0])
-      }))
-  })
-
-  describe("* /ingest/*", () => {
-    it.effect("forwards an event batch to PostHog's ingest with its path, query and the browser's address", () =>
-      Effect.gen(function*() {
-        const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
-
-        const response = yield* proxy.send("/ingest/e/?compression=gzip-js&ver=1", {
-          method: "POST",
-          headers: {
-            "content-type": "text/plain",
-            cookie: "bluechip_session=secret",
-            "x-forwarded-for": "203.0.113.7"
-          },
-          body: "batch"
-        })
-
-        const [sent] = yield* proxy.received
-        assert.deepStrictEqual(
-          [
-            response.status,
-            response.headers.get("set-cookie"),
-            sent!.method,
-            sent!.url,
-            sent!.headers["x-forwarded-for"],
-            sent!.headers["cookie"],
-            new TextDecoder().decode(sent!.body)
-          ],
-          [200, null, "POST", "https://posthog.test/e/?compression=gzip-js&ver=1", "203.0.113.7", undefined, "batch"]
-        )
-      }))
-
-    it.effect("loads PostHog's scripts from its assets host", () =>
-      Effect.gen(function*() {
-        const proxy = yield* TelemetryUpstreamTest.proxy(PAPER)
-
-        yield* proxy.send("/ingest/static/recorder.js?v=1.2")
-
-        const [sent] = yield* proxy.received
-        assert.deepStrictEqual([sent!.method, sent!.url], [
-          "GET",
-          "https://assets.posthog.test/static/recorder.js?v=1.2"
-        ])
-      }))
-
-    it.effect("404 and nothing forwarded outside paper and production", () =>
-      Effect.gen(function*() {
-        const proxy = yield* TelemetryUpstreamTest.proxy(DEVELOPMENT)
-
-        const response = yield* proxy.send("/ingest/e/", { method: "POST", body: "batch" })
-
-        assert.deepStrictEqual([response.status, (yield* proxy.received).length], [404, 0])
       }))
   })
 })

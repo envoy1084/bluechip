@@ -1,6 +1,7 @@
 import { ChainClient } from "@bluechip/chain/ChainClient"
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
 import { swapCallGas, swapCalls } from "@bluechip/chain/market/Swaps"
+import { usdBucket } from "@bluechip/domain/analytics/Buckets"
 import {
   Conflict,
   InsufficientCash,
@@ -33,6 +34,7 @@ import type { Hex } from "viem"
 import { Database } from "../../platform/db/Database.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { accounts } from "../accounts/tables.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { type IntentRow, IntentStore } from "../intents/IntentStore.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
 import { Quoter } from "../market/Quoter.ts"
@@ -114,6 +116,7 @@ export class Trades extends Context.Service<Trades, {
       const operations = yield* OwnerOperations
       const signing = yield* SigningRequests
       const scope = yield* Effect.scope
+      const analytics = yield* Analytics
 
       // Each leg of a request as its payload keeps it: the trade, its quote, and the intent it carries out.
       const PreparedLegs = Schema.fromJsonString(Schema.toCodecJson(Schema.Array(Schema.Struct({
@@ -218,11 +221,30 @@ export class Trades extends Context.Service<Trades, {
           const selling = ordered.some(({ leg }) => leg.side === "sell")
           if (!selling && buying > cash) return yield* new InsufficientCash({ available: cash })
 
-          const quotes = yield* Effect.forEach(ordered, ({ leg }) =>
+          // A sale's dollars are known only once quoted: a failed one counts in the smallest range.
+          const quotes = yield* Effect.forEach(ordered, ({ leg }, index) =>
             quoter.quote(
               "usdc" in leg.amount
                 ? { symbol: leg.symbol, side: "buy", usdc: leg.amount.usdc }
                 : { symbol: leg.symbol, side: "sell", shares: leg.amount.shares }
+            ).pipe(
+              Effect.tap((quote) =>
+                analytics.capture(owner.id, {
+                  _tag: "quote_requested",
+                  symbol: leg.symbol,
+                  side: leg.side,
+                  usd_bucket: usdBucket(Number(quote.usdc) / 1e6)
+                }, { id: `${requestId}:${index}` })
+              ),
+              Effect.tapError((error) =>
+                analytics.capture(owner.id, {
+                  _tag: "quote_failed",
+                  symbol: leg.symbol,
+                  side: leg.side,
+                  usd_bucket: usdBucket("usdc" in leg.amount ? Number(leg.amount.usdc) / 1e6 : 0),
+                  reason: error._tag === "QuoteUnavailable" ? error.reason : "notTradable"
+                }, { id: `${requestId}:${index}` })
+              )
             ))
           const fromSales = quotes.reduce(
             (sum, quote) => quote.side === "sell" ? sum + quote.minimumOut : sum,
@@ -341,6 +363,12 @@ export class Trades extends Context.Service<Trades, {
             createdAt: now
           })
           rows.push(row)
+          yield* analytics.capture(owner.id, {
+            _tag: "trade_signed",
+            symbol: quote.symbol,
+            side: quote.side,
+            usd_bucket: usdBucket(Number(quote.usdc) / 1e6)
+          }, { id: row.id, at: now })
 
           const intent = sending[index]
           if (intent === undefined) continue

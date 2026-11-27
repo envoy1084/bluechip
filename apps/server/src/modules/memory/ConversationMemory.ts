@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm"
 import * as LanguageModel from "effect/ai/LanguageModel"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
@@ -87,7 +88,7 @@ export class ConversationMemory extends Context.Service<ConversationMemory, {
           const words = wordsOf(message, { tools: true })
           return words.length === 0 ? [] : [`${message.role === "user" ? "User" : "Assistant"}: ${words}`]
         }).join("\n")
-        const response = yield* models.small(LanguageModel.generateObject({
+        const [elapsed, response] = yield* Effect.timed(models.small(LanguageModel.generateObject({
           objectName: "conversation_summary",
           schema: Summary,
           prompt: [
@@ -98,8 +99,11 @@ export class ConversationMemory extends Context.Service<ConversationMemory, {
                 `<transcript>\n${transcript}\n</transcript>`
             }
           ]
-        }))
-        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "memory")
+        })))
+        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "memory", {
+          latencyMs: Duration.toMillis(elapsed),
+          $ai_stop_reason: response.finishReason
+        })
 
         const now = yield* DateTime.now
         const text = response.value.summary.trim()

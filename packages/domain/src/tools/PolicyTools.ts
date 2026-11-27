@@ -108,8 +108,8 @@ export const CheckAgentSpec = Tool.make("checkAgentSpec", {
  * @since 0.0.0
  */
 export const SaveTemplate = Tool.make("saveTemplate", {
-  description: "Shows a card to save a set of policies as a template (an existing agent's, or a draft), saved once " +
-    "the user confirms.",
+  description: "Asks the user to confirm saving a set of policies as a template (an existing agent's, or a draft); " +
+    "saved once they confirm.",
   parameters: Schema.Struct({
     name: TemplateName,
     agentId: Schema.NullOr(AgentIdParam).annotate({ description: "Save this agent's policies; null to save a draft." }),

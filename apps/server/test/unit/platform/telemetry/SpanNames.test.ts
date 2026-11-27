@@ -21,9 +21,7 @@ describe("isUntraced", () => {
     ["GET", "/api/version", true],
     ["GET", "/api/events", true],
     ["POST", "/api/rpc", true],
-    ["POST", "/ingest/e/?ip=0", true],
-    ["GET", "/ingest/static/array.js", true],
-    ["POST", "/api/telemetry/v1/traces", true],
+    ["POST", "/api/sync/t", true],
     ["OPTIONS", "/api/intents", true],
     ["POST", "/api/intents", false],
     ["GET", "/api/portfolio", false]

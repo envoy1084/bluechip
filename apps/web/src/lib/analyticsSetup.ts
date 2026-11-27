@@ -8,6 +8,8 @@ export interface AnalyticsSetup {
   readonly environment: typeof Environment.Type
   readonly network: "sepolia" | "base"
   readonly projectKey: string
+  /** Where posthog-js sends: the PostHog reverse proxy on our own domain (`VITE_POSTHOG_HOST`). */
+  readonly posthogHost: string
   readonly appVersion: string
 }
 
@@ -19,6 +21,8 @@ export interface AnalyticsSwitches {
   readonly preview: boolean
   readonly network: Network
   readonly projectKey: string | undefined
+  /** `VITE_POSTHOG_HOST`. */
+  readonly posthogHost: string | undefined
   /** `VITE_DEPLOYMENT_ENVIRONMENT`, when the build names its deployment instead of deriving it from the network. */
   readonly deploymentEnvironment: string | undefined
   readonly appVersion: string
@@ -26,18 +30,25 @@ export interface AnalyticsSwitches {
 
 /**
  * Whether and where this page reports: only a paper or production build (never the development server, never
- * preview mode, never the local chain) with PostHog's project key. `null` turns analytics and telemetry off.
+ * preview mode, never the local chain) with PostHog's project key and host. `null` turns analytics and telemetry off.
  */
 export const analyticsSetup = (switches: AnalyticsSwitches): AnalyticsSetup | null => {
   if (switches.dev || switches.preview) return null
   if (switches.network === "local") return null
   if (switches.projectKey === undefined || switches.projectKey.trim() === "") return null
+  if (switches.posthogHost === undefined || switches.posthogHost.trim() === "") return null
 
   const derived = switches.network === "sepolia" ? "paper" : "production"
   const environment = switches.deploymentEnvironment === "paper" || switches.deploymentEnvironment === "production"
     ? switches.deploymentEnvironment
     : derived
-  return { environment, network: switches.network, projectKey: switches.projectKey, appVersion: switches.appVersion }
+  return {
+    environment,
+    network: switches.network,
+    projectKey: switches.projectKey,
+    posthogHost: switches.posthogHost.replace(/\/+$/, ""),
+    appVersion: switches.appVersion
+  }
 }
 
 const URL_PROPERTIES = ["$current_url", "$referrer", "$initial_current_url", "$initial_referrer", "$prev_pageview_url"]
@@ -71,16 +82,16 @@ export const templateCapture = (capture: CaptureResult, origin: string): Capture
 }
 
 /**
- * PostHog's settings for this page. Events go through bluechip's own server (`/ingest`, so ad blockers keep the
- * funnels whole); only identified people get a profile; events are the typed catalogue's (no autocapture), plus
+ * PostHog's settings for this page. Events go to PostHog's reverse proxy on our own domain (`VITE_POSTHOG_HOST`, so
+ * ad blockers keep the funnels whole); only identified people get a profile; events are the typed catalogue's (no autocapture), plus
  * pageviews by route, page leaves, exceptions and web vitals. Replays never record what anyone types, nor the network
  * bodies (amounts), and on production they record no text at all (on paper, only what is marked `data-ph-mask`).
  */
 export const posthogConfig = (
   setup: AnalyticsSetup,
-  options: { readonly origin: string; readonly optedOut: boolean }
+  options: { readonly origin: string }
 ): Partial<PostHogConfig> => ({
-  api_host: `${options.origin}/ingest`,
+  api_host: setup.posthogHost,
   ui_host: "https://us.posthog.com",
   defaults: "2026-08-30",
   person_profiles: "identified_only",
@@ -92,7 +103,6 @@ export const posthogConfig = (
   capture_dead_clicks: true,
   enable_heatmaps: true,
   respect_dnt: true,
-  opt_out_capturing_by_default: options.optedOut,
   session_recording: {
     maskAllInputs: true,
     maskTextSelector: setup.environment === "production" ? "*" : "[data-ph-mask]",

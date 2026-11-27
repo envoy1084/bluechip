@@ -13,6 +13,7 @@ import * as Option from "effect/Option"
 import type { Hex } from "viem"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, Passkeys as PasskeysMetric } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Challenges } from "../auth/Challenges.ts"
 import { passkeyLabel } from "../auth/PasskeyLabel.ts"
@@ -59,6 +60,7 @@ export class Passkeys extends Context.Service<Passkeys, {
     Passkeys,
     Effect.gen(function*() {
       const accounts = yield* Accounts
+      const analytics = yield* Analytics
       const challenges = yield* Challenges
       const webAuthn = yield* WebAuthn
       const signing = yield* SigningRequests
@@ -130,6 +132,12 @@ export class Passkeys extends Context.Service<Passkeys, {
           data: { label: row.label }
         })
         yield* count(PasskeysMetric, { change: adding ? "added" : "removed" })
+        const owners = (yield* accounts.owners(userId)).length
+        yield* analytics.capture(userId, { _tag: adding ? "passkey_added" : "passkey_removed", count_after: owners }, {
+          id: row.id,
+          at: now,
+          set: { passkeys_count: owners }
+        })
         yield* notifications.add(userId, notificationOfPasskey(row, adding))
         yield* changed(userId)
       })

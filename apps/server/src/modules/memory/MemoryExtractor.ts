@@ -3,6 +3,7 @@ import type { MessageId } from "@bluechip/domain/Ids"
 import * as LanguageModel from "effect/ai/LanguageModel"
 import type * as Prompt from "effect/ai/Prompt"
 import * as Context from "effect/Context"
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
@@ -67,12 +68,15 @@ export class MemoryExtractor extends Context.Service<MemoryExtractor, {
         // Up to this many memories, the notes see them all; past it, the ones recalled for the message.
         const known = yield* memories.list(owner)
         const existing = known.length <= NOTES_CONTEXT ? known : yield* memories.list(owner, { text: turn.userText })
-        const response = yield* models.onConversation(LanguageModel.generateObject({
+        const [elapsed, response] = yield* Effect.timed(models.onConversation(LanguageModel.generateObject({
           objectName: "memory_notes",
           schema: Notes,
           prompt: notesPrompt(existing, turn.userText)
-        }))
-        yield* budgets.record(owner, models.conversationModel, tokenUsage(response.usage), "memory")
+        })))
+        yield* budgets.record(owner, models.conversationModel, tokenUsage(response.usage), "memory", {
+          latencyMs: Duration.toMillis(elapsed),
+          $ai_stop_reason: response.finishReason
+        })
 
         const learned: Array<Memory> = []
         for (const candidate of response.value.memories) {

@@ -7,11 +7,18 @@ const switches = {
   preview: false,
   network: "sepolia",
   projectKey: "phc_test",
+  posthogHost: "https://t.example.com/",
   deploymentEnvironment: undefined,
   appVersion: "1.2.3"
 } as const
 
-const paper = { environment: "paper", network: "sepolia", projectKey: "phc_test", appVersion: "1.2.3" } as const
+const paper = {
+  environment: "paper",
+  network: "sepolia",
+  projectKey: "phc_test",
+  posthogHost: "https://t.example.com",
+  appVersion: "1.2.3"
+} as const
 const origin = "https://paper.bluechip.markets"
 
 describe("analyticsSetup", () => {
@@ -37,7 +44,8 @@ describe("analyticsSetup", () => {
       { name: "preview mode", switches: { ...switches, preview: true }, expected: null },
       { name: "the local chain", switches: { ...switches, network: "local" }, expected: null },
       { name: "no project key", switches: { ...switches, projectKey: undefined }, expected: null },
-      { name: "an empty project key", switches: { ...switches, projectKey: " " }, expected: null }
+      { name: "an empty project key", switches: { ...switches, projectKey: " " }, expected: null },
+      { name: "no PostHog host", switches: { ...switches, posthogHost: undefined }, expected: null }
     ] as const
   )("$name", ({ switches, expected }) => {
     assert.deepStrictEqual(analyticsSetup(switches), expected)
@@ -85,7 +93,7 @@ describe("posthogConfig", () => {
       { name: "production masks all text", setup: { ...paper, environment: "production" }, expected: "*" }
     ] as const
   )("$name", ({ setup, expected }) => {
-    const { session_recording } = posthogConfig(setup, { origin, optedOut: false })
+    const { session_recording } = posthogConfig(setup, { origin })
 
     assert.deepStrictEqual(session_recording, {
       maskAllInputs: true,
@@ -96,11 +104,11 @@ describe("posthogConfig", () => {
     })
   })
 
-  it("sends through this site's /ingest, with typed events only", () => {
-    const { before_send: _, session_recording: __, ...config } = posthogConfig(paper, { origin, optedOut: false })
+  it("sends to our PostHog host, with typed events only", () => {
+    const { before_send: _, session_recording: __, ...config } = posthogConfig(paper, { origin })
 
     assert.deepStrictEqual(config, {
-      api_host: `${origin}/ingest`,
+      api_host: "https://t.example.com",
       ui_host: "https://us.posthog.com",
       defaults: "2026-08-30",
       person_profiles: "identified_only",
@@ -111,12 +119,7 @@ describe("posthogConfig", () => {
       capture_performance: { web_vitals: true, network_timing: true },
       capture_dead_clicks: true,
       enable_heatmaps: true,
-      respect_dnt: true,
-      opt_out_capturing_by_default: false
+      respect_dnt: true
     })
-  })
-
-  it("starts opted out when you turned analytics off", () => {
-    assert.strictEqual(posthogConfig(paper, { origin, optedOut: true }).opt_out_capturing_by_default, true)
   })
 })

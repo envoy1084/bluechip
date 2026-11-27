@@ -91,7 +91,8 @@ describe("promptOf", () => {
             result: {},
             isFailure: false,
             providerExecuted: false,
-            modelOutput: "Shown as a card. Nothing changes until the user confirms it on the card."
+            modelOutput:
+              "Waiting for the user to confirm pausing every agent: trading stops at once, and nothing is sold."
           },
           {
             type: "card",
@@ -124,7 +125,7 @@ describe("promptOf", () => {
               : part.type
           )
       ]),
-      [["user", ["text"]], ["assistant", ["tool-call"]], ["tool", [["The card is dismissed."]]]]
+      [["user", ["text"]], ["assistant", ["tool-call"]], ["tool", [["The user left it as it was; nothing changed."]]]]
     )
   })
 

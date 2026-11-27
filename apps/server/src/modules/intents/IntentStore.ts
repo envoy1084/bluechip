@@ -1,4 +1,6 @@
 import { ChainDeployment } from "@bluechip/chain/ChainDeployment"
+import { usdBucket } from "@bluechip/domain/analytics/Buckets"
+import type { TradeSource } from "@bluechip/domain/analytics/Properties"
 import { Conflict, NotFound } from "@bluechip/domain/Errors"
 import { LiveEvent } from "@bluechip/domain/Events"
 import type { AgentId, IntentId, TradeId, UserId } from "@bluechip/domain/Ids"
@@ -38,6 +40,7 @@ import {
   secondsSince,
   sourceOf
 } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { AgentJournal } from "../journal/AgentJournal.ts"
 import { NotificationOutbox } from "../notifications/Outbox.ts"
@@ -153,6 +156,7 @@ export class IntentStore extends Context.Service<IntentStore, {
       const outbox = yield* NotificationOutbox
       const audit = yield* AuditLog
       const journal = yield* AgentJournal
+      const analytics = yield* Analytics
       const { stocks } = yield* ChainDeployment
       const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
@@ -206,6 +210,15 @@ export class IntentStore extends Context.Service<IntentStore, {
             executor: created.executor,
             batched: String(created.batchId !== null)
           })
+          yield* analytics.capture(created.userId as UserId, {
+            _tag: "intent_created",
+            source: sourceOf(created.source, created.executor) as TradeSource,
+            executor: created.executor,
+            agent_id: created.agentId,
+            automation_id: created.source === "automation" ? created.sourceId : null,
+            batched: created.batchId !== null,
+            legs: 1
+          }, { id: created.id, at: created.createdAt })
           return { row: created, created: true }
         }
 
@@ -253,9 +266,10 @@ export class IntentStore extends Context.Service<IntentStore, {
         return rows.map(toIntent)
       })
 
-      // The intents' metrics for a move from `from` to `row.status`.
-      const measure = Effect.fnUntraced(function*(row: IntentRow, from: IntentStatus) {
+      // The intents' metrics and analytics events for a move from `from` to `row.status`, once it committed.
+      const measure = Effect.fnUntraced(function*(row: IntentRow, from: IntentStatus, decided: boolean) {
         const source = sourceOf(row.source, row.executor)
+        yield* tell(row, from, decided)
         const approval = row.agentId !== null || row.source === "automation"
         const decision = row.decision
 
@@ -280,6 +294,70 @@ export class IntentStore extends Context.Service<IntentStore, {
           const ended = { outcome: row.status, source, executor: row.executor }
           yield* count(IntentsEnded, ended)
           yield* record(IntentsDuration, yield* secondsSince(row.createdAt), ended)
+        }
+      })
+
+      // The analytics events of a move: what was decided, an approval asked for or resolved, how the intent ended.
+      const tell = Effect.fnUntraced(function*(row: IntentRow, from: IntentStatus, decided: boolean) {
+        const userId = row.userId as UserId
+        const source = sourceOf(row.source, row.executor) as TradeSource
+        const at = row.updatedAt
+        const fact = { id: `${row.id}:${row.status}`, at }
+        const decision = row.decision
+        const secondsOpen = Math.max(0, (DateTime.toEpochMillis(at) - DateTime.toEpochMillis(row.createdAt)) / 1000)
+
+        if (decided && decision !== null) {
+          yield* analytics.capture(userId, {
+            _tag: "intent_decided",
+            decision: decision._tag === "Passes" ?
+              "passes" :
+              decision._tag === "OverLargestTrade" ?
+              "over_largest_trade" :
+              decision._tag === "Ask" ?
+              "asks_you" :
+              decision._tag === "Refused" ?
+              "refused" :
+              "waits",
+            policy: decision._tag === "Refused" ? decision.policy : null,
+            wait_reason: decision._tag === "Wait" ? decision.reason : null
+          }, { id: `${row.id}:decided:${DateTime.formatIso(at)}`, at })
+        }
+        if (row.status === "needsApproval" && decision !== null) {
+          // A sale's dollars are known only once quoted: it counts in the smallest range.
+          const dollars = "usdc" in row.leg.amount ? Number(row.leg.amount.usdc) / 1e6 : 0
+          yield* analytics.capture(userId, {
+            _tag: "approval_requested",
+            reason: decision._tag,
+            usd_bucket: usdBucket(dollars),
+            source
+          }, fact)
+        }
+        const approval = row.agentId !== null || row.source === "automation"
+        if (approval && (from === "needsApproval" || from === "awaitingSignature")) {
+          if (row.status === "sending" && from === "awaitingSignature") {
+            yield* analytics.capture(userId, {
+              _tag: "approval_signed",
+              seconds_to_resolve: secondsOpen,
+              surface: "web"
+            }, fact)
+          } else if (row.status === "declined") {
+            yield* analytics.capture(userId, {
+              _tag: "approval_declined",
+              seconds_to_resolve: secondsOpen,
+              surface: "web"
+            }, fact)
+          } else if (row.status === "expired") {
+            yield* analytics.capture(userId, { _tag: "approval_expired", seconds_to_resolve: secondsOpen }, fact)
+          }
+        }
+        if (isEnded(row.status)) {
+          yield* analytics.capture(userId, {
+            _tag: "intent_ended",
+            outcome: row.status as "filled" | "blocked" | "declined" | "expired" | "failed" | "cancelled",
+            source,
+            executor: row.executor,
+            seconds: secondsOpen
+          }, fact)
         }
       })
 
@@ -309,7 +387,7 @@ export class IntentStore extends Context.Service<IntentStore, {
             })
           ).pipe(Effect.orDie)
           if (updated === undefined) return yield* new Conflict({ reason: "intentChanged" })
-          yield* measure(updated, row.status)
+          yield* measure(updated, row.status, event._tag === "Decided")
 
           // The agent's journal next, so whoever hears of the change can read it there.
           const intent = toIntent(updated)

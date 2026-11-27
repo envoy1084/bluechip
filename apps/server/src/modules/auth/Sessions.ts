@@ -15,6 +15,7 @@ import { Database } from "../../platform/db/Database.ts"
 import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, DevicesSignedOut } from "../../platform/telemetry/Metrics.ts"
 import { accounts, passkeys } from "../accounts/tables.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { sessions } from "./tables.ts"
 
@@ -68,6 +69,7 @@ export class Sessions extends Context.Service<Sessions, {
       const db = yield* Database
       const audit = yield* AuditLog
       const live = yield* LiveEvents
+      const analytics = yield* Analytics
 
       const signedOut = (userId: UserId, subjectId: string, data: object) =>
         Effect.andThen(
@@ -196,6 +198,7 @@ export class Sessions extends Context.Service<Sessions, {
         if (revoked.length === 0) return yield* new NotFound({ resource: "device", id })
         yield* signedOut(userId, id, { device: revoked[0]!.device })
         yield* count(DevicesSignedOut, { scope: "one" })
+        yield* analytics.capture(userId, { _tag: "device_signed_out", scope: "one" }, { id })
       })
 
       const signOutAll = Effect.fn("Sessions.signOutAll")(function*(userId: UserId, keep?: SessionId | undefined) {
@@ -206,6 +209,11 @@ export class Sessions extends Context.Service<Sessions, {
         )).pipe(Effect.orDie)
         yield* signedOut(userId, keep ?? userId, { everywhere: true, kept: keep ?? null })
         yield* count(DevicesSignedOut, { scope: keep === undefined ? "all" : "others" })
+        if (keep !== undefined) {
+          yield* analytics.capture(userId, { _tag: "device_signed_out", scope: "others" }, {
+            id: `${keep}:${DateTime.formatIso(yield* DateTime.now)}`
+          })
+        }
       })
 
       const signOutPasskey = Effect.fn("Sessions.signOutPasskey")(function*(passkeyId: string) {

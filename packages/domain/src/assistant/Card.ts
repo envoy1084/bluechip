@@ -1,7 +1,6 @@
 /**
- * Cards: what the assistant's actions look like in the conversation. Every number you see comes from a card built
- * from real data (an intent, an agent, a signing request), never from the model's words; the model is only told
- * what the card says.
+ * Cards: what the assistant's actions look like in the conversation, built from real data (an intent, an agent, a
+ * signing request). The model is told what each card says, in words, so its answer states the same facts.
  *
  * @since 0.0.0
  */
@@ -9,11 +8,14 @@ import * as Schema from "effect/Schema"
 import { Agent, AgentRequest } from "../agents/Agent.ts"
 import { Automation, AutomationDescription, AutomationDraft } from "../automations/Automation.ts"
 import { AgentId, AutomationId, CardId, RequestId } from "../Ids.ts"
-import { describeDecision } from "../intents/Describe.ts"
+import { describeDecision, describeLeg } from "../intents/Describe.ts"
 import { Intent, IntentRequest } from "../intents/Intent.ts"
+import type { Quote } from "../market/Market.ts"
 import { AgentSpec } from "../policies/AgentSpec.ts"
-import { SpecChanges, SpecDescription } from "../policies/Catalog.ts"
+import { policyOf, SpecChanges, SpecDescription } from "../policies/Catalog.ts"
 import { SavedTemplate } from "../policies/Templates.ts"
+import { price, shares, usd } from "../tools/Words.ts"
+import type { TradeWarning } from "../trading/Trade.ts"
 import { Memory } from "./Memory.ts"
 
 /**
@@ -208,28 +210,66 @@ export type ConfirmableCard = Extract<Card, { readonly status: CardStatus }>
  */
 export const isPending = (card: Card): card is ConfirmableCard => "status" in card && card.status === "pending"
 
+// What became of a trade, in words the model can pass on.
 const tradeOutcome = (intent: Intent): string => {
+  const decided = intent.decision === null ? "" : `${describeDecision(intent.decision)} `
   switch (intent.status) {
     case "proposed":
     case "deciding":
-      return "Its policies are deciding it now; the card shows the outcome."
+      return "Its policies are still deciding it; nothing has been sent yet."
     case "needsApproval":
+      return `${decided}It waits for the user to approve it with Face ID; nothing is sent until they do.`
     case "awaitingSignature":
-      return "It waits for the user's approval with Face ID on the card."
-    case "blocked":
+      return "It waits for the user's Face ID; nothing is sent until they approve it."
     case "waiting":
-      return intent.decision === null ? `It is ${intent.status}.` : describeDecision(intent.decision)
+      return `${decided}Nothing was sent; it is decided again later.`
+    case "blocked":
+      return `${decided}Nothing was sent.`
     case "sending":
     case "confirming":
-      return "The agent is sending it."
-    default:
-      return `It is ${intent.status}.`
+      return "Within its policies, so it is being sent now; it isn't filled yet."
+    case "filled":
+      return "It is filled (getActivity has the fill)."
+    case "failed":
+      return "It failed on Base, so nothing moved."
+    case "declined":
+      return "The user declined it; nothing was sent."
+    case "expired":
+      return "It expired before it was approved; nothing was sent."
+    case "cancelled":
+      return "It was cancelled; nothing was sent."
   }
 }
 
+const tradeOf = (intent: Intent): string => `${describeLeg(intent.leg, (symbol) => symbol)} (intent ${intent.id})`
+
+const quoteOf = (quote: Quote): string =>
+  `${quote.side === "buy" ? "about " : ""}${shares(quote.shares)} ${quote.symbol} for ${
+    quote.side === "sell" ? "about " : ""
+  }${usd(quote.usdc)}, at ${price(quote.price)} a share, ${Math.abs(quote.gapBps) / 100}% ${
+    quote.gapBps >= 0 ? "worse" : "better"
+  } than Chainlink's ${price(quote.reference.price)}`
+
+const WARNINGS: Readonly<Record<TradeWarning, string>> = {
+  pricesPaused: "The market is closed, so prices are paused and it trades at the pool's price.",
+  marketApart: "The pool's price is further from Chainlink's than usual."
+}
+
+const policiesOf = (description: SpecDescription): string =>
+  `It can: ${description.can.join("; ")}. It never: ${description.never.join("; ")}.`
+
+const changesOf = (changes: SpecChanges): string =>
+  `Overall it is ${changes.overall}: ${
+    changes.policies.map((change) => `${policyOf(change.policy).title} ${change.change}`).join(", ")
+  }.`
+
+const answered = (status: CardStatus, done: string): string =>
+  status === "applied" ? done : "The user left it as it was; nothing changed."
+
 /**
- * What the model is told about a card it produced: what the user sees and what happens next, never a number the card
- * doesn't show. The model refers to the card instead of repeating it.
+ * What the model is told about a card it produced: the facts the user sees on it (amounts, prices, names, what was
+ * decided), in words it can repeat, and what happens next. The user may not see the card at all (a chat shows only a
+ * short message), so the model says the substance itself.
  *
  * @stability unstable
  * @category cards
@@ -238,40 +278,95 @@ const tradeOutcome = (intent: Intent): string => {
 export const describeCard = (card: Card): string => {
   switch (card._tag) {
     case "Trade":
-      return `Shown as a trade card for intent ${card.intent.id} (${card.intent.leg.side} ${card.intent.leg.symbol}). ` +
-        tradeOutcome(card.intent)
-    case "Approval":
-      return `Shown as a trade card for intent ${card.intent.id}, prepared for the user's Face ID. ` +
-        "Nothing happens unless they approve it on the card."
-    case "DraftAgent":
-      return `Shown as a draft agent card for "${card.agent.name}" (${card.agent.id}). ` +
-        "It is locked only when the user approves it with Face ID on the card." +
-        ((card.automations ?? []).length === 0 ?
+      return `${card.intent.agentId === null ? "The user's own trade" : `Agent ${card.intent.agentId}'s trade`}: ` +
+        `${tradeOf(card.intent)}. ${tradeOutcome(card.intent)}`
+    case "Approval": {
+      const { request } = card
+      const together = request.together.length === 0 ?
+        "" :
+        ` The same Face ID also sends: ${
+          request.together.map((other) => `${tradeOf(other.intent)}, ${quoteOf(other.quote)}`).join("; ")
+        }.`
+      return `The user's own trade, prepared for their Face ID: ${tradeOf(card.intent)}, ${quoteOf(request.quote)}.` +
+        together +
+        (request.deploysAccount ? " It also sets up their account onchain, in the same Face ID." : "") +
+        request.warnings.map((warning) => ` ${WARNINGS[warning]}`).join("") +
+        " Nothing happens until they approve it with Face ID."
+    }
+    case "DraftAgent": {
+      const automations = card.automations ?? []
+      return `Drafted the agent "${card.agent.name}" (${card.agent.id}), not live yet. ${
+        policiesOf(card.description)
+      }` +
+        (automations.length === 0 ?
           "" :
-          ` It comes with these automations, each kept or left out by the user on the card, the kept ones started ` +
-          `once it is live: ${(card.automations ?? []).map((automation) => automation.sentence).join(" ")}`)
-    case "PolicyChange":
-      return card.request === null ?
-        `The draft agent ${card.agent.id} was removed.` :
-        `Shown as a card to ${card.action} ${card.agent.name} (${card.agent.id}). ` +
-        "It happens only when the user approves it with Face ID on the card."
-    case "Automation":
-      return card.status === "pending" ?
-        `Shown as a card reading the automation back: "${card.description.sentence}" Nothing is saved until the ` +
-        "user confirms it on the card." :
-        `The card is ${card.status}.`
-    case "AgentControl":
-    case "AutomationControl":
+          ` It comes with these automations, each kept or left out by the user before it's locked and started once ` +
+          `it's live: ${automations.map((automation) => automation.sentence).join(" ")}`) +
+        " It is locked onchain only when the user approves it with Face ID."
+    }
+    case "PolicyChange": {
+      const agent = `${card.agent.name} (${card.agent.id})`
+      if (card.request === null) return `Removed the draft agent ${agent}; it was never live, so no Face ID was needed.`
+      switch (card.action) {
+        case "update":
+          return `Prepared a change to ${agent}'s policies. ` +
+            (card.changes === null ? "" : `${changesOf(card.changes)} `) +
+            (card.description === null ? "" : `After it: ${policiesOf(card.description)} `) +
+            "Nothing changes until the user approves it with Face ID."
+        case "renew":
+          return `Prepared a renewal of ${agent}: a new key with the same policies for 90 more days, once the user ` +
+            "approves it with Face ID."
+        case "remove":
+          return `Prepared the removal of ${agent}: once the user approves it with Face ID its key is revoked onchain ` +
+            "and it stops for good. Their stocks and cash stay in their account."
+      }
+    }
+    case "AgentControl": {
+      const name = card.agentName ?? "every agent"
+      if (card.status === "pending") {
+        return card.action === "resume" ?
+          `Waiting for the user to confirm resuming ${name}: it trades again inside its policies.` :
+          `Waiting for the user to confirm pausing ${name}: trading stops at once, and nothing is sold.`
+      }
+      return answered(
+        card.status,
+        card.action === "pauseAll" ?
+          "Every agent is paused." :
+          `${name} is ${card.action === "pause" ? "paused" : "running again"}.`
+      )
+    }
     case "SaveTemplate":
       return card.status === "pending" ?
-        "Shown as a card. Nothing changes until the user confirms it on the card." :
-        `The card is ${card.status}.`
+        `Waiting for the user to confirm saving the template "${card.name}". ${policiesOf(card.description)}` :
+        answered(card.status, `Saved the template "${card.name}".`)
+    case "Automation":
+      return card.status === "pending" ?
+        `Waiting for the user to confirm ${
+          card.action === "create" ? "a new automation" : "a change to an automation"
+        }: ` +
+        `"${card.description.sentence}" Nothing is saved until they do.` :
+        answered(card.status, `Saved the automation: "${card.description.sentence}"`)
+    case "AutomationControl":
+      return card.status === "pending" ?
+        `Waiting for the user to confirm ${card.action === "pause" ? "pausing" : "resuming"} the automation ` +
+        `${card.automationName}.` :
+        answered(
+          card.status,
+          `The automation ${card.automationName} is ${card.action === "pause" ? "paused" : "running again"}.`
+        )
     case "Memory":
-      return card.action === "confirm" ?
-        `Shown as a card asking the user to confirm the memory "${card.memory.text}".` :
-        `Memory ${card.action}: "${card.memory.text}" (${card.memory.id}).`
+      if (card.action !== "confirm") return `Memory ${card.action}: "${card.memory.text}" (${card.memory.id}).`
+      return card.status === "pending" ?
+        `Asking the user whether to remember: "${card.memory.text}"` :
+        card.status === "applied" ?
+        `The user kept the memory "${card.memory.text}".` :
+        `The user chose not to keep "${card.memory.text}".`
     case "Research":
-      return `Shown as a research card citing ${card.citations.length} pages.`
+      return card.citations.length === 0 ?
+        `Searched the web for "${card.query}"; nothing was cited.` :
+        `Searched the web for "${card.query}" and cited: ${
+          card.citations.map((citation) => `${citation.title} (${citation.url})`).join("; ")
+        }.`
     case "Error":
       return card.message
   }

@@ -10,10 +10,12 @@ import type { JudgmentId } from "@bluechip/domain/Ids"
 import { and, eq } from "drizzle-orm"
 import * as LanguageModel from "effect/ai/LanguageModel"
 import * as Context from "effect/Context"
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import { Database } from "../../platform/db/Database.ts"
 import { AutomationsJudgments, count } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AssistantModels } from "../assistant/AssistantModels.ts"
 import { Budgets } from "../assistant/Budgets.ts"
 import { tokenUsage } from "../assistant/Transcript.ts"
@@ -55,9 +57,10 @@ export class Judgments extends Context.Service<Judgments, {
       const models = yield* AssistantModels
       const budgets = yield* Budgets
       const runs = yield* AutomationRuns
+      const analytics = yield* Analytics
 
       const ask = Effect.fnUntraced(function*(owner: Owner, config: JudgmentConfig, story: NewsItem) {
-        const response = yield* models.small(LanguageModel.generateObject({
+        const [elapsed, response] = yield* Effect.timed(models.small(LanguageModel.generateObject({
           objectName: "judgment",
           schema: Answer,
           prompt: [
@@ -74,8 +77,11 @@ export class Judgments extends Context.Service<Judgments, {
               ].join("\n")
             }
           ]
-        }))
-        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "judgment")
+        })))
+        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "judgment", {
+          latencyMs: Duration.toMillis(elapsed),
+          $ai_stop_reason: response.finishReason
+        })
         return response.value satisfies JudgmentAnswer
       })
 
@@ -107,6 +113,13 @@ export class Judgments extends Context.Service<Judgments, {
         })
         const verdict = judged(config, answer.success)
         yield* count(AutomationsJudgments, { preset: config.preset, verdict: verdict.pass ? "pass" : "fail" })
+        const { confidence } = answer.success
+        yield* analytics.capture(owner.id, {
+          _tag: "judgment_made",
+          preset: config.preset,
+          verdict: verdict.pass ? "pass" : "fail",
+          confidence_bucket: confidence < 0.5 ? "low" : confidence < 0.8 ? "medium" : "high"
+        }, { id: judgmentId })
         return { ...verdict, judgmentId }
       })
 

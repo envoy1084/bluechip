@@ -22,6 +22,7 @@ import {
   WorkflowRetries
 } from "../../platform/telemetry/Metrics.ts"
 import { users } from "../accounts/tables.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { DeliverNotification } from "./DeliverNotification.ts"
 import { toNotification } from "./Notifications.ts"
 import { Notifiers } from "./Notifiers.ts"
@@ -45,6 +46,7 @@ export class Deliveries extends Context.Service<Deliveries, {
     Effect.gen(function*() {
       const db = yield* Database
       const notifiers = yield* Notifiers
+      const analytics = yield* Analytics
 
       const find = Effect.fnUntraced(function*(deliveryId: string) {
         const [found] = yield* db.select({ delivery: notificationDeliveries, notification: notifications })
@@ -110,6 +112,12 @@ export class Deliveries extends Context.Service<Deliveries, {
         yield* count(NotificationsDelivered, { channel, kind, outcome })
         if (outcome === "sent") {
           yield* recordMetric(NotificationsDelay, yield* secondsSince(found.notification.createdAt), { channel })
+          yield* analytics.capture(found.notification.userId as UserId, {
+            _tag: "notification_sent",
+            kind,
+            channel,
+            severity: found.notification.severity
+          }, { id: deliveryId })
         }
       })
 

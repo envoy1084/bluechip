@@ -14,6 +14,7 @@ import { Embeddings } from "../../src/platform/embeddings/Embeddings.ts"
 import { OriginCheckMiddleware } from "../../src/platform/http/OriginCheck.ts"
 import { ServicesLive } from "../../src/Services.ts"
 import { AlpacaTest } from "./AlpacaTest.ts"
+import { AnalyticsTest } from "./AnalyticsTest.ts"
 import { EngineTest } from "./EngineTest.ts"
 import { PushServiceTest } from "./PushServiceTest.ts"
 import { RecordedModel } from "./RecordedModel.ts"
@@ -33,7 +34,7 @@ export const TelegramTest = ChatTest.layer({
  * The API on a test server (`NodeHttpServer.layerTest`, a random port), with every service of the app, Alpaca's test
  * layer, the chain's prices read fresh each time (so a test that moves the chain's clock or a feed sees it at once),
  * the assistant on recorded models (`RecordedModel`) and the deterministic embedder, `chat` as the chat router
- * (`TelegramTest` unless a test runs Telegram's real adapter), push services in process (`PushServiceTest`), the
+ * (`TelegramTest` unless a test runs Telegram's real adapter), push services in process (`PushServiceTest`), analytics in memory (`AnalyticsTest`), the
  * in-memory engine and the test database; the devnet's controls (`Devnet`, `DevChain`, `ChainClient`) come from the
  * devnet it is given. Provides an `HttpClient` that sends to the server and the database (for harness services that
  * read what tests can't ask the API).
@@ -48,7 +49,9 @@ const serve = <A, E, R>(chat: Layer.Layer<A | Chat.Chat | ChatAdapter.Registry, 
   }).pipe(
     Layer.provideMerge(NodeHttpServer.layerTest),
     Layer.provideMerge(ServicesLive),
-    Layer.provideMerge(Layer.mergeAll(RecordedModel.layer, Embeddings.layerTest, chat, PushServiceTest.layer)),
+    Layer.provideMerge(
+      Layer.mergeAll(RecordedModel.layer, Embeddings.layerTest, chat, PushServiceTest.layer, AnalyticsTest.layer)
+    ),
     Layer.provide(ReferencePrices.layerUncached),
     Layer.provide(Layer.merge(AlpacaTest, AppConfig.layer)),
     Layer.provideMerge(Database.layer),

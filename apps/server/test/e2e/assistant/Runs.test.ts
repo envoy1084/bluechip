@@ -82,6 +82,7 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
 
         assert.deepStrictEqual(prompt!.content.map((message) => message.role), [
           "system",
+          "system",
           "user",
           "assistant",
           "user"
@@ -219,7 +220,7 @@ layer(Layer.mergeAll(TestAssistant.layer, TestUsers.layer), { excludeTestService
               ["user", ["Go on"]],
               ["assistant", ["You have no money in bluechip yet."]]
             ],
-            ["system", "user", "assistant", "tool", "assistant", "user"]
+            ["system", "system", "user", "assistant", "tool", "assistant", "user"]
           ]
         )
       }))

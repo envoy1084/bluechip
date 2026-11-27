@@ -23,6 +23,7 @@ import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { messages } from "../assistant/tables.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { Recall } from "./Recall.ts"
@@ -110,6 +111,7 @@ export class Memories extends Context.Service<Memories, {
       const db = yield* Database
       const recall = yield* Recall
       const recallIndex = yield* RecallIndex
+      const analytics = yield* Analytics
 
       const ofOwner = (owner: Owner) => eq(memories.userId, owner.id as `user_${string}`)
       const byId = (owner: Owner, id: string) => and(ofOwner(owner), eq(memories.id, id as `memory_${string}`))
@@ -228,7 +230,9 @@ export class Memories extends Context.Service<Memories, {
         readonly agentId: AgentId | null
         readonly messageId: MessageId | null
       }) {
-        return yield* insert(owner, { ...input, source: "said", confidence: 1, note: null, confirmed: true })
+        const memory = yield* insert(owner, { ...input, source: "said", confidence: 1, note: null, confirmed: true })
+        yield* analytics.capture(owner.id, { _tag: "memory_saved", source: "you" }, { id: memory.id })
+        return memory
       })
 
       const confirm = Effect.fn("Memories.confirm")(function*(owner: Owner, id: string) {
@@ -289,6 +293,12 @@ export class Memories extends Context.Service<Memories, {
       const remove = Effect.fn("Memories.remove")(function*(owner: Owner, id: string, during?: MessageId | undefined) {
         const memory = yield* drop(owner, id)
         if (memory.messageId !== null && memory.messageId !== during) yield* deleteTurn(memory.messageId)
+        yield* analytics.capture(owner.id, {
+          _tag: "memory_deleted",
+          source: during === undefined ? "you" : "assistant"
+        }, {
+          id: `${memory.id}:deleted`
+        })
         return memory
       })
 
@@ -305,12 +315,18 @@ export class Memories extends Context.Service<Memories, {
           case "Skip":
             return undefined
           case "Add":
-            return yield* insert(owner, { ...fields, note: null, confirmed: write.confirmed })
+            return yield* Effect.tap(
+              insert(owner, { ...fields, note: null, confirmed: write.confirmed }),
+              (memory) => analytics.capture(owner.id, { _tag: "memory_saved", source: "assistant" }, { id: memory.id })
+            )
           case "Refresh":
             return yield* Effect.orDie(confirm(owner, write.memoryId))
           case "Replace": {
             yield* Effect.orDie(drop(owner, write.memoryId))
-            return yield* insert(owner, { ...fields, note: write.note, confirmed: write.confirmed })
+            return yield* Effect.tap(
+              insert(owner, { ...fields, note: write.note, confirmed: write.confirmed }),
+              (memory) => analytics.capture(owner.id, { _tag: "memory_saved", source: "assistant" }, { id: memory.id })
+            )
           }
         }
       })

@@ -17,6 +17,7 @@ import { AppConfig } from "../../config/AppConfig.ts"
 import { measuredWorkflow } from "../../platform/engine/Measured.ts"
 import { count, TelegramMessages } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { Cards } from "../assistant/Cards.ts"
 import { Recoveries } from "../recovery/Recoveries.ts"
 import { ChannelLinks } from "./ChannelLinks.ts"
@@ -74,6 +75,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
   const stockName = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
   const recoveries = yield* Recoveries
   const { publicOrigin } = yield* AppConfig
+  const analytics = yield* Analytics
 
   const PAUSED_ALL = "Every agent is paused. Nothing was sold. Resume them in bluechip."
 
@@ -106,6 +108,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
       yield* count(TelegramMessages, { direction: "in", kind: "button" })
       const who = yield* bot.ownerOf(click.thread, click.userId)
       if (who === undefined) return ChatInteraction.ack
+      yield* clicked(who, click)
       const answered = yield* (confirmed ? cards.confirm : cards.dismiss)(who.owner, click.value).pipe(
         Effect.map((card) =>
           chatCard(card, { stock: stockName, conversationPath: `/chat/${who.link.conversationId}` })?.markdown ??
@@ -124,6 +127,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
 
   // A command from a chat that isn't linked, or from someone else in it, gets how to link one.
   const linked = (
+    command: string,
     event: ChatInteraction.CommandInvoked,
     run: (who: ChatOwner) => Effect.Effect<ChatInteraction.Respond>
   ): Effect.Effect<ChatInteraction.Respond> =>
@@ -132,7 +136,25 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
         count(TelegramMessages, { direction: "in", kind: "command" }),
         bot.ownerOf(event.thread, event.userId)
       ),
-      (who) => who === undefined ? Effect.succeed(respond(NOT_LINKED)) : run(who)
+      (who) =>
+        who === undefined ?
+          Effect.succeed(respond(NOT_LINKED)) :
+          Effect.andThen(
+            analytics.capture(who.owner.id, { _tag: "telegram_message", kind: "command", command }, { id: event.id }),
+            run(who)
+          )
+    )
+
+  // A button pressed by the chat's owner, and the notification action it took (Pause all, Cancel recovery).
+  const clicked = (who: ChatOwner, click: ChatInteraction.Click<string>, action?: "pause_all" | "cancel_recovery") =>
+    Effect.andThen(
+      analytics.capture(who.owner.id, { _tag: "telegram_message", kind: "button", command: null }, { id: click.id }),
+      action === undefined ? Effect.void : analytics.capture(who.owner.id, {
+        _tag: "notification_action",
+        kind: action === "pause_all" ? "intentBlocked" : "recoveryRequested",
+        action,
+        surface: "telegram"
+      }, { id: click.id })
     )
 
   return BotInteractions.of({
@@ -141,6 +163,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
     pauseAgent: Effect.fnUntraced(function*(click) {
       const who = yield* bot.ownerOf(click.thread, click.userId)
       if (who === undefined) return ChatInteraction.ack
+      yield* clicked(who, click)
       const said = yield* agents.pause(who.owner, click.value as AgentId).pipe(
         Effect.map((agent) => `${agent.name} is paused. It can't trade until you resume it in bluechip.`),
         Effect.catchTags({
@@ -154,6 +177,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
     pauseAll: Effect.fnUntraced(function*(click) {
       const who = yield* bot.ownerOf(click.thread, click.userId)
       if (who === undefined) return ChatInteraction.ack
+      yield* clicked(who, click, "pause_all")
       yield* agents.pauseAll(who.owner)
       yield* chat.post(click.thread, chatContent({ markdown: PAUSED_ALL, actions: [] }, publicOrigin)).pipe(
         Effect.catch((error) => Effect.logWarning("A chat message couldn't be sent", error))
@@ -163,6 +187,7 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
     cancelRecovery: Effect.fnUntraced(function*(click) {
       const who = yield* bot.ownerOf(click.thread, click.userId)
       if (who === undefined) return ChatInteraction.ack
+      yield* clicked(who, click, "cancel_recovery")
       const said = yield* cancelRecovery(who)
       yield* chat.post(click.thread, chatContent({ markdown: said, actions: [] }, publicOrigin)).pipe(
         Effect.catch((error) => Effect.logWarning("A chat message couldn't be sent", error))
@@ -189,10 +214,11 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
       const who = yield* bot.ownerOf(event.thread, event.userId)
       return started(who === undefined ? NOT_LINKED : HELP)
     }),
-    portfolio: (event) => linked(event, (who) => Effect.map(bot.portfolio(who.owner), (text) => respond(text))),
-    agents: (event) => linked(event, (who) => Effect.map(bot.agents(who.owner), (text) => respond(text))),
+    portfolio: (event) =>
+      linked("portfolio", event, (who) => Effect.map(bot.portfolio(who.owner), (text) => respond(text))),
+    agents: (event) => linked("agents", event, (who) => Effect.map(bot.agents(who.owner), (text) => respond(text))),
     pause: (event) =>
-      linked(event, (who) =>
+      linked("pause", event, (who) =>
         Effect.map(agents.list(who.owner), (all) => {
           const trading = all.filter((agent) => agent.status === "active" && !agent.paused)
           return trading.length === 0 ?
@@ -202,10 +228,13 @@ export const BotInteractionsLive = BotInteractions.toLayer(Effect.gen(function*(
               trading.map((agent) => PauseAgent.of(agent.id, { label: agent.name }))
             )
         })),
-    pause_all: (event) => linked(event, (who) => Effect.map(agents.pauseAll(who.owner), () => respond(PAUSED_ALL))),
-    cancel_recovery: (event) => linked(event, (who) => Effect.map(cancelRecovery(who), (said) => respond(said))),
+    pause_all: (event) =>
+      linked("pause_all", event, (who) => Effect.map(agents.pauseAll(who.owner), () => respond(PAUSED_ALL))),
+    cancel_recovery: (event) =>
+      linked("cancel_recovery", event, (who) => Effect.map(cancelRecovery(who), (said) => respond(said))),
     unlink: (event) =>
       linked(
+        "unlink",
         event,
         () => Effect.as(links.unlinkChat(event.thread.platform as Platform, event.thread.id), respond(UNLINKED))
       ),

@@ -39,9 +39,9 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           yield* assistant.ask(user, conversation.id, "Who trades here?")
           const [prompt] = yield* models.prompts("Who trades here?")
 
-          const system = prompt!.content.find((message) => message.role === "system")
+          const system = prompt!.content.flatMap((message) => message.role === "system" ? [message.content] : [])
           assert.include(
-            system?.role === "system" ? system.content : "",
+            system.join("\n"),
             `Propose every trade with agentId ${agent.id} first`
           )
         }))

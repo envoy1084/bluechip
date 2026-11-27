@@ -53,54 +53,13 @@ export const replaySessionId = (): string | null => {
   return state.posthog.get_session_id()
 }
 
-// The opt-out lives in this browser (PostHog keeps its own copy too), read before PostHog loads.
-const OPT_OUT_KEY = "bluechip.analytics.optOut"
-const optOutListeners = new Set<() => void>()
-
-/** Whether you turned product analytics off in Settings, on this browser. */
-export const analyticsOptedOut = (): boolean => {
-  try {
-    return localStorage.getItem(OPT_OUT_KEY) === "1"
-  } catch {
-    return false
-  }
-}
-
-/** Calls `listener` when the opt-out changes; returns the unsubscribe. */
-export const subscribeAnalyticsOptOut = (listener: () => void): () => void => {
-  optOutListeners.add(listener)
-  return () => optOutListeners.delete(listener)
-}
-
-/** Turns product analytics off (or back on) for this browser: no events, no replays. */
-export const setAnalyticsOptOut = (optedOut: boolean): void => {
-  try {
-    if (optedOut) localStorage.setItem(OPT_OUT_KEY, "1")
-    else localStorage.removeItem(OPT_OUT_KEY)
-  } catch {
-    // Storage is off: PostHog's own opt-out below still holds for this page.
-  }
-  // The change itself is the last event before opting out, and the first after opting back in.
-  const changed: WebEvent = { _tag: "settings_changed", setting: "analytics_opt_out" }
-  if (optedOut) {
-    track(changed)
-    withPostHog((posthog) => posthog.opt_out_capturing())
-  } else {
-    withPostHog((posthog) => posthog.opt_in_capturing())
-    track(changed)
-  }
-  for (const listener of optOutListeners) listener()
-}
-
 /** Loads PostHog and starts capturing (pageviews, replays, the typed events). */
 export const startAnalytics = async (setup: AnalyticsSetup): Promise<void> => {
   const waiting: Array<(posthog: PostHog) => void> = []
   state = { _tag: "Loading", waiting }
   const { default: posthog } = await import("posthog-js")
-  const optedOut = analyticsOptedOut()
-  posthog.init(setup.projectKey, posthogConfig(setup, { origin: location.origin, optedOut }))
+  posthog.init(setup.projectKey, posthogConfig(setup, { origin: location.origin }))
   posthog.register(commonProperties(setup))
-  if (optedOut) posthog.opt_out_capturing()
   state = { _tag: "On", posthog }
   for (const use of waiting) use(posthog)
 }

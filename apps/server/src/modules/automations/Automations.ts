@@ -17,7 +17,7 @@ import type { AgentId, AutomationId, MessageId, UserId } from "@bluechip/domain/
 import type { StockSymbol } from "@bluechip/domain/market/Market"
 import type { AgentSpec } from "@bluechip/domain/policies/AgentSpec"
 import { complete } from "@bluechip/domain/policies/Catalog"
-import { and, desc, eq, inArray, lte, ne, sql } from "drizzle-orm"
+import { and, count as countRows, desc, eq, inArray, lte, ne, sql } from "drizzle-orm"
 import * as Context from "effect/Context"
 import * as DateTime from "effect/DateTime"
 import * as Effect from "effect/Effect"
@@ -27,6 +27,7 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { AutomationsCreated, count } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
 import { AutomationRuns } from "./AutomationRuns.ts"
@@ -93,6 +94,7 @@ export class Automations extends Context.Service<Automations, {
       const agents = yield* Agents
       const runs = yield* AutomationRuns
       const audit = yield* AuditLog
+      const analytics = yield* Analytics
       const { stocks } = yield* ChainDeployment
       const nameOf = (symbol: StockSymbol) => stocks.find((stock) => stock.symbol === symbol)?.name ?? symbol
 
@@ -205,6 +207,18 @@ export class Automations extends Context.Service<Automations, {
           action: row.action.type,
           created_by: row.createdBy
         })
+        const [active] = yield* db.select({ count: countRows() }).from(automations).where(and(
+          eq(automations.userId, row.userId),
+          ne(automations.status, "deleted")
+        )).pipe(Effect.orDie)
+        yield* analytics.capture(owner.id, {
+          _tag: "automation_created",
+          trigger: row.trigger.type,
+          action: row.action.type,
+          conditions: row.conditions.map((condition) => condition.type),
+          created_by: row.createdBy === "assistant" ? "assistant" : "you",
+          for: row.agentId === null ? "you" : "agent"
+        }, { id: row.id, at: now, set: { automations_count: active?.count ?? 0 } })
         return toAutomation(row)
       })
 
@@ -244,6 +258,13 @@ export class Automations extends Context.Service<Automations, {
           yield* advance(row.id, () => ({ state: EMPTY_STATE, fire: null }))
         }
         yield* record(updated!, draft === undefined ? (changes.status === "paused" ? "paused" : "resumed") : "edited")
+        if (changes.status === "paused" && row.status !== "paused") {
+          yield* analytics.capture(owner.id, {
+            _tag: "automation_paused",
+            trigger: updated!.trigger.type,
+            by: "you"
+          }, { id: `${row.id}:paused:${DateTime.formatIso(now)}`, at: now })
+        }
         return toAutomation(updated!)
       })
 
@@ -252,6 +273,9 @@ export class Automations extends Context.Service<Automations, {
         yield* db.update(automations).set({ status: "deleted", nextRunAt: null, updatedAt: yield* DateTime.now })
           .where(eq(automations.id, row.id)).pipe(Effect.orDie)
         yield* record(row, "deleted")
+        yield* analytics.capture(owner.id, { _tag: "automation_deleted", trigger: row.trigger.type, by: "you" }, {
+          id: `${row.id}:deleted`
+        })
       })
 
       const list = Effect.fn("Automations.list")(function*(owner: Owner, agentId?: AgentId | undefined) {

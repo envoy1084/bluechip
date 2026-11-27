@@ -72,9 +72,9 @@ export const ListAutomations = Tool.make("listAutomations", {
  */
 export const CreateAutomation = Tool.make("createAutomation", {
   description: "Drafts an automation from the user's words (a trigger, conditions and an action from the catalogs, " +
-    "with settings) and shows it as a card reading it back in sentences; saved only when the user confirms. To " +
-    "change a saved automation (\"make it 8%\"), pass its automationId with the whole changed draft; to change a " +
-    `card not confirmed yet, call this again with the new draft. ${UNITS} If the draft has problems, this says ` +
+    "with settings) and returns it read back in a sentence: say that sentence to the user. Saved only when they " +
+    "confirm. To change a saved automation (\"make it 8%\"), pass its automationId with the whole changed draft; to " +
+    `change one not confirmed yet, call this again with the new draft. ${UNITS} If the draft has problems, this says ` +
     "which: fix them or ask the user. News and judgment conditions ask the user before trading unless they say " +
     "to act directly.",
   parameters: Schema.Struct({
@@ -96,8 +96,8 @@ export const CreateAutomation = Tool.make("createAutomation", {
  * @since 0.0.0
  */
 export const PauseAutomation = Tool.make("pauseAutomation", {
-  description: "Shows a card to pause an automation (or resume a paused one), applied once the user confirms. A " +
-    "paused automation fires nothing.",
+  description: "Asks the user to confirm pausing an automation (or resuming a paused one); applied once they " +
+    "confirm. A paused automation fires nothing.",
   parameters: Schema.Struct({
     automationId: AutomationIdParam,
     resume: Schema.Boolean.annotate({ description: "true to resume a paused automation, false to pause it." })

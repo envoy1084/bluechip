@@ -1,4 +1,4 @@
-// The browser's own traces, logs and metrics, exported as OTLP to bluechip's server (`/api/telemetry/v1/*`), which
+// The browser's own traces, logs and metrics, exported as OTLP to bluechip's server (`/api/sync/{t,l,m}`), which
 // forwards them to Axiom with its own token. API calls carry W3C `traceparent`, so a page's request and the server's
 // work for it are one trace.
 import * as Context from "effect/Context"
@@ -30,8 +30,8 @@ export const TRACE_SAMPLE_RATE = 0.2
 export const sessionSampled = (stored: string | null, roll: number): boolean =>
   stored === "1" ? true : stored === "0" ? false : roll < TRACE_SAMPLE_RATE
 
-// The live stream never ends, and telemetry and analytics' own requests would trace themselves.
-const UNTRACED_PREFIXES = ["/api/telemetry/", "/ingest/"]
+// The live stream never ends, and telemetry's own export would trace itself.
+const UNTRACED_PREFIXES = ["/api/sync/"]
 
 /** Whether a request from the page gets no client span (and so no `traceparent`). */
 export const untracedRequest = (pathname: string): boolean =>
@@ -93,7 +93,8 @@ const exporters = (setup: AnalyticsSetup) => {
     serviceVersion: setup.appVersion,
     attributes: { "deployment.environment": setup.environment, network: setup.network }
   }
-  const url = (signal: "traces" | "logs" | "metrics") => new URL(`/api/telemetry/v1/${signal}`, location.origin).href
+  // Short, neutral paths: ad blockers drop requests to ones that look like telemetry.
+  const url = (signal: "traces" | "logs" | "metrics") => new URL(`/api/sync/${signal[0]}`, location.origin).href
   // `keepalive` lets the last batch leave while the tab closes.
   const fetchClient = FetchHttpClient.layer.pipe(
     Layer.provide(Layer.succeed(FetchHttpClient.RequestInit, { keepalive: true }))

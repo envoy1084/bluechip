@@ -16,6 +16,7 @@ export const startObservability = async (): Promise<void> => {
     preview: new URLSearchParams(location.search).has("preview"),
     network,
     projectKey: import.meta.env["VITE_POSTHOG_PROJECT_API_KEY"],
+    posthogHost: import.meta.env["VITE_POSTHOG_HOST"],
     deploymentEnvironment: import.meta.env["VITE_DEPLOYMENT_ENVIRONMENT"],
     appVersion: import.meta.env["VITE_APP_VERSION"] ?? "0.0.0"
   })

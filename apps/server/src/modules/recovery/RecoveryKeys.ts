@@ -18,6 +18,7 @@ import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, Recovery as RecoveryMetric } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { encryptKey } from "../agents/Keys.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Challenges } from "../auth/Challenges.ts"
 import { passkeyLabel } from "../auth/PasskeyLabel.ts"
@@ -68,6 +69,7 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
       const store = yield* RecoveryStore
       const notifications = yield* Notifications
       const audit = yield* AuditLog
+      const analytics = yield* Analytics
       const live = yield* LiveEvents
       const scope = yield* Effect.scope
 
@@ -152,6 +154,15 @@ export class RecoveryKeys extends Context.Service<RecoveryKeys, {
           data: { label: passkey.label }
         })
         yield* count(RecoveryMetric, { change: locking ? "key_added" : "key_removed" })
+        if (locking) {
+          yield* analytics.capture(userId, { _tag: "recovery_key_added", by: "device" }, {
+            id: row.id,
+            at: now,
+            set: { has_recovery_passkey: true }
+          })
+        } else {
+          yield* analytics.identify(userId, { id: `${row.id}:removed`, at: now, set: { has_recovery_passkey: false } })
+        }
         yield* notifications.add(userId, notificationOfRecoveryKey({ id: row.id, label: passkey.label }, locking))
         yield* changed(userId)
       })

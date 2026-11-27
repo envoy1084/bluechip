@@ -1,3 +1,4 @@
+import type { ServerEvent } from "@bluechip/domain/analytics/ServerEvents"
 import { type Card, isPending } from "@bluechip/domain/assistant/Card"
 import type { Memory } from "@bluechip/domain/assistant/Memory"
 import { Conflict, type InvalidAutomation, type InvalidSpec, NotFound } from "@bluechip/domain/Errors"
@@ -12,11 +13,12 @@ import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { AssistantCards, count } from "../../platform/telemetry/Metrics.ts"
 import { Agents } from "../agents/Agents.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { Automations } from "../automations/Automations.ts"
 import { Memories } from "../memory/Memories.ts"
 import { SavedTemplates } from "../policies/SavedTemplates.ts"
 import type { Owner } from "../signing/SigningRequests.ts"
-import { assistantCards } from "./tables.ts"
+import { assistantCards, conversations } from "./tables.ts"
 
 /** A card before it is stored: everything but its id. */
 export type CardInput = Card extends infer C ? C extends Card ? Omit<C, "id"> : never : never
@@ -66,6 +68,25 @@ export class Cards extends Context.Service<Cards, {
       const templates = yield* SavedTemplates
       const memories = yield* Memories
       const automations = yield* Automations
+      const analytics = yield* Analytics
+
+      // A card's moment told to analytics, with its conversation and where it was (a card outside one is the web's).
+      const tell = Effect.fnUntraced(function*(
+        owner: Owner,
+        card: Card,
+        event: "card_shown" | "card_confirmed" | "card_dismissed",
+        conversationId: string | null
+      ) {
+        if (conversationId === null) return
+        const [conversation] = yield* db.select({ surface: conversations.surface }).from(conversations)
+          .where(eq(conversations.id, conversationId as `conversation_${string}`)).pipe(Effect.orDie)
+        yield* analytics.capture(owner.id, {
+          _tag: event,
+          kind: card._tag,
+          conversation_id: conversationId,
+          surface: conversation?.surface ?? "web"
+        } as Extract<ServerEvent, { readonly _tag: typeof event }>, { id: card.id })
+      })
 
       const byId = (owner: Owner, id: string) =>
         and(eq(assistantCards.id, id as `card_${string}`), eq(assistantCards.userId, owner.id as `user_${string}`))
@@ -86,6 +107,7 @@ export class Cards extends Context.Service<Cards, {
           updatedAt: now
         }).pipe(Effect.orDie)
         yield* count(AssistantCards, { kind: card._tag, outcome: "shown" })
+        yield* tell(owner, card, "card_shown", conversationId)
         return card
       })
 
@@ -98,11 +120,17 @@ export class Cards extends Context.Service<Cards, {
       })
 
       const save = Effect.fnUntraced(function*(owner: Owner, card: Card) {
-        yield* db.update(assistantCards).set({ card, updatedAt: yield* DateTime.now })
-          .where(byId(owner, card.id)).pipe(Effect.orDie)
+        const [saved] = yield* db.update(assistantCards).set({ card, updatedAt: yield* DateTime.now })
+          .where(byId(owner, card.id)).returning({ conversationId: assistantCards.conversationId }).pipe(Effect.orDie)
         const status = (card as { readonly status?: string }).status
         if (status === "applied" || status === "dismissed") {
           yield* count(AssistantCards, { kind: card._tag, outcome: status === "applied" ? "confirmed" : "dismissed" })
+          yield* tell(
+            owner,
+            card,
+            status === "applied" ? "card_confirmed" : "card_dismissed",
+            saved?.conversationId ?? null
+          )
         }
         return card
       })

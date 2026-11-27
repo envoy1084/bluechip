@@ -1,6 +1,7 @@
 import type { ConversationId } from "@bluechip/domain/Ids"
 import * as LanguageModel from "effect/ai/LanguageModel"
 import * as Context from "effect/Context"
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
@@ -26,7 +27,7 @@ export class Titles extends Context.Service<Titles, {
       const conversations = yield* Conversations
 
       const name = Effect.fn("Titles.name")(function*(owner: Owner, conversationId: ConversationId, userText: string) {
-        const response = yield* models.small(LanguageModel.generateObject({
+        const [elapsed, response] = yield* Effect.timed(models.small(LanguageModel.generateObject({
           objectName: "conversation_title",
           schema: Title,
           prompt: [
@@ -36,8 +37,12 @@ export class Titles extends Context.Service<Titles, {
             },
             { role: "user", content: `<user_message>\n${userText}\n</user_message>` }
           ]
-        }))
-        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "title")
+        })))
+        yield* budgets.record(owner, models.smallModel, tokenUsage(response.usage), "title", {
+          latencyMs: Duration.toMillis(elapsed),
+          $ai_stop_reason: response.finishReason,
+          $ai_session_id: conversationId
+        })
         yield* conversations.setTitle(conversationId, response.value.title.trim().slice(0, 80))
       }, (effect) =>
         // A conversation left untitled is named on its next turn.

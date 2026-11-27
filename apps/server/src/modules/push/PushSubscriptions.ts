@@ -9,6 +9,7 @@ import * as Layer from "effect/Layer"
 import { typeid } from "typeid-js"
 import { Database } from "../../platform/db/Database.ts"
 import { count, PushSubscriptions as PushSubscriptionsMetric } from "../../platform/telemetry/Metrics.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { pushSubscriptions } from "./tables.ts"
 
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect
@@ -37,6 +38,7 @@ export class PushSubscriptions extends Context.Service<PushSubscriptions, {
     PushSubscriptions,
     Effect.gen(function*() {
       const db = yield* Database
+      const analytics = yield* Analytics
 
       const rows = Effect.fn("PushSubscriptions.rows")(function*(userId: UserId) {
         return yield* db.select().from(pushSubscriptions)
@@ -59,6 +61,11 @@ export class PushSubscriptions extends Context.Service<PushSubscriptions, {
             ...values
           }).onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: values }).returning().pipe(Effect.orDie)
           yield* count(PushSubscriptionsMetric, { change: "added" })
+          yield* analytics.capture(userId, { _tag: "push_enabled" }, {
+            id: row!.id,
+            at: row!.createdAt,
+            set: { push_enabled: true }
+          })
           return toDevice(row!)
         }
       )
@@ -70,6 +77,12 @@ export class PushSubscriptions extends Context.Service<PushSubscriptions, {
         )).returning().pipe(Effect.orDie)
         if (removed.length === 0) return yield* new NotFound({ resource: "pushDevice", id })
         yield* count(PushSubscriptionsMetric, { change: "removed" })
+        if ((yield* rows(userId)).length === 0) {
+          yield* analytics.capture(userId, { _tag: "push_disabled" }, {
+            id: `${id}:removed`,
+            set: { push_enabled: false }
+          })
+        }
       })
 
       // A device its push service no longer knows (404, 410).

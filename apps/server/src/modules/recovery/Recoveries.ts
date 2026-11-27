@@ -28,6 +28,7 @@ import { LiveEvents } from "../../platform/live/LiveEvents.ts"
 import { count, Recovery as RecoveryMetric, UsersSignedIn } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { decryptKey } from "../agents/Keys.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { AuditLog } from "../audit/AuditLog.ts"
 import { Challenges } from "../auth/Challenges.ts"
 import { passkeyLabel } from "../auth/PasskeyLabel.ts"
@@ -111,10 +112,16 @@ export class Recoveries extends Context.Service<Recoveries, {
       const audit = yield* AuditLog
       const live = yield* LiveEvents
       const scope = yield* Effect.scope
+      const analytics = yield* Analytics
 
       const changed = (userId: string) => live.publish(LiveEvent.cases.AccountChanged.make({}), userId as UserId)
 
-      const recordAudit = (row: RecoveryRequestRow, action: string, actor: "owner" | "system", data: object = {}) =>
+      const recordAudit = (
+        row: RecoveryRequestRow,
+        action: "requested" | "completed" | "cancelled",
+        actor: "owner" | "system",
+        data: { readonly from?: CancelledFrom; readonly [field: string]: unknown } = {}
+      ) =>
         audit.record({
           userId: row.userId as UserId,
           actor,
@@ -122,7 +129,13 @@ export class Recoveries extends Context.Service<Recoveries, {
           subjectType: "recovery",
           subjectId: row.id,
           data
-        }).pipe(Effect.andThen(count(RecoveryMetric, { change: action === "requested" ? "started" : action })))
+        }).pipe(
+          Effect.andThen(count(RecoveryMetric, { change: action === "requested" ? "started" : action })),
+          Effect.andThen(analytics.capture(row.userId as UserId, {
+            _tag: action === "requested" ? "recovery_started" : `recovery_${action}`,
+            by: data.from === "telegram" ? "telegram" : "device"
+          }, { id: `${row.id}:${action}` }))
+        )
 
       // The recovery passkey's session and guard, as locked on the account.
       const grantsOf = Effect.fnUntraced(function*(stored: StoredKey) {

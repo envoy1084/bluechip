@@ -1,4 +1,4 @@
-// PostHog's and Axiom's ingest at the edge, in process, and the telemetry proxy in front of it: records what the telemetry proxy forwards (where, its
+// Axiom's ingest at the edge, in process, and the telemetry proxy in front of it: records what the telemetry proxy forwards (where, its
 // headers and its body) and answers 200 with a small JSON body.
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"

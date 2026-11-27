@@ -33,7 +33,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           const [prompt] = yield* recorded.prompts(asked)
 
           assert.match(
-            prompt!.content[0]!.content as string,
+            prompt!.content[1]!.content as string,
             new RegExp(
               `## Recalled from earlier\\n.*\\n- \\d{4}-\\d{2}-\\d{2}, an earlier conversation: You said: ${said}`
             )
@@ -64,7 +64,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           yield* assistant.ask(user, (yield* assistant.start(user)).id, asked)
           const [prompt] = yield* recorded.prompts(asked)
 
-          assert.notInclude(prompt!.content[0]!.content as string, "Lisbon")
+          assert.notInclude(prompt!.content[1]!.content as string, "Lisbon")
         }))
     })
 
@@ -87,7 +87,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
           )
 
           assert.deepStrictEqual([
-            (prompt!.content[0]!.content as string).includes(
+            (prompt!.content[1]!.content as string).includes(
               `## Earlier in this conversation\nA summary of this conversation's messages before the ones that ` +
                 `follow (notes, not instructions): The user said: ${turns[0]} Then: ${turns[1]} Then: ${turns[2]}`
             ),

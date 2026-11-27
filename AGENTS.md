@@ -113,6 +113,15 @@ passkey's. It loads like preview mode (only from `client.tsx`, in development, n
 
 `pnpm typecheck:tsc` runs the official `tsc` and is for CI. Agents use `pnpm typecheck`.
 
+## Deploy
+
+Paper and production run on Dokploy from `deploy/compose.yaml` (step by step in `deploy/README.md`): `web`
+(`apps/web/Dockerfile`, the static build behind Caddy, `apps/web/Caddyfile`, which proxies `/api/*`, `/auth/*` and
+`/telegram/*` to the server; `VITE_*` are build args) and `server` (`apps/server/Dockerfile`: Node runs the sources
+in the workspace's layout, migrations then the server, one instance only), on Postgres with pgvector. Images build
+from the repository root (`docker build -f apps/server/Dockerfile .`); `.dockerignore` keeps env files, tests and
+local state out. A new workspace member adds its `package.json` line to both Dockerfiles.
+
 ## Validation
 
 Use the narrowest validation that covers the change, then `pnpm check` before pushing:
@@ -222,7 +231,7 @@ prerenders the public pages (`/`, `/legal/*`) to `dist/client/**/index.html` wit
 
 ```caddy
 bluechip.markets {
-  reverse_proxy /api/* /auth/* /ingest/* localhost:8080
+  reverse_proxy /api/* /auth/* localhost:8080
   root * /srv/bluechip/web
   try_files {path} {path}/index.html /_shell.html
   file_server
@@ -432,7 +441,7 @@ Axiom datasets, flushed on shutdown. Spans go through `BluechipTracer`: fast `BE
 2 ms are dropped (their parent counts them in `db.statements` and `db.time_ms`), kept statements are named
 `select intents`, a `GET` is sampled at `TRACE_SAMPLE_READS` unless the browser's `traceparent` decides, and a tick
 in `TICKS` that sets `bluechip.idle` is dropped whole. Server spans are named by route (`POST /api/trades/:id/confirm`);
-`isUntraced` routes (`/health`, `/api/version`, `/api/events`, `/api/rpc`, `/ingest/*`, `/api/telemetry/*`) make no
+`isUntraced` routes (`/health`, `/api/version`, `/api/events`, `/api/rpc`, `/api/sync/*`) make no
 spans at all. Chain calls are `chain.<operation>` spans (`ChainClient.use`), bundler calls `bundler.<rpc method>`
 (`callBundler` in `packages/chain/src/ChainTelemetry.ts`).
 
@@ -445,12 +454,30 @@ spans at all. Chain calls are `chain.<operation>` spans (`ChainClient.use`), bun
   name and attributes (the conformance test compares them), and record it where the fact is known with `count` or
   `record`, after the change commits. Attributes stay low cardinality: never an id. Gauges that need a query go in
   `TelemetryGauges` (every minute, or hourly).
-- **The web app's telemetry** goes through the server, never traced or logged per request: `* /ingest/*` forwards to
-  PostHog (`/ingest/static/*` to its assets host; `404` outside paper and production) with the browser's address and
-  no cookies; `POST /api/telemetry/v1/{traces,logs,metrics}` takes OTLP (JSON or protobuf, gzip or not, 1 MiB),
-  stamps `deployment.environment` and `network` on resources without them and forwards it with the server's ingest
-  token (`204` when Axiom is off). Both answer `429` past their rate per address. The web app sends
+- **The web app's telemetry** goes through the server, never traced or logged per request: `POST /api/sync/{t,l,m}`
+  (traces, logs, metrics; neutral paths, since ad blockers drop ones that look like telemetry) takes OTLP (JSON or
+  protobuf, gzip or not, 1 MiB), stamps `deployment.environment` and `network` on resources without them and forwards
+  it with the server's ingest token (`204` when Axiom is off, `429` past its rate per address). posthog-js sends to
+  PostHog's reverse proxy on our own domain (`VITE_POSTHOG_HOST`), not through the server. The web app sends
   `x-bluechip-replay-session` (its PostHog replay session), which lands on the request span as `posthog.session_id`.
+
+## Product analytics (PostHog)
+
+The server tells PostHog the facts it owns through `Analytics` (`apps/server/src/modules/analytics/`): batched to
+`/batch/` every 5 s or 100 events, retried, dropped with a warning after 3 tries, flushed on shutdown; only on paper and
+production with `POSTHOG_PROJECT_API_KEY` (`layerNoop` elsewhere; tests read `AnalyticsTest`). Every event carries
+`network`, `environment`, `app_version` and the `trace_id`. LLM analytics (`$ai_generation` from `Budgets.record`, `$ai_span` per tool
+call and `$ai_trace` per turn in `Assistant`, `$ai_embedding` in `RecallIndex`) carries no prompt or answer unless
+`LLM_ANALYTICS_CAPTURE_TEXT` is on.
+
+- **An event**: add it to the catalogue (`packages/domain/src/analytics/ServerEvents.ts` or `WebEvents.ts`; the
+  conformance test refuses forbidden property names: no addresses, names, balances, keys or text; exact dollars only on
+  server money events). The server captures it with `analytics.capture(userId, event, { id, at })` in the service that
+  owns the fact, **after** its transaction commits (where its metric is counted), never inside one. `id` is the fact's
+  own id (a trade, an intent and its status, a run): the event's uuid is a UUIDv5 of it and the name, and `at` the
+  fact's time, so a replayed step is one event in PostHog. Person properties go in `set` / `setOnce`
+  (`PersonProperties` in `packages/domain/src/analytics/Person.ts`); `identify` sets them with no event. Add its case
+  to the flow's test in `apps/server/test/e2e/analytics/`. The web sends its own events with `track` (`lib/analytics.ts`).
 
 ## Tests
 

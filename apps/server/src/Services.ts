@@ -145,7 +145,7 @@ const NetworkLive: Layer.Layer<never, Config.ConfigError, ChainClient> = Layer.u
  * provides the ones below it. Entrypoints and tests provide the rest: `AppConfig`, `Database`, `ChainClient` and its
  * `ChainDeployment`, the
  * chain's prices (`ReferencePrices`, uncached in tests), `Alpaca`, the assistant's models (`AssistantModels`), the
- * embedder (`Embeddings`), the chat router (`Chat`, with Telegram's adapter or `ChatTest`'s), the `HttpClient` push
+ * embedder (`Embeddings`), product analytics (`Analytics`), the chat router (`Chat`, with Telegram's adapter or `ChatTest`'s), the `HttpClient` push
  * services are reached with, and the durable engine.
  */
 export const ServicesLive = Layer.mergeAll(

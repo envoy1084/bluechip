@@ -24,7 +24,7 @@ export const AgentIdParam = AgentId.annotate({
  */
 export const IntentIdParam = IntentId.annotate({
   identifier: undefined,
-  description: "A trade's intent id (intent_…), from a card or getAgentHistory."
+  description: "A trade's intent id (intent_…), from a tool result or getAgentHistory."
 })
 
 /**
@@ -54,5 +54,5 @@ export const SavedTemplateIdParam = SavedTemplateId.annotate({
  */
 export const AutomationIdParam = AutomationId.annotate({
   identifier: undefined,
-  description: "An automation's id (automation_…), from listAutomations or a card."
+  description: "An automation's id (automation_…), from listAutomations or a tool result."
 })

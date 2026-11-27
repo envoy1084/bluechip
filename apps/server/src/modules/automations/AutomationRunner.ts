@@ -19,6 +19,7 @@ import type { Address } from "viem"
 import { AutomationsRuns, AutomationsSkipped, BatchesCreated, count } from "../../platform/telemetry/Metrics.ts"
 import { Accounts } from "../accounts/Accounts.ts"
 import { AgentStore } from "../agents/AgentStore.ts"
+import { Analytics } from "../analytics/Analytics.ts"
 import { Intents } from "../intents/Intents.ts"
 import { marketStatus } from "../market/Calendar.ts"
 import { MarketPrices } from "../market/MarketPrices.ts"
@@ -61,6 +62,7 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
     Effect.gen(function*() {
       const automations = yield* Automations
       const runs = yield* AutomationRuns
+      const analytics = yield* Analytics
       const agentStore = yield* AgentStore
       const accounts = yield* Accounts
       const balances = yield* AccountBalances
@@ -233,6 +235,28 @@ export class AutomationRunner extends Context.Service<AutomationRunner, {
         yield* count(AutomationsRuns, { trigger: row.trigger.type, action: row.action.type, outcome: result.outcome })
         const stopped = result.conditions.find((condition) => !condition.pass)
         if (stopped !== undefined) yield* count(AutomationsSkipped, { condition: stopped.type })
+        // The run is the fact: a fire replayed after a restart finds it started and tells nothing again.
+        const userId = row.userId as UserId
+        const fact = { id: started.row.id, at: started.row.firedAt }
+        if (result.outcome === "skipped") {
+          yield* analytics.capture(userId, {
+            _tag: "automation_skipped",
+            trigger: row.trigger.type,
+            condition: stopped?.type ?? "nothing_to_trade"
+          }, fact)
+        } else {
+          yield* analytics.capture(userId, {
+            _tag: "automation_fired",
+            trigger: row.trigger.type,
+            action: row.action.type,
+            outcome: result.outcome === "proposed"
+              ? "traded"
+              : result.outcome === "asked"
+              ? "proposed"
+              : result.outcome,
+            legs: result.intentIds.length
+          }, fact)
+        }
         if (result.outcome === "skipped" || result.outcome === "failed") return
 
         yield* automations.fired(row.id, yield* DateTime.now)

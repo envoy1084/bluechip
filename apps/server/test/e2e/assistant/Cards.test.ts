@@ -34,7 +34,8 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
               interrupts: [{
                 id: card.id,
                 reason: "confirmation",
-                message: "Shown as a card. Nothing changes until the user confirms it on the card."
+                message:
+                  "Waiting for the user to confirm pausing Tech picker: trading stops at once, and nothing is sold."
               }]
             }]
           )
@@ -164,7 +165,7 @@ layer(Layer.mergeAll(TestAssistant.layerNoDeps, TestAgents.layer), { excludeTest
               []
           )
 
-          assert.deepStrictEqual([now.paused, toolResults], [true, ["The card is applied."]])
+          assert.deepStrictEqual([now.paused, toolResults], [true, ["Tech picker is paused."]])
         }))
     })
   }

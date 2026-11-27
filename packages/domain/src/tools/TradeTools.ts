@@ -24,7 +24,7 @@ export const MAX_REASON_LENGTH = 200
 
 // A plain string: a trimmed string's pattern held Anthropic's constrained decoding in a loop. Handlers trim it.
 const Reason = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(MAX_REASON_LENGTH)).annotate({
-  description: "Why, in a short sentence the user will read on the card."
+  description: "Why, in a short sentence the user will read with the trade."
 })
 
 /**
@@ -34,8 +34,10 @@ const Reason = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(MAX
  */
 export const ProposeTrade = Tool.make("proposeTrade", {
   description: "Proposes one trade, through an agent (its policies decide: it sends it, asks the user, or blocks it) " +
-    "or as the user (prepared for their Face ID). Give dollars for a buy and shares for a sell. The result is a card; " +
-    "never claim a trade happened unless the card says so.",
+    "or as the user (prepared for their Face ID). Give dollars for a buy and shares for a sell. Returns the outcome: " +
+    "being sent, waiting for the user's approval, blocked by a named policy and why, or waiting; a trade as the user " +
+    "comes with its quote. Tell the user the trade, the outcome and what they need to do; never claim it happened " +
+    "unless the result says so.",
   parameters: Schema.Struct({
     agentId: Schema.NullOr(AgentIdParam).annotate({
       description: "The agent to trade through; null to trade as the user."
@@ -60,7 +62,8 @@ export const ProposeTrade = Tool.make("proposeTrade", {
  */
 export const ProposeRebalance = Tool.make("proposeRebalance", {
   description: "Proposes the trades that bring the portfolio back to a rebalancer agent's target mix, one intent per " +
-    "stock that drifted past its trigger, each decided by the agent's policies.",
+    "stock that drifted past its trigger, each decided by the agent's policies. Returns each trade with its outcome: " +
+    "tell the user what moves and what waits for them.",
   parameters: Schema.Struct({ agentId: AgentIdParam, reason: Reason }),
   success: Schema.Array(Card),
   failure: ToolProblem,
